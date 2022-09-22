@@ -14,6 +14,7 @@ import stk
 import numpy as np
 import os
 import json
+import logging
 
 from shape import ShapeMeasure
 
@@ -60,7 +61,7 @@ def run_aniso_optimisation(
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
-        print(f": running optimisation of {run_prefix}")
+        logging.info(f": running optimisation of {run_prefix}")
         opt = CGGulpOptimizer(
             fileprefix=run_prefix,
             output_dir=output_dir,
@@ -88,7 +89,7 @@ def run_aniso_optimisation(
         fin_energy = run_data["final_energy"]
         fin_gnorm = run_data["final_gnorm"]
         traj_data = run_data["traj"]
-        print(
+        logging.info(
             f"{run_prefix}: {num_steps} {fin_energy} {fin_gnorm} "
             f"{cu8_measure}"
         )
@@ -269,4 +270,8 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s | %(levelname)s | %(message)s",
+    )
     main()
