@@ -42,6 +42,38 @@ def cubism_calculations():
     return path
 
 
+def mnl2n():
+    path = project_dir() / pathlib.Path("mnl2n/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def mnl2n_figures():
+    path = mnl2n() / pathlib.Path("figures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def mnl2n_structures():
+    path = mnl2n() / pathlib.Path("structures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def mnl2n_calculations():
+    path = mnl2n() / pathlib.Path("calculations/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
 def gulp_path():
     return pathlib.Path("/home/atarzia/software/gulp-6.1/Src/gulp")
 
