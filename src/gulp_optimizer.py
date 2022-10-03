@@ -19,19 +19,9 @@ from utilities import get_all_angles, angle_between
 
 
 class CGGulpOptimizer:
-    def __init__(
-        self,
-        fileprefix,
-        output_dir,
-        anisotropy,
-        ortho_k,
-        o_angle_k,
-    ):
+    def __init__(self, fileprefix, output_dir):
         self._fileprefix = fileprefix
         self._output_dir = output_dir
-        self._anisotropy = anisotropy
-        self._ortho_k = ortho_k
-        self._o_angle_k = o_angle_k
         self._gulp_in = os.path.join(
             self._output_dir, f"{self._fileprefix}.gin"
         )
@@ -75,62 +65,10 @@ class CGGulpOptimizer:
         return run_data
 
     def define_bond_potentials(self):
-        bond_ks_ = {
-            ("C", "C"): 10,
-            ("B", "B"): 10,
-            ("B", "C"): self._ortho_k,
-            ("C", "Zn"): 10,
-            ("B", "Zn"): 10,
-            ("Fe", "Fe"): 10,
-            ("Fe", "Zn"): 10,
-            ("Zn", "Zn"): 10,
-        }
-        _base_length = 4
-        _ortho_length = self._anisotropy * _base_length
-        bond_rs_ = {
-            ("C", "C"): _base_length,
-            ("B", "B"): _base_length,
-            ("B", "C"): _ortho_length,
-            ("C", "Zn"): 4,
-            ("B", "Zn"): 4,
-            ("Fe", "Fe"): 4,
-            ("Fe", "Zn"): 4,
-            ("Zn", "Zn"): 4,
-        }
-        return bond_ks_, bond_rs_
+        raise NotImplementedError()
 
     def define_angle_potentials(self):
-        angle_ks_ = {
-            ("B", "C", "C"): self._o_angle_k,
-            ("B", "B", "C"): self._o_angle_k,
-            ("Fe", "Fe", "Fe"): 20,
-            # ('Fe', 'Fe', 'Zn'): 10,
-            ("Fe", "Zn", "Zn"): 20,
-            ("Zn", "Zn", "Zn"): 20,
-            ("B", "C", "Zn"): self._o_angle_k,
-            ("B", "B", "Zn"): self._o_angle_k,
-            ("C", "C", "Zn"): self._o_angle_k,
-            ("C", "Fe", "Zn"): 20,
-            ("B", "Fe", "Zn"): 20,
-        }
-        angle_thetas_ = {
-            ("B", "C", "C"): 90,
-            ("B", "B", "C"): 90,
-            ("Fe", "Fe", "Fe"): 60,
-            # ('Fe', 'Fe', 'Zn'): 60,
-            # This requires a special rule.
-            ("Fe", "Zn", "Zn"): (
-                "check",
-                {"cut": 70, "min": 60, "max": 90},
-            ),
-            ("Zn", "Zn", "Zn"): 60,
-            ("B", "C", "Zn"): 135,
-            ("B", "B", "Zn"): 135,
-            ("C", "C", "Zn"): 135,
-            ("C", "Fe", "Zn"): 180,
-            ("B", "Fe", "Zn"): 180,
-        }
-        return angle_ks_, angle_thetas_
+        raise NotImplementedError()
 
     def _get_coord_mass_string(self, mol):
         coord_string = "cartesian\n"
@@ -196,7 +134,9 @@ class CGGulpOptimizer:
             try:
                 angle_k = angle_ks_[sorted_name]
                 angle_theta = angle_thetas_[sorted_name]
-                if isinstance(angle_theta, int):
+                if isinstance(angle_theta, int) or isinstance(
+                    angle_theta, float
+                ):
                     pass
                 elif angle_theta[0] == "check":
                     a1id = atom1.get_id()

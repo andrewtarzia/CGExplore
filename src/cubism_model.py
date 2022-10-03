@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Script to cubism CG model analysis.
+Script to generate CG models of cubism M8L6 systems.
 
 Author: Andrew Tarzia
 
@@ -32,7 +32,7 @@ from gulp_optimizer import CGGulpOptimizer
 from cube_construction.cube import CGM8L6Cube
 from cube_construction.symmetries import symmetries
 
-from plotting import (
+from cube_construction.plotting import (
     convergence,
     scatter,
     geom_distributions,
@@ -44,7 +44,80 @@ from plotting import (
 from precursor_db.precursors import delta_bb, lambda_bb, plane_bb
 
 
-def run_aniso_optimisation(
+class CubismOptimizer(CGGulpOptimizer):
+    def __init__(
+        self,
+        fileprefix,
+        output_dir,
+        anisotropy,
+        ortho_k,
+        o_angle_k,
+    ):
+        self._anisotropy = anisotropy
+        self._ortho_k = ortho_k
+        self._o_angle_k = o_angle_k
+        super().__init__(fileprefix, output_dir)
+
+    def define_bond_potentials(self):
+        bond_ks_ = {
+            ("C", "C"): 10,
+            ("B", "B"): 10,
+            ("B", "C"): self._ortho_k,
+            ("C", "Zn"): 10,
+            ("B", "Zn"): 10,
+            ("Fe", "Fe"): 10,
+            ("Fe", "Zn"): 10,
+            ("Zn", "Zn"): 10,
+        }
+        _base_length = 4
+        _ortho_length = self._anisotropy * _base_length
+        bond_rs_ = {
+            ("C", "C"): _base_length,
+            ("B", "B"): _base_length,
+            ("B", "C"): _ortho_length,
+            ("C", "Zn"): 4,
+            ("B", "Zn"): 4,
+            ("Fe", "Fe"): 4,
+            ("Fe", "Zn"): 4,
+            ("Zn", "Zn"): 4,
+        }
+        return bond_ks_, bond_rs_
+
+    def define_angle_potentials(self):
+        angle_ks_ = {
+            ("B", "C", "C"): self._o_angle_k,
+            ("B", "B", "C"): self._o_angle_k,
+            ("Fe", "Fe", "Fe"): 20,
+            # ('Fe', 'Fe', 'Zn'): 10,
+            ("Fe", "Zn", "Zn"): 20,
+            ("Zn", "Zn", "Zn"): 20,
+            ("B", "C", "Zn"): self._o_angle_k,
+            ("B", "B", "Zn"): self._o_angle_k,
+            ("C", "C", "Zn"): self._o_angle_k,
+            ("C", "Fe", "Zn"): 20,
+            ("B", "Fe", "Zn"): 20,
+        }
+        angle_thetas_ = {
+            ("B", "C", "C"): 90,
+            ("B", "B", "C"): 90,
+            ("Fe", "Fe", "Fe"): 60,
+            # ('Fe', 'Fe', 'Zn'): 60,
+            # This requires a special rule.
+            ("Fe", "Zn", "Zn"): (
+                "check",
+                {"cut": 70, "min": 60, "max": 90},
+            ),
+            ("Zn", "Zn", "Zn"): 60,
+            ("B", "C", "Zn"): 135,
+            ("B", "B", "Zn"): 135,
+            ("C", "C", "Zn"): 135,
+            ("C", "Fe", "Zn"): 180,
+            ("B", "Fe", "Zn"): 180,
+        }
+        return angle_ks_, angle_thetas_
+
+
+def run_optimisation(
     cage,
     aniso,
     symm,
@@ -62,7 +135,7 @@ def run_aniso_optimisation(
             res_dict = json.load(f)
     else:
         logging.info(f": running optimisation of {run_prefix}")
-        opt = CGGulpOptimizer(
+        opt = CubismOptimizer(
             fileprefix=run_prefix,
             output_dir=output_dir,
             anisotropy=aniso,
@@ -107,7 +180,7 @@ def run_aniso_optimisation(
 
 
 def main():
-    first_line = "Usage: cubism_model.py"
+    first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
         print(f"{first_line}")
         sys.exit()
@@ -138,7 +211,7 @@ def main():
 
             for aniso in anisotropies:
                 aniso = round(aniso, 2)
-                res_dict = run_aniso_optimisation(
+                res_dict = run_optimisation(
                     cage=cage,
                     aniso=aniso,
                     symm=symm,
@@ -271,7 +344,7 @@ def main():
 
 if __name__ == "__main__":
     logging.basicConfig(
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
     )
     main()
