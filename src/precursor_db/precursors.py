@@ -34,6 +34,36 @@ def lambda_bb():
     )
 
 
+def twoc_bb():
+    bb = stk.BuildingBlock(
+        smiles="[Br][N][C][B][C][N][Br]",
+        functional_groups=(stk.BromoFactory(),),
+        position_matrix=[
+            [2, 1, 0],
+            [2, 0, 0],
+            [1, 0, 0],
+            [0, 0, 0],
+            [-1, 0, 0],
+            [-2, 0, 0],
+            [-2, 1, 0],
+        ],
+    )
+    bb.write(os.path.join(precursor_dir(), "twoc_bb.mol"))
+    return bb
+
+
+def fourc_bb():
+    bb = stk.BuildingBlock(
+        smiles="[Pd+2]",
+        functional_groups=(
+            stk.SingleAtom(stk.Pd(0, charge=2)) for i in range(4)
+        ),
+        position_matrix=[[0, 0, 0]],
+    )
+    bb.write(os.path.join(precursor_dir(), "fourc_bb.mol"))
+    return bb
+
+
 def plane_bb():
 
     bb = FaceBuildingBlock.init_from_file(
