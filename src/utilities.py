@@ -11,41 +11,9 @@ Author: Andrew Tarzia
 
 import numpy as np
 import json
+import logging
 from rdkit.Chem import AllChem as rdkit
 from scipy.spatial.distance import euclidean
-
-
-def merge_bond_types(s):
-
-    translation = {
-        "CC": "face",
-        "BB": "face",
-        "CZn": "face-metal",
-        "BZn": "face-metal",
-        "FeFe": "metal",
-        "FeZn": "metal",
-        "ZnZn": "metal",
-    }
-
-    return translation[s]
-
-
-def merge_angle_types(s):
-
-    translation = {
-        "BCC": "face",
-        "BBC": "face",
-        "BCZn": "face-metal",
-        "BBZn": "face-metal",
-        "CCZn": "face-metal",
-        "BFeZn": "face-metal",
-        "CFeZn": "face-metal",
-        "FeZnZn": "metal",
-        "FeFeFe": "metal",
-        "ZnZnZn": "metal",
-    }
-
-    return translation[s]
 
 
 def get_distances(optimizer, cage):
@@ -173,35 +141,11 @@ def read_lib(lib_file):
     Returns dictionary.
     """
 
-    print(f"reading {lib_file}")
+    logging.info(f"reading {lib_file}")
     with open(lib_file, "rb") as f:
         lib = json.load(f)
 
     return lib
-
-
-def convert_symm_names(symm_name):
-
-    new_names = {
-        "d2": r"D$_2$",
-        "th1": r"T$_{h, 1}$",
-        "th2": r"T$_{h, 2}$",
-        "td": r"T$_{\Delta}$",
-        "tl": r"T$_{\Lambda}$",
-        "s41": r"S$_{4, 1}$",
-        "s42": r"S$_{4, 2}$",
-        "s61": r"S$_{6, 1}$",
-        "s62": r"S$_{6, 2}$",
-        "d31": r"D$_{3, 1}$",
-        "d32": r"D$_{3, 2}$",
-        "d31n": r"D$_{3, 1n}$",
-        "d32n": r"D$_{3, 2n}$",
-        "c2v": r"C$_{2h}$",
-        "c2h": r"C$_{2v}$",
-        "d3c3": r"knot",
-    }
-
-    return new_names[symm_name]
 
 
 def get_all_angles(molecule):
