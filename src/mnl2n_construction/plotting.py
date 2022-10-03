@@ -14,63 +14,90 @@ import numpy as np
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 
-from utilities import (
-    convert_symm_names,
-    merge_angle_types,
-    merge_bond_types,
-)
+
+plt.set_loglevel("WARNING")
+
+
+def merge_bond_types(s):
+
+    translation = {
+        "NPd": "N-metal",
+        "BC": "ligand",
+        "CN": "ligand-N",
+    }
+
+    return translation[s]
+
+
+def merge_angle_types(s):
+
+    translation = {
+        "BCC": "ligand",
+        "NNPd": "N-metal-N",
+        "BCN": "ligand-N",
+        "CNPd": "ligand-N-metal",
+    }
+
+    return translation[s]
+
+
+def convert_topo_names(topo_str):
+
+    new_names = {
+        "m2l4": "M2L4",
+        "m3l6": "M3L6",
+        "m4l8": "M4L8",
+        "m6l12": "M6L12",
+        "m12l24": "M12L24",
+        "m24l48": "M24L48",
+    }
+
+    return new_names[topo_str]
 
 
 def scatter(
-    symm_to_c,
+    topo_to_c,
     results,
     ylabel,
     output_dir,
     filename,
-    flex,
 ):
+    print("add properties to this")
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    for aniso in results:
-        da = results[aniso]
-        for symm in da:
+    switched_data = {}
+    for biteangle in results:
+        da = results[biteangle]
+        for topo_s in da:
             if ylabel == "energy (eV)":
-                ys = da[symm]["fin_energy"]
+                ys = da[topo_s]["fin_energy"]
             elif ylabel == "CU-8":
-                ys = da[symm]["cu8"]
+                ys = da[topo_s]["cu8"]
                 ax.axhline(y=0, lw=2, c="k")
 
-            ax.scatter(
-                aniso,
-                ys,
-                c=symm_to_c[symm][1],
-                marker=symm_to_c[symm][0],
-                edgecolor="k",
-                s=80,
-                alpha=0.5,
-            )
+            if topo_s not in switched_data:
+                switched_data[topo_s] = []
+            switched_data[topo_s].append((biteangle, ys))
 
-    legend_elements = []
-    for s in symm_to_c:
-        legend_elements.append(
-            Line2D(
-                [0],
-                [0],
-                color="w",
-                marker=symm_to_c[s][0],
-                label=convert_symm_names(s),
-                markerfacecolor=symm_to_c[s][1],
-                markersize=10,
-                markeredgecolor="k",
-            )
+    for topo_s in topo_to_c:
+        ax.plot(
+            [i[0] for i in switched_data[topo_s]],
+            [i[1] for i in switched_data[topo_s]],
+            c=topo_to_c[topo_s][1],
+            # marker=topo_to_c[topo_s][0],
+            # edgecolor="k",
+            # s=80,
+            lw=3,
+            alpha=1.0,
+            label=convert_topo_names(topo_s),
         )
 
-    ax.legend(handles=legend_elements, fontsize=16, ncol=3)
+    ax.legend(fontsize=16, ncol=3)
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("anisotropy", fontsize=16)
+    ax.set_xlabel("bite angle [degrees]", fontsize=16)
     ax.set_ylabel(ylabel, fontsize=16)
-    ax.set_title(f"flex: {flex}", fontsize=16)
+    ax.set_ylim(0, 10)
 
     fig.tight_layout()
     fig.savefig(
@@ -81,11 +108,13 @@ def scatter(
     plt.close()
 
 
-def ey_vs_shape(
+def ey_vs_property(
     results,
     output_dir,
     filename,
 ):
+    print("make this a property of interest -- pore?")
+    return
 
     _to_plot = {
         "d2": ("o", "k"),
@@ -95,23 +124,23 @@ def ey_vs_shape(
     }
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    for symm in _to_plot:
+    for topo_s in _to_plot:
         x_vals = []
         y_vals = []
         for aniso in results:
             da = results[aniso]
-            x_vals.append(da[symm]["cu8"])
-            y_vals.append(da[symm]["fin_energy"])
+            x_vals.append(da[topo_s]["cu8"])
+            y_vals.append(da[topo_s]["fin_energy"])
 
         ax.scatter(
             x_vals,
             y_vals,
-            c=_to_plot[symm][1],
-            marker=_to_plot[symm][0],
+            c=_to_plot[topo_s][1],
+            marker=_to_plot[topo_s][0],
             edgecolor="k",
             s=100,
             alpha=1.0,
-            label=convert_symm_names(symm),
+            label=convert_topo_names(topo_s),
         )
 
     ax.legend(fontsize=16)
@@ -119,72 +148,6 @@ def ey_vs_shape(
     ax.set_xlabel("CU-8", fontsize=16)
     ax.set_ylabel("energy (eV)", fontsize=16)
     ax.set_xlim(0, 2)
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(output_dir, filename),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def comp_scatter(
-    symm_to_c,
-    symm_set,
-    results,
-    ylabel,
-    output_dir,
-    filename,
-    flex,
-    ylim,
-):
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    for aniso in results:
-        da = results[aniso]
-        for symm in da:
-            if symm not in symm_set:
-                continue
-            if ylabel == "energy (eV)":
-                ys = da[symm]["fin_energy"]
-            elif ylabel == "CU-8":
-                ys = da[symm]["cu8"]
-                ax.axhline(y=0, lw=2, c="k")
-
-            ax.scatter(
-                aniso,
-                ys,
-                c=symm_to_c[symm][1],
-                marker=symm_to_c[symm][0],
-                edgecolor="k",
-                s=120,
-            )
-
-    legend_elements = []
-    for s in symm_to_c:
-        if s not in symm_set:
-            continue
-        legend_elements.append(
-            Line2D(
-                [0],
-                [0],
-                color="w",
-                marker=symm_to_c[s][0],
-                label=convert_symm_names(s),
-                markerfacecolor=symm_to_c[s][1],
-                markersize=12,
-                markeredgecolor="k",
-            )
-        )
-
-    ax.legend(handles=legend_elements, fontsize=16, ncol=2)
-
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("anisotropy", fontsize=16)
-    ax.set_ylabel(ylabel, fontsize=16)
-    ax.set_title(f"flex: {flex}", fontsize=16)
-    ax.set_ylim(ylim)
 
     fig.tight_layout()
     fig.savefig(
@@ -204,22 +167,23 @@ def geom_distributions(
     # Collect all values for each bond and angle type.
     distance_by_type = {}
     angle_by_type = {}
-    for aniso in results:
-        da = results[aniso]
-        for symm in da:
-            dists = da[symm]["distances"]
-            angles = da[symm]["angles"]
+    for biteangle in results:
+        da = results[biteangle]
+        for topo_str in da:
+            dists = da[topo_str]["distances"]
+            angles = da[topo_str]["angles"]
             for d in dists:
-                if d == "BC":
-                    dd = f"{d}{aniso}"
-                else:
-                    dd = merge_bond_types(d)
+                dd = merge_bond_types(d)
                 if dd in distance_by_type:
                     distance_by_type[dd].extend(dists[d])
                 else:
                     distance_by_type[dd] = dists[d]
+
             for a in angles:
-                aa = merge_angle_types(a)
+                if a == "BCN":
+                    aa = f"{a}{biteangle}"
+                else:
+                    aa = merge_angle_types(a)
                 if aa in angle_by_type:
                     angle_by_type[aa].extend(angles[a])
                 else:
@@ -232,13 +196,11 @@ def geom_distributions(
     )
     # Plot distributions of each bond type.
     for btype in distance_by_type:
-        if "BC" in btype:
-            continue
         data = distance_by_type[btype]
         axs[0].hist(
             x=data,
             bins=50,
-            range=(3.6, 4.4),
+            range=(0, 4.4),
             density=True,
             histtype="step",
             # color='',
@@ -251,13 +213,13 @@ def geom_distributions(
     axs[0].legend(fontsize=16, ncol=1)
 
     # Plot distributions of each variable bond type.
-    for btype in distance_by_type:
-        if "BC" not in btype:
+    for atype in angle_by_type:
+        if "BCN" not in atype:
             continue
-        data = distance_by_type[btype]
-        aniso = float(btype.replace("BC", ""))
+        data = angle_by_type[atype]
+        biteangle = float(atype.replace("BCN", ""))
         axs[1].scatter(
-            x=[aniso for i in data],
+            x=[biteangle for i in data],
             y=data,
             color="gray",
             s=30,
@@ -265,16 +227,18 @@ def geom_distributions(
             rasterized=True,
         )
     axs[1].tick_params(axis="both", which="major", labelsize=16)
-    axs[1].set_xlabel("anisotropy", fontsize=16)
-    axs[1].set_ylabel(r"F1-F2 distance [$\mathrm{\AA}}$]", fontsize=16)
+    axs[1].set_xlabel("bite angle [degrees]", fontsize=16)
+    axs[1].set_ylabel(r"BCN [degrees]", fontsize=16)
 
     # Plot distributions of each angle type.
     for atype in angle_by_type:
+        if "BCN" in atype:
+            continue
         data = angle_by_type[atype]
         axs[2].hist(
             x=data,
             bins=50,
-            range=(20, 182),
+            range=(0, 182),
             density=True,
             histtype="step",
             # color='',
@@ -296,25 +260,24 @@ def geom_distributions(
 
 
 def heatmap(
-    symm_to_c,
+    topo_to_c,
     results,
     output_dir,
     filename,
     vmin,
     vmax,
     clabel,
-    flex,
 ):
-
+    print("add a property here too.")
     fig, ax = plt.subplots(figsize=(8, 8))
-    maps = np.zeros((len(symm_to_c), len(results)))
-    for j, aniso in enumerate(results):
-        da = results[aniso]
-        for i, symm in enumerate(symm_to_c):
+    maps = np.zeros((len(topo_to_c), len(results)))
+    for j, biteangle in enumerate(results):
+        da = results[biteangle]
+        for i, topo_s in enumerate(topo_to_c):
             if clabel == "energy (eV)":
-                maps[i][j] = da[symm]["fin_energy"]
+                maps[i][j] = da[topo_s]["fin_energy"]
             elif clabel == "CU-8":
-                maps[i][j] = da[symm]["cu8"]
+                maps[i][j] = da[topo_s]["cu8"]
 
     im = ax.imshow(maps, vmin=vmin, vmax=vmax, cmap="Purples_r")
     # Create colorbar
@@ -335,31 +298,23 @@ def heatmap(
         index_min = np.argmin(maps, axis=1)
         ax.scatter(
             x=index_min,
-            y=[symm_to_c[symm][2] for symm in symm_to_c],
+            y=[topo_to_c[topo_s][2] for topo_s in topo_to_c],
             c="white",
             marker="P",
             edgecolors="k",
             s=80,
         )
-        # # Max of each row.
-        # index_max = np.argmax(maps, axis=1)
-        # ax.scatter(
-        #     x=index_max,
-        #     y=[symm_to_c[symm][2] for symm in symm_to_c],
-        #     c='white',
-        #     edgecolors='k',
-        #     marker='X',
-        #     s=40,
-        # )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("anisotropy", fontsize=16)
-    ax.set_ylabel("symmetry", fontsize=16)
+    ax.set_xlabel("bite angle [degrees]", fontsize=16)
+    ax.set_ylabel("topology", fontsize=16)
     # Show all ticks and label them with the respective lists.
     ax.set_xticks([i for i in range(len(results))])
     ax.set_xticklabels([a for a in results])
-    ax.set_yticks([symm_to_c[symm][2] for symm in symm_to_c])
-    ax.set_yticklabels([convert_symm_names(symm) for symm in symm_to_c])
+    ax.set_yticks([topo_to_c[topo_s][2] for topo_s in topo_to_c])
+    ax.set_yticklabels(
+        [convert_topo_names(topo_s) for topo_s in topo_to_c]
+    )
 
     # Rotate the tick labels and set their alignment.
     plt.setp(
@@ -368,7 +323,6 @@ def heatmap(
         ha="right",
         rotation_mode="anchor",
     )
-    ax.set_title(f"flex: {flex}", fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -387,14 +341,11 @@ def convergence(
 
     # Pick examples to plot.
     _to_plot = (
-        "td_2.0",
-        # 'c2v_1.65',
-        "c2v_1.5",
-        # 'th2_1.6',
-        "th2_1.1",
-        # 's61_1.85',
-        "s61_1.3",
-        "s42_1.05",
+        "m2l4_80",
+        "m3l6_120",
+        "m6l12_20",
+        "m12l24_10",
+        "m24l48_100",
     )
 
     fig, axs = plt.subplots(
@@ -404,10 +355,12 @@ def convergence(
         figsize=(8, 10),
     )
 
+    xmax, xwin = (501, 50)
+
     for name, ax in zip(_to_plot, axs):
-        symm, aniso = name.split("_")
-        da = results[float(aniso)]
-        traj = da[symm]["traj"]
+        topo_s, biteangle = name.split("_")
+        da = results[int(biteangle)]
+        traj = da[topo_s]["traj"]
         traj_x = [i for i in traj]
         traj_e = [traj[i]["energy"] for i in traj]
         traj_g = [traj[i]["gnorm"] for i in traj]
@@ -440,18 +393,19 @@ def convergence(
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.text(
-            x=340,
+            x=xmax * 0.6,
             y=1100,
-            s=f"{convert_symm_names(symm)}, aniso={aniso}",
+            s=f"{convert_topo_names(topo_s)}, bite-angle={biteangle}",
             fontsize=16,
         )
-        if name == "th2_1.1":
+        if name == "m2l4_80":
             ax.set_ylabel("energy [eV]", fontsize=16)
             ax2.set_ylabel("Gnorm", fontsize=16)
+        ax.axhline(y=0.01, c="k", lw=2, linestyle="--")
 
     ax.set_xlabel("step", fontsize=16)
-    ax.set_xticks(range(0, 501, 50))
-    ax.set_xticklabels([str(i) for i in range(0, 501, 50)])
+    ax.set_xticks(range(0, xmax, xwin))
+    ax.set_xticklabels([str(i) for i in range(0, xmax, xwin)])
 
     fig.tight_layout()
     fig.savefig(
