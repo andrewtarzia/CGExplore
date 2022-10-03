@@ -11,7 +11,6 @@ Author: Andrew Tarzia
 
 import os
 import numpy as np
-from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
 
 
