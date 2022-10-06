@@ -499,7 +499,7 @@ def convergence(
             s=f"{convert_symm_names(symm)}, aniso={aniso}",
             fontsize=16,
         )
-        if name == "th2_1.1":
+        if name == _to_plot[0]:
             ax.set_ylabel("energy [eV]", fontsize=16)
             ax2.set_ylabel("Gnorm", fontsize=16)
 

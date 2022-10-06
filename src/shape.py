@@ -43,6 +43,11 @@ class ShapeMeasure:
                 "label": "OP-8",
                 "code": "1",
             },
+            "oc6": {
+                "vertices": "6",
+                "label": "OC-6",
+                "code": "3",
+            },
         }
 
     def _collect_all_shape_values(self, output_file):
@@ -163,8 +168,17 @@ class ShapeMeasure:
             os.chdir(output_dir)
             centroids = self._get_centroids(molecule)
             structure_string = "shape run by AT\n"
+            num_centroids = 0
             for c in centroids:
                 structure_string += f"Zn {c[0]} {c[1]} {c[2]}\n"
+                num_centroids += 1
+
+            exp_vertices = self._shape_dict["vertices"]
+            if exp_vertices != num_centroids:
+                raise ValueError(
+                    f"expected {exp_vertices} centroids, "
+                    f"but got {num_centroids}."
+                )
 
             shapes = self._run_calculation(structure_string)
             shape_measure = shapes[self._shape_dict["label"]]

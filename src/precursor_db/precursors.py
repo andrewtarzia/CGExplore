@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 import os
+import math
 import stk
 
 from .facebuildingblock import FaceBuildingBlock
@@ -34,21 +35,63 @@ def lambda_bb():
     )
 
 
-def twoc_bb():
+def twoc_bb(sites):
+    if sites == 3:
+        bb = stk.BuildingBlock(
+            smiles="[Br][N][B][N][Br]",
+            functional_groups=(stk.BromoFactory(),),
+            position_matrix=[
+                [2, 1, 0],
+                [1, 0, 0],
+                [0, 0, 0],
+                [-1, 0, 0],
+                [-2, 1, 0],
+            ],
+        )
+        bb.write(os.path.join(precursor_dir(), f"twoc_{sites}_bb.mol"))
+    elif sites == 5:
+        bb = stk.BuildingBlock(
+            smiles="[Br][N][C][B][C][N][Br]",
+            functional_groups=(stk.BromoFactory(),),
+            position_matrix=[
+                [2, 1, 0],
+                [2, 0, 0],
+                [1, 0, 0],
+                [0, 0, 0],
+                [-1, 0, 0],
+                [-2, 0, 0],
+                [-2, 1, 0],
+            ],
+        )
+        bb.write(os.path.join(precursor_dir(), f"twoc_{sites}_bb.mol"))
+    return bb
+
+
+def threec_bb():
+
+    top_vertex = (0, math.sqrt(3) / 4)
+    lef_vertex = (-1 / 2, -math.sqrt(3) / 4)
+    rig_vertex = (1 / 2, -math.sqrt(3) / 4)
     bb = stk.BuildingBlock(
-        smiles="[Br][N][C][B][C][N][Br]",
+        smiles="[S]12([Fe]3[C]1([Br])[P]23[Br])[Br]",
         functional_groups=(stk.BromoFactory(),),
         position_matrix=[
-            [2, 1, 0],
-            [2, 0, 0],
-            [1, 0, 0],
+            [3 * top_vertex[0], 3 * top_vertex[1], 0],
             [0, 0, 0],
-            [-1, 0, 0],
-            [-2, 0, 0],
-            [-2, 1, 0],
+            [3 * lef_vertex[0], 3 * lef_vertex[1], 0],
+            [6 * lef_vertex[0], 6 * lef_vertex[1], 0],
+            [3 * rig_vertex[0], 3 * rig_vertex[1], 0],
+            [6 * rig_vertex[0], 6 * rig_vertex[1], 0],
+            [6 * top_vertex[0], 6 * top_vertex[1], 0],
+            # [3 * top_vertex[0], 3 * top_vertex[1], 0],
+            # [4 * top_vertex[0], 4 * top_vertex[1], 0],
+            # [3 * lef_vertex[0], 3 * lef_vertex[1], 0],
+            # [4 * lef_vertex[0], 4 * lef_vertex[1], 0],
+            # [3 * rig_vertex[0], 3 * rig_vertex[1], 0],
+            # [4 * rig_vertex[0], 4 * rig_vertex[1], 0],
         ],
     )
-    bb.write(os.path.join(precursor_dir(), "twoc_bb.mol"))
+    bb.write(os.path.join(precursor_dir(), "threec_bb.mol"))
     return bb
 
 

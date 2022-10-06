@@ -13,9 +13,87 @@ import os
 import numpy as np
 import re
 from string import digits
+import logging
+from dataclasses import dataclass
 
 from env_set import gulp_path
 from utilities import get_all_angles, angle_between
+
+
+class BondSet:
+    def __init__(self, bonds: tuple):
+        self._bonds = bonds
+        pairs = {}
+        for bond in bonds:
+            if bond.get_types() not in pairs:
+                pairs[bond.get_types()] = []
+            pairs[bond.get_types()].append(bond)
+
+        self._pairs = pairs
+
+    def get_pairs(self):
+        return self._pairs
+
+
+class AngleSet:
+    def __init__(self, angles: tuple):
+        self._angles = angles
+        triplets = {}
+        for angle in angles:
+            if angle.get_types() not in triplets:
+                triplets[angle.get_types()] = []
+            triplets[angle.get_types()].append(angle)
+
+        self._triplets = triplets
+
+    def get_triplets(self):
+        return self._triplets
+
+
+@dataclass
+class HarmBond:
+    atom1_type: str
+    atom2_type: str
+    bond_r: float
+    bond_k: float
+
+    def get_types(self):
+        return tuple(
+            sorted([i for i in (self.atom1_type, self.atom2_type)])
+        )
+
+
+@dataclass
+class ThreeAngle:
+    atom1_type: str
+    atom2_type: str
+    atom3_type: str
+    theta: float
+    angle_k: float
+
+    def get_types(self):
+        return tuple(
+            sorted(
+                [
+                    i
+                    for i in (
+                        self.atom1_type,
+                        self.atom2_type,
+                        self.atom3_type,
+                    )
+                ]
+            )
+        )
+
+
+@dataclass
+class CheckedThreeAngle(ThreeAngle):
+    atom1_type: str
+    atom2_type: str
+    atom3_type: str
+    cut_angle: float
+    min_angle: float
+    max_angle: float
 
 
 class CGGulpOptimizer:
@@ -87,7 +165,8 @@ class CGGulpOptimizer:
         return coord_string, mass_string
 
     def _get_bond_string(self, mol):
-        bond_ks_, bond_rs_ = self.define_bond_potentials()
+        bond_set = self.define_bond_potentials()
+        bond_set_pairs = bond_set.get_pairs()
         bond_string = "harm\n"
         bonds = list(mol.get_bonds())
 
@@ -102,20 +181,23 @@ class CGGulpOptimizer:
             )
 
             try:
-                bond_k = bond_ks_[sorted_name]
-                bond_r = bond_rs_[sorted_name]
+                pair = bond_set_pairs[sorted_name]
+                for pot in pair:
+                    bond_string += (
+                        f"{name1} {name2}  {pot.bond_k} {pot.bond_r} "
+                        f"{self._bond_cutoff}\n"
+                    )
             except KeyError:
+                logging.info(f"{sorted_name} not assigned.")
                 continue
 
-            bond_string += (
-                f"{name1} {name2}  {bond_k} {bond_r} "
-                f"{self._bond_cutoff}\n"
-            )
         return bond_string
 
     def _get_angle_string(self, mol):
+        angle_set = self.define_angle_potentials()
+        angle_set_triplets = angle_set.get_triplets()
+
         angle_string = "three\n"
-        angle_ks_, angle_thetas_ = self.define_angle_potentials()
         angles = get_all_angles(mol)
         pos_mat = mol.get_position_matrix()
 
@@ -132,34 +214,56 @@ class CGGulpOptimizer:
             )
 
             try:
-                angle_k = angle_ks_[sorted_name]
-                angle_theta = angle_thetas_[sorted_name]
-                if isinstance(angle_theta, int) or isinstance(
-                    angle_theta, float
-                ):
-                    pass
-                elif angle_theta[0] == "check":
-                    a1id = atom1.get_id()
-                    a2id = atom2.get_id()
-                    a3id = atom3.get_id()
-                    vector1 = pos_mat[a2id] - pos_mat[a1id]
-                    vector2 = pos_mat[a2id] - pos_mat[a3id]
-                    curr_angle = np.degrees(
-                        angle_between(vector1, vector2)
+                triplet = angle_set_triplets[sorted_name]
+                for pot in triplet:
+                    # Want to check ordering here.
+                    if pot.atom1_type in name1:
+                        centre_atom = name1
+                        outer1 = name2
+                        outer2 = name3
+                    elif pot.atom1_type in name2:
+                        centre_atom = name2
+                        outer1 = name1
+                        outer2 = name3
+                    elif pot.atom1_type in name3:
+                        centre_atom = name3
+                        outer1 = name1
+                        outer2 = name2
+
+                    if isinstance(pot, CheckedThreeAngle):
+                        a1id = re.findall(r"\d+", outer1)
+                        a2id = re.findall(r"\d+", centre_atom)
+                        a3id = re.findall(r"\d+", outer2)
+                        print(sorted_name)
+                        print(triplet)
+                        print(pot)
+                        print(
+                            atom1, atom2, atom3, pot, a1id, a2id, a3id
+                        )
+                        vector1 = pos_mat[a2id] - pos_mat[a1id]
+                        vector2 = pos_mat[a2id] - pos_mat[a3id]
+                        curr_angle = np.degrees(
+                            angle_between(vector1, vector2)
+                        )
+                        if curr_angle < pot.angle_cut:
+                            angle_theta = pot.angle_min
+                        elif curr_angle >= pot.angle_cut:
+                            angle_theta = pot.angle_max
+                        raise SystemExit("need to check this")
+                    else:
+                        angle_k = pot.angle_k
+                        angle_theta = pot.theta
+
+                    angle_string += (
+                        f"{centre_atom} {outer1} {outer2} "
+                        f"{angle_k} {angle_theta} "
+                        f"{self._angle_cutoff} {self._angle_cutoff} "
+                        f"{self._angle_cutoff} \n"
                     )
-                    if curr_angle < angle_theta[1]["cut"]:
-                        angle_theta = angle_theta[1]["min"]
-                    elif curr_angle >= angle_theta[1]["cut"]:
-                        angle_theta = angle_theta[1]["max"]
 
             except KeyError:
+                logging.info(f"{sorted_name} not assigned.")
                 continue
-
-            angle_string += (
-                f"{name2} {name1} {name3} {angle_k} {angle_theta} "
-                f"{self._angle_cutoff} {self._angle_cutoff} "
-                f"{self._angle_cutoff} \n"
-            )
 
         return angle_string
 

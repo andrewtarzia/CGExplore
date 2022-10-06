@@ -74,6 +74,38 @@ def mnl2n_calculations():
     return path
 
 
+def fourplussix():
+    path = project_dir() / pathlib.Path("fourplussix/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def fourplussix_figures():
+    path = fourplussix() / pathlib.Path("figures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def fourplussix_structures():
+    path = fourplussix() / pathlib.Path("structures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def fourplussix_calculations():
+    path = fourplussix() / pathlib.Path("calculations/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
 def gulp_path():
     return pathlib.Path("/home/atarzia/software/gulp-6.1/Src/gulp")
 

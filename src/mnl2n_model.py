@@ -138,7 +138,7 @@ def main():
     figure_output = mnl2n_figures()
 
     # Make cage of each symmetry.
-    topologies = cage_topologies(fourc_bb(), twoc_bb())
+    topologies = cage_topologies(fourc_bb(), twoc_bb(sites=5))
     bite_angles = np.arange(0, 181, 10)
 
     results = {i: {} for i in bite_angles}

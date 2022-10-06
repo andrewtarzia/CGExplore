@@ -34,12 +34,12 @@ class CGM6L12Cube(stk.cage.M6L12Cube):
 
 class CGM12L24(stk.cage.M12L24):
     def _get_scale(self, building_block_vertices):
-        return 15
+        return 10
 
 
 class CGM24L48(stk.cage.M24L48):
     def _get_scale(self, building_block_vertices):
-        return 15
+        return 10
 
 
 def cage_topologies(fourc_bb, twoc_bb):

@@ -332,6 +332,55 @@ def heatmap(
     plt.close()
 
 
+def ey_vs_shape(
+    results,
+    output_dir,
+    filename,
+):
+    raise SystemExit("much to fix here")
+
+    _to_plot = {
+        "d2": ("o", "k"),
+        "th2": ("X", "r"),
+        "s62": ("D", "gold"),
+        "d32": ("o", "skyblue"),
+    }
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for symm in _to_plot:
+        x_vals = []
+        y_vals = []
+        for aniso in results:
+            da = results[aniso]
+            x_vals.append(da[symm]["cu8"])
+            y_vals.append(da[symm]["fin_energy"])
+
+        ax.scatter(
+            x_vals,
+            y_vals,
+            c=_to_plot[symm][1],
+            marker=_to_plot[symm][0],
+            edgecolor="k",
+            s=100,
+            alpha=1.0,
+            label=convert_topo_names(topo_s),
+        )
+
+    ax.legend(fontsize=16)
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("CU-8", fontsize=16)
+    ax.set_ylabel("energy (eV)", fontsize=16)
+    ax.set_xlim(0, 2)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(output_dir, filename),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def convergence(
     results,
     output_dir,
