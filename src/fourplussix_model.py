@@ -15,6 +15,7 @@ import os
 import json
 import logging
 import math
+import numpy as np
 
 from shape import ShapeMeasure
 
@@ -72,10 +73,9 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
             HarmBond("S", "N", bond_r=2, bond_k=10),
         )
 
-        print(bonds)
         new_bonds = []
         for bond in bonds:
-            bond_type = bond.get_types()
+            bond_type = bond.get_unsortedtypes()
             if bond_type in self._param_pool["bonds"]:
                 k, r = self._param_pool["bonds"][bond_type]
                 nbond = HarmBond(bond.atom1_type, bond.atom2_type, r, k)
@@ -84,8 +84,6 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
                 new_bonds.append(bond)
 
         new_bonds = tuple(new_bonds)
-        print(new_bonds)
-        input("check when modified")
 
         return BondSet(new_bonds)
 
@@ -171,21 +169,10 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
                 angle_k=20,
             ),
         )
-        #     # ("C", "N", "P"): 120,
-        #     # ("C", "N", "S"): 120,
-        #     # ("N", "P", "S"): 120,
-        #     # ("B", "N", "S"): 180,
-        #     # ("B", "N", "P"): 180,
-        #     # ("B", "C", "N"): 180,
-        #     # ("C", "Fe", "N"): 180,
-        #     # ("Fe", "N", "S"): 180,
-        #     # ("Fe", "N", "P"): 180,
-        # }
 
-        print(angles)
         new_angles = []
         for angle in angles:
-            angle_type = angle.get_types()
+            angle_type = angle.get_unsortedtypes()
             if angle_type in self._param_pool["angles"]:
                 k, theta = self._param_pool["angles"][angle_type]
                 nangle = ThreeAngle(
@@ -200,8 +187,6 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
                 new_angles.append(angle)
 
         new_angles = tuple(new_angles)
-        print(new_angles)
-        input("check when modified")
 
         return AngleSet(new_angles)
 
@@ -235,7 +220,7 @@ def run_optimisation(
         )
         opted.write(os.path.join(output_dir, f"{run_prefix}_final.mol"))
 
-        return {}
+        raise SystemExit("up to here you fool")
         oh6_measure = ShapeMeasure(
             output_dir=(
                 fourplussix_calculations() / f"{run_prefix}_shape"
@@ -283,11 +268,24 @@ def main():
 
     ff_options = {
         "default": {
-            "param_pool": {"bonds": (), "angles": ()},
+            "param_pool": {"bonds": {}, "angles": {}},
             "notes": "default FF, high symmetry, rigid",
             "name": "def",
         },
     }
+
+    bite_angles = np.arange(10, 181, 10)
+    for ba in bite_angles:
+        ff_options[f"ba_{ba}"] = {
+            "param_pool": {
+                "bonds": {},
+                "angles": {
+                    ("B", "N", "N"): (20, ba),
+                },
+            },
+            "notes": f"bite-angle change: {ba}, rigid",
+            "name": f"ba{ba}",
+        }
 
     results = {i: {} for i in ff_options}
     for topo_str in topologies:

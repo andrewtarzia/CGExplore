@@ -62,6 +62,9 @@ class HarmBond:
             sorted([i for i in (self.atom1_type, self.atom2_type)])
         )
 
+    def get_unsortedtypes(self):
+        return tuple([i for i in (self.atom1_type, self.atom2_type)])
+
 
 @dataclass
 class ThreeAngle:
@@ -83,6 +86,18 @@ class ThreeAngle:
                     )
                 ]
             )
+        )
+
+    def get_unsortedtypes(self):
+        return tuple(
+            [
+                i
+                for i in (
+                    self.atom1_type,
+                    self.atom2_type,
+                    self.atom3_type,
+                )
+            ]
         )
 
 
