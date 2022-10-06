@@ -13,41 +13,28 @@ import os
 import numpy as np
 import re
 from string import digits
-import logging
 from dataclasses import dataclass
 
 from env_set import gulp_path
 from utilities import get_all_angles, angle_between
 
 
-class BondSet:
-    def __init__(self, bonds: tuple):
-        self._bonds = bonds
-        pairs = {}
-        for bond in bonds:
-            if bond.get_types() not in pairs:
-                pairs[bond.get_types()] = []
-            pairs[bond.get_types()].append(bond)
+class IntSet:
+    def __init__(self, interactions: tuple):
+        self._interactions = interactions
+        int_set = {}
+        for inter in interactions:
+            if inter.get_types() not in int_set:
+                int_set[inter.get_types()] = []
+            int_set[inter.get_types()].append(inter)
 
-        self._pairs = pairs
+        self._int_set = int_set
 
-    def get_pairs(self):
-        return self._pairs
+    def get_set_dict(self):
+        return self._int_set
 
-
-class AngleSet:
-    def __init__(self, angles: tuple):
-        self._angles = angles
-        triplets = {}
-        for angle in angles:
-            if angle.get_types() not in triplets:
-                triplets[angle.get_types()] = []
-            triplets[angle.get_types()].append(angle)
-
-        self._triplets = triplets
-
-    def get_triplets(self):
-        return self._triplets
+    def get_keys(self):
+        return self._int_set.keys()
 
 
 @dataclass
@@ -181,7 +168,7 @@ class CGGulpOptimizer:
 
     def _get_bond_string(self, mol):
         bond_set = self.define_bond_potentials()
-        bond_set_pairs = bond_set.get_pairs()
+        bond_set_pairs = bond_set.get_set_dict()
         bond_string = "harm\n"
         bonds = list(mol.get_bonds())
 
@@ -203,14 +190,14 @@ class CGGulpOptimizer:
                         f"{self._bond_cutoff}\n"
                     )
             except KeyError:
-                logging.info(f"{sorted_name} not assigned.")
+                # logging.info(f"{sorted_name} not assigned.")
                 continue
 
         return bond_string
 
     def _get_angle_string(self, mol):
         angle_set = self.define_angle_potentials()
-        angle_set_triplets = angle_set.get_triplets()
+        angle_set_triplets = angle_set.get_set_dict()
 
         angle_string = "three\n"
         angles = get_all_angles(mol)
@@ -277,7 +264,7 @@ class CGGulpOptimizer:
                     )
 
             except KeyError:
-                logging.info(f"{sorted_name} not assigned.")
+                # logging.info(f"{sorted_name} not assigned.")
                 continue
 
         return angle_string

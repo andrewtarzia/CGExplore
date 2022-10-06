@@ -17,8 +17,8 @@ from scipy.spatial.distance import euclidean
 
 
 def get_distances(optimizer, cage):
-    bond_ks_, __ = optimizer.define_bond_potentials()
-    set_ks = tuple(bond_ks_.keys())
+    bond_set = optimizer.define_bond_potentials()
+    set_ks = tuple(bond_set.get_keys())
     distances = {"".join(i): [] for i in set_ks}
     for bond in cage.get_bonds():
         a1 = bond.get_atom1()
@@ -37,8 +37,8 @@ def get_distances(optimizer, cage):
 
 
 def get_angles(optimizer, cage):
-    angle_ks_, __ = optimizer.define_angle_potentials()
-    set_ks = tuple(angle_ks_.keys())
+    angle_set = optimizer.define_angle_potentials()
+    set_ks = tuple(angle_set.get_keys())
     angles = {"".join(i): [] for i in set_ks}
     pos_mat = cage.get_position_matrix()
 

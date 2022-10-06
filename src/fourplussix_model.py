@@ -32,8 +32,7 @@ from gulp_optimizer import (
     CGGulpOptimizer,
     HarmBond,
     ThreeAngle,
-    BondSet,
-    AngleSet,
+    IntSet,
 )
 
 from fourplusix_construction.topologies import cage_topologies
@@ -85,7 +84,7 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
 
         new_bonds = tuple(new_bonds)
 
-        return BondSet(new_bonds)
+        return IntSet(new_bonds)
 
     def define_angle_potentials(self):
         angles = (
@@ -168,6 +167,27 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
                 theta=180,
                 angle_k=20,
             ),
+            # ThreeAngle(
+            #     atom1_type="C",
+            #     atom2_type="N",
+            #     atom3_type="S",
+            #     theta=120,
+            #     angle_k=20,
+            # ),
+            # ThreeAngle(
+            #     atom1_type="C",
+            #     atom2_type="N",
+            #     atom3_type="P",
+            #     theta=120,
+            #     angle_k=20,
+            # ),
+            # ThreeAngle(
+            #     atom1_type="P",
+            #     atom2_type="N",
+            #     atom3_type="S",
+            #     theta=120,
+            #     angle_k=20,
+            # ),
         )
 
         new_angles = []
@@ -188,17 +208,17 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
 
         new_angles = tuple(new_angles)
 
-        return AngleSet(new_angles)
+        return IntSet(new_angles)
 
 
 def run_optimisation(
     cage,
     ff_modifications,
+    ffname,
     topo_str,
     output_dir,
 ):
 
-    ffname = ff_modifications["name"]
     run_prefix = f"{topo_str}_{ffname}"
     output_file = os.path.join(output_dir, f"{run_prefix}_res.json")
 
@@ -220,7 +240,6 @@ def run_optimisation(
         )
         opted.write(os.path.join(output_dir, f"{run_prefix}_final.mol"))
 
-        raise SystemExit("up to here you fool")
         oh6_measure = ShapeMeasure(
             output_dir=(
                 fourplussix_calculations() / f"{run_prefix}_shape"
@@ -266,17 +285,11 @@ def main():
     # Make cage of each symmetry.
     topologies = cage_topologies(threec_bb(), twoc_bb(sites=3))
 
-    ff_options = {
-        "default": {
-            "param_pool": {"bonds": {}, "angles": {}},
-            "notes": "default FF, high symmetry, rigid",
-            "name": "def",
-        },
-    }
+    ff_options = {}
 
     bite_angles = np.arange(10, 181, 10)
     for ba in bite_angles:
-        ff_options[f"ba_{ba}"] = {
+        ff_options[f"ba{ba}"] = {
             "param_pool": {
                 "bonds": {},
                 "angles": {
@@ -296,21 +309,16 @@ def main():
         for ff_str in ff_options:
             res_dict = run_optimisation(
                 cage=cage,
+                ffname=ff_str,
                 ff_modifications=ff_options[ff_str],
                 topo_str=topo_str,
                 output_dir=struct_output,
             )
             results[ff_str][topo_str] = res_dict
 
-    print(results)
-    raise SystemExit()
     topo_to_c = {
-        "m2l4": ("o", "k", 0),
-        "m3l6": ("D", "r", 1),
-        "m4l8": ("X", "gold", 2),
-        "m6l12": ("o", "skyblue", 3),
-        "m12l24": ("P", "b", 4),
-        "m24l48": ("X", "green", 5),
+        "FourPlusSix": ("o", "k", 0),
+        "FourPlusSix2": ("D", "r", 1),
     }
 
     convergence(
@@ -320,6 +328,7 @@ def main():
     )
 
     ey_vs_shape(
+        topo_to_c=topo_to_c,
         results=results,
         output_dir=figure_output,
         filename="e_vs_shape.pdf",
@@ -337,7 +346,7 @@ def main():
         output_dir=figure_output,
         filename="energy_map.pdf",
         vmin=0,
-        vmax=45,
+        vmax=20,
         clabel="energy (eV)",
     )
 

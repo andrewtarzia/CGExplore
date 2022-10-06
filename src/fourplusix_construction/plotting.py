@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 import os
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -20,9 +21,16 @@ plt.set_loglevel("WARNING")
 def merge_bond_types(s):
 
     translation = {
-        "NPd": "N-metal",
-        "BC": "ligand",
-        "CN": "ligand-N",
+        "CP": "intra-3c",
+        "CS": "intra-3c",
+        "PS": "intra-3c",
+        "CFe": "core-3c",
+        "FeS": "core-3c",
+        "FeP": "core-3c",
+        "BN": "ligand",
+        "CN": "inter-BB",
+        "NP": "inter-BB",
+        "NS": "inter-BB",
     }
 
     return translation[s]
@@ -31,10 +39,17 @@ def merge_bond_types(s):
 def merge_angle_types(s):
 
     translation = {
-        "BCC": "ligand",
-        "NNPd": "N-metal-N",
-        "BCN": "ligand-N",
-        "CNPd": "ligand-N-metal",
+        "BNN": "ligand",
+        "CPS": "outer-3c",
+        "FePS": "inner-3c",
+        "CFeP": "inner-3c",
+        "CFeS": "inner-3c",
+        "CFeN": "inner-3c",
+        "FeNP": "inner-3c",
+        "FeNS": "inner-3c",
+        "BNP": "inter-BB",
+        "BNS": "inter-BB",
+        "BCN": "inter-BB",
     }
 
     return translation[s]
@@ -43,12 +58,8 @@ def merge_angle_types(s):
 def convert_topo_names(topo_str):
 
     new_names = {
-        "m2l4": "M2L4",
-        "m3l6": "M3L6",
-        "m4l8": "M4L8",
-        "m6l12": "M6L12",
-        "m12l24": "M12L24",
-        "m24l48": "M24L48",
+        "FourPlusSix": "4+6",
+        "FourPlusSix2": "4+6_2",
     }
 
     return new_names[topo_str]
@@ -70,6 +81,9 @@ def scatter(
         for topo_s in da:
             if ylabel == "energy (eV)":
                 ys = da[topo_s]["fin_energy"]
+            elif ylabel == "OH-6":
+                ys = da[topo_s]["oh6"]
+                ax.axhline(y=0, lw=2, c="k")
             elif ylabel == "CU-8":
                 ys = da[topo_s]["cu8"]
                 ax.axhline(y=0, lw=2, c="k")
@@ -94,7 +108,7 @@ def scatter(
     ax.legend(fontsize=16, ncol=3)
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("bite angle [degrees]", fontsize=16)
+    ax.set_xlabel("ff_str", fontsize=16)
     ax.set_ylabel(ylabel, fontsize=16)
     ax.set_ylim(0, 10)
 
@@ -163,30 +177,38 @@ def geom_distributions(
     filename,
 ):
 
+    target_trio = "BNN"
+
     # Collect all values for each bond and angle type.
     distance_by_type = {}
     angle_by_type = {}
-    for biteangle in results:
-        da = results[biteangle]
+    for ff_str in results:
+        da = results[ff_str]
         for topo_str in da:
             dists = da[topo_str]["distances"]
             angles = da[topo_str]["angles"]
-            for d in dists:
-                dd = merge_bond_types(d)
-                if dd in distance_by_type:
-                    distance_by_type[dd].extend(dists[d])
-                else:
-                    distance_by_type[dd] = dists[d]
 
-            for a in angles:
-                if a == "BCN":
-                    aa = f"{a}{biteangle}"
-                else:
-                    aa = merge_angle_types(a)
-                if aa in angle_by_type:
-                    angle_by_type[aa].extend(angles[a])
-                else:
-                    angle_by_type[aa] = angles[a]
+            try:
+                for d in dists:
+                    dd = merge_bond_types(d)
+                    if dd in distance_by_type:
+                        distance_by_type[dd].extend(dists[d])
+                    else:
+                        distance_by_type[dd] = dists[d]
+
+                for a in angles:
+                    if a == target_trio:
+                        aa = f"{a}{ff_str}"
+                    else:
+                        aa = merge_angle_types(a)
+                    if aa in angle_by_type:
+                        angle_by_type[aa].extend(angles[a])
+                    else:
+                        angle_by_type[aa] = angles[a]
+            except KeyError as e:
+                print(e)
+                logging.info(f"expected bond types: {dists.keys()}")
+                logging.info(f"expected bond types: {angles.keys()}")
 
     fig, axs = plt.subplots(
         nrows=3,
@@ -213,10 +235,10 @@ def geom_distributions(
 
     # Plot distributions of each variable bond type.
     for atype in angle_by_type:
-        if "BCN" not in atype:
+        if target_trio not in atype:
             continue
         data = angle_by_type[atype]
-        biteangle = float(atype.replace("BCN", ""))
+        biteangle = atype.replace(target_trio, "")
         axs[1].scatter(
             x=[biteangle for i in data],
             y=data,
@@ -227,11 +249,11 @@ def geom_distributions(
         )
     axs[1].tick_params(axis="both", which="major", labelsize=16)
     axs[1].set_xlabel("bite angle [degrees]", fontsize=16)
-    axs[1].set_ylabel(r"BCN [degrees]", fontsize=16)
+    axs[1].set_ylabel(f"{target_trio} [degrees]", fontsize=16)
 
     # Plot distributions of each angle type.
     for atype in angle_by_type:
-        if "BCN" in atype:
+        if target_trio in atype:
             continue
         data = angle_by_type[atype]
         axs[2].hist(
@@ -277,6 +299,8 @@ def heatmap(
                 maps[i][j] = da[topo_s]["fin_energy"]
             elif clabel == "CU-8":
                 maps[i][j] = da[topo_s]["cu8"]
+            elif clabel == "OH-6":
+                maps[i][j] = da[topo_s]["oh6"]
 
     im = ax.imshow(maps, vmin=vmin, vmax=vmax, cmap="Purples_r")
     # Create colorbar
@@ -305,7 +329,7 @@ def heatmap(
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("bite angle [degrees]", fontsize=16)
+    ax.set_xlabel("ff_str", fontsize=16)
     ax.set_ylabel("topology", fontsize=16)
     # Show all ticks and label them with the respective lists.
     ax.set_xticks([i for i in range(len(results))])
@@ -334,43 +358,37 @@ def heatmap(
 
 def ey_vs_shape(
     results,
+    topo_to_c,
     output_dir,
     filename,
 ):
-    raise SystemExit("much to fix here")
-
-    _to_plot = {
-        "d2": ("o", "k"),
-        "th2": ("X", "r"),
-        "s62": ("D", "gold"),
-        "d32": ("o", "skyblue"),
-    }
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    for symm in _to_plot:
+
+    for topo_s in topo_to_c:
         x_vals = []
         y_vals = []
-        for aniso in results:
-            da = results[aniso]
-            x_vals.append(da[symm]["cu8"])
-            y_vals.append(da[symm]["fin_energy"])
+        for res in results:
+            da = results[res]
+            x_vals.append(da[topo_s]["oh6"])
+            y_vals.append(da[topo_s]["fin_energy"])
 
         ax.scatter(
             x_vals,
             y_vals,
-            c=_to_plot[symm][1],
-            marker=_to_plot[symm][0],
+            c=topo_to_c[topo_s][1],
+            marker=topo_to_c[topo_s][0],
             edgecolor="k",
-            s=100,
+            s=40,
             alpha=1.0,
             label=convert_topo_names(topo_s),
         )
 
     ax.legend(fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("CU-8", fontsize=16)
+    ax.set_xlabel("OH-6", fontsize=16)
     ax.set_ylabel("energy (eV)", fontsize=16)
-    ax.set_xlim(0, 2)
+    # ax.set_xlim(0, 2)
 
     fig.tight_layout()
     fig.savefig(
@@ -389,11 +407,12 @@ def convergence(
 
     # Pick examples to plot.
     _to_plot = (
-        "m2l4_80",
-        "m3l6_120",
-        "m6l12_20",
-        "m12l24_10",
-        "m24l48_100",
+        "FourPlusSix_ba70",
+        "FourPlusSix2_ba130",
+        "FourPlusSix_ba20",
+        "FourPlusSix2_ba180",
+        "FourPlusSix_ba100",
+        "FourPlusSix2_ba40",
     )
 
     fig, axs = plt.subplots(
@@ -406,8 +425,8 @@ def convergence(
     xmax, xwin = (501, 50)
 
     for name, ax in zip(_to_plot, axs):
-        topo_s, biteangle = name.split("_")
-        da = results[int(biteangle)]
+        topo_s, ff_str = name.split("_")
+        da = results[ff_str]
         traj = da[topo_s]["traj"]
         traj_x = [i for i in traj]
         traj_e = [traj[i]["energy"] for i in traj]
@@ -443,7 +462,7 @@ def convergence(
         ax.text(
             x=xmax * 0.6,
             y=1100,
-            s=f"{convert_topo_names(topo_s)}, bite-angle={biteangle}",
+            s=f"{convert_topo_names(topo_s)}, ff-str={ff_str}",
             fontsize=16,
         )
         if name == _to_plot[0]:

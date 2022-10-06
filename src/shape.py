@@ -173,7 +173,7 @@ class ShapeMeasure:
                 structure_string += f"Zn {c[0]} {c[1]} {c[2]}\n"
                 num_centroids += 1
 
-            exp_vertices = self._shape_dict["vertices"]
+            exp_vertices = int(self._shape_dict["vertices"])
             if exp_vertices != num_centroids:
                 raise ValueError(
                     f"expected {exp_vertices} centroids, "
