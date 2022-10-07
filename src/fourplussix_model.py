@@ -33,6 +33,7 @@ from gulp_optimizer import (
     HarmBond,
     ThreeAngle,
     IntSet,
+    Torsion,
 )
 
 from fourplusix_construction.topologies import cage_topologies
@@ -210,6 +211,60 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
 
         return IntSet(new_angles)
 
+    def define_torsion_potentials(self):
+        torsions = (
+            # # Intra-BB.
+            # Torsion(
+            #     atom1_type="C",
+            #     atom2_type="N",
+            #     atom3_type="B",
+            #     atom4_type="N",
+            #     n=1,
+            #     k=1,
+            #     phi0=180,
+            # ),
+            # Torsion(
+            #     atom1_type="S",
+            #     atom2_type="N",
+            #     atom3_type="B",
+            #     atom4_type="N",
+            #     n=1,
+            #     k=1,
+            #     phi0=180,
+            # ),
+            # Torsion(
+            #     atom1_type="P",
+            #     atom2_type="N",
+            #     atom3_type="B",
+            #     atom4_type="N",
+            #     n=1,
+            #     k=1,
+            #     phi0=180,
+            # ),
+        )
+
+        new_torsions = []
+        for torsion in torsions:
+            torsion_type = torsion.get_unsortedtypes()
+            if torsion_type in self._param_pool["torsions"]:
+                n, k, phi0 = self._param_pool["torsions"][torsion_type]
+                ntorsion = Torsion(
+                    torsion.atom1_type,
+                    torsion.atom2_type,
+                    torsion.atom3_type,
+                    torsion.atom4_type,
+                    n=n,
+                    k=k,
+                    phi0=phi0,
+                )
+                new_torsions.append(ntorsion)
+            else:
+                new_torsions.append(torsion)
+
+        new_torsions = tuple(new_torsions)
+
+        return IntSet(new_torsions)
+
 
 def run_optimisation(
     cage,
@@ -295,6 +350,7 @@ def main():
                 "angles": {
                     ("B", "N", "N"): (20, ba),
                 },
+                "torsions": {},
             },
             "notes": f"bite-angle change: {ba}, rigid",
             "name": f"ba{ba}",
@@ -314,6 +370,7 @@ def main():
                 topo_str=topo_str,
                 output_dir=struct_output,
             )
+            continue
             results[ff_str][topo_str] = res_dict
 
     topo_to_c = {

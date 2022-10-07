@@ -16,7 +16,7 @@ from string import digits
 from dataclasses import dataclass
 
 from env_set import gulp_path
-from utilities import get_all_angles, angle_between
+from utilities import get_all_angles, angle_between, get_all_torsions
 
 
 class IntSet:
@@ -89,6 +89,45 @@ class ThreeAngle:
 
 
 @dataclass
+class Torsion:
+    atom1_type: str
+    atom2_type: str
+    atom3_type: str
+    atom4_type: str
+    n: int
+    k: float
+    phi0: float
+
+    def get_types(self):
+        return tuple(
+            sorted(
+                [
+                    i
+                    for i in (
+                        self.atom1_type,
+                        self.atom2_type,
+                        self.atom3_type,
+                        self.atom4_type,
+                    )
+                ]
+            )
+        )
+
+    def get_unsortedtypes(self):
+        return tuple(
+            [
+                i
+                for i in (
+                    self.atom1_type,
+                    self.atom2_type,
+                    self.atom3_type,
+                    self.atom4_type,
+                )
+            ]
+        )
+
+
+@dataclass
 class CheckedThreeAngle(ThreeAngle):
     atom1_type: str
     atom2_type: str
@@ -112,8 +151,11 @@ class CGGulpOptimizer:
             self._output_dir, f"{self._fileprefix}_final.xyz"
         )
         self._mass = 1
+        # This is the underlying scale for distances.
+        self._sigma = 1
         self._bond_cutoff = 30
         self._angle_cutoff = 30
+        self._torsion_cutoff = 30
 
     def _run_gulp(self):
         os.system(f"{gulp_path()} < {self._gulp_in} > {self._gulp_out}")
@@ -148,6 +190,12 @@ class CGGulpOptimizer:
         raise NotImplementedError()
 
     def define_angle_potentials(self):
+        raise NotImplementedError()
+
+    def define_torsion_potentials(self):
+        raise NotImplementedError()
+
+    def define_vdw_potentials(self):
         raise NotImplementedError()
 
     def _get_coord_mass_string(self, mol):
@@ -269,11 +317,86 @@ class CGGulpOptimizer:
 
         return angle_string
 
+    def _get_torsion_string(self, mol):
+        torsion_set = self.define_torsion_potentials()
+        torsion_set_dict = torsion_set.get_set_dict()
+
+        torsion_string = "torsion\n"
+        torsions = get_all_torsions(mol)
+
+        for torsion in torsions:
+            atom1, atom2, atom3, atom4 = torsion
+            name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
+            name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
+            name3 = f"{atom3.__class__.__name__}{atom3.get_id()+1}"
+            name4 = f"{atom4.__class__.__name__}{atom4.get_id()+1}"
+            table = str.maketrans("", "", digits)
+            sorted_name = tuple(
+                sorted(
+                    [
+                        i.translate(table)
+                        for i in (name1, name2, name3, name4)
+                    ]
+                )
+            )
+
+            try:
+                tset = torsion_set_dict[sorted_name]
+
+                for pot in tset:
+                    # Want to check ordering here.
+                    if pot.atom2_type in name2:
+                        centre_atom1 = name2
+                        centre_atom2 = name3
+                        outer1 = name1
+                        outer2 = name4
+                    elif pot.atom2_type in name3:
+                        centre_atom1 = name3
+                        centre_atom2 = name2
+                        outer1 = name4
+                        outer2 = name1
+
+                    n = pot.n
+                    k = pot.k
+                    phi0 = pot.phi0
+
+                    torsion_string += (
+                        f"{outer1} {centre_atom1} {centre_atom2} "
+                        f"{outer2} {k} {n} {phi0} "
+                        f"{self._torsion_cutoff} "
+                        f"{self._torsion_cutoff} "
+                        f"{self._torsion_cutoff} "
+                        f"{self._torsion_cutoff} \n"
+                    )
+
+            except KeyError:
+                # logging.info(f"{sorted_name} not assigned.")
+                continue
+
+        return torsion_string
+
+    def _get_vdw_string(self, mol):
+        vdw_set = self.define_vdw_potentials()
+        vdw_set_pairs = bond_set.get_set_dict()
+        vdw_string = "harm\n"
+        print(vdw_set, vdw_set_pairs, vdw_string)
+        raise SystemExit()
+        pair = vdw_set_pairs[sorted_name]
+        for pot in pair:
+            bond_string += (
+                f"{name1} {name2}  {pot.bond_k} {pot.bond_r} "
+                f"{self._bond_cutoff}\n"
+            )
+
+        return vdw_string
+
     def _write_gulp_input(self, mol):
         top_string = "opti conv cartesian\n"
         coord_string, mass_string = self._get_coord_mass_string(mol)
         bond_string = self._get_bond_string(mol)
         angle_string = self._get_angle_string(mol)
+        torsion_string = self._get_torsion_string(mol)
+        vdw_string = self._get_vdw_string(mol)
         settings_string = (
             "\nmaxcyc 500\n"
             # f'output xyz movie {filename}_traj.xyz\n'
@@ -286,9 +409,58 @@ class CGGulpOptimizer:
             f.write(mass_string)
             f.write(bond_string)
             f.write(angle_string)
+            f.write(torsion_string)
+            f.write(vdw_string)
             f.write(settings_string)
 
     def optimize(self, molecule):
         self._write_gulp_input(mol=molecule)
         self._run_gulp()
         return self._extract_gulp()
+
+
+class CGGulpMD:
+    def __init__(self, fileprefix, output_dir):
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
+        self._gulp_in = os.path.join(
+            self._output_dir, f"{self._fileprefix}.gin"
+        )
+        self._gulp_out = os.path.join(
+            self._output_dir, f"{self._fileprefix}.ginout"
+        )
+        self._output_xyz = os.path.join(
+            self._output_dir, f"{self._fileprefix}_final.xyz"
+        )
+        self._mass = 1
+        # This is the underlying scale for distances.
+        self._sigma = 1
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+
+        raise NotImplementedError()
+
+    def _write_gulp_input(self, mol):
+        top_string = "opti conv cartesian\n"
+        coord_string, mass_string = self._get_coord_mass_string(mol)
+        bond_string = self._get_bond_string(mol)
+        angle_string = self._get_angle_string(mol)
+        torsion_string = self._get_torsion_string(mol)
+        vdw_string = self._get_vdw_string(mol)
+        raise NotImplementedError()
+        settings_string = (
+            "\nmaxcyc 500\n"
+            # f'output xyz movie {filename}_traj.xyz\n'
+            f"output xyz {self._output_xyz}\n"
+        )
+
+        with open(self._gulp_in, "w") as f:
+            f.write(top_string)
+            f.write(coord_string)
+            f.write(mass_string)
+            f.write(bond_string)
+            f.write(angle_string)
+            f.write(torsion_string)
+            f.write(vdw_string)
+            f.write(settings_string)
