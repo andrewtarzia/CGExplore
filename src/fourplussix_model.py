@@ -50,10 +50,6 @@ from precursor_db.precursors import threec_bb, twoc_bb
 
 
 class FourPlusSixOptimizer(CGGulpOptimizer):
-    def __init__(self, fileprefix, output_dir, param_pool):
-        self._param_pool = param_pool
-        super().__init__(fileprefix, output_dir)
-
     def define_bond_potentials(self):
         edge_length = 3
         to_centre = edge_length / math.sqrt(3)
@@ -73,17 +69,7 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
             HarmBond("S", "N", bond_r=2, bond_k=10),
         )
 
-        new_bonds = []
-        for bond in bonds:
-            bond_type = bond.get_unsortedtypes()
-            if bond_type in self._param_pool["bonds"]:
-                k, r = self._param_pool["bonds"][bond_type]
-                nbond = HarmBond(bond.atom1_type, bond.atom2_type, r, k)
-                new_bonds.append(nbond)
-            else:
-                new_bonds.append(bond)
-
-        new_bonds = tuple(new_bonds)
+        new_bonds = self._update_bonds(self, bonds)
 
         return IntSet(new_bonds)
 
@@ -191,23 +177,7 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
             # ),
         )
 
-        new_angles = []
-        for angle in angles:
-            angle_type = angle.get_unsortedtypes()
-            if angle_type in self._param_pool["angles"]:
-                k, theta = self._param_pool["angles"][angle_type]
-                nangle = ThreeAngle(
-                    angle.atom1_type,
-                    angle.atom2_type,
-                    angle.atom3_type,
-                    theta,
-                    k,
-                )
-                new_angles.append(nangle)
-            else:
-                new_angles.append(angle)
-
-        new_angles = tuple(new_angles)
+        new_angles = self._update_angles(angles)
 
         return IntSet(new_angles)
 
@@ -242,28 +212,14 @@ class FourPlusSixOptimizer(CGGulpOptimizer):
             #     phi0=180,
             # ),
         )
-
-        new_torsions = []
-        for torsion in torsions:
-            torsion_type = torsion.get_unsortedtypes()
-            if torsion_type in self._param_pool["torsions"]:
-                n, k, phi0 = self._param_pool["torsions"][torsion_type]
-                ntorsion = Torsion(
-                    torsion.atom1_type,
-                    torsion.atom2_type,
-                    torsion.atom3_type,
-                    torsion.atom4_type,
-                    n=n,
-                    k=k,
-                    phi0=phi0,
-                )
-                new_torsions.append(ntorsion)
-            else:
-                new_torsions.append(torsion)
-
-        new_torsions = tuple(new_torsions)
+        new_torsions = self._update_torsions(torsions)
 
         return IntSet(new_torsions)
+
+    def define_vdw_potentials():
+        pairs = ()
+
+        return IntSet(self._update_pairs(pairs))
 
 
 def run_optimisation(
@@ -351,6 +307,7 @@ def main():
                     ("B", "N", "N"): (20, ba),
                 },
                 "torsions": {},
+                "pairs": {},
             },
             "notes": f"bite-angle change: {ba}, rigid",
             "name": f"ba{ba}",
