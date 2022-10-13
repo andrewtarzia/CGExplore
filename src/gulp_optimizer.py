@@ -13,7 +13,9 @@ import os
 import numpy as np
 import re
 from string import digits
+import logging
 from dataclasses import dataclass
+from itertools import combinations
 
 from env_set import gulp_path
 from utilities import get_all_angles, angle_between, get_all_torsions
@@ -519,40 +521,220 @@ class CGGulpOptimizer:
         return self._extract_gulp()
 
 
-class CGGulpMD:
-    def __init__(self, fileprefix, output_dir):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
+class CGGulpMD(CGGulpOptimizer):
+    def __init__(self, fileprefix, output_dir, param_pool):
+
+        super().__init__(fileprefix, output_dir, param_pool)
         self._gulp_in = os.path.join(
-            self._output_dir, f"{self._fileprefix}.gin"
+            self._output_dir, f"{self._fileprefix}_md.gin"
         )
         self._gulp_out = os.path.join(
-            self._output_dir, f"{self._fileprefix}.ginout"
+            self._output_dir, f"{self._fileprefix}_md.ginout"
+        )
+        self._output_traj = os.path.join(
+            self._output_dir, f"{self._fileprefix}.trg"
+        )
+        self._output_trajxyz = os.path.join(
+            self._output_dir, f"{self._fileprefix}_traj.xyz"
         )
         self._output_xyz = os.path.join(
             self._output_dir, f"{self._fileprefix}_final.xyz"
         )
-        self._mass = 1
-        # This is the underlying scale for distances.
-        self._sigma = 1
-        self._bond_cutoff = 30
-        self._angle_cutoff = 30
-        self._torsion_cutoff = 30
 
-        raise NotImplementedError()
+        self._integrator = "stochastic"
+        self._ensemble = "nvt"
+        self._temperature = 100
+        self._equilbration = 1.0
+        self._production = 10.0
+        self._timestep = 1.0
+        self._N_conformers = 20
+        samples = float(self._production) / float(self._N_conformers)
+        self._sample = samples
+        self._write = samples
+
+    def _convert_traj_to_xyz(self, input_xyz_template, output_traj):
+
+        # Get atom types from an existing xyz file.
+        atom_types = []
+        with open(input_xyz_template, "r") as f:
+            for line in f.readlines()[2:]:
+                atom_types.append(line.rstrip().split(" ")[0])
+
+        # Read in lines from trajectory file.
+        with open(output_traj, "r") as f:
+            lines = f.readlines()
+
+        # Split file using strings.
+        timesteps = "".join(lines).split("#  Time/KE/E/T")[1:]
+        trajectory_data = {}
+        xyz_traj_lines = []
+        for ts, cont in enumerate(timesteps):
+            ts_data = {}
+            time_section = cont.split("#  Coordinates\n")[0]
+            coords_section = cont.split("#  Coordinates\n")[1].split(
+                "#  Velocities\n"
+            )[0]
+            vels_section = cont.split("#  Velocities\n")[1].split(
+                "#  Derivatives \n"
+            )[0]
+            derivs_section = cont.split("#  Derivatives \n")[1].split(
+                "#  Site energies \n"
+            )[0]
+            sites_section = cont.split("#  Site energies \n")[1]
+
+            ts_data["time"] = float(
+                [i for i in time_section.strip().split(" ") if i][0]
+            )
+            ts_data["KE"] = float(
+                [i for i in time_section.strip().split(" ") if i][1]
+            )
+            ts_data["E"] = float(
+                [i for i in time_section.strip().split(" ") if i][2]
+            )
+            ts_data["T"] = float(
+                [i for i in time_section.strip().split(" ") if i][3]
+            )
+            ts_data["coords"] = [
+                [i for i in li.split(" ") if i]
+                for li in coords_section.split("\n")[:-1]
+            ]
+            ts_data["vels"] = [
+                [i for i in li.split(" ") if i]
+                for li in vels_section.split("\n")[:-1]
+            ]
+            ts_data["derivs"] = [
+                [i for i in li.split(" ") if i]
+                for li in derivs_section.split("\n")[:-1]
+            ]
+            ts_data["sites"] = [
+                [i for i in li.split(" ") if i]
+                for li in sites_section.split("\n")[:-1]
+            ]
+
+            trajectory_data[ts] = ts_data
+
+            # Write XYZ string for XYZ traj file.
+            xyz_string = (
+                f"{len(ts_data['coords'])}\n"
+                f"{ts_data['time']},{ts_data['KE']},"
+                f"{ts_data['E']},{ts_data['T']}\n"
+            )
+
+            for i, coord in enumerate(ts_data["coords"]):
+                site_E = ts_data["sites"][i][0]
+                xyz_string += (
+                    f"{atom_types[i]} {round(float(coord[0]), 5)} "
+                    f"{round(float(coord[1]), 5)} "
+                    f"{round(float(coord[2]), 5)} {site_E}\n"
+                )
+
+            xyz_traj_lines.append(xyz_string)
+
+        return atom_types, trajectory_data, xyz_traj_lines
+
+    def _calculate_lowest_energy_conformer(self, trajectory_data):
+        energies = [trajectory_data[ts]["E"] for ts in trajectory_data]
+        min_energy = min(energies)
+        min_ts = list(trajectory_data.keys())[
+            energies.index(min_energy)
+        ]
+        return min_ts
+
+    def _write_conformer_xyz_file(
+        self,
+        ts,
+        ts_data,
+        filename,
+        atom_types,
+    ):
+
+        coords = ts_data["coords"]
+        xyz_string = (
+            f"{len(ts_data['coords'])}\n"
+            f"{ts}, {round(ts_data['time'], 2)}, "
+            f"{round(ts_data['KE'], 2)}, "
+            f"{round(ts_data['E'], 2)}, {round(ts_data['T'], 2)}\n"
+        )
+
+        for i, coord in enumerate(coords):
+            xyz_string += (
+                f"{atom_types[i]} {round(float(coord[0]), 5)} "
+                f"{round(float(coord[1]), 5)} "
+                f"{round(float(coord[2]), 5)}\n"
+            )
+        with open(filename, "w") as f:
+            f.write(xyz_string)
+
+    def _extract_gulp(self, input_xyz_template):
+
+        # Convert GULP trajectory file to xyz trajectory.
+        atom_types, t_data, xyz_lines = self._convert_traj_to_xyz(
+            input_xyz_template=input_xyz_template,
+            output_traj=self._output_traj,
+        )
+        # Write XYZ trajectory file.
+        with open(self._output_trajxyz, "w") as f:
+            for line in xyz_lines:
+                f.write(line)
+
+        # Find lowest energy conformation and output to XYZ.
+        min_ts = self._calculate_lowest_energy_conformer(
+            trajectory_data=t_data,
+        )
+
+        self._write_conformer_xyz_file(
+            ts=min_ts,
+            ts_data=t_data[min_ts],
+            filename=self._output_xyz,
+            atom_types=atom_types,
+        )
+
+        run_data = {"traj": {}}
+
+        return run_data
+
+        with open(self._gulp_out, "r") as f:
+            lines = f.readlines()
+
+        nums = re.compile(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
+        run_data = {"traj": {}}
+        for line in lines:
+            if "Cycle" in line:
+                splits = line.rstrip().split()
+                run_data["traj"][int(splits[1])] = {
+                    "energy": float(splits[3]),
+                    "gnorm": float(splits[5]),
+                }
+
+            if "Final energy" in line:
+                string = nums.search(line.rstrip()).group(0)
+                energy = float(string)
+                run_data["final_energy"] = energy
+
+            if "Final Gnorm" in line:
+                string = nums.search(line.rstrip()).group(0)
+                gnorm = float(string)
+                run_data["final_gnorm"] = gnorm
+
+        return run_data
 
     def _write_gulp_input(self, mol):
-        top_string = "opti conv cartesian\n"
+        top_string = "md conv cartesian\n"
         coord_string, mass_string = self._get_coord_mass_string(mol)
         bond_string = self._get_bond_string(mol)
         angle_string = self._get_angle_string(mol)
         torsion_string = self._get_torsion_string(mol)
         vdw_string = self._get_vdw_string(mol)
-        raise NotImplementedError()
         settings_string = (
-            "\nmaxcyc 500\n"
-            # f'output xyz movie {filename}_traj.xyz\n'
-            f"output xyz {self._output_xyz}\n"
+            f"integrator {self._integrator}\n"
+            f"ensemble {self._ensemble}\n"
+            f"temperature {self._temperature}\n"
+            f"equilbration {self._equilbration} ps\n"
+            f"production {self._production} ps\n"
+            f"timestep {self._timestep} fs\n"
+            f"sample {self._sample} ps\n"
+            f"write {self._write} ps\n"
+            f"output trajectory ascii {self._output_traj}\n"
         )
 
         with open(self._gulp_in, "w") as f:
@@ -564,3 +746,10 @@ class CGGulpMD:
             f.write(torsion_string)
             f.write(vdw_string)
             f.write(settings_string)
+
+    def optimize(self, molecule):
+        input_xyz_template = "gulp_template.xyz"
+        molecule.write(input_xyz_template)
+        self._write_gulp_input(mol=molecule)
+        self._run_gulp()
+        return self._extract_gulp(input_xyz_template)
