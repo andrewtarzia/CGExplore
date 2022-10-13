@@ -150,9 +150,10 @@ class Torsion:
 
 
 class CGGulpOptimizer:
-    def __init__(self, fileprefix, output_dir):
+    def __init__(self, fileprefix, output_dir, param_pool):
         self._fileprefix = fileprefix
         self._output_dir = output_dir
+        self._param_pool = param_pool
         self._gulp_in = os.path.join(
             self._output_dir, f"{self._fileprefix}.gin"
         )
@@ -160,7 +161,7 @@ class CGGulpOptimizer:
             self._output_dir, f"{self._fileprefix}.ginout"
         )
         self._output_xyz = os.path.join(
-            self._output_dir, f"{self._fileprefix}_final.xyz"
+            self._output_dir, f"{self._fileprefix}_opted.xyz"
         )
         self._mass = 1
         # This is the underlying scale for distances.
@@ -168,6 +169,7 @@ class CGGulpOptimizer:
         self._bond_cutoff = 30
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
+        self._lj_cutoff = 15
 
     def _run_gulp(self):
         os.system(f"{gulp_path()} < {self._gulp_in} > {self._gulp_out}")
@@ -205,7 +207,10 @@ class CGGulpOptimizer:
         raise NotImplementedError()
 
     def define_torsion_potentials(self):
-        raise NotImplementedError()
+        torsions = ()
+        new_torsions = self._update_torsions(torsions)
+
+        return IntSet(new_torsions)
 
     def define_vdw_potentials(self):
         raise NotImplementedError()
@@ -250,7 +255,7 @@ class CGGulpOptimizer:
                         f"{self._bond_cutoff}\n"
                     )
             except KeyError:
-                # logging.info(f"{sorted_name} not assigned.")
+                # logging.info(f"{sorted_name} bond not assigned.")
                 continue
 
         return bond_string
@@ -293,25 +298,21 @@ class CGGulpOptimizer:
                         outer2 = name2
 
                     if isinstance(pot, CheckedThreeAngle):
-                        a1id = re.findall(r"\d+", outer1)
-                        a2id = re.findall(r"\d+", centre_atom)
-                        a3id = re.findall(r"\d+", outer2)
-                        print(sorted_name)
-                        print(triplet)
-                        print(pot)
-                        print(
-                            atom1, atom2, atom3, pot, a1id, a2id, a3id
+                        a1id = int(re.findall(r"\d+", outer1)[0]) - 1
+                        a2id = (
+                            int(re.findall(r"\d+", centre_atom)[0]) - 1
                         )
+                        a3id = int(re.findall(r"\d+", outer2)[0]) - 1
                         vector1 = pos_mat[a2id] - pos_mat[a1id]
                         vector2 = pos_mat[a2id] - pos_mat[a3id]
                         curr_angle = np.degrees(
                             angle_between(vector1, vector2)
                         )
-                        if curr_angle < pot.angle_cut:
-                            angle_theta = pot.angle_min
-                        elif curr_angle >= pot.angle_cut:
-                            angle_theta = pot.angle_max
-                        raise SystemExit("need to check this")
+                        if curr_angle < pot.cut_angle:
+                            angle_theta = pot.min_angle
+                        elif curr_angle >= pot.cut_angle:
+                            angle_theta = pot.max_angle
+                        angle_k = pot.angle_k
                     else:
                         angle_k = pot.angle_k
                         angle_theta = pot.theta
@@ -324,7 +325,7 @@ class CGGulpOptimizer:
                     )
 
             except KeyError:
-                # logging.info(f"{sorted_name} not assigned.")
+                # logging.info(f"{sorted_name} angle not assigned.")
                 continue
 
         return angle_string
@@ -382,25 +383,112 @@ class CGGulpOptimizer:
                     )
 
             except KeyError:
-                # logging.info(f"{sorted_name} not assigned.")
+                # logging.info(f"{sorted_name} torsion not assigned.")
                 continue
 
         return torsion_string
 
     def _get_vdw_string(self, mol):
         vdw_set = self.define_vdw_potentials()
-        vdw_set_pairs = bond_set.get_set_dict()
-        vdw_string = "harm\n"
-        print(vdw_set, vdw_set_pairs, vdw_string)
-        raise SystemExit()
-        pair = vdw_set_pairs[sorted_name]
-        for pot in pair:
-            bond_string += (
-                f"{name1} {name2}  {pot.bond_k} {pot.bond_r} "
-                f"{self._bond_cutoff}\n"
+        vdw_set_pairs = vdw_set.get_set_dict()
+        vdw_string = "lennard epsilon\n"
+        pairs = combinations(mol.get_atoms(), 2)
+
+        for pair in pairs:
+            atom1, atom2 = pair
+            name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
+            name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
+            table = str.maketrans("", "", digits)
+            sorted_name = tuple(
+                sorted([i.translate(table) for i in (name1, name2)])
             )
+            try:
+                pair = vdw_set_pairs[sorted_name]
+                for pot in pair:
+                    vdw_string += (
+                        f"{name1} {name2}  {pot.epsilon} {pot.sigma} "
+                        f"{self._lj_cutoff}\n"
+                    )
+            except KeyError:
+                # logging.info(f"{sorted_name} vdw not assigned.")
+                continue
 
         return vdw_string
+
+    def _update_bonds(self, bonds):
+        new_bonds = []
+        for bond in bonds:
+            bond_type = bond.get_unsortedtypes()
+            if bond_type in self._param_pool["bonds"]:
+                k, r = self._param_pool["bonds"][bond_type]
+                nbond = HarmBond(bond.atom1_type, bond.atom2_type, r, k)
+                new_bonds.append(nbond)
+            else:
+                new_bonds.append(bond)
+
+        new_bonds = tuple(new_bonds)
+        return new_bonds
+
+    def _update_angles(self, angles):
+        new_angles = []
+        for angle in angles:
+            angle_type = angle.get_unsortedtypes()
+            if angle_type in self._param_pool["angles"]:
+                k, theta = self._param_pool["angles"][angle_type]
+                nangle = ThreeAngle(
+                    angle.atom1_type,
+                    angle.atom2_type,
+                    angle.atom3_type,
+                    theta,
+                    k,
+                )
+                new_angles.append(nangle)
+            else:
+                new_angles.append(angle)
+
+        new_angles = tuple(new_angles)
+        return new_angles
+
+    def _update_torsions(self, torsions):
+        new_torsions = []
+        for torsion in torsions:
+            torsion_type = torsion.get_unsortedtypes()
+            if torsion_type in self._param_pool["torsions"]:
+                n, k, phi0 = self._param_pool["torsions"][torsion_type]
+                ntorsion = Torsion(
+                    torsion.atom1_type,
+                    torsion.atom2_type,
+                    torsion.atom3_type,
+                    torsion.atom4_type,
+                    n=n,
+                    k=k,
+                    phi0=phi0,
+                )
+                new_torsions.append(ntorsion)
+            else:
+                new_torsions.append(torsion)
+
+        new_torsions = tuple(new_torsions)
+        return new_torsions
+
+    def _update_pairs(self, pairs):
+        new_pairs = []
+        for pair in pairs:
+            pair_type = pair.get_unsortedtypes()
+            if pair_type in self._param_pool["pairs"]:
+                epsilon, sigma = self._param_pool["pairs"][pair_type]
+                npair = LennardJones(
+                    pair.atom1_type,
+                    pair.atom2_type,
+                    epsilon,
+                    sigma,
+                )
+                new_pairs.append(npair)
+            else:
+                new_pairs.append(pair)
+
+        new_pairs = tuple(new_pairs)
+        return new_pairs
 
     def _write_gulp_input(self, mol):
         top_string = "opti conv cartesian\n"
