@@ -38,11 +38,9 @@ class IntSet:
 
 
 @dataclass
-class HarmBond:
+class Pair:
     atom1_type: str
     atom2_type: str
-    bond_r: float
-    bond_k: float
 
     def get_types(self):
         return tuple(
@@ -54,12 +52,22 @@ class HarmBond:
 
 
 @dataclass
-class ThreeAngle:
+class HarmBond(Pair):
+    bond_r: float
+    bond_k: float
+
+
+@dataclass
+class LennardJones(Pair):
+    epsilon: float
+    sigma: float
+
+
+@dataclass
+class Angle:
     atom1_type: str
     atom2_type: str
     atom3_type: str
-    theta: float
-    angle_k: float
 
     def get_types(self):
         return tuple(
@@ -86,6 +94,20 @@ class ThreeAngle:
                 )
             ]
         )
+
+
+@dataclass
+class ThreeAngle(Angle):
+    theta: float
+    angle_k: float
+
+
+@dataclass
+class CheckedThreeAngle(Angle):
+    cut_angle: float
+    min_angle: float
+    max_angle: float
+    angle_k: float
 
 
 @dataclass
@@ -125,16 +147,6 @@ class Torsion:
                 )
             ]
         )
-
-
-@dataclass
-class CheckedThreeAngle(ThreeAngle):
-    atom1_type: str
-    atom2_type: str
-    atom3_type: str
-    cut_angle: float
-    min_angle: float
-    max_angle: float
 
 
 class CGGulpOptimizer:
