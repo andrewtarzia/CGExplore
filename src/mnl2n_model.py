@@ -24,7 +24,15 @@ from utilities import (
     get_distances,
     get_angles,
 )
-from gulp_optimizer import CGGulpOptimizer
+from gulp_optimizer import (
+    CGGulpOptimizer,
+    CGGulpMD,
+    HarmBond,
+    LennardJones,
+    ThreeAngle,
+    IntSet,
+    CheckedThreeAngle,
+)
 
 from mnl2n_construction.topologies import cage_topologies
 
@@ -39,52 +47,89 @@ from mnl2n_construction.plotting import (
 from precursor_db.precursors import twoc_bb, fourc_bb
 
 
-class MNL2NOptimizer(CGGulpOptimizer):
-    def __init__(
-        self,
-        fileprefix,
-        output_dir,
-        biteangle,
-    ):
-        self._biteangle = float(biteangle)
-        super().__init__(fileprefix, output_dir)
+def defined_bonds():
+    return (
+        HarmBond("N", "Pd", bond_r=2, bond_k=10),
+        HarmBond("C", "N", bond_r=2, bond_k=10),
+        HarmBond("B", "C", bond_r=3, bond_k=10),
+    )
 
+
+def defined_angles():
+    return (
+        ThreeAngle("B", "C", "C", theta=180, angle_k=20),
+        CheckedThreeAngle(
+            "Pd",
+            "N",
+            "N",
+            cut_angle=130,
+            min_angle=90,
+            max_angle=180,
+            angle_k=20,
+        ),
+        ThreeAngle("C", "B", "N", theta=180, angle_k=20),
+        ThreeAngle("N", "C", "Pd", theta=180, angle_k=20),
+    )
+
+
+def defined_pairs():
+    return (
+        # LennardJones("N", "N", epsilon=0.1, sigma=1),
+        # LennardJones("C", "N", epsilon=0.1, sigma=1),
+        # LennardJones("B", "N", epsilon=0.1, sigma=1),
+        # LennardJones("Pd", "N", epsilon=0.1, sigma=1),
+        # LennardJones("C", "C", epsilon=0.1, sigma=1),
+        # LennardJones("B", "C", epsilon=0.1, sigma=1),
+        # LennardJones("Pd", "C", epsilon=0.1, sigma=1),
+        # LennardJones("B", "B", epsilon=0.1, sigma=1),
+        # LennardJones("Pd", "B", epsilon=0.1, sigma=1),
+        # LennardJones("Pd", "Pd", epsilon=0.1, sigma=1),
+    )
+
+
+class MNL2NOptimizer(CGGulpOptimizer):
     def define_bond_potentials(self):
-        bond_ks_ = {
-            ("N", "Pd"): 10,
-            ("C", "N"): 10,
-            ("B", "C"): 10,
-        }
-        bond_rs_ = {
-            ("N", "Pd"): 2,
-            ("C", "N"): 2,
-            ("B", "C"): 3,
-        }
-        return bond_ks_, bond_rs_
+        bonds = defined_bonds()
+        new_bonds = self._update_bonds(bonds)
+        return IntSet(new_bonds)
 
     def define_angle_potentials(self):
-        angle_ks_ = {
-            ("B", "C", "C"): 20,
-            ("N", "N", "Pd"): 20,
-            ("B", "C", "N"): 20,
-            ("C", "N", "Pd"): 20,
-        }
-        angle_thetas_ = {
-            ("B", "C", "C"): 180,
-            ("N", "N", "Pd"): (
-                "check",
-                {"cut": 130, "min": 90, "max": 180},
-            ),
-            ("B", "C", "N"): (self._biteangle / 2) + 90,
-            ("C", "N", "Pd"): 180,
-        }
+        angles = defined_angles()
+        new_angles = self._update_angles(angles)
+        return IntSet(new_angles)
 
-        return angle_ks_, angle_thetas_
+    def define_vdw_potentials(self):
+        pairs = defined_pairs()
+        new_pairs = self._update_pairs(pairs)
+        return IntSet(new_pairs)
 
 
-def run_optimisation(cage, biteangle, topo_str, output_dir):
+class MNL2NMD(CGGulpMD):
+    def define_bond_potentials(self):
+        bonds = defined_bonds()
+        new_bonds = self._update_bonds(bonds)
+        return IntSet(new_bonds)
 
-    run_prefix = f"{topo_str}_{biteangle}"
+    def define_angle_potentials(self):
+        angles = defined_angles()
+        new_angles = self._update_angles(angles)
+        return IntSet(new_angles)
+
+    def define_vdw_potentials(self):
+        pairs = defined_pairs()
+        new_pairs = self._update_pairs(pairs)
+        return IntSet(new_pairs)
+
+
+def run_optimisation(
+    cage,
+    ff_modifications,
+    ffname,
+    topo_str,
+    output_dir,
+):
+
+    run_prefix = f"{topo_str}_{ffname}"
     output_file = os.path.join(output_dir, f"{run_prefix}_res.json")
 
     if os.path.exists(output_file):
@@ -95,30 +140,50 @@ def run_optimisation(cage, biteangle, topo_str, output_dir):
         opt = MNL2NOptimizer(
             fileprefix=run_prefix,
             output_dir=output_dir,
-            biteangle=biteangle,
+            param_pool=ff_modifications["param_pool"],
         )
         run_data = opt.optimize(cage)
 
         # Get cube shape measure.
         opted = cage.with_structure_from_file(
-            path=os.path.join(output_dir, f"{run_prefix}_final.xyz"),
+            path=os.path.join(output_dir, f"{run_prefix}_opted.xyz"),
         )
-        opted.write(os.path.join(output_dir, f"{run_prefix}_final.mol"))
+        opted.write(os.path.join(output_dir, f"{run_prefix}_opted.mol"))
+
         distances = get_distances(optimizer=opt, cage=opted)
         angles = get_angles(optimizer=opt, cage=opted)
 
         num_steps = len(run_data["traj"])
         fin_energy = run_data["final_energy"]
         fin_gnorm = run_data["final_gnorm"]
-        traj_data = run_data["traj"]
+        opt_traj_data = run_data["traj"]
         logging.info(
             f"{run_prefix}: {num_steps} {fin_energy} {fin_gnorm} "
         )
+
+        logging.info("running MD..")
+        opt = MNL2NMD(
+            fileprefix=run_prefix,
+            output_dir=output_dir,
+            param_pool=ff_modifications["param_pool"],
+        )
+        md_data = opt.optimize(opted)
+        mded = cage.with_structure_from_file(
+            path=os.path.join(output_dir, f"{run_prefix}_final.xyz"),
+        )
+        mded.write(os.path.join(output_dir, f"{run_prefix}_final.mol"))
+        print(md_data)
+        raise SystemExit()
+        md_fin_energy = run_data["final_energy"]
+        md_traj_data = md_data["traj"]
+
         res_dict = {
             "fin_energy": fin_energy,
-            "traj": traj_data,
+            "traj": opt_traj_data,
             "distances": distances,
             "angles": angles,
+            "md_fin_energy": md_fin_energy,
+            "mdtraj": md_traj_data,
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f)
@@ -140,6 +205,20 @@ def main():
     # Make cage of each symmetry.
     topologies = cage_topologies(fourc_bb(), twoc_bb(sites=5))
     bite_angles = np.arange(0, 181, 10)
+    ff_options = {}
+    for ba in bite_angles:
+        ff_options[f"ba{ba}"] = {
+            "param_pool": {
+                "bonds": {},
+                "angles": {
+                    ("C", "B", "N"): (20, (ba / 2) + 90),
+                },
+                "torsions": {},
+                "pairs": {},
+            },
+            "notes": f"bite-angle change: {ba}, rigid",
+            "name": f"ba{ba}",
+        }
 
     results = {i: {} for i in bite_angles}
     for topo_str in topologies:
@@ -147,14 +226,17 @@ def main():
         cage = stk.ConstructedMolecule(topology_graph)
         cage.write(os.path.join(struct_output, f"{topo_str}_unopt.mol"))
 
-        for ba in bite_angles:
+        for ff_str in ff_options:
             res_dict = run_optimisation(
                 cage=cage,
-                biteangle=ba,
+                ffname=ff_str,
+                ff_modifications=ff_options[ff_str],
                 topo_str=topo_str,
                 output_dir=struct_output,
             )
+            continue
             results[ba][topo_str] = res_dict
+        raise SystemExit()
 
     topo_to_c = {
         "m2l4": ("o", "k", 0),
