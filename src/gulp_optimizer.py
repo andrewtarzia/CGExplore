@@ -678,9 +678,7 @@ class CGGulpMD(CGGulpOptimizer):
                 f.write(line)
 
         # Find lowest energy conformation and output to XYZ.
-        min_ts = self._calculate_lowest_energy_conformer(
-            trajectory_data=t_data,
-        )
+        min_ts = self._calculate_lowest_energy_conformer(t_data)
 
         self._write_conformer_xyz_file(
             ts=min_ts,
@@ -689,32 +687,7 @@ class CGGulpMD(CGGulpOptimizer):
             atom_types=atom_types,
         )
 
-        run_data = {"traj": {}}
-
-        return run_data
-
-        with open(self._gulp_out, "r") as f:
-            lines = f.readlines()
-
-        nums = re.compile(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
-        run_data = {"traj": {}}
-        for line in lines:
-            if "Cycle" in line:
-                splits = line.rstrip().split()
-                run_data["traj"][int(splits[1])] = {
-                    "energy": float(splits[3]),
-                    "gnorm": float(splits[5]),
-                }
-
-            if "Final energy" in line:
-                string = nums.search(line.rstrip()).group(0)
-                energy = float(string)
-                run_data["final_energy"] = energy
-
-            if "Final Gnorm" in line:
-                string = nums.search(line.rstrip()).group(0)
-                gnorm = float(string)
-                run_data["final_gnorm"] = gnorm
+        run_data = {"traj": t_data}
 
         return run_data
 

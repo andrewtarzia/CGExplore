@@ -28,7 +28,6 @@ from gulp_optimizer import (
     CGGulpOptimizer,
     CGGulpMD,
     HarmBond,
-    LennardJones,
     ThreeAngle,
     IntSet,
     CheckedThreeAngle,
@@ -38,6 +37,7 @@ from mnl2n_construction.topologies import cage_topologies
 
 from mnl2n_construction.plotting import (
     convergence,
+    md_output_plot,
     scatter,
     geom_distributions,
     heatmap,
@@ -121,6 +121,27 @@ class MNL2NMD(CGGulpMD):
         return IntSet(new_pairs)
 
 
+def calculate_rmsd(init_coords, coords):
+    init_coords = np.array(init_coords, dtype=float)
+    coords = np.array(coords, dtype=float)
+    deviations = init_coords - coords
+    N = len(init_coords)
+    return np.sqrt(np.sum(deviations * deviations) / N)
+
+
+def add_traj_rmsd(md_traj_data):
+    for step in md_traj_data:
+        sdict = md_traj_data[step]
+        if step == 0:
+            init_coords = sdict["coords"]
+            rmsd = 0
+        else:
+            coords = sdict["coords"]
+            rmsd = calculate_rmsd(init_coords, coords)
+        md_traj_data[step]["rmsd"] = rmsd
+    return md_traj_data
+
+
 def run_optimisation(
     cage,
     ff_modifications,
@@ -131,24 +152,25 @@ def run_optimisation(
 
     run_prefix = f"{topo_str}_{ffname}"
     output_file = os.path.join(output_dir, f"{run_prefix}_res.json")
+    opt_xyz_file = os.path.join(output_dir, f"{run_prefix}_opted.xyz")
+    md_xyz_file = os.path.join(output_dir, f"{run_prefix}_final.xyz")
+    opt_mol_file = os.path.join(output_dir, f"{run_prefix}_opted.mol")
+    md_mol_file = os.path.join(output_dir, f"{run_prefix}_final.mol")
 
     if os.path.exists(output_file):
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
-        logging.info(f": running optimisation of {run_prefix}")
-        opt = MNL2NOptimizer(
-            fileprefix=run_prefix,
-            output_dir=output_dir,
-            param_pool=ff_modifications["param_pool"],
-        )
-        run_data = opt.optimize(cage)
-
-        # Get cube shape measure.
-        opted = cage.with_structure_from_file(
-            path=os.path.join(output_dir, f"{run_prefix}_opted.xyz"),
-        )
-        opted.write(os.path.join(output_dir, f"{run_prefix}_opted.mol"))
+        if not os.path.exists(opt_xyz_file):
+            logging.info(f": running optimisation of {run_prefix}")
+            opt = MNL2NOptimizer(
+                fileprefix=run_prefix,
+                output_dir=output_dir,
+                param_pool=ff_modifications["param_pool"],
+            )
+            run_data = opt.optimize(cage)
+        opted = cage.with_structure_from_file(opt_xyz_file)
+        opted.write(opt_mol_file)
 
         distances = get_distances(optimizer=opt, cage=opted)
         angles = get_angles(optimizer=opt, cage=opted)
@@ -161,28 +183,28 @@ def run_optimisation(
             f"{run_prefix}: {num_steps} {fin_energy} {fin_gnorm} "
         )
 
-        logging.info("running MD..")
-        opt = MNL2NMD(
-            fileprefix=run_prefix,
-            output_dir=output_dir,
-            param_pool=ff_modifications["param_pool"],
-        )
-        md_data = opt.optimize(opted)
-        mded = cage.with_structure_from_file(
-            path=os.path.join(output_dir, f"{run_prefix}_final.xyz"),
-        )
-        mded.write(os.path.join(output_dir, f"{run_prefix}_final.mol"))
-        print(md_data)
-        raise SystemExit()
-        md_fin_energy = run_data["final_energy"]
-        md_traj_data = md_data["traj"]
+        try:
+            if not os.path.exists(md_xyz_file):
+                logging.info("running MD..")
+                opt = MNL2NMD(
+                    fileprefix=run_prefix,
+                    output_dir=output_dir,
+                    param_pool=ff_modifications["param_pool"],
+                )
+                md_data = opt.optimize(opted)
+            mded = cage.with_structure_from_file(md_xyz_file)
+            mded.write(md_mol_file)
+            md_traj_data = md_data["traj"]
+            md_traj_data = add_traj_rmsd(md_traj_data)
+        except ValueError:
+            logging.info(f"MD of {run_prefix} failed.")
+            md_traj_data = {}
 
         res_dict = {
             "fin_energy": fin_energy,
             "traj": opt_traj_data,
             "distances": distances,
             "angles": angles,
-            "md_fin_energy": md_fin_energy,
             "mdtraj": md_traj_data,
         }
         with open(output_file, "w") as f:
@@ -220,7 +242,7 @@ def main():
             "name": f"ba{ba}",
         }
 
-    results = {i: {} for i in bite_angles}
+    results = {i: {} for i in ff_options}
     for topo_str in topologies:
         topology_graph = topologies[topo_str]
         cage = stk.ConstructedMolecule(topology_graph)
@@ -234,9 +256,7 @@ def main():
                 topo_str=topo_str,
                 output_dir=struct_output,
             )
-            continue
-            results[ba][topo_str] = res_dict
-        raise SystemExit()
+            results[ff_str][topo_str] = res_dict
 
     topo_to_c = {
         "m2l4": ("o", "k", 0),
@@ -246,6 +266,16 @@ def main():
         "m12l24": ("P", "b", 4),
         "m24l48": ("X", "green", 5),
     }
+
+    md_y_columns = ("E", "T", "KE", "rmsd")
+    for ycol in md_y_columns:
+        md_output_plot(
+            topo_to_c=topo_to_c,
+            results=results,
+            output_dir=figure_output,
+            filename=f"md_output_{ycol}.pdf",
+            y_column=ycol,
+        )
 
     convergence(
         results=results,

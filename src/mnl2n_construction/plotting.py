@@ -163,11 +163,13 @@ def geom_distributions(
     filename,
 ):
 
+    target_type = "BCN"
+
     # Collect all values for each bond and angle type.
     distance_by_type = {}
     angle_by_type = {}
-    for biteangle in results:
-        da = results[biteangle]
+    for ffstr in results:
+        da = results[ffstr]
         for topo_str in da:
             dists = da[topo_str]["distances"]
             angles = da[topo_str]["angles"]
@@ -179,8 +181,8 @@ def geom_distributions(
                     distance_by_type[dd] = dists[d]
 
             for a in angles:
-                if a == "BCN":
-                    aa = f"{a}{biteangle}"
+                if a == target_type:
+                    aa = f"{a}{ffstr}"
                 else:
                     aa = merge_angle_types(a)
                 if aa in angle_by_type:
@@ -213,10 +215,10 @@ def geom_distributions(
 
     # Plot distributions of each variable bond type.
     for atype in angle_by_type:
-        if "BCN" not in atype:
+        if target_type not in atype:
             continue
         data = angle_by_type[atype]
-        biteangle = float(atype.replace("BCN", ""))
+        biteangle = float(atype.replace(f"{target_type}ba", ""))
         axs[1].scatter(
             x=[biteangle for i in data],
             y=data,
@@ -227,11 +229,11 @@ def geom_distributions(
         )
     axs[1].tick_params(axis="both", which="major", labelsize=16)
     axs[1].set_xlabel("bite angle [degrees]", fontsize=16)
-    axs[1].set_ylabel(r"BCN [degrees]", fontsize=16)
+    axs[1].set_ylabel(f"{target_type} [degrees]", fontsize=16)
 
     # Plot distributions of each angle type.
     for atype in angle_by_type:
-        if "BCN" in atype:
+        if target_type in atype:
             continue
         data = angle_by_type[atype]
         axs[2].hist(
@@ -340,11 +342,11 @@ def convergence(
 
     # Pick examples to plot.
     _to_plot = (
-        "m2l4_80",
-        "m3l6_120",
-        "m6l12_20",
-        "m12l24_10",
-        "m24l48_100",
+        "m2l4_20",
+        "m3l6_70",
+        "m6l12_70",
+        "m12l24_120",
+        "m24l48_80",
     )
 
     fig, axs = plt.subplots(
@@ -358,7 +360,7 @@ def convergence(
 
     for name, ax in zip(_to_plot, axs):
         topo_s, biteangle = name.split("_")
-        da = results[int(biteangle)]
+        da = results[f"ba{biteangle}"]
         traj = da[topo_s]["traj"]
         traj_x = [i for i in traj]
         traj_e = [traj[i]["energy"] for i in traj]
@@ -400,11 +402,68 @@ def convergence(
         if name == _to_plot[0]:
             ax.set_ylabel("energy [eV]", fontsize=16)
             ax2.set_ylabel("Gnorm", fontsize=16)
-        ax.axhline(y=0.01, c="k", lw=2, linestyle="--")
 
     ax.set_xlabel("step", fontsize=16)
     ax.set_xticks(range(0, xmax, xwin))
     ax.set_xticklabels([str(i) for i in range(0, xmax, xwin)])
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(output_dir, filename),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def md_output_plot(
+    topo_to_c,
+    results,
+    output_dir,
+    filename,
+    y_column,
+):
+
+    topo_to_ax = {j: i for i, j in enumerate(topo_to_c)}
+    ycol_to_label = {
+        "E": "energy [eV]",
+        "T": "temperature [K]",
+        "KE": "kinetic energy [eV]",
+        "rmsd": "RMSD [A]",
+    }
+
+    fig, axs = plt.subplots(
+        nrows=len(topo_to_c),
+        ncols=1,
+        sharex=True,
+        figsize=(8, 10),
+    )
+
+    for ba in results:
+        badict = results[ba]
+        for topo_str in badict:
+            ax = axs[topo_to_ax[topo_str]]
+            tdict = badict[topo_str]
+            tdata = tdict["mdtraj"]
+            xs = []
+            ys = []
+            for step in tdata:
+                sdict = tdata[step]
+                xs.append(sdict["time"])
+                ys.append(sdict[y_column])
+
+            ax.plot(
+                xs,
+                ys,
+                lw=5,
+                # marker='o',
+                # markersize=12,
+                color=topo_to_c[topo_str][1],
+            )
+            ax.tick_params(axis="both", which="major", labelsize=16)
+
+    axs[-1].set_xlabel("time []", fontsize=16)
+    axs[-1].set_ylabel(ycol_to_label[y_column], fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
