@@ -13,7 +13,6 @@ import os
 import numpy as np
 import re
 from string import digits
-import logging
 from dataclasses import dataclass
 from itertools import combinations
 
@@ -176,7 +175,7 @@ class CGGulpOptimizer:
     def _run_gulp(self):
         os.system(f"{gulp_path()} < {self._gulp_in} > {self._gulp_out}")
 
-    def _extract_gulp(self):
+    def extract_gulp(self):
         with open(self._gulp_out, "r") as f:
             lines = f.readlines()
 
@@ -518,7 +517,7 @@ class CGGulpOptimizer:
     def optimize(self, molecule):
         self._write_gulp_input(mol=molecule)
         self._run_gulp()
-        return self._extract_gulp()
+        return self.extract_gulp()
 
 
 class CGGulpMD(CGGulpOptimizer):
@@ -552,13 +551,17 @@ class CGGulpMD(CGGulpOptimizer):
         self._sample = samples
         self._write = samples
 
-    def _convert_traj_to_xyz(self, input_xyz_template, output_traj):
-
+    def get_xyz_atom_types(self, xyz_file):
         # Get atom types from an existing xyz file.
         atom_types = []
-        with open(input_xyz_template, "r") as f:
+        with open(xyz_file, "r") as f:
             for line in f.readlines()[2:]:
                 atom_types.append(line.rstrip().split(" ")[0])
+        return atom_types
+
+    def _convert_traj_to_xyz(self, input_xyz_template, output_traj):
+
+        atom_types = self.get_xyz_atom_types(input_xyz_template)
 
         # Read in lines from trajectory file.
         with open(output_traj, "r") as f:
@@ -640,7 +643,7 @@ class CGGulpMD(CGGulpOptimizer):
         ]
         return min_ts
 
-    def _write_conformer_xyz_file(
+    def write_conformer_xyz_file(
         self,
         ts,
         ts_data,
@@ -665,7 +668,7 @@ class CGGulpMD(CGGulpOptimizer):
         with open(filename, "w") as f:
             f.write(xyz_string)
 
-    def _extract_gulp(self, input_xyz_template):
+    def extract_gulp(self, input_xyz_template):
 
         # Convert GULP trajectory file to xyz trajectory.
         atom_types, t_data, xyz_lines = self._convert_traj_to_xyz(
@@ -680,7 +683,7 @@ class CGGulpMD(CGGulpOptimizer):
         # Find lowest energy conformation and output to XYZ.
         min_ts = self._calculate_lowest_energy_conformer(t_data)
 
-        self._write_conformer_xyz_file(
+        self.write_conformer_xyz_file(
             ts=min_ts,
             ts_data=t_data[min_ts],
             filename=self._output_xyz,
@@ -725,4 +728,4 @@ class CGGulpMD(CGGulpOptimizer):
         molecule.write(input_xyz_template)
         self._write_gulp_input(mol=molecule)
         self._run_gulp()
-        return self._extract_gulp(input_xyz_template)
+        return self.extract_gulp(input_xyz_template)
