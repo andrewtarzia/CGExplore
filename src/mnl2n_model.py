@@ -230,16 +230,20 @@ def run_optimisation(
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
+        opt = MNL2NOptimizer(
+            fileprefix=run_prefix,
+            output_dir=output_dir,
+            param_pool=ff_modifications["param_pool"],
+        )
         if not os.path.exists(opt_xyz_file):
             logging.info(f": running optimisation of {run_prefix}")
-            opt = MNL2NOptimizer(
-                fileprefix=run_prefix,
-                output_dir=output_dir,
-                param_pool=ff_modifications["param_pool"],
-            )
             run_data = opt.optimize(cage)
+        else:
+            run_data = opt.extract_gulp()
         opted = cage.with_structure_from_file(opt_xyz_file)
         opted.write(opt_mol_file)
+
+        opt_pore_data = calculate_pore(opt_xyz_file)
 
         distances = get_distances(optimizer=opt, cage=opted)
         angles = get_angles(optimizer=opt, cage=opted)
@@ -247,24 +251,34 @@ def run_optimisation(
         num_steps = len(run_data["traj"])
         fin_energy = run_data["final_energy"]
         fin_gnorm = run_data["final_gnorm"]
+        max_opt_diam = opted.get_maximum_diameter()
         opt_traj_data = run_data["traj"]
         logging.info(
             f"{run_prefix}: {num_steps} {fin_energy} {fin_gnorm} "
         )
 
         try:
+            opt = MNL2NMD(
+                fileprefix=run_prefix,
+                output_dir=output_dir,
+                param_pool=ff_modifications["param_pool"],
+            )
             if not os.path.exists(md_xyz_file):
                 logging.info("running MD..")
-                opt = MNL2NMD(
-                    fileprefix=run_prefix,
-                    output_dir=output_dir,
-                    param_pool=ff_modifications["param_pool"],
-                )
                 md_data = opt.optimize(opted)
+            else:
+                md_data = opt.extract_gulp(opt_xyz_file)
             mded = cage.with_structure_from_file(md_xyz_file)
             mded.write(md_mol_file)
             md_traj_data = md_data["traj"]
             md_traj_data = add_traj_rmsd(md_traj_data)
+            md_traj_data = add_traj_pore(
+                name=run_prefix,
+                input_xyz_template=md_xyz_file,
+                optimizer=opt,
+                md_traj_data=md_traj_data,
+                output_dir=output_dir,
+            )
         except ValueError:
             logging.info(f"MD of {run_prefix} failed.")
             md_traj_data = {}
@@ -275,9 +289,11 @@ def run_optimisation(
             "distances": distances,
             "angles": angles,
             "mdtraj": md_traj_data,
+            "opt_pore_data": opt_pore_data,
+            "max_opt_diam": max_opt_diam,
         }
         with open(output_file, "w") as f:
-            json.dump(res_dict, f)
+            json.dump(res_dict, f, indent=4)
 
     return res_dict
 
@@ -336,27 +352,27 @@ def main():
         "m24l48": ("X", "green", 5),
     }
 
-    md_y_columns = ("E", "T", "KE", "rmsd")
-    for ycol in md_y_columns:
-        md_output_plot(
-            topo_to_c=topo_to_c,
-            results=results,
-            output_dir=figure_output,
-            filename=f"md_output_{ycol}.pdf",
-            y_column=ycol,
-        )
-
     convergence(
         results=results,
         output_dir=figure_output,
         filename="convergence.pdf",
     )
 
-    ey_vs_property(
-        results=results,
-        output_dir=figure_output,
-        filename="e_vs_shape.pdf",
-    )
+    properties = {
+        "pore_max_rad": ("max. pore radius [A]", None),
+        "max_opt_diam": ("max diameter [A]", None),
+    }
+    for prop in properties:
+        ey_vs_property(
+            topo_to_c=topo_to_c,
+            results=results,
+            output_dir=figure_output,
+            xprop=prop,
+            xlim=properties[prop][1],
+            xtitle=properties[prop][0],
+            filename=f"e_vs_{prop}.pdf",
+            ylim=(0, 100),
+        )
 
     geom_distributions(
         results=results,
@@ -374,13 +390,43 @@ def main():
         clabel="energy (eV)",
     )
 
-    scatter(
-        topo_to_c=topo_to_c,
-        results=results,
-        output_dir=figure_output,
-        filename="energy.pdf",
-        ylabel="energy (eV)",
+    properties = {
+        "energy": ("energy (eV)", (0, 10)),
+        "pore_volume": ("pore volume [A^3]", None),
+        "pore_max_rad": ("max. pore radius [A]", None),
+        "max_opt_diam": ("max diameter [A]", None),
+    }
+    for prop in properties:
+        scatter(
+            topo_to_c=topo_to_c,
+            results=results,
+            output_dir=figure_output,
+            filename=f"{prop}.pdf",
+            ylabel=properties[prop][0],
+            ylim=properties[prop][1],
+        )
+
+    md_y_columns = (
+        "E",
+        "T",
+        "KE",
+        "rmsd",
+        "num_windows",
+        "blob_max_diam",
+        "pore_max_rad",
+        "pore_mean_rad",
+        "pore_volume",
+        "asphericity",
+        "shape",
     )
+    for ycol in md_y_columns:
+        md_output_plot(
+            topo_to_c=topo_to_c,
+            results=results,
+            output_dir=figure_output,
+            filename=f"md_output_{ycol}.pdf",
+            y_column=ycol,
+        )
 
 
 if __name__ == "__main__":

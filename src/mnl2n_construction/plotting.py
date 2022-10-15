@@ -58,21 +58,28 @@ def scatter(
     topo_to_c,
     results,
     ylabel,
+    ylim,
     output_dir,
     filename,
 ):
-    print("add properties to this")
 
     fig, ax = plt.subplots(figsize=(8, 5))
     switched_data = {}
-    for biteangle in results:
-        da = results[biteangle]
+    for bastr in results:
+        biteangle = int(bastr.replace("ba", ""))
+        da = results[bastr]
         for topo_s in da:
             if ylabel == "energy (eV)":
                 ys = da[topo_s]["fin_energy"]
             elif ylabel == "CU-8":
                 ys = da[topo_s]["cu8"]
                 ax.axhline(y=0, lw=2, c="k")
+            elif ylabel == "max diameter [A]":
+                ys = da[topo_s]["max_opt_diam"]
+            elif ylabel == "pore volume [A^3]":
+                ys = da[topo_s]["opt_pore_data"]["pore_volume"]
+            elif ylabel == "max. pore radius [A]":
+                ys = da[topo_s]["opt_pore_data"]["pore_max_rad"]
 
             if topo_s not in switched_data:
                 switched_data[topo_s] = []
@@ -96,7 +103,7 @@ def scatter(
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("bite angle [degrees]", fontsize=16)
     ax.set_ylabel(ylabel, fontsize=16)
-    ax.set_ylim(0, 10)
+    ax.set_ylim(ylim)
 
     fig.tight_layout()
     fig.savefig(
@@ -108,34 +115,32 @@ def scatter(
 
 
 def ey_vs_property(
+    topo_to_c,
     results,
     output_dir,
+    xprop,
+    xlim,
+    xtitle,
     filename,
+    ylim,
 ):
-    print("make this a property of interest -- pore?")
-    return
-
-    _to_plot = {
-        "d2": ("o", "k"),
-        "th2": ("X", "r"),
-        "s62": ("D", "gold"),
-        "d32": ("o", "skyblue"),
-    }
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    for topo_s in _to_plot:
+    for topo_s in topo_to_c:
         x_vals = []
         y_vals = []
-        for aniso in results:
-            da = results[aniso]
-            x_vals.append(da[topo_s]["cu8"])
+        for biteangle in results:
+            da = results[biteangle]
+            try:
+                x_vals.append(da[topo_s][xprop])
+            except KeyError:
+                x_vals.append(da[topo_s]["opt_pore_data"][xprop])
             y_vals.append(da[topo_s]["fin_energy"])
 
         ax.scatter(
             x_vals,
             y_vals,
-            c=_to_plot[topo_s][1],
-            marker=_to_plot[topo_s][0],
+            c=topo_to_c[topo_s][1],
             edgecolor="k",
             s=100,
             alpha=1.0,
@@ -144,9 +149,10 @@ def ey_vs_property(
 
     ax.legend(fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("CU-8", fontsize=16)
+    ax.set_xlabel(xtitle, fontsize=16)
     ax.set_ylabel("energy (eV)", fontsize=16)
-    ax.set_xlim(0, 2)
+    ax.set_xlim(xlim)
+    ax.set_ylim(ylim)
 
     fig.tight_layout()
     fig.savefig(
@@ -269,7 +275,7 @@ def heatmap(
     vmax,
     clabel,
 ):
-    print("add a property here too.")
+    print("add a property to heatmap too.")
     fig, ax = plt.subplots(figsize=(8, 8))
     maps = np.zeros((len(topo_to_c), len(results)))
     for j, biteangle in enumerate(results):
@@ -425,24 +431,46 @@ def md_output_plot(
 ):
 
     topo_to_ax = {j: i for i, j in enumerate(topo_to_c)}
+    ba_to_ax = {j: i for i, j in enumerate(results)}
     ycol_to_label = {
         "E": "energy [eV]",
         "T": "temperature [K]",
         "KE": "kinetic energy [eV]",
         "rmsd": "RMSD [A]",
+        "num_windows": "num. windows",
+        "blob_max_diam": "max blob diam [A]",
+        "pore_max_rad": "max pore radius [A]",
+        "pore_mean_rad": "mean pore radius [A]",
+        "pore_volume": "pore volume [A^3]",
+        "asphericity": "pore asphericity",
+        "shape": "pore shape",
+    }
+    ycol_to_lim = {
+        "E": (0, 10),
+        "T": None,
+        "KE": (0, 4),
+        "rmsd": (0, 2),
+        "num_windows": (0, 30),
+        "blob_max_diam": (0, 60),
+        "pore_max_rad": (0, 30),
+        "pore_mean_rad": (0, 30),
+        "pore_volume": (0, 1000),
+        "asphericity": (0, 10),
+        "shape": (0, 0.1),
     }
 
     fig, axs = plt.subplots(
         nrows=len(topo_to_c),
-        ncols=1,
+        ncols=len(results),
         sharex=True,
-        figsize=(8, 10),
+        sharey=True,
+        figsize=(16, 10),
     )
 
     for ba in results:
         badict = results[ba]
         for topo_str in badict:
-            ax = axs[topo_to_ax[topo_str]]
+            ax = axs[topo_to_ax[topo_str]][ba_to_ax[ba]]
             tdict = badict[topo_str]
             tdata = tdict["mdtraj"]
             xs = []
@@ -452,23 +480,28 @@ def md_output_plot(
                 xs.append(sdict["time"])
                 ys.append(sdict[y_column])
 
-            ax.plot(
+            if topo_str == "m2l4":
+                ax.set_title(ba, fontsize=16)
+
+            ax.scatter(
                 xs,
                 ys,
-                lw=5,
+                s=40,
                 # marker='o',
                 # markersize=12,
                 color=topo_to_c[topo_str][1],
+                rasterized=True,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
+            ax.set_ylim(ycol_to_lim[y_column])
 
-    axs[-1].set_xlabel("time []", fontsize=16)
-    axs[-1].set_ylabel(ycol_to_label[y_column], fontsize=16)
+    axs[-1][0].set_xlabel("time []", fontsize=16)
+    axs[-1][0].set_ylabel(ycol_to_label[y_column], fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
         os.path.join(output_dir, filename),
-        dpi=720,
+        dpi=180,
         bbox_inches="tight",
     )
     plt.close()
