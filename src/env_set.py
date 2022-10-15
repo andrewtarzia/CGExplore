@@ -66,6 +66,30 @@ def mnl2n_structures():
     return path
 
 
+def guest():
+    path = project_dir() / pathlib.Path("guest/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def guest_figures():
+    path = guest() / pathlib.Path("figures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def guest_structures():
+    path = guest() / pathlib.Path("structures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
 def mnl2n_calculations():
     path = mnl2n() / pathlib.Path("calculations/")
     if not os.path.exists(path):
