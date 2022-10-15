@@ -451,11 +451,11 @@ def md_output_plot(
         "KE": (0, 4),
         "rmsd": (0, 2),
         "num_windows": (0, 30),
-        "blob_max_diam": (0, 60),
-        "pore_max_rad": (0, 30),
-        "pore_mean_rad": (0, 30),
-        "pore_volume": (0, 1000),
-        "asphericity": (0, 10),
+        "blob_max_diam": (0, 80),
+        "pore_max_rad": (0, 20),
+        "pore_mean_rad": (0, 20),
+        "pore_volume": (0, 20000),
+        "asphericity": (0, 20),
         "shape": (0, 0.1),
     }
 
