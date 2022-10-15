@@ -14,6 +14,7 @@ import stk
 import numpy as np
 import os
 import json
+import pore_mapper as pm
 import logging
 
 from env_set import (
@@ -139,6 +140,74 @@ def add_traj_rmsd(md_traj_data):
             coords = sdict["coords"]
             rmsd = calculate_rmsd(init_coords, coords)
         md_traj_data[step]["rmsd"] = rmsd
+    return md_traj_data
+
+
+def calculate_pore(xyz_file):
+
+    output_file = xyz_file.replace(".xyz", ".json")
+    if os.path.exists(output_file):
+        with open(output_file, "r") as f:
+            pore_data = json.load(f)
+        return pore_data
+
+    host = pm.Host.init_from_xyz_file(xyz_file)
+    host = host.with_centroid([0.0, 0.0, 0.0])
+
+    # Define calculator object.
+    logging.warning(
+        "currently using very small pore, would want to use normal "
+        "size in future."
+    )
+    calculator = pm.Inflater(bead_sigma=0.5)
+    # Run calculator on host object, analysing output.
+    logging.info(f"calculating pore of {xyz_file}...")
+    final_result = calculator.get_inflated_blob(host=host)
+    pore = final_result.pore
+    blob = final_result.pore.get_blob()
+    windows = pore.get_windows()
+    pore_data = {
+        "step": final_result.step,
+        "num_movable_beads": final_result.num_movable_beads,
+        "windows": windows,
+        "blob_max_diam": blob.get_maximum_diameter(),
+        "pore_max_rad": pore.get_maximum_distance_to_com(),
+        "pore_mean_rad": pore.get_mean_distance_to_com(),
+        "pore_volume": pore.get_volume(),
+        "asphericity": pore.get_asphericity(),
+        "shape": pore.get_relative_shape_anisotropy(),
+    }
+    with open(output_file, "w") as f:
+        json.dump(pore_data, f)
+    return pore_data
+
+
+def add_traj_pore(
+    name,
+    input_xyz_template,
+    optimizer,
+    md_traj_data,
+    output_dir,
+):
+    atom_types = optimizer.get_xyz_atom_types(input_xyz_template)
+    for step in md_traj_data:
+        sdict = md_traj_data[step]
+        xyz_file = os.path.join(output_dir, f"{name}_{step}.xyz")
+        optimizer.write_conformer_xyz_file(
+            ts=step,
+            ts_data=sdict,
+            filename=xyz_file,
+            atom_types=atom_types,
+        )
+        pore_data = calculate_pore(xyz_file)
+        md_traj_data[step]["windows"] = pore_data["windows"]
+        md_traj_data[step]["num_windows"] = len(pore_data["windows"])
+        md_traj_data[step]["blob_max_diam"] = pore_data["blob_max_diam"]
+        md_traj_data[step]["pore_max_rad"] = pore_data["pore_max_rad"]
+        md_traj_data[step]["pore_mean_rad"] = pore_data["pore_mean_rad"]
+        md_traj_data[step]["pore_volume"] = pore_data["pore_volume"]
+        md_traj_data[step]["asphericity"] = pore_data["asphericity"]
+        md_traj_data[step]["shape"] = pore_data["shape"]
     return md_traj_data
 
 
