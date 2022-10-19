@@ -44,12 +44,28 @@ class CGM24L48(stk.cage.M24L48):
 
 def cage_topologies(fourc_bb, twoc_bb):
     topologies = {
-        "m2l4": CGM2L4Lantern((fourc_bb, twoc_bb)),
-        "m3l6": CGM3L6((fourc_bb, twoc_bb)),
-        "m4l8": CGM4L8((fourc_bb, twoc_bb)),
-        "m6l12": CGM6L12Cube((fourc_bb, twoc_bb)),
-        "m12l24": CGM12L24((fourc_bb, twoc_bb)),
-        "m24l48": CGM24L48((fourc_bb, twoc_bb)),
+        "m2l4": CGM2L4Lantern(
+            building_blocks=(fourc_bb, twoc_bb),
+            optimizer=stk.Collapser(distance_threshold=3),
+        ),
+        "m3l6": CGM3L6(
+            building_blocks=(fourc_bb, twoc_bb),
+            optimizer=stk.Collapser(distance_threshold=3),
+        ),
+        "m4l8": CGM4L8(
+            building_blocks=(fourc_bb, twoc_bb),
+            optimizer=stk.Collapser(distance_threshold=3),
+        ),
+        "m6l12": CGM6L12Cube(
+            building_blocks=(fourc_bb, twoc_bb),
+            optimizer=stk.Collapser(distance_threshold=3),
+        ),
+        "m12l24": CGM12L24(
+            building_blocks=(fourc_bb, twoc_bb),
+        ),
+        "m24l48": CGM24L48(
+            building_blocks=(fourc_bb, twoc_bb),
+        ),
     }
 
     return topologies
