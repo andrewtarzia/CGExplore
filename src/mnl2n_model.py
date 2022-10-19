@@ -30,6 +30,7 @@ from gulp_optimizer import (
     CGGulpMD,
     HarmBond,
     ThreeAngle,
+    LennardJones,
     IntSet,
     CheckedThreeAngle,
 )
@@ -75,16 +76,16 @@ def defined_angles():
 
 def defined_pairs():
     return (
-        # LennardJones("N", "N", epsilon=0.1, sigma=1),
-        # LennardJones("C", "N", epsilon=0.1, sigma=1),
-        # LennardJones("B", "N", epsilon=0.1, sigma=1),
-        # LennardJones("Pd", "N", epsilon=0.1, sigma=1),
-        # LennardJones("C", "C", epsilon=0.1, sigma=1),
-        # LennardJones("B", "C", epsilon=0.1, sigma=1),
-        # LennardJones("Pd", "C", epsilon=0.1, sigma=1),
-        # LennardJones("B", "B", epsilon=0.1, sigma=1),
-        # LennardJones("Pd", "B", epsilon=0.1, sigma=1),
-        # LennardJones("Pd", "Pd", epsilon=0.1, sigma=1),
+        LennardJones("N", "N", epsilon=0.1, sigma=0.25),
+        LennardJones("C", "N", epsilon=0.1, sigma=0.25),
+        LennardJones("B", "N", epsilon=0.1, sigma=0.25),
+        LennardJones("Pd", "N", epsilon=0.1, sigma=0.25),
+        LennardJones("C", "C", epsilon=0.1, sigma=0.25),
+        LennardJones("B", "C", epsilon=0.1, sigma=0.25),
+        LennardJones("Pd", "C", epsilon=0.1, sigma=0.25),
+        LennardJones("B", "B", epsilon=0.1, sigma=0.25),
+        LennardJones("Pd", "B", epsilon=0.1, sigma=0.25),
+        LennardJones("Pd", "Pd", epsilon=0.1, sigma=0.25),
     )
 
 
