@@ -492,14 +492,14 @@ class CGGulpOptimizer:
         return new_pairs
 
     def _write_gulp_input(self, mol):
-        top_string = "opti conv cartesian\n"
+        top_string = "opti conj unit conv cartesian\n"
         coord_string, mass_string = self._get_coord_mass_string(mol)
         bond_string = self._get_bond_string(mol)
         angle_string = self._get_angle_string(mol)
         torsion_string = self._get_torsion_string(mol)
         vdw_string = self._get_vdw_string(mol)
         settings_string = (
-            "\nmaxcyc 500\n"
+            "\nmaxcyc 1000\n"
             # f'output xyz movie {filename}_traj.xyz\n'
             f"output xyz {self._output_xyz}\n"
         )
@@ -702,6 +702,7 @@ class CGGulpMD(CGGulpOptimizer):
         torsion_string = self._get_torsion_string(mol)
         vdw_string = self._get_vdw_string(mol)
         settings_string = (
+            "mdmaxtemp 100000000\n"
             f"integrator {self._integrator}\n"
             f"ensemble {self._ensemble}\n"
             f"temperature {self._temperature}\n"
