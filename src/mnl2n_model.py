@@ -31,7 +31,6 @@ from gulp_optimizer import (
     CGGulpMD,
     HarmBond,
     ThreeAngle,
-    LennardJones,
     IntSet,
     CheckedThreeAngle,
 )
