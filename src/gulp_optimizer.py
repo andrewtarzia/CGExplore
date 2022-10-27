@@ -165,8 +165,6 @@ class CGGulpOptimizer:
             self._output_dir, f"{self._fileprefix}_opted.xyz"
         )
         self._mass = 1
-        # This is the underlying scale for distances.
-        self._sigma = 1
         self._bond_cutoff = 30
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
@@ -395,6 +393,7 @@ class CGGulpOptimizer:
         vdw_string = "lennard epsilon\n"
         pairs = combinations(mol.get_atoms(), 2)
 
+        # pos_mat = mol.get_position_matrix()
         for pair in pairs:
             atom1, atom2 = pair
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
@@ -405,6 +404,12 @@ class CGGulpOptimizer:
             )
             try:
                 pair = vdw_set_pairs[sorted_name]
+                # distance = np.linalg.norm(
+                #     pos_mat[atom1.get_id()] - pos_mat[atom2.get_id()]
+                # )
+                # if distance == 0:
+                #     print("what")
+
                 for pot in pair:
                     vdw_string += (
                         f"{name1} {name2}  {pot.epsilon} {pot.sigma} "
@@ -499,7 +504,7 @@ class CGGulpOptimizer:
         torsion_string = self._get_torsion_string(mol)
         vdw_string = self._get_vdw_string(mol)
         settings_string = (
-            "\nmaxcyc 1000\n"
+            "\nmaxcyc 500\n"
             # f'output xyz movie {filename}_traj.xyz\n'
             f"output xyz {self._output_xyz}\n"
         )

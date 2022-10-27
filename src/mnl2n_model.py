@@ -16,6 +16,7 @@ import os
 import json
 import pore_mapper as pm
 import logging
+import multiprocessing
 
 from env_set import (
     mnl2n_figures,
@@ -76,16 +77,16 @@ def defined_angles():
 
 def defined_pairs():
     return (
-        LennardJones("N", "N", epsilon=0.1, sigma=0.25),
-        LennardJones("C", "N", epsilon=0.1, sigma=0.25),
-        LennardJones("B", "N", epsilon=0.1, sigma=0.25),
-        LennardJones("Pd", "N", epsilon=0.1, sigma=0.25),
-        LennardJones("C", "C", epsilon=0.1, sigma=0.25),
-        LennardJones("B", "C", epsilon=0.1, sigma=0.25),
-        LennardJones("Pd", "C", epsilon=0.1, sigma=0.25),
-        LennardJones("B", "B", epsilon=0.1, sigma=0.25),
-        LennardJones("Pd", "B", epsilon=0.1, sigma=0.25),
-        LennardJones("Pd", "Pd", epsilon=0.1, sigma=0.25),
+        # LennardJones("N", "N", epsilon=0.1, sigma=0.25),
+        # LennardJones("C", "N", epsilon=0.1, sigma=0.25),
+        # LennardJones("B", "N", epsilon=0.1, sigma=0.25),
+        # LennardJones("Pd", "N", epsilon=0.1, sigma=0.25),
+        # LennardJones("C", "C", epsilon=0.1, sigma=0.25),
+        # LennardJones("B", "C", epsilon=0.1, sigma=0.25),
+        # LennardJones("Pd", "C", epsilon=0.1, sigma=0.25),
+        # LennardJones("B", "B", epsilon=0.1, sigma=0.25),
+        # LennardJones("Pd", "B", epsilon=0.1, sigma=0.25),
+        # LennardJones("Pd", "Pd", epsilon=0.1, sigma=0.25),
     )
 
 
@@ -223,21 +224,23 @@ def run_optimisation(
     run_prefix = f"{topo_str}_{ffname}"
     output_file = os.path.join(output_dir, f"{run_prefix}_res.json")
     opt_xyz_file = os.path.join(output_dir, f"{run_prefix}_opted.xyz")
-    md_xyz_file = os.path.join(output_dir, f"{run_prefix}_final.xyz")
     opt_mol_file = os.path.join(output_dir, f"{run_prefix}_opted.mol")
+    md_xyz_file = os.path.join(output_dir, f"{run_prefix}_final.xyz")
     md_mol_file = os.path.join(output_dir, f"{run_prefix}_final.mol")
 
     if os.path.exists(output_file):
+        logging.info(f"loading {output_file}...")
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
+
         opt = MNL2NOptimizer(
             fileprefix=run_prefix,
             output_dir=output_dir,
             param_pool=ff_modifications["param_pool"],
         )
         if not os.path.exists(opt_xyz_file):
-            logging.info(f": running optimisation of {run_prefix}")
+            logging.info(f"running optimisation of {run_prefix}...")
             run_data = opt.optimize(cage)
         else:
             run_data = opt.extract_gulp()
@@ -265,7 +268,7 @@ def run_optimisation(
                 param_pool=ff_modifications["param_pool"],
             )
             if not os.path.exists(md_xyz_file):
-                logging.info("running MD..")
+                logging.info("running MD...")
                 md_data = opt.optimize(opted)
             else:
                 md_data = opt.extract_gulp(opt_xyz_file)
@@ -387,12 +390,12 @@ def main():
         output_dir=figure_output,
         filename="energy_map.pdf",
         vmin=0,
-        vmax=5,
+        vmax=25,
         clabel="energy (eV)",
     )
 
     properties = {
-        "energy": ("energy (eV)", (0, 10)),
+        "energy": ("energy (eV)", (0, 30)),
         "pore_volume": ("pore volume [A^3]", None),
         "pore_max_rad": ("max. pore radius [A]", None),
         "max_opt_diam": ("max diameter [A]", None),
@@ -435,4 +438,5 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
     )
+    logging.info(f"Number of cpu : {multiprocessing.cpu_count()}")
     main()
