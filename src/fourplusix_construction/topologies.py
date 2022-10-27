@@ -29,3 +29,12 @@ def cage_topologies(threec_bb, twoc_bb):
     }
 
     return topologies
+
+
+def cage_topology_options():
+    topologies = {
+        "FourPlusSix": stk.cage.FourPlusSix,
+        "FourPlusSix2": stk.cage.FourPlusSix2,
+    }
+
+    return topologies
