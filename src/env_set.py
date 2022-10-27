@@ -122,6 +122,14 @@ def fourplussix_structures():
     return path
 
 
+def fourplussix_optimisation():
+    path = fourplussix() / pathlib.Path("optimisation/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
 def fourplussix_calculations():
     path = fourplussix() / pathlib.Path("calculations/")
     if not os.path.exists(path):
