@@ -16,10 +16,7 @@ from scipy.spatial import ConvexHull
 
 import logging
 
-from env_set import (
-    guest_figures,
-    guest_structures,
-)
+from env_set import guest_structures
 
 
 class PointCloud:
@@ -97,30 +94,31 @@ def main():
         pass
 
     struct_output = guest_structures()
-    figure_output = guest_figures()
+    manual_structures = struct_output / "manual_builds"
 
-    guest_smiles = {
-        "1": "CN1C=NC2=C1C(=O)N(C(=O)N2C)C",
-        "2": "c1ccccc1",
-        "3": (
-            "c12c3c4c5c1c1c6c7c2c2c8c3c3c9c4c4c%10c5c5c1c1c6c6c%11c7c2c"
-            "2c7c8c3c3c8c9c4c4c9c%10c5c5c1c1c6c6c%11c2c2c7c3c3c8c4c4c9c"
-            "5c1c1c6c2c3c41"
+    guest_bbs = {
+        "1": stk.BuildingBlock("CN1C=NC2=C1C(=O)N(C(=O)N2C)C"),
+        "2": stk.BuildingBlock("c1ccccc1"),
+        "3": stk.BuildingBlock.init_from_file(
+            str(manual_structures / "C60.mol")
         ),
-        "4": (
-            "c12c3c4c5c1c1c6c7c2c2c8c3c3c9c4c4c%10c5c5c1c1c6c6c%11c7c2c"
-            "2c7c8c3c3c8c9c4c4c9c%10c5c5c1c1c6c6c%10c%11c2c2c%11c7c3c3c"
-            "%11c7c(c%102)c2c6c1c1c5c9c5c6c4c8c3c6c7c2c15"
+        "4": stk.BuildingBlock.init_from_file(
+            str(manual_structures / "C70.mol")
+        ),
+        "5": stk.BuildingBlock.init_from_file(
+            str(manual_structures / "C20.mol")
+        ),
+        "6": stk.BuildingBlock.init_from_file(
+            str(manual_structures / "PCBM.mol")
         ),
     }
 
-    for name in guest_smiles:
+    for name in guest_bbs:
         molecule_output = str(struct_output / f"{name}.mol")
         hitpoint_output = str(struct_output / f"{name}_hp.xyz")
         convexhu_output = str(struct_output / f"{name}_ch.xyz")
 
-        guest_smi = guest_smiles[name]
-        bb = stk.BuildingBlock(guest_smi)
+        bb = guest_bbs[name]
         bb.write(molecule_output)
         guest = Guest(bb)
         guest.write_hitpoints(filename=hitpoint_output, atomtype="C")
