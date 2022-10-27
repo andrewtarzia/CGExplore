@@ -15,6 +15,7 @@ import stk
 
 from .facebuildingblock import FaceBuildingBlock
 from .utilities import reorient_linker
+from .topologies import ThreeCPrecursorTemplate, TwoCPrecursorTemplate
 
 
 def precursor_dir():
@@ -145,3 +146,22 @@ def plane_bb():
     )
 
     return bb
+
+
+def three_precursor_topology_options():
+    topologies = {
+        "3c-1": ThreeCPrecursorTemplate(arm_length=1),
+        "3c-2": ThreeCPrecursorTemplate(arm_length=2),
+    }
+
+    return topologies
+
+
+def two_precursor_topology_options():
+    topologies = {
+        "2c-1": TwoCPrecursorTemplate(arm_length=1),
+        "2c-2": TwoCPrecursorTemplate(arm_length=2),
+        "2c-3": TwoCPrecursorTemplate(arm_length=1),
+    }
+
+    return topologies
