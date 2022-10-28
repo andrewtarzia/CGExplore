@@ -15,9 +15,14 @@ import re
 from string import digits
 from dataclasses import dataclass
 from itertools import combinations
+import logging
 
 from env_set import gulp_path
 from utilities import get_all_angles, angle_between, get_all_torsions
+
+
+def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
+    return (sigma1 + sigma2) / 2
 
 
 class IntSet:
@@ -72,16 +77,14 @@ class Angle:
 
     def get_types(self):
         return tuple(
-            sorted(
-                [
-                    i
-                    for i in (
-                        self.atom1_type,
-                        self.atom2_type,
-                        self.atom3_type,
-                    )
-                ]
-            )
+            [
+                i
+                for i in (
+                    self.atom1_type,
+                    self.atom2_type,
+                    self.atom3_type,
+                )
+            ]
         )
 
     def get_unsortedtypes(self):
@@ -151,10 +154,17 @@ class Torsion:
 
 
 class CGGulpOptimizer:
-    def __init__(self, fileprefix, output_dir, param_pool):
+    def __init__(
+        self,
+        fileprefix,
+        output_dir,
+        param_pool,
+        max_cycles=500,
+        conjugate_gradient=False,
+    ):
         self._fileprefix = fileprefix
         self._output_dir = output_dir
-        self._param_pool = param_pool
+        self._param_pool = {i.element_string: i for i in param_pool}
         self._gulp_in = os.path.join(
             self._output_dir, f"{self._fileprefix}.gin"
         )
@@ -165,10 +175,12 @@ class CGGulpOptimizer:
             self._output_dir, f"{self._fileprefix}_opted.xyz"
         )
         self._mass = 1
-        self._bond_cutoff = 30
-        self._angle_cutoff = 30
+        self._bond_cutoff = 50
+        self._angle_cutoff = 50
         self._torsion_cutoff = 30
         self._lj_cutoff = 15
+        self._maxcycles = max_cycles
+        self._conjugate_gradient = conjugate_gradient
 
     def _run_gulp(self):
         os.system(f"{gulp_path()} < {self._gulp_in} > {self._gulp_out}")
@@ -231,8 +243,9 @@ class CGGulpOptimizer:
         return coord_string, mass_string
 
     def _get_bond_string(self, mol):
-        bond_set = self.define_bond_potentials()
-        bond_set_pairs = bond_set.get_set_dict()
+        logging.info("you are not yet assigning different k values")
+        bond_k = 10
+
         bond_string = "harm\n"
         bonds = list(mol.get_bonds())
 
@@ -241,95 +254,99 @@ class CGGulpOptimizer:
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
             atom2 = bond.get_atom2()
             name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
-            table = str.maketrans("", "", digits)
-            sorted_name = tuple(
-                sorted([i.translate(table) for i in (name1, name2)])
-            )
+            estring1 = atom1.__class__.__name__
+            estring2 = atom2.__class__.__name__
 
             try:
-                pair = bond_set_pairs[sorted_name]
-                for pot in pair:
-                    bond_string += (
-                        f"{name1} {name2}  {pot.bond_k} {pot.bond_r} "
-                        f"{self._bond_cutoff}\n"
-                    )
+                cgbead1 = self._param_pool[estring1]
+                cgbead2 = self._param_pool[estring2]
+                bond_r = lorentz_berthelot_sigma_mixing(
+                    sigma1=cgbead1.sigma,
+                    sigma2=cgbead2.sigma,
+                )
+                bond_string += (
+                    f"{name1} {name2}  {bond_k} {bond_r} "
+                    f"{self._bond_cutoff}\n"
+                )
             except KeyError:
-                # logging.info(f"{sorted_name} bond not assigned.")
+                logging.info(f"{(name1, name2)} bond not assigned.")
                 continue
 
         return bond_string
 
     def _get_angle_string(self, mol):
-        angle_set = self.define_angle_potentials()
-        angle_set_triplets = angle_set.get_set_dict()
+        logging.info("you are not yet assigning different k values")
+        angle_k = 20
 
         angle_string = "three\n"
         angles = get_all_angles(mol)
         pos_mat = mol.get_position_matrix()
 
         for angle in angles:
-            atom1, atom2, atom3 = angle
-            name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
-            name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
-            name3 = f"{atom3.__class__.__name__}{atom3.get_id()+1}"
-            table = str.maketrans("", "", digits)
-            sorted_name = tuple(
-                sorted(
-                    [i.translate(table) for i in (name1, name2, name3)]
-                )
+            outer_atom1, centre_atom, outer_atom2 = angle
+            outer_name1 = (
+                f"{outer_atom1.__class__.__name__}"
+                f"{outer_atom1.get_id()+1}"
             )
-
+            centre_name = (
+                f"{centre_atom.__class__.__name__}"
+                f"{centre_atom.get_id()+1}"
+            )
+            outer_name2 = (
+                f"{outer_atom2.__class__.__name__}"
+                f"{outer_atom2.get_id()+1}"
+            )
+            outer_estring1 = outer_atom1.__class__.__name__
+            centre_estring = centre_atom.__class__.__name__
+            outer_estring2 = outer_atom2.__class__.__name__
             try:
-                triplet = angle_set_triplets[sorted_name]
-                for pot in triplet:
-                    # Want to check ordering here.
-                    if pot.atom1_type in name1:
-                        centre_atom = name1
-                        outer1 = name2
-                        outer2 = name3
-                    elif pot.atom1_type in name2:
-                        centre_atom = name2
-                        outer1 = name1
-                        outer2 = name3
-                    elif pot.atom1_type in name3:
-                        centre_atom = name3
-                        outer1 = name1
-                        outer2 = name2
+                outer_cgbead1 = self._param_pool[outer_estring1]
+                centre_cgbead = self._param_pool[centre_estring]
+                outer_cgbead2 = self._param_pool[outer_estring2]
 
-                    if isinstance(pot, CheckedThreeAngle):
-                        a1id = int(re.findall(r"\d+", outer1)[0]) - 1
-                        a2id = (
-                            int(re.findall(r"\d+", centre_atom)[0]) - 1
-                        )
-                        a3id = int(re.findall(r"\d+", outer2)[0]) - 1
-                        vector1 = pos_mat[a2id] - pos_mat[a1id]
-                        vector2 = pos_mat[a2id] - pos_mat[a3id]
-                        curr_angle = np.degrees(
-                            angle_between(vector1, vector2)
-                        )
-                        if curr_angle < pot.cut_angle:
-                            angle_theta = pot.min_angle
-                        elif curr_angle >= pot.cut_angle:
-                            angle_theta = pot.max_angle
-                        angle_k = pot.angle_k
-                    else:
-                        angle_k = pot.angle_k
-                        angle_theta = pot.theta
+                acentered = centre_cgbead.angle_centered
+                if isinstance(acentered, int) or isinstance(
+                    acentered, float
+                ):
+                    angle_theta = acentered
 
-                    angle_string += (
-                        f"{centre_atom} {outer1} {outer2} "
-                        f"{angle_k} {angle_theta} "
-                        f"{self._angle_cutoff} {self._angle_cutoff} "
-                        f"{self._angle_cutoff} \n"
+                elif isinstance(acentered, tuple):
+                    min_angle, max_angle, cut_angle = acentered
+                    vector1 = (
+                        pos_mat[centre_atom.get_id()]
+                        - pos_mat[outer_atom1.get_id()]
                     )
+                    vector2 = (
+                        pos_mat[centre_atom.get_id()]
+                        - pos_mat[outer_atom2.get_id()]
+                    )
+                    curr_angle = np.degrees(
+                        angle_between(vector1, vector2)
+                    )
+                    if curr_angle < cut_angle:
+                        angle_theta = min_angle
+                    elif curr_angle >= cut_angle:
+                        angle_theta = max_angle
+
+                angle_string += (
+                    f"{centre_name} {outer_name1} {outer_name2} "
+                    f"{angle_k} {angle_theta} "
+                    f"{self._angle_cutoff} {self._angle_cutoff} "
+                    f"{self._angle_cutoff} \n"
+                )
 
             except KeyError:
-                # logging.info(f"{sorted_name} angle not assigned.")
+                logging.info(
+                    f"{(outer_name1, centre_name, outer_name2)} "
+                    f"angle not assigned (centered on {centre_name})."
+                )
                 continue
 
         return angle_string
 
     def _get_torsion_string(self, mol):
+        logging.info("no torsion interactions yet.")
+        return ""
         torsion_set = self.define_torsion_potentials()
         torsion_set_dict = torsion_set.get_set_dict()
 
@@ -388,6 +405,8 @@ class CGGulpOptimizer:
         return torsion_string
 
     def _get_vdw_string(self, mol):
+        logging.info("no vdw interactions yet.")
+        return ""
         vdw_set = self.define_vdw_potentials()
         vdw_set_pairs = vdw_set.get_set_dict()
         vdw_string = "lennard epsilon\n"
@@ -497,14 +516,17 @@ class CGGulpOptimizer:
         return new_pairs
 
     def _write_gulp_input(self, mol):
-        top_string = "opti conj unit conv cartesian\n"
+        if self._conjugate_gradient:
+            top_string = "opti conj unit conv cartesian\n"
+        else:
+            top_string = "opti conv cartesian\n"
         coord_string, mass_string = self._get_coord_mass_string(mol)
         bond_string = self._get_bond_string(mol)
         angle_string = self._get_angle_string(mol)
         torsion_string = self._get_torsion_string(mol)
         vdw_string = self._get_vdw_string(mol)
         settings_string = (
-            "\nmaxcyc 500\n"
+            f"\nmaxcyc {self._maxcycles}\n"
             # f'output xyz movie {filename}_traj.xyz\n'
             f"output xyz {self._output_xyz}\n"
         )
