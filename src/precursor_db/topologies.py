@@ -246,30 +246,30 @@ class TwoCPrecursorTemplate:
         self._arm_length = arm_length
         self._internal_topology = stk.polymer.Linear
 
-    def get_building_block(self, bead_1c_lib, bead_2c_lib):
+    def get_building_block(self, core_bead_lib, bead_2c_lib):
         factories = (stk.BromoFactory(placers=(0, 1)),)
 
-        one_c = random.choice(bead_1c_lib)
-        one_c_bb = stk.BuildingBlock(
-            smiles=f"[{one_c.element_string}][Br]",
+        core_c = random.choice(core_bead_lib)
+        core_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{core_c.element_string}][Br]",
             functional_groups=factories,
-            position_matrix=[[-3, 0, 0], [0, 0, 0]],
+            position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
         )
         if self._arm_length == 1:
             repeating_unit = "ABA"
             two_cs = random.choice(bead_2c_lib)
             bb_tuple = (
-                one_c_bb,
                 stk.BuildingBlock(
-                    smiles=f"[Br][{two_cs.element_string}][Br]",
+                    smiles=f"[{two_cs.element_string}][Br]",
                     functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
                 ),
+                core_c_bb,
             )
             new_fgs = stk.SmartsFunctionalGroupFactory(
                 smarts=(
-                    f"[{one_c.element_string}]"
                     f"[{two_cs.element_string}]"
+                    f"[{core_c.element_string}]"
                 ),
                 bonders=(0,),
                 deleters=(),
@@ -280,22 +280,22 @@ class TwoCPrecursorTemplate:
             repeating_unit = "ABCBA"
             two_cs = random.choices(bead_2c_lib, k=2)
             bb_tuple = (
-                one_c_bb,
                 stk.BuildingBlock(
-                    smiles=f"[Br][{two_cs[0].element_string}][Br]",
+                    smiles=f"[{two_cs[0].element_string}][Br]",
                     functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
                 ),
                 stk.BuildingBlock(
                     smiles=f"[Br][{two_cs[1].element_string}][Br]",
                     functional_groups=factories,
                     position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
                 ),
+                core_c_bb,
             )
             new_fgs = stk.SmartsFunctionalGroupFactory(
                 smarts=(
-                    f"[{one_c.element_string}]"
                     f"[{two_cs[0].element_string}]"
+                    f"[{two_cs[1].element_string}]"
                 ),
                 bonders=(0,),
                 deleters=(),
@@ -306,11 +306,10 @@ class TwoCPrecursorTemplate:
             repeating_unit = "ABCDCBA"
             two_cs = random.choices(bead_2c_lib, k=3)
             bb_tuple = (
-                one_c_bb,
                 stk.BuildingBlock(
-                    smiles=f"[Br][{two_cs[0].element_string}][Br]",
+                    smiles=f"[{two_cs[0].element_string}][Br]",
                     functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
                 ),
                 stk.BuildingBlock(
                     smiles=f"[Br][{two_cs[1].element_string}][Br]",
@@ -322,11 +321,12 @@ class TwoCPrecursorTemplate:
                     functional_groups=factories,
                     position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
                 ),
+                core_c_bb,
             )
             new_fgs = stk.SmartsFunctionalGroupFactory(
                 smarts=(
-                    f"[{one_c.element_string}]"
                     f"[{two_cs[0].element_string}]"
+                    f"[{two_cs[1].element_string}]"
                 ),
                 bonders=(0,),
                 deleters=(),
