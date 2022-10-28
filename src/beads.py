@@ -11,10 +11,6 @@ Author: Andrew Tarzia
 
 from dataclasses import dataclass
 from typing import Union, Tuple
-import itertools
-import logging
-
-from gulp_optimizer import HarmBond, ThreeAngle, CheckedThreeAngle
 
 
 @dataclass
@@ -97,80 +93,3 @@ def beads_3c():
 
 def beads_4c():
     return (CgBead("Pt", 2.0, 4, (90, 180, 130)),)
-
-
-def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
-    return (sigma1 + sigma2) / 2
-
-
-def bond_library():
-    logging.info("you are not yet assigning different k values")
-    bond_k = 10
-
-    all_beads = core_beads() + beads_2c() + beads_3c() + beads_4c()
-
-    bonds = [
-        HarmBond(
-            atom1_type=i.element_string,
-            atom2_type=i.element_string,
-            bond_r=i.sigma,
-            bond_k=bond_k,
-        )
-        for i in all_beads
-    ]
-    for pair in itertools.combinations(all_beads, r=2):
-        sorted_ids = tuple(
-            sorted([pair[0].element_string, pair[1].element_string])
-        )
-        mixed_radii = lorentz_berthelot_sigma_mixing(
-            sigma1=pair[0].sigma,
-            sigma2=pair[1].sigma,
-        )
-        bonds.append(
-            HarmBond(
-                atom1_type=sorted_ids[0],
-                atom2_type=sorted_ids[1],
-                bond_r=mixed_radii,
-                bond_k=bond_k,
-            )
-        )
-
-    return tuple(bonds)
-
-
-def angle_library():
-    logging.info("you are not yet assigning different k values")
-    angle_k = 20
-
-    all_beads = core_beads() + beads_2c() + beads_3c() + beads_4c()
-
-    angles = []
-    for triplet in itertools.combinations_with_replacement(
-        all_beads, 3
-    ):
-        # Atom1 type defines the centre atom.
-        acentered = triplet[1].angle_centered
-        if isinstance(acentered, int) or isinstance(acentered, float):
-            angles.append(
-                ThreeAngle(
-                    atom1_type=triplet[1].element_string,
-                    atom2_type=triplet[0].element_string,
-                    atom3_type=triplet[2].element_string,
-                    theta=acentered,
-                    angle_k=angle_k,
-                )
-            )
-        elif isinstance(acentered, tuple):
-            angles.append(
-                CheckedThreeAngle(
-                    atom1_type=triplet[1].element_string,
-                    atom2_type=triplet[0].element_string,
-                    atom3_type=triplet[2].element_string,
-                    cut_angle=acentered[2],
-                    min_angle=acentered[0],
-                    max_angle=acentered[1],
-                    angle_k=angle_k,
-                )
-            )
-
-    return tuple(angles)
