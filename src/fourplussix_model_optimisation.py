@@ -26,16 +26,8 @@ from env_set import (
     fourplussix_optimisation,
     fourplussix_calculations,
 )
-from utilities import (
-    get_distances,
-    get_angles,
-)
-from gulp_optimizer import (
-    CGGulpOptimizer,
-    HarmBond,
-    ThreeAngle,
-    IntSet,
-)
+
+from gulp_optimizer import CGGulpOptimizer
 
 from fourplusix_construction.topologies import cage_topology_options
 
@@ -52,7 +44,11 @@ from precursor_db.precursors import (
     two_precursor_topology_options,
 )
 
-from beads import beads_1c, beads_2c, beads_3c
+from beads import (
+    core_beads,
+    beads_2c,
+    beads_3c,
+)
 
 
 def calculate_pore(xyz_file):
@@ -94,95 +90,6 @@ def calculate_pore(xyz_file):
     return pore_data
 
 
-class FourPlusSixOptimizer(CGGulpOptimizer):
-    def define_bond_potentials(self):
-
-        bonds = (
-            # Intra-BB.
-            HarmBond("B", "N", bond_r=1, bond_k=10),
-        )
-
-        return IntSet(self._update_bonds(bonds))
-
-    def define_angle_potentials(self):
-        angles = (
-            # Intra-BB.
-            ThreeAngle(
-                atom1_type="B",
-                atom2_type="N",
-                atom3_type="N",
-                theta=100,
-                angle_k=20,
-            ),
-        )
-        return IntSet(self._update_angles(angles))
-
-    def define_torsion_potentials(self):
-        torsions = ()
-        return IntSet(self._update_torsions(torsions))
-
-    def define_vdw_potentials(self):
-        pairs = ()
-        return IntSet(self._update_pairs(pairs))
-
-
-def run_optimisation(
-    cage,
-    ff_modifications,
-    ffname,
-    topo_str,
-    output_dir,
-):
-
-    run_prefix = f"{topo_str}_{ffname}"
-    output_file = os.path.join(output_dir, f"{run_prefix}_res.json")
-
-    if os.path.exists(output_file):
-        with open(output_file, "r") as f:
-            res_dict = json.load(f)
-    else:
-        logging.info(f": running optimisation of {run_prefix}")
-        opt = FourPlusSixOptimizer(
-            fileprefix=run_prefix,
-            output_dir=output_dir,
-            param_pool=ff_modifications["param_pool"],
-        )
-        run_data = opt.optimize(cage)
-
-        opted = cage.with_structure_from_file(
-            path=os.path.join(output_dir, f"{run_prefix}_final.xyz"),
-        )
-        opted.write(os.path.join(output_dir, f"{run_prefix}_final.mol"))
-
-        oh6_measure = ShapeMeasure(
-            output_dir=output_dir / f"{run_prefix}_shape",
-            target_atmnum=5,
-            shape_string="oc6",
-        ).calculate(opted)
-        distances = get_distances(optimizer=opt, cage=opted)
-        angles = get_angles(optimizer=opt, cage=opted)
-
-        num_steps = len(run_data["traj"])
-        fin_energy = run_data["final_energy"]
-        fin_gnorm = run_data["final_gnorm"]
-        traj_data = run_data["traj"]
-        logging.info(
-            f"{run_prefix}: {num_steps} {fin_energy} {fin_gnorm} "
-            f"{oh6_measure}"
-        )
-        res_dict = {
-            "fin_energy": fin_energy,
-            "oh6": oh6_measure,
-            "traj": traj_data,
-            "distances": distances,
-            "angles": angles,
-        }
-        with open(output_file, "w") as f:
-            json.dump(res_dict, f)
-
-    return res_dict
-
-
 def get_initial_population(
     cage_topologies,
     three_precursor_topologies,
@@ -201,7 +108,7 @@ def get_initial_population(
         bb_2c_template = two_precursor_topologies[s_2c_topology]
 
         bb_2c = bb_2c_template.get_building_block(
-            bead_1c_lib=beads_1c(),
+            core_bead_lib=core_beads(),
             bead_2c_lib=beads_2c(),
         )
 
@@ -228,14 +135,22 @@ def get_molecule_formula(molecule):
 
 def get_fitness_value(molecule_record, output_dir):
 
-    tg = molecule_record.get_topology_graph().__class__.__name__
+    tg = molecule_record.get_topology_graph()
+    # Get the atom number for atoms used in shape measure.
+    bbs = list(tg.get_building_blocks())
+    two_c_bb = bbs[1]
+    max_atom_id = max([i.get_id() for i in two_c_bb.get_atoms()])
+    central_2c_atom = tuple(two_c_bb.get_atoms(atom_ids=max_atom_id))[0]
+    central_2c_atom_number = central_2c_atom.get_atomic_number()
+
     molecule = molecule_record.get_molecule()
     chemmform = get_molecule_formula(molecule)
-    run_prefix = f"{tg}_{chemmform}"
+    run_prefix = f"{tg.__class__.__name__}_{chemmform}"
 
     output_file = os.path.join(output_dir, f"{run_prefix}_res.json")
     opt_xyz_file = os.path.join(output_dir, f"{run_prefix}_opted.xyz")
-    opt_mol_file = os.path.join(output_dir, f"{run_prefix}_opted.mol")
+    opt1_mol_file = os.path.join(output_dir, f"{run_prefix}_opted1.mol")
+    opt2_mol_file = os.path.join(output_dir, f"{run_prefix}_opted2.mol")
 
     if os.path.exists(output_file):
         logging.info(f"loading {output_file}...")
@@ -245,30 +160,39 @@ def get_fitness_value(molecule_record, output_dir):
 
         # Does optimisation.
         logging.info(f": running optimisation of {run_prefix}")
-        opt = FourPlusSixOptimizer(
+        opt = CGGulpOptimizer(
             fileprefix=run_prefix,
             output_dir=output_dir,
+            param_pool=core_beads() + beads_2c() + beads_3c(),
+            max_cycles=1000,
+            conjugate_gradient=True,
         )
         run_data = opt.optimize(molecule)
-        print(run_data)
         opted = molecule.with_structure_from_file(opt_xyz_file)
-        opted.write(opt_mol_file)
+        opted.write(opt1_mol_file)
 
-        raise SystemExit()
+        opt = CGGulpOptimizer(
+            fileprefix=run_prefix,
+            output_dir=output_dir,
+            param_pool=core_beads() + beads_2c() + beads_3c(),
+            max_cycles=1000,
+            conjugate_gradient=False,
+        )
+        run_data = opt.optimize(opted)
+        opted = molecule.with_structure_from_file(opt_xyz_file)
+        opted.write(opt2_mol_file)
+
         # Minimises energy, OH shape and targets pore size of 5 A.
         oh6_measure = ShapeMeasure(
             output_dir=(output_dir / f"{run_prefix}_shape"),
-            target_atmnum=5,
+            target_atmnum=central_2c_atom_number,
             shape_string="oc6",
         ).calculate(opted)
-
-        raise SystemExit()
 
         fin_energy = run_data["final_energy"]
         fin_gnorm = run_data["final_gnorm"]
         logging.info(f"{run_prefix}: {fin_energy} {fin_gnorm} ")
         opt_pore_data = calculate_pore(opt_xyz_file)
-        print(opt_pore_data)
         res_dict = {
             "fin_energy": fin_energy,
             "opt_pore_data": opt_pore_data,
@@ -277,14 +201,13 @@ def get_fitness_value(molecule_record, output_dir):
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
 
-    pore_radius = res_dict["opt_pore_data"]
-    pore_size_diff = (5 - pore_radius * 2) / 5
+    pore_radius = res_dict["opt_pore_data"]["pore_max_rad"]
+    pore_size_diff = abs(5 - pore_radius * 2) / 5
     score = (
-        res_dict["final_energy"]
+        res_dict["fin_energy"]
         + res_dict["oh6_measure"] * 100
         + pore_size_diff * 100
     )
-    print(score)
     return score
 
 
@@ -307,8 +230,6 @@ def main():
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
 
-    logging.info("you need to figure out a hashing to avoid reruns.")
-
     # For now, just build N options and calculate properties.
     initial_population = tuple(
         get_initial_population(
@@ -319,10 +240,13 @@ def main():
         )
     )
 
+    initial_fitness_values = []
     for i, mol in enumerate(initial_population):
-        print(mol.get_molecule())
-        print(get_fitness_value(mol, calc_output))
+        initial_fitness_values.append(
+            get_fitness_value(mol, calc_output)
+        )
 
+    print(initial_fitness_values)
     raise SystemExit()
 
     def get_num_functional_groups(building_block):
