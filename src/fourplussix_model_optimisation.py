@@ -50,10 +50,19 @@ from beads import (
     beads_3c,
 )
 
+from ea_module import (
+    RandomCgBead,
+    CgGeneticRecombination,
+    CgEvolutionaryAlgorithm,
+    RecordFitnessFunction,
+)
 
-def calculate_pore(xyz_file):
 
-    output_file = xyz_file.replace(".xyz", ".json")
+def calculate_pore(molecule, output_file):
+
+    xyz_file = output_file.replace(".json", ".xyz")
+    molecule.write(xyz_file)
+
     if os.path.exists(output_file):
         with open(output_file, "r") as f:
             pore_data = json.load(f)
@@ -63,11 +72,7 @@ def calculate_pore(xyz_file):
     host = host.with_centroid([0.0, 0.0, 0.0])
 
     # Define calculator object.
-    logging.warning(
-        "currently using very small pore, would want to use normal "
-        "size in future."
-    )
-    calculator = pm.Inflater(bead_sigma=0.5)
+    calculator = pm.Inflater(bead_sigma=1.2)
     # Run calculator on host object, analysing output.
     logging.info(f"calculating pore of {xyz_file}...")
     final_result = calculator.get_inflated_blob(host=host)
@@ -133,21 +138,33 @@ def get_molecule_formula(molecule):
     return rdMolHash.MolHash(rdk_mol, hash_function)
 
 
-def get_fitness_value(molecule_record, output_dir):
+def get_molecule_name_from_record(record):
+    tg = record.get_topology_graph()
+    molecule = record.get_molecule()
+    chemmform = get_molecule_formula(molecule)
+    return f"{tg.__class__.__name__}_{chemmform}"
 
-    tg = molecule_record.get_topology_graph()
+
+def get_fitness_value(molecule_record):
+
+    output_dir = fourplussix_calculations()
+
     # Get the atom number for atoms used in shape measure.
-    bbs = list(tg.get_building_blocks())
+    bbs = list(
+        molecule_record.get_topology_graph().get_building_blocks()
+    )
     two_c_bb = bbs[1]
     max_atom_id = max([i.get_id() for i in two_c_bb.get_atoms()])
     central_2c_atom = tuple(two_c_bb.get_atoms(atom_ids=max_atom_id))[0]
     central_2c_atom_number = central_2c_atom.get_atomic_number()
 
     molecule = molecule_record.get_molecule()
-    chemmform = get_molecule_formula(molecule)
-    run_prefix = f"{tg.__class__.__name__}_{chemmform}"
+    run_prefix = get_molecule_name_from_record(molecule_record)
 
     output_file = os.path.join(output_dir, f"{run_prefix}_res.json")
+    pm_output_file = os.path.join(
+        output_dir, f"{run_prefix}_opted.json"
+    )
     opt_xyz_file = os.path.join(output_dir, f"{run_prefix}_opted.xyz")
     opt1_mol_file = os.path.join(output_dir, f"{run_prefix}_opted1.mol")
     opt2_mol_file = os.path.join(output_dir, f"{run_prefix}_opted2.mol")
@@ -159,17 +176,20 @@ def get_fitness_value(molecule_record, output_dir):
     else:
 
         # Does optimisation.
-        logging.info(f": running optimisation of {run_prefix}")
-        opt = CGGulpOptimizer(
-            fileprefix=run_prefix,
-            output_dir=output_dir,
-            param_pool=core_beads() + beads_2c() + beads_3c(),
-            max_cycles=1000,
-            conjugate_gradient=True,
-        )
-        run_data = opt.optimize(molecule)
-        opted = molecule.with_structure_from_file(opt_xyz_file)
-        opted.write(opt1_mol_file)
+        if os.path.exists(opt1_mol_file):
+            molecule = molecule.with_structure_from_file(opt1_mol_file)
+        else:
+            logging.info(f": running optimisation of {run_prefix}")
+            opt = CGGulpOptimizer(
+                fileprefix=run_prefix,
+                output_dir=output_dir,
+                param_pool=core_beads() + beads_2c() + beads_3c(),
+                max_cycles=1000,
+                conjugate_gradient=True,
+            )
+            run_data = opt.optimize(molecule)
+            molecule = molecule.with_structure_from_file(opt_xyz_file)
+            molecule.write(opt1_mol_file)
 
         opt = CGGulpOptimizer(
             fileprefix=run_prefix,
@@ -178,21 +198,25 @@ def get_fitness_value(molecule_record, output_dir):
             max_cycles=1000,
             conjugate_gradient=False,
         )
-        run_data = opt.optimize(opted)
-        opted = molecule.with_structure_from_file(opt_xyz_file)
-        opted.write(opt2_mol_file)
+        if os.path.exists(opt2_mol_file):
+            molecule = molecule.with_structure_from_file(opt2_mol_file)
+            run_data = opt.extract_gulp()
+        else:
+            run_data = opt.optimize(molecule)
+            molecule = molecule.with_structure_from_file(opt_xyz_file)
+            molecule.write(opt2_mol_file)
 
         # Minimises energy, OH shape and targets pore size of 5 A.
         oh6_measure = ShapeMeasure(
             output_dir=(output_dir / f"{run_prefix}_shape"),
             target_atmnum=central_2c_atom_number,
             shape_string="oc6",
-        ).calculate(opted)
+        ).calculate(molecule)
 
         fin_energy = run_data["final_energy"]
         fin_gnorm = run_data["final_gnorm"]
         logging.info(f"{run_prefix}: {fin_energy} {fin_gnorm} ")
-        opt_pore_data = calculate_pore(opt_xyz_file)
+        opt_pore_data = calculate_pore(molecule, pm_output_file)
         res_dict = {
             "fin_energy": fin_energy,
             "opt_pore_data": opt_pore_data,
@@ -204,11 +228,59 @@ def get_fitness_value(molecule_record, output_dir):
     pore_radius = res_dict["opt_pore_data"]["pore_max_rad"]
     pore_size_diff = abs(5 - pore_radius * 2) / 5
     score = (
-        res_dict["fin_energy"]
-        + res_dict["oh6_measure"] * 100
-        + pore_size_diff * 100
+        1
+        / (
+            res_dict["fin_energy"]
+            + res_dict["oh6_measure"] * 100
+            + pore_size_diff * 100
+        )
+        * 10
     )
     return score
+
+
+def mutator(generator, cage_topologies):
+    bead_2c_lib = beads_2c()
+    bead_3c_lib = beads_3c()
+    bead_core_lib = core_beads()
+
+    return stk.RandomMutator(
+        mutators=(
+            # Substitutes a 2c CGBead with another.
+            RandomCgBead(
+                bead_library=bead_2c_lib,
+                random_seed=generator.randint(0, 1000),
+            ),
+            # Substitutes a 3c CGBead with another.
+            RandomCgBead(
+                bead_library=bead_3c_lib,
+                random_seed=generator.randint(0, 1000),
+            ),
+            # Substitutes a core CGBead with another.
+            RandomCgBead(
+                bead_library=bead_core_lib,
+                random_seed=generator.randint(0, 1000),
+            ),
+            stk.RandomTopologyGraph(
+                replacement_funcs=tuple(
+                    lambda graph: cage_topologies[i](
+                        graph.get_building_blocks()
+                    )
+                    for i in cage_topologies
+                )
+            ),
+        ),
+        random_seed=generator.randint(0, 1000),
+    )
+
+
+def crosser(generator):
+    def get_num_functional_groups(building_block):
+        return building_block.get_num_functional_groups()
+
+    return CgGeneticRecombination(
+        get_gene=get_num_functional_groups,
+    )
 
 
 def main():
@@ -220,7 +292,6 @@ def main():
         pass
 
     struct_output = fourplussix_optimisation()
-    calc_output = fourplussix_calculations()
     figure_output = fourplussix_figures()
 
     # Define list of topology functions.
@@ -230,87 +301,92 @@ def main():
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
 
+    population_size_per_step = 10
+    num_gen = 10
+
     # For now, just build N options and calculate properties.
     initial_population = tuple(
         get_initial_population(
             cage_topologies=cage_topologies,
             three_precursor_topologies=three_precursor_topologies,
             two_precursor_topologies=two_precursor_topologies,
-            num_population=10,
+            num_population=population_size_per_step,
         )
     )
 
     initial_fitness_values = []
     for i, mol in enumerate(initial_population):
-        initial_fitness_values.append(
-            get_fitness_value(mol, calc_output)
-        )
+        initial_fitness_values.append(get_fitness_value(mol))
 
-    print(initial_fitness_values)
-    raise SystemExit()
+    # mut = RandomCgBead(
+    #     bead_library=core_beads(),
+    #     random_seed=np.random.RandomState(4).randint(0, 1000),
+    # )
+    # print(initial_population[0])
+    # record = mut.mutate(record=initial_population[0])
+    # print(record)
+    # raise SystemExit()
 
-    def get_num_functional_groups(building_block):
-        return building_block.get_num_functional_groups()
-
-    def is_mono(building_block):
-        return get_num_functional_groups(building_block) == 1
-
-    def is_tri(building_block):
-        return get_num_functional_groups(building_block) == 3
-
+    logging.info("setting up the EA...")
     generator = np.random.RandomState(4)
-    mutator = stk.RandomMutator(
-        mutators=(
-            # Substitutes a monotopic building block with a
-            # random monotopic building block.
-            stk.RandomBuildingBlock(
-                building_blocks=monotopics,
-                is_replaceable=is_mono,
-                random_seed=generator.randint(0, 1000),
-            ),
-            # Substitutes a tritopic building block with a
-            # random tritopic building block.
-            stk.RandomBuildingBlock(
-                building_blocks=tritopics,
-                is_replaceable=is_tri,
-                random_seed=generator.randint(0, 1000),
-            ),
-        ),
-        random_seed=generator.randint(0, 1000),
-    )
-    ea = stk.EvolutionaryAlgorithm(
+    ea = CgEvolutionaryAlgorithm(
         initial_population=initial_population,
-        fitness_calculator=stk.FitnessFunction(get_fitness_value),
-        mutator=mutator,
-        crosser=stk.GeneticRecombination(
-            get_gene=get_num_functional_groups,
-        ),
+        fitness_calculator=RecordFitnessFunction(get_fitness_value),
+        mutator=mutator(generator, cage_topologies),
+        crosser=crosser(generator),
         generation_selector=stk.Best(
-            num_batches=5,
+            num_batches=population_size_per_step,
+            batch_size=1,
             duplicate_molecules=False,
         ),
         mutation_selector=stk.Roulette(
-            num_batches=5,
+            num_batches=1,
+            batch_size=2,
+            duplicate_molecules=False,
             random_seed=generator.randint(0, 1000),
         ),
         crossover_selector=stk.Roulette(
-            num_batches=3,
+            num_batches=1,
             batch_size=2,
+            duplicate_molecules=False,
             random_seed=generator.randint(0, 1000),
         ),
+        key_maker=stk.Smiles(),
+        num_processes=1,
     )
 
     writer = stk.MolWriter()
     generations = []
-    for i, generation in enumerate(ea.get_generations(10)):
+    logging.info(f"running the EA for {num_gen}...")
+    logging.info(
+        "Currently, not able to save the optimised molecules for new "
+        "records, but they are being run - the output is being saved!"
+    )
+    for i, generation in enumerate(ea.get_generations(num_gen)):
+        logging.info(f"EA generation {i}...")
         generations.append(generation)
 
         for molecule_id, molecule_record in enumerate(
             generation.get_molecule_records()
         ):
+            molecule_name = get_molecule_name_from_record(
+                molecule_record
+            )
+            opt2_mol_file = os.path.join(
+                fourplussix_calculations(),
+                f"{molecule_name}_opted2.mol",
+            )
+            opt_mol = (
+                molecule_record.get_molecule().with_structure_from_file(
+                    opt2_mol_file
+                )
+            )
             writer.write(
-                molecule=molecule_record.get_molecule(),
-                path=f"g_{i}_m_{molecule_id}.mol",
+                molecule=opt_mol,
+                path=os.path.join(
+                    struct_output,
+                    f"{molecule_name}_g_{i}_m_{molecule_id}.mol",
+                ),
             )
 
     fitness_progress = stk.ProgressPlotter(
@@ -323,48 +399,6 @@ def main():
     )
 
     raise SystemExit()
-
-    # Make cage of each symmetry.
-    topologies = topology_options()
-
-    ff_options = {}
-
-    bite_angles = np.arange(10, 181, 10)
-    for ba in bite_angles:
-        ff_options[f"ba{ba}"] = {
-            "param_pool": {
-                "bonds": {},
-                "angles": {
-                    ("B", "N", "N"): (20, ba),
-                },
-                "torsions": {},
-                "pairs": {},
-            },
-            "notes": f"bite-angle change: {ba}, rigid",
-            "name": f"ba{ba}",
-        }
-
-    results = {i: {} for i in ff_options}
-    for topo_str in topologies:
-        topology_graph = topologies[topo_str]
-        cage = stk.ConstructedMolecule(topology_graph)
-        cage.write(os.path.join(struct_output, f"{topo_str}_unopt.mol"))
-
-        for ff_str in ff_options:
-            res_dict = run_optimisation(
-                cage=cage,
-                ffname=ff_str,
-                ff_modifications=ff_options[ff_str],
-                topo_str=topo_str,
-                output_dir=struct_output,
-            )
-            continue
-            results[ff_str][topo_str] = res_dict
-
-    topo_to_c = {
-        "FourPlusSix": ("o", "k", 0),
-        "FourPlusSix2": ("D", "r", 1),
-    }
 
     convergence(
         results=results,
