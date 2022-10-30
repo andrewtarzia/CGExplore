@@ -141,10 +141,7 @@ def get_molecule_name_from_record(record):
     return f"{tg.__class__.__name__}_{chemmform}"
 
 
-def get_fitness_value(molecule_record):
-
-    output_dir = fourplussix_calculations()
-
+def get_shape_atom_numbers(molecule_record):
     # Get the atom number for atoms used in shape measure.
     bbs = list(
         molecule_record.get_topology_graph().get_building_blocks()
@@ -153,6 +150,13 @@ def get_fitness_value(molecule_record):
     max_atom_id = max([i.get_id() for i in two_c_bb.get_atoms()])
     central_2c_atom = tuple(two_c_bb.get_atoms(atom_ids=max_atom_id))[0]
     central_2c_atom_number = central_2c_atom.get_atomic_number()
+    return central_2c_atom_number
+
+
+def get_results_dictionary(molecule_record):
+    output_dir = fourplussix_calculations()
+
+    central_2c_atom_number = get_shape_atom_numbers(molecule_record)
 
     molecule = molecule_record.get_molecule()
     run_prefix = get_molecule_name_from_record(molecule_record)
@@ -166,7 +170,6 @@ def get_fitness_value(molecule_record):
     opt2_mol_file = os.path.join(output_dir, f"{run_prefix}_opted2.mol")
 
     if os.path.exists(output_file):
-        logging.info(f"loading {output_file}...")
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
@@ -175,7 +178,7 @@ def get_fitness_value(molecule_record):
         if os.path.exists(opt1_mol_file):
             molecule = molecule.with_structure_from_file(opt1_mol_file)
         else:
-            logging.info(f": running optimisation of {run_prefix}")
+            logging.info(f"running optimisation of {run_prefix}...")
             opt = CGGulpOptimizer(
                 fileprefix=run_prefix,
                 output_dir=output_dir,
@@ -210,8 +213,6 @@ def get_fitness_value(molecule_record):
         ).calculate(molecule)
 
         fin_energy = run_data["final_energy"]
-        fin_gnorm = run_data["final_gnorm"]
-        logging.info(f"{run_prefix}: {fin_energy} {fin_gnorm} ")
         opt_pore_data = calculate_pore(molecule, pm_output_file)
         res_dict = {
             "fin_energy": fin_energy,
@@ -220,6 +221,31 @@ def get_fitness_value(molecule_record):
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
+
+    return res_dict
+
+
+def get_pore_radius(molecule_record):
+    res_dict = get_results_dictionary(molecule_record)
+
+    return res_dict["opt_pore_data"]["pore_max_rad"]
+
+
+def get_OH6_measure(molecule_record):
+    res_dict = get_results_dictionary(molecule_record)
+
+    return res_dict["oh6_measure"]
+
+
+def get_final_energy(molecule_record):
+    res_dict = get_results_dictionary(molecule_record)
+
+    return res_dict["fin_energy"]
+
+
+def get_fitness_value(molecule_record):
+
+    res_dict = get_results_dictionary(molecule_record)
 
     pore_radius = res_dict["opt_pore_data"]["pore_max_rad"]
     pore_size_diff = abs(5 - pore_radius * 2) / 5
