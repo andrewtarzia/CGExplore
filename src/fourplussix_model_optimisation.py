@@ -392,7 +392,7 @@ def main():
 
     writer = stk.MolWriter()
     generations = []
-    logging.info(f"running the EA for {num_generations}...")
+    logging.info(f"running the EA for {num_generations} generations...")
     for i, generation in enumerate(ea.get_generations(num_generations)):
         generations.append(generation)
 
@@ -418,6 +418,8 @@ def main():
                     f"g_{i}_m_{molecule_id}_{molecule_name}.mol",
                 ),
             )
+
+    logging.info("EA done!")
 
     fitness_progress = CgProgressPlotter(
         generations=generations,

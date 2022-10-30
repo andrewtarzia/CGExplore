@@ -29,7 +29,7 @@ class CgProgressPlotter(stk.ProgressPlotter):
         min_data = self._plot_data[self._plot_data["Type"] == "Min"]
         ax.plot(
             max_data["Generation"],
-            max_data["Fitness Value"],
+            max_data[self._y_label],
             c="#087E8B",
             label="max",
             # edgecolor="white",
@@ -37,11 +37,11 @@ class CgProgressPlotter(stk.ProgressPlotter):
             alpha=1.0,
             lw=3,
             marker="o",
-            marker_size=3,
+            markersize=4,
         )
         ax.plot(
             mean_data["Generation"],
-            mean_data["Fitness Value"],
+            mean_data[self._y_label],
             c="#FF5A5F",
             label="mean",
             # edgecolor="white",
@@ -49,11 +49,11 @@ class CgProgressPlotter(stk.ProgressPlotter):
             alpha=1.0,
             lw=3,
             marker="o",
-            marker_size=3,
+            markersize=4,
         )
         ax.plot(
             min_data["Generation"],
-            min_data["Fitness Value"],
+            min_data[self._y_label],
             c="#6D435A",
             label="min",
             # edgecolor="white",
@@ -61,7 +61,7 @@ class CgProgressPlotter(stk.ProgressPlotter):
             alpha=1.0,
             lw=3,
             marker="o",
-            marker_size=3,
+            markersize=4,
         )
 
         # Set the length of the axes to account for all generations,
@@ -70,7 +70,7 @@ class CgProgressPlotter(stk.ProgressPlotter):
         ax.set_xlim(0, self._num_generations)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("generation", fontsize=16)
-        ax.set_ylabel("fitness value", fontsize=16)
+        ax.set_ylabel(self._y_label, fontsize=16)
         fig.legend(fontsize=16)
 
         fig.tight_layout()
