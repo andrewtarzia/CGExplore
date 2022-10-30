@@ -30,14 +30,6 @@ from gulp_optimizer import CGGulpOptimizer
 
 from fourplusix_construction.topologies import cage_topology_options
 
-from fourplusix_construction.plotting import (
-    convergence,
-    scatter,
-    geom_distributions,
-    heatmap,
-    ey_vs_shape,
-)
-
 from precursor_db.precursors import (
     three_precursor_topology_options,
     two_precursor_topology_options,
@@ -54,6 +46,10 @@ from ea_module import (
     CgGeneticRecombination,
     CgEvolutionaryAlgorithm,
     RecordFitnessFunction,
+)
+from ea_plotters import (
+    CgProgressPlotter,
+    plot_existing_data_distributions,
 )
 
 
@@ -362,13 +358,8 @@ def main():
 
     writer = stk.MolWriter()
     generations = []
-    logging.info(f"running the EA for {num_gen}...")
-    logging.info(
-        "Currently, not able to save the optimised molecules for new "
-        "records, but they are being run - the output is being saved!"
-    )
-    for i, generation in enumerate(ea.get_generations(num_gen)):
-        logging.info(f"EA generation {i}...")
+    logging.info(f"running the EA for {num_generations}...")
+    for i, generation in enumerate(ea.get_generations(num_generations)):
         generations.append(generation)
 
         for molecule_id, molecule_record in enumerate(
@@ -390,11 +381,11 @@ def main():
                 molecule=opt_mol,
                 path=os.path.join(
                     struct_output,
-                    f"{molecule_name}_g_{i}_m_{molecule_id}.mol",
+                    f"g_{i}_m_{molecule_id}_{molecule_name}.mol",
                 ),
             )
 
-    fitness_progress = stk.ProgressPlotter(
+    fitness_progress = CgProgressPlotter(
         generations=generations,
         get_property=lambda record: record.get_fitness_value(),
         y_label="Fitness Value",
@@ -403,60 +394,31 @@ def main():
         str(fourplussix_figures() / "fitness_progress.pdf")
     )
 
-    raise SystemExit()
-
-    convergence(
-        results=results,
-        output_dir=figure_output,
-        filename="convergence.pdf",
+    fitness_progress = CgProgressPlotter(
+        generations=generations,
+        get_property=lambda record: get_pore_radius(record),
+        y_label="pore radius",
+    )
+    fitness_progress.write(
+        str(fourplussix_figures() / "pore_progress.pdf")
     )
 
-    ey_vs_shape(
-        topo_to_c=topo_to_c,
-        results=results,
-        output_dir=figure_output,
-        filename="e_vs_shape.pdf",
+    fitness_progress = CgProgressPlotter(
+        generations=generations,
+        get_property=lambda record: get_OH6_measure(record),
+        y_label="OH6 measure",
+    )
+    fitness_progress.write(
+        str(fourplussix_figures() / "shape_progress.pdf")
     )
 
-    geom_distributions(
-        results=results,
-        output_dir=figure_output,
-        filename="dist.pdf",
+    fitness_progress = CgProgressPlotter(
+        generations=generations,
+        get_property=lambda record: get_final_energy(record),
+        y_label="final energy",
     )
-
-    heatmap(
-        topo_to_c=topo_to_c,
-        results=results,
-        output_dir=figure_output,
-        filename="energy_map.pdf",
-        vmin=0,
-        vmax=20,
-        clabel="energy (eV)",
-    )
-
-    heatmap(
-        topo_to_c=topo_to_c,
-        results=results,
-        output_dir=figure_output,
-        filename="shape_map.pdf",
-        vmin=0,
-        vmax=2.2,
-        clabel="OH-6",
-    )
-
-    scatter(
-        topo_to_c=topo_to_c,
-        results=results,
-        output_dir=figure_output,
-        filename="energy.pdf",
-        ylabel="energy (eV)",
-    )
-    scatter(
-        topo_to_c=topo_to_c,
-        results=results,
-        output_dir=figure_output,
-        filename="shape.pdf",
-        ylabel="OH-6",
+    fitness_progress.write(
+        str(fourplussix_figures() / "energy_progress.pdf")
     )
 
 
