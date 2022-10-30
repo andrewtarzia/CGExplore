@@ -243,7 +243,9 @@ class CGGulpOptimizer:
         return coord_string, mass_string
 
     def _get_bond_string(self, mol):
-        logging.info("you are not yet assigning different k values")
+        logging.info(
+            "OPT: you are not yet assigning different k values"
+        )
         bond_k = 10
 
         bond_string = "harm\n"
@@ -269,13 +271,17 @@ class CGGulpOptimizer:
                     f"{self._bond_cutoff}\n"
                 )
             except KeyError:
-                logging.info(f"{(name1, name2)} bond not assigned.")
+                logging.info(
+                    f"OPT: {(name1, name2)} bond not assigned."
+                )
                 continue
 
         return bond_string
 
     def _get_angle_string(self, mol):
-        logging.info("you are not yet assigning different k values")
+        logging.info(
+            "OPT: you are not yet assigning different k values"
+        )
         angle_k = 20
 
         angle_string = "three\n"
@@ -296,13 +302,13 @@ class CGGulpOptimizer:
                 f"{outer_atom2.__class__.__name__}"
                 f"{outer_atom2.get_id()+1}"
             )
-            outer_estring1 = outer_atom1.__class__.__name__
+            # outer_estring1 = outer_atom1.__class__.__name__
             centre_estring = centre_atom.__class__.__name__
-            outer_estring2 = outer_atom2.__class__.__name__
+            # outer_estring2 = outer_atom2.__class__.__name__
             try:
-                outer_cgbead1 = self._param_pool[outer_estring1]
+                # outer_cgbead1 = self._param_pool[outer_estring1]
                 centre_cgbead = self._param_pool[centre_estring]
-                outer_cgbead2 = self._param_pool[outer_estring2]
+                # outer_cgbead2 = self._param_pool[outer_estring2]
 
                 acentered = centre_cgbead.angle_centered
                 if isinstance(acentered, int) or isinstance(
@@ -337,7 +343,7 @@ class CGGulpOptimizer:
 
             except KeyError:
                 logging.info(
-                    f"{(outer_name1, centre_name, outer_name2)} "
+                    f"OPT: {(outer_name1, centre_name, outer_name2)} "
                     f"angle not assigned (centered on {centre_name})."
                 )
                 continue
@@ -345,7 +351,7 @@ class CGGulpOptimizer:
         return angle_string
 
     def _get_torsion_string(self, mol):
-        logging.info("no torsion interactions yet.")
+        logging.info("OPT: no torsion interactions yet.")
         return ""
         torsion_set = self.define_torsion_potentials()
         torsion_set_dict = torsion_set.get_set_dict()
@@ -399,13 +405,13 @@ class CGGulpOptimizer:
                     )
 
             except KeyError:
-                # logging.info(f"{sorted_name} torsion not assigned.")
+                # logging.info(f"OPT: {sorted_name} torsion not assigned.")
                 continue
 
         return torsion_string
 
     def _get_vdw_string(self, mol):
-        logging.info("no vdw interactions yet.")
+        logging.info("OPT: no vdw interactions yet.")
         return ""
         vdw_set = self.define_vdw_potentials()
         vdw_set_pairs = vdw_set.get_set_dict()
@@ -435,7 +441,7 @@ class CGGulpOptimizer:
                         f"{self._lj_cutoff}\n"
                     )
             except KeyError:
-                # logging.info(f"{sorted_name} vdw not assigned.")
+                # logging.info(f"OPT: {sorted_name} vdw not assigned.")
                 continue
 
         return vdw_string

@@ -15,7 +15,6 @@ import os
 import json
 import logging
 from rdkit.Chem import rdMolHash
-import random
 import pore_mapper as pm
 import numpy as np
 
@@ -74,7 +73,6 @@ def calculate_pore(molecule, output_file):
     # Define calculator object.
     calculator = pm.Inflater(bead_sigma=1.2)
     # Run calculator on host object, analysing output.
-    logging.info(f"calculating pore of {xyz_file}...")
     final_result = calculator.get_inflated_blob(host=host)
     pore = final_result.pore
     blob = final_result.pore.get_blob()
@@ -100,30 +98,32 @@ def get_initial_population(
     three_precursor_topologies,
     two_precursor_topologies,
     num_population,
+    generator,
 ):
 
     for i in range(num_population):
-        selected_cage_topology = random.choice(
+        selected_cage_topology = generator.choice(
             list(cage_topologies.keys())
         )
 
-        s_2c_topology = random.choice(
+        s_2c_topology = generator.choice(
             list(two_precursor_topologies.keys())
         )
         bb_2c_template = two_precursor_topologies[s_2c_topology]
-
         bb_2c = bb_2c_template.get_building_block(
             core_bead_lib=core_beads(),
             bead_2c_lib=beads_2c(),
+            generator=generator,
         )
 
-        s_3c_topology = random.choice(
+        s_3c_topology = generator.choice(
             list(three_precursor_topologies.keys())
         )
         bb_3c_template = three_precursor_topologies[s_3c_topology]
         bb_3c = bb_3c_template.get_building_block(
             bead_2c_lib=beads_2c(),
             bead_3c_lib=beads_3c(),
+            generator=generator,
         )
         yield stk.MoleculeRecord(
             topology_graph=cage_topologies[selected_cage_topology](
@@ -301,8 +301,12 @@ def main():
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
 
-    population_size_per_step = 10
-    num_gen = 10
+    num_generations = 100
+    # Set seed for reproducible results.
+    logging.info(
+        "using a constant, reproducible random state from seed 4"
+    )
+    generator = np.random.RandomState(4)
 
     # For now, just build N options and calculate properties.
     initial_population = tuple(
@@ -311,6 +315,7 @@ def main():
             three_precursor_topologies=three_precursor_topologies,
             two_precursor_topologies=two_precursor_topologies,
             num_population=population_size_per_step,
+            generator=generator,
         )
     )
 

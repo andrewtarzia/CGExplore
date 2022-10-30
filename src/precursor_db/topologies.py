@@ -10,7 +10,6 @@ Author: Andrew Tarzia
 """
 
 import stk
-import random
 
 from stk.molecular.topology_graphs.cage.vertices import _CageVertex
 
@@ -172,10 +171,10 @@ class ThreeCPrecursorTemplate:
         elif arm_length == 2:
             self._internal_topology = Core2Arm
 
-    def get_building_block(self, bead_2c_lib, bead_3c_lib):
+    def get_building_block(self, bead_2c_lib, bead_3c_lib, generator):
         factories = (stk.BromoFactory(placers=(0, 1)),)
 
-        three_c = random.choice(bead_3c_lib)
+        three_c = generator.choice(bead_3c_lib)
         three_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{three_c.element_string}]([Br])[Br]",
             functional_groups=factories,
@@ -188,7 +187,7 @@ class ThreeCPrecursorTemplate:
         )
 
         if self._arm_length == 1:
-            two_cs = random.choice(bead_2c_lib)
+            two_cs = generator.choice(bead_2c_lib)
             bb_tuple = (
                 three_c_bb,
                 stk.BuildingBlock(
@@ -207,7 +206,7 @@ class ThreeCPrecursorTemplate:
             )
 
         elif self._arm_length == 2:
-            two_cs = random.choices(bead_2c_lib, k=2)
+            two_cs = generator.choice(bead_2c_lib, 2)
             bb_tuple = (
                 three_c_bb,
                 stk.BuildingBlock(
@@ -246,10 +245,10 @@ class TwoCPrecursorTemplate:
         self._arm_length = arm_length
         self._internal_topology = stk.polymer.Linear
 
-    def get_building_block(self, core_bead_lib, bead_2c_lib):
+    def get_building_block(self, core_bead_lib, bead_2c_lib, generator):
         factories = (stk.BromoFactory(placers=(0, 1)),)
 
-        core_c = random.choice(core_bead_lib)
+        core_c = generator.choice(core_bead_lib)
         core_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{core_c.element_string}][Br]",
             functional_groups=factories,
@@ -257,7 +256,7 @@ class TwoCPrecursorTemplate:
         )
         if self._arm_length == 1:
             repeating_unit = "ABA"
-            two_cs = random.choice(bead_2c_lib)
+            two_cs = generator.choice(bead_2c_lib)
             bb_tuple = (
                 stk.BuildingBlock(
                     smiles=f"[{two_cs.element_string}][Br]",
@@ -278,7 +277,7 @@ class TwoCPrecursorTemplate:
 
         elif self._arm_length == 2:
             repeating_unit = "ABCBA"
-            two_cs = random.choices(bead_2c_lib, k=2)
+            two_cs = generator.choice(bead_2c_lib, 2)
             bb_tuple = (
                 stk.BuildingBlock(
                     smiles=f"[{two_cs[0].element_string}][Br]",
@@ -304,7 +303,7 @@ class TwoCPrecursorTemplate:
 
         elif self._arm_length == 3:
             repeating_unit = "ABCDCBA"
-            two_cs = random.choices(bead_2c_lib, k=3)
+            two_cs = generator.choice(bead_2c_lib, 3)
             bb_tuple = (
                 stk.BuildingBlock(
                     smiles=f"[{two_cs[0].element_string}][Br]",
