@@ -315,6 +315,7 @@ def main():
 
     struct_output = fourplussix_optimisation()
     figure_output = fourplussix_figures()
+    calculation_output = fourplussix_calculations()
 
     # Define list of topology functions.
     cage_topologies = cage_topology_options()
@@ -344,6 +345,11 @@ def main():
     initial_fitness_values = []
     for i, mol in enumerate(initial_population):
         initial_fitness_values.append(get_fitness_value(mol))
+
+    plot_existing_data_distributions(
+        calculation_dir=calculation_output,
+        figures_dir=figure_output,
+    )
 
     # mut = RandomCgBead(
     #     bead_library=core_beads(),
