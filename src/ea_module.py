@@ -15,8 +15,10 @@ import numpy as np
 import stk
 from stk.utilities import dedupe
 import logging
+from rdkit import RDLogger
 
 logger = logging.getLogger(__name__)
+RDLogger.DisableLog("rdApp.*")
 
 
 class RecordFitnessFunction(stk.ea.FitnessCalculator):
