@@ -324,6 +324,7 @@ def main():
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
 
+    population_size_per_step = 20
     num_generations = 100
     # Set seed for reproducible results.
     logging.info(
@@ -361,7 +362,6 @@ def main():
     # raise SystemExit()
 
     logging.info("setting up the EA...")
-    generator = np.random.RandomState(4)
     ea = CgEvolutionaryAlgorithm(
         initial_population=initial_population,
         fitness_calculator=RecordFitnessFunction(get_fitness_value),
@@ -370,21 +370,23 @@ def main():
         generation_selector=stk.Best(
             num_batches=population_size_per_step,
             batch_size=1,
-            duplicate_molecules=False,
         ),
         mutation_selector=stk.Roulette(
-            num_batches=1,
+            num_batches=10,
+            # Small batch sizes are MUCH more efficient.
             batch_size=2,
+            duplicate_batches=False,
             duplicate_molecules=False,
             random_seed=generator.randint(0, 1000),
         ),
         crossover_selector=stk.Roulette(
-            num_batches=1,
+            num_batches=10,
+            # Small batch sizes are MUCH more efficient.
             batch_size=2,
+            duplicate_batches=False,
             duplicate_molecules=False,
             random_seed=generator.randint(0, 1000),
         ),
-        key_maker=stk.Smiles(),
         num_processes=1,
     )
 
