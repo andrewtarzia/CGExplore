@@ -35,6 +35,10 @@ def cage_topology_options():
     topologies = {
         "FourPlusSix": stk.cage.FourPlusSix,
         "FourPlusSix2": stk.cage.FourPlusSix2,
+        # "SixPlusNine": stk.cage.SixPlusNine,
+        # "EightPlusTwelve": stk.cage.EightPlusTwelve,
+        # "TwentyPlusThirty": stk.cage.TwentyPlusThirty,
+        # "TwoPlusThree": stk.cage.TwoPlusThree,
     }
 
     return topologies
