@@ -71,7 +71,7 @@ class CgProgressPlotter(stk.ProgressPlotter):
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("generation", fontsize=16)
         ax.set_ylabel(self._y_label, fontsize=16)
-        fig.legend(fontsize=16)
+        ax.legend(loc=0, fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
@@ -178,47 +178,58 @@ def plot_existing_data_distributions(calculation_dir, figures_dir):
     plt.close()
 
     fig, axs = plt.subplots(
-        nrows=1,
-        ncols=3,
-        sharey=True,
-        figsize=(16, 5),
+        nrows=2,
+        ncols=2,
+        figsize=(16, 10),
     )
 
-    hb = axs[0].hexbin(
+    hb = axs[0][0].hexbin(
         energies,
         scores,
         gridsize=20,
         cmap="inferno",
         bins="log",
     )
-    axs[0].tick_params(axis="both", which="major", labelsize=16)
-    axs[0].set_xlabel("energies", fontsize=16)
-    axs[0].set_ylabel("fitness", fontsize=16)
-    fig.colorbar(hb, ax=axs[0], label="log10(N)")
+    axs[0][0].tick_params(axis="both", which="major", labelsize=16)
+    axs[0][0].set_xlabel("energies", fontsize=16)
+    axs[0][0].set_ylabel("fitness", fontsize=16)
+    fig.colorbar(hb, ax=axs[0][0], label="log10(N)")
 
-    hb = axs[1].hexbin(
+    hb = axs[0][1].hexbin(
         oh6_measures,
         scores,
         gridsize=20,
         cmap="inferno",
         bins="log",
     )
-    axs[1].tick_params(axis="both", which="major", labelsize=16)
-    axs[1].set_xlabel("oh6_measures", fontsize=16)
-    axs[1].set_ylabel("fitness", fontsize=16)
-    fig.colorbar(hb, ax=axs[1], label="log10(N)")
+    axs[0][1].tick_params(axis="both", which="major", labelsize=16)
+    axs[0][1].set_xlabel("oh6_measures", fontsize=16)
+    axs[0][1].set_ylabel("fitness", fontsize=16)
+    fig.colorbar(hb, ax=axs[0][1], label="log10(N)")
 
-    hb = axs[2].hexbin(
+    hb = axs[1][0].hexbin(
         pore_radii,
         scores,
         gridsize=20,
         cmap="inferno",
         bins="log",
     )
-    axs[2].tick_params(axis="both", which="major", labelsize=16)
-    axs[2].set_xlabel("pore_radii", fontsize=16)
-    axs[2].set_ylabel("fitness", fontsize=16)
-    fig.colorbar(hb, ax=axs[2], label="log10(N)")
+    axs[1][0].tick_params(axis="both", which="major", labelsize=16)
+    axs[1][0].set_xlabel("pore_radii", fontsize=16)
+    axs[1][0].set_ylabel("fitness", fontsize=16)
+    fig.colorbar(hb, ax=axs[1][0], label="log10(N)")
+
+    hb = axs[1][1].hexbin(
+        pore_radii,
+        oh6_measures,
+        gridsize=20,
+        cmap="inferno",
+        bins="log",
+    )
+    axs[1][1].tick_params(axis="both", which="major", labelsize=16)
+    axs[1][1].set_xlabel("pore_radii", fontsize=16)
+    axs[1][1].set_ylabel("oh6_measures", fontsize=16)
+    fig.colorbar(hb, ax=axs[1][1], label="log10(N)")
 
     fig.tight_layout()
     fig.savefig(

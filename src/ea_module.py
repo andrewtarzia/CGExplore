@@ -113,6 +113,9 @@ class CgSerial:
             crossover_records = tuple(
                 self._get_crossover_records(population)
             )
+            self._logger.info(
+                f"There are {len(crossover_records)} offspring."
+            )
 
             self._logger.info("Doing mutations.")
             mutation_records = tuple(
@@ -122,6 +125,9 @@ class CgSerial:
                     self._mutation_selector.select(population),
                 )
                 if record is not None
+            )
+            self._logger.info(
+                f"There are {len(mutation_records)} mutants."
             )
 
             self._logger.info("Calculating fitness values.")
@@ -150,6 +156,9 @@ class CgSerial:
             )
             population = tuple(
                 self._fitness_normalizer.normalize(population)
+            )
+            self._logger.info(
+                f"New population size is {len(population)}."
             )
 
             population = tuple(

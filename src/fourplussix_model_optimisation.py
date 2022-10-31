@@ -178,7 +178,7 @@ def get_results_dictionary(molecule_record):
         if os.path.exists(opt1_mol_file):
             molecule = molecule.with_structure_from_file(opt1_mol_file)
         else:
-            logging.info(f"running optimisation of {run_prefix}...")
+            logging.info(f"optimising {run_prefix}...")
             opt = CGGulpOptimizer(
                 fileprefix=run_prefix,
                 output_dir=output_dir,
@@ -246,17 +246,17 @@ def get_final_energy(molecule_record):
 def get_fitness_value(molecule_record):
 
     res_dict = get_results_dictionary(molecule_record)
+    target_pore_diameter = 5
 
     pore_radius = res_dict["opt_pore_data"]["pore_max_rad"]
-    pore_size_diff = abs(5 - pore_radius * 2) / 5
-    score = (
-        1
-        / (
-            res_dict["fin_energy"]
-            + res_dict["oh6_measure"] * 100
-            + pore_size_diff * 100
-        )
-        * 10
+    pore_size_diff = (
+        abs(target_pore_diameter - pore_radius * 2)
+        / target_pore_diameter
+    )
+    score = 10 / (
+        res_dict["fin_energy"]
+        + res_dict["oh6_measure"] * 100
+        + pore_size_diff * 100
     )
     return score
 
@@ -324,15 +324,19 @@ def main():
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
 
-    population_size_per_step = 20
+    population_size_per_step = 100
     num_generations = 100
     # Set seed for reproducible results.
+    seed = 2538
     logging.info(
-        "using a constant, reproducible random state from seed 4"
+        f"using a constant, reproducible random state from seed {seed}"
     )
-    generator = np.random.RandomState(4)
+    generator = np.random.RandomState(seed)
 
     # For now, just build N options and calculate properties.
+    logging.info(
+        f"building initial population of {population_size_per_step}..."
+    )
     initial_population = tuple(
         get_initial_population(
             cage_topologies=cage_topologies,
@@ -343,23 +347,28 @@ def main():
         )
     )
 
-    initial_fitness_values = []
-    for i, mol in enumerate(initial_population):
-        initial_fitness_values.append(get_fitness_value(mol))
-
     plot_existing_data_distributions(
         calculation_dir=calculation_output,
         figures_dir=figure_output,
     )
 
-    # mut = RandomCgBead(
-    #     bead_library=core_beads(),
-    #     random_seed=np.random.RandomState(4).randint(0, 1000),
-    # )
-    # print(initial_population[0])
-    # record = mut.mutate(record=initial_population[0])
-    # print(record)
-    # raise SystemExit()
+    mutation_selector = stk.Roulette(
+        num_batches=40,
+        # Small batch sizes are MUCH more efficient.
+        batch_size=1,
+        duplicate_batches=False,
+        duplicate_molecules=False,
+        # random_seed=generator.randint(0, 1000),
+    )
+
+    crossover_selector = stk.Roulette(
+        num_batches=40,
+        # Small batch sizes are MUCH more efficient.
+        batch_size=1,
+        duplicate_batches=False,
+        duplicate_molecules=False,
+        random_seed=generator.randint(0, 1000),
+    )
 
     logging.info("setting up the EA...")
     ea = CgEvolutionaryAlgorithm(
@@ -371,22 +380,8 @@ def main():
             num_batches=population_size_per_step,
             batch_size=1,
         ),
-        mutation_selector=stk.Roulette(
-            num_batches=10,
-            # Small batch sizes are MUCH more efficient.
-            batch_size=2,
-            duplicate_batches=False,
-            duplicate_molecules=False,
-            random_seed=generator.randint(0, 1000),
-        ),
-        crossover_selector=stk.Roulette(
-            num_batches=10,
-            # Small batch sizes are MUCH more efficient.
-            batch_size=2,
-            duplicate_batches=False,
-            duplicate_molecules=False,
-            random_seed=generator.randint(0, 1000),
-        ),
+        mutation_selector=mutation_selector,
+        crossover_selector=crossover_selector,
         num_processes=1,
     )
 
@@ -395,6 +390,15 @@ def main():
     logging.info(f"running the EA for {num_generations} generations...")
     for i, generation in enumerate(ea.get_generations(num_generations)):
         generations.append(generation)
+
+        fitness_progress = CgProgressPlotter(
+            generations=generations,
+            get_property=lambda record: record.get_fitness_value(),
+            y_label="fitness value",
+        )
+        fitness_progress.write(
+            str(figure_output / "fitness_progress.pdf")
+        )
 
         for molecule_id, molecule_record in enumerate(
             generation.get_molecule_records()
@@ -421,40 +425,29 @@ def main():
 
     logging.info("EA done!")
 
-    fitness_progress = CgProgressPlotter(
-        generations=generations,
-        get_property=lambda record: record.get_fitness_value(),
-        y_label="Fitness Value",
-    )
-    fitness_progress.write(
-        str(fourplussix_figures() / "fitness_progress.pdf")
-    )
+    fitness_progress.write(str(figure_output / "fitness_progress.pdf"))
 
-    fitness_progress = CgProgressPlotter(
+    CgProgressPlotter(
         generations=generations,
         get_property=lambda record: get_pore_radius(record),
         y_label="pore radius",
-    )
-    fitness_progress.write(
-        str(fourplussix_figures() / "pore_progress.pdf")
-    )
+    ).write(str(figure_output / "pore_progress.pdf"))
 
-    fitness_progress = CgProgressPlotter(
+    CgProgressPlotter(
         generations=generations,
         get_property=lambda record: get_OH6_measure(record),
         y_label="OH6 measure",
-    )
-    fitness_progress.write(
-        str(fourplussix_figures() / "shape_progress.pdf")
-    )
+    ).write(str(figure_output / "shape_progress.pdf"))
 
-    fitness_progress = CgProgressPlotter(
+    CgProgressPlotter(
         generations=generations,
         get_property=lambda record: get_final_energy(record),
         y_label="final energy",
-    )
-    fitness_progress.write(
-        str(fourplussix_figures() / "energy_progress.pdf")
+    ).write(str(figure_output / "energy_progress.pdf"))
+
+    plot_existing_data_distributions(
+        calculation_dir=calculation_output,
+        figures_dir=figure_output,
     )
 
 
