@@ -91,6 +91,7 @@ def plot_existing_data_distributions(calculation_dir, figures_dir):
     energies = []
     oh6_measures = []
     pore_radii = []
+    num_atoms = []
     for json_file in all_jsons:
         with open(json_file, "r") as f:
             res_dict = json.load(f)
@@ -110,6 +111,11 @@ def plot_existing_data_distributions(calculation_dir, figures_dir):
         energies.append(res_dict["fin_energy"])
         oh6_measures.append(res_dict["oh6_measure"])
         pore_radii.append(pore_radius)
+
+        xyz_file = str(json_file).replace("_res.json", "_opted.xyz")
+        with open(xyz_file, "r") as f:
+            na = int(f.readline().strip())
+        num_atoms.append(na)
 
     fig, axs = plt.subplots(
         nrows=4,
@@ -234,6 +240,27 @@ def plot_existing_data_distributions(calculation_dir, figures_dir):
     fig.tight_layout()
     fig.savefig(
         os.path.join(figures_dir, "known_library_hexdists.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    fig, axs = plt.subplots(figsize=(5, 5))
+    hb = axs.hexbin(
+        num_atoms,
+        scores,
+        gridsize=20,
+        cmap="inferno",
+        bins="log",
+    )
+    axs.tick_params(axis="both", which="major", labelsize=16)
+    axs.set_xlabel("num. atoms", fontsize=16)
+    axs.set_ylabel("fitness", fontsize=16)
+    fig.colorbar(hb, ax=axs, label="log10(N)")
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figures_dir, "known_library_na_hexdists.pdf"),
         dpi=720,
         bbox_inches="tight",
     )

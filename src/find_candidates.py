@@ -33,6 +33,7 @@ def survey_existing_data_distributions(
             res_dict = json.load(f)
 
         name = json_file.name.replace("_res.json", "")
+        tg_str = name.split("_")[0]
 
         pore_radius = res_dict["opt_pore_data"]["pore_max_rad"]
         pore_size_diff = (
@@ -52,6 +53,7 @@ def survey_existing_data_distributions(
             "energy": res_dict["fin_energy"],
             "oh6": res_dict["oh6_measure"],
             "pore_radius": pore_radius,
+            "tg": tg_str,
         }
 
     return scores
@@ -84,6 +86,13 @@ def main():
         viz_command += f"{i}_opted2.mol "
 
     print(viz_command)
+
+    # Per topology graph.
+    for tg in ("FourPlusSix", "FourPlusSix2"):
+        print(tg)
+        tg_df = sorted_scores[sorted_scores["tg"] == tg]
+        top_N = tg_df.head(N)
+        print(top_N)
 
 
 if __name__ == "__main__":

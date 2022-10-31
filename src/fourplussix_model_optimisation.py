@@ -97,14 +97,22 @@ def get_initial_population(
     generator,
 ):
 
+    topology_distribution = {}
     for i in range(num_population):
         selected_cage_topology = generator.choice(
             list(cage_topologies.keys())
         )
+        if selected_cage_topology not in topology_distribution:
+            topology_distribution[selected_cage_topology] = 0
+        topology_distribution[selected_cage_topology] += 1
 
         s_2c_topology = generator.choice(
             list(two_precursor_topologies.keys())
         )
+        if s_2c_topology not in topology_distribution:
+            topology_distribution[s_2c_topology] = 0
+        topology_distribution[s_2c_topology] += 1
+
         bb_2c_template = two_precursor_topologies[s_2c_topology]
         bb_2c = bb_2c_template.get_building_block(
             core_bead_lib=core_beads(),
@@ -115,6 +123,10 @@ def get_initial_population(
         s_3c_topology = generator.choice(
             list(three_precursor_topologies.keys())
         )
+        if s_3c_topology not in topology_distribution:
+            topology_distribution[s_3c_topology] = 0
+        topology_distribution[s_3c_topology] += 1
+
         bb_3c_template = three_precursor_topologies[s_3c_topology]
         bb_3c = bb_3c_template.get_building_block(
             bead_2c_lib=beads_2c(),
@@ -126,6 +138,7 @@ def get_initial_population(
                 building_blocks=(bb_2c, bb_3c),
             ),
         )
+    logging.info(f"BB topology distribution: {topology_distribution}")
 
 
 def get_molecule_formula(molecule):
@@ -324,131 +337,133 @@ def main():
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
 
+    # Settings for runs.
     population_size_per_step = 100
     num_generations = 100
-    # Set seed for reproducible results.
-    seed = 2538
-    logging.info(
-        f"using a constant, reproducible random state from seed {seed}"
-    )
-    generator = np.random.RandomState(seed)
+    # Set seeds for reproducible results.
+    seeds = [256, 2909, 123, 986, 7823, 271541]
 
-    # For now, just build N options and calculate properties.
-    logging.info(
-        f"building initial population of {population_size_per_step}..."
-    )
-    initial_population = tuple(
-        get_initial_population(
-            cage_topologies=cage_topologies,
-            three_precursor_topologies=three_precursor_topologies,
-            two_precursor_topologies=two_precursor_topologies,
-            num_population=population_size_per_step,
-            generator=generator,
+    for seed in seeds:
+        logging.info(f"setting up the EA for seed {seed}...")
+        run_name = f"s{seed}"
+        generator = np.random.RandomState(seed)
+
+        # For now, just build N options and calculate properties.
+        logging.info(
+            f"building population of {population_size_per_step}..."
         )
-    )
+        initial_population = tuple(
+            get_initial_population(
+                cage_topologies=cage_topologies,
+                three_precursor_topologies=three_precursor_topologies,
+                two_precursor_topologies=two_precursor_topologies,
+                num_population=population_size_per_step,
+                generator=generator,
+            )
+        )
 
-    plot_existing_data_distributions(
-        calculation_dir=calculation_output,
-        figures_dir=figure_output,
-    )
+        plot_existing_data_distributions(
+            calculation_dir=calculation_output,
+            figures_dir=figure_output,
+        )
 
-    mutation_selector = stk.Roulette(
-        num_batches=40,
-        # Small batch sizes are MUCH more efficient.
-        batch_size=1,
-        duplicate_batches=False,
-        duplicate_molecules=False,
-        # random_seed=generator.randint(0, 1000),
-    )
-
-    crossover_selector = stk.Roulette(
-        num_batches=40,
-        # Small batch sizes are MUCH more efficient.
-        batch_size=1,
-        duplicate_batches=False,
-        duplicate_molecules=False,
-        random_seed=generator.randint(0, 1000),
-    )
-
-    logging.info("setting up the EA...")
-    ea = CgEvolutionaryAlgorithm(
-        initial_population=initial_population,
-        fitness_calculator=RecordFitnessFunction(get_fitness_value),
-        mutator=mutator(generator, cage_topologies),
-        crosser=crosser(generator),
-        generation_selector=stk.Best(
-            num_batches=population_size_per_step,
+        mutation_selector = stk.Roulette(
+            num_batches=40,
+            # Small batch sizes are MUCH more efficient.
             batch_size=1,
-        ),
-        mutation_selector=mutation_selector,
-        crossover_selector=crossover_selector,
-        num_processes=1,
-    )
-
-    writer = stk.MolWriter()
-    generations = []
-    logging.info(f"running the EA for {num_generations} generations...")
-    for i, generation in enumerate(ea.get_generations(num_generations)):
-        generations.append(generation)
-
-        fitness_progress = CgProgressPlotter(
-            generations=generations,
-            get_property=lambda record: record.get_fitness_value(),
-            y_label="fitness value",
-        )
-        fitness_progress.write(
-            str(figure_output / "fitness_progress.pdf")
+            duplicate_batches=False,
+            duplicate_molecules=False,
+            # random_seed=generator.randint(0, 1000),
         )
 
-        for molecule_id, molecule_record in enumerate(
-            generation.get_molecule_records()
+        crossover_selector = stk.Roulette(
+            num_batches=40,
+            # Small batch sizes are MUCH more efficient.
+            batch_size=1,
+            duplicate_batches=False,
+            duplicate_molecules=False,
+            random_seed=generator.randint(0, 1000),
+        )
+
+        ea = CgEvolutionaryAlgorithm(
+            initial_population=initial_population,
+            fitness_calculator=RecordFitnessFunction(get_fitness_value),
+            mutator=mutator(generator, cage_topologies),
+            crosser=crosser(generator),
+            generation_selector=stk.Best(
+                num_batches=population_size_per_step,
+                batch_size=1,
+            ),
+            mutation_selector=mutation_selector,
+            crossover_selector=crossover_selector,
+            num_processes=1,
+        )
+
+        writer = stk.MolWriter()
+        generations = []
+        logging.info(f"running EA for {num_generations} generations...")
+        for i, generation in enumerate(
+            ea.get_generations(num_generations)
         ):
-            molecule_name = get_molecule_name_from_record(
-                molecule_record
+            generations.append(generation)
+
+            fitness_progress = CgProgressPlotter(
+                generations=generations,
+                get_property=lambda record: record.get_fitness_value(),
+                y_label="fitness value",
             )
-            opt2_mol_file = os.path.join(
-                fourplussix_calculations(),
-                f"{molecule_name}_opted2.mol",
+            fitness_progress.write(
+                str(figure_output / f"fitness_progress_{run_name}.pdf")
             )
-            opt_mol = (
-                molecule_record.get_molecule().with_structure_from_file(
-                    opt2_mol_file
+
+            for molecule_id, molecule_record in enumerate(
+                generation.get_molecule_records()
+            ):
+                molecule_name = get_molecule_name_from_record(
+                    molecule_record
                 )
-            )
-            writer.write(
-                molecule=opt_mol,
-                path=os.path.join(
-                    struct_output,
-                    f"g_{i}_m_{molecule_id}_{molecule_name}.mol",
-                ),
-            )
+                opt2_mol_file = os.path.join(
+                    fourplussix_calculations(),
+                    f"{molecule_name}_opted2.mol",
+                )
+                mol = molecule_record.get_molecule()
+                opt_mol = mol.with_structure_from_file(opt2_mol_file)
+                writer.write(
+                    molecule=opt_mol,
+                    path=os.path.join(
+                        struct_output,
+                        f"g_{i}_m_{molecule_id}_{molecule_name}.mol",
+                    ),
+                )
 
-    logging.info("EA done!")
+        logging.info("EA done!")
 
-    fitness_progress.write(str(figure_output / "fitness_progress.pdf"))
+        fitness_progress.write(
+            str(figure_output / f"fitness_progress_{run_name}.pdf")
+        )
 
-    CgProgressPlotter(
-        generations=generations,
-        get_property=lambda record: get_pore_radius(record),
-        y_label="pore radius",
-    ).write(str(figure_output / "pore_progress.pdf"))
+        CgProgressPlotter(
+            generations=generations,
+            get_property=lambda record: get_pore_radius(record),
+            y_label="pore radius",
+        ).write(str(figure_output / f"pore_progress_{run_name}.pdf"))
 
-    CgProgressPlotter(
-        generations=generations,
-        get_property=lambda record: get_OH6_measure(record),
-        y_label="OH6 measure",
-    ).write(str(figure_output / "shape_progress.pdf"))
+        CgProgressPlotter(
+            generations=generations,
+            get_property=lambda record: get_OH6_measure(record),
+            y_label="OH6 measure",
+        ).write(str(figure_output / f"shape_progress_{run_name}.pdf"))
 
-    CgProgressPlotter(
-        generations=generations,
-        get_property=lambda record: get_final_energy(record),
-        y_label="final energy",
-    ).write(str(figure_output / "energy_progress.pdf"))
+        CgProgressPlotter(
+            generations=generations,
+            get_property=lambda record: get_final_energy(record),
+            y_label="final energy",
+        ).write(str(figure_output / f"energy_progress_{run_name}.pdf"))
 
-    plot_existing_data_distributions(
-        calculation_dir=calculation_output,
-        figures_dir=figure_output,
-    )
+        plot_existing_data_distributions(
+            calculation_dir=calculation_output,
+            figures_dir=figure_output,
+        )
 
 
 if __name__ == "__main__":
