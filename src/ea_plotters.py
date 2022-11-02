@@ -107,6 +107,7 @@ def plot_existing_data_distributions(
     oh6_measures = []
     pore_radii = []
     num_atoms = []
+    topologies = {}
     for json_file in all_jsons:
         with open(json_file, "r") as f:
             res_dict = json.load(f)
@@ -131,6 +132,11 @@ def plot_existing_data_distributions(
         with open(xyz_file, "r") as f:
             na = int(f.readline().strip())
         num_atoms.append(na)
+
+        tg_str = str(json_file.name).split("_")[0]
+        if tg_str not in topologies:
+            topologies[tg_str] = 0
+        topologies[tg_str] += 1
 
     fig, axs = plt.subplots(
         nrows=4,
@@ -268,18 +274,33 @@ def plot_existing_data_distributions(
     )
     plt.close()
 
-    fig, axs = plt.subplots(figsize=(5, 5))
-    hb = axs.hexbin(
+    fig, axs = plt.subplots(
+        nrows=1,
+        ncols=2,
+        figsize=(16, 5),
+    )
+    hb = axs[0].hexbin(
         num_atoms,
         scores,
         gridsize=20,
         cmap="inferno",
         bins="log",
     )
-    axs.tick_params(axis="both", which="major", labelsize=16)
-    axs.set_xlabel("num. atoms", fontsize=16)
-    axs.set_ylabel("fitness", fontsize=16)
-    fig.colorbar(hb, ax=axs, label="log10(N)")
+    axs[0].tick_params(axis="both", which="major", labelsize=16)
+    axs[0].set_xlabel("num. atoms", fontsize=16)
+    axs[0].set_ylabel("fitness", fontsize=16)
+    fig.colorbar(hb, ax=axs[0], label="log10(N)")
+
+    axs[1].bar(
+        topologies.keys(),
+        topologies.values(),
+        color="purple",
+        edgecolor="k",
+        linewidth=2,
+    )
+    axs[1].tick_params(axis="both", which="major", labelsize=16)
+    axs[1].set_xlabel("topology", fontsize=16)
+    axs[1].set_ylabel("count", fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -318,6 +339,7 @@ def plot_existing_guest_data_distributions(
     oh6_measures = []
     volume_ratios = []
     min_distances = []
+    topologies = {}
     for json_file in all_jsons:
         with open(json_file, "r") as f:
             res_dict = json.load(f)
@@ -342,6 +364,11 @@ def plot_existing_guest_data_distributions(
         oh6_measures.append(res_dict["oh6_measure"])
         volume_ratios.append(volume_ratio)
         min_distances.append(min_distance)
+
+        tg_str = str(json_file.name).split("_")[0]
+        if tg_str not in topologies:
+            topologies[tg_str] = 0
+        topologies[tg_str] += 1
 
     fig, axs = plt.subplots(
         nrows=5,
@@ -532,6 +559,29 @@ def plot_existing_guest_data_distributions(
     fig.savefig(
         os.path.join(
             figures_dir, "known_library_guest_maphexdists.pdf"
+        ),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    fig, axs = plt.subplots(figsize=(8, 5))
+
+    axs.bar(
+        topologies.keys(),
+        topologies.values(),
+        color="purple",
+        edgecolor="k",
+        linewidth=2,
+    )
+    axs.tick_params(axis="both", which="major", labelsize=16)
+    axs.set_xlabel("topology", fontsize=16)
+    axs.set_ylabel("count", fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(
+            figures_dir, "known_library_guest_topo_hexdists.pdf"
         ),
         dpi=720,
         bbox_inches="tight",
