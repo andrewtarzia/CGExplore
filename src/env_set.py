@@ -130,6 +130,14 @@ def fourplussix_optimisation():
     return path
 
 
+def fourplussix_backmap():
+    path = fourplussix() / pathlib.Path("backmap/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
 def fourplussix_hg_optimisation():
     path = fourplussix() / pathlib.Path("hg_optimisation/")
     if not os.path.exists(path):
