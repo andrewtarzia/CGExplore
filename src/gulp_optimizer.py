@@ -20,6 +20,8 @@ import logging
 from env_set import gulp_path
 from utilities import get_all_angles, angle_between, get_all_torsions
 
+from beads import guest_beads
+
 
 def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
     return (sigma1 + sigma2) / 2
@@ -178,9 +180,12 @@ class CGGulpOptimizer:
         self._bond_cutoff = 50
         self._angle_cutoff = 50
         self._torsion_cutoff = 30
-        self._lj_cutoff = 15
+        self._lj_cutoff = 10
         self._maxcycles = max_cycles
         self._conjugate_gradient = conjugate_gradient
+        self._vdw_on_types = tuple(
+            i.element_string for i in guest_beads()
+        )
 
     def _run_gulp(self):
         os.system(f"{gulp_path()} < {self._gulp_in} > {self._gulp_out}")
@@ -411,40 +416,59 @@ class CGGulpOptimizer:
         return torsion_string
 
     def _get_vdw_string(self, mol):
-        logging.info("OPT: no vdw interactions yet.")
-        return ""
-        vdw_set = self.define_vdw_potentials()
-        vdw_set_pairs = vdw_set.get_set_dict()
+        logging.info(
+            "OPT: only vdw interactions between host and guest."
+        )
+
         vdw_string = "lennard epsilon\n"
         pairs = combinations(mol.get_atoms(), 2)
 
-        # pos_mat = mol.get_position_matrix()
         for pair in pairs:
             atom1, atom2 = pair
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
             name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
-            table = str.maketrans("", "", digits)
-            sorted_name = tuple(
-                sorted([i.translate(table) for i in (name1, name2)])
+            estring1 = atom1.__class__.__name__
+            estring2 = atom2.__class__.__name__
+            guest_estrings = tuple(
+                i
+                for i in (estring1, estring2)
+                if i in self._vdw_on_types
             )
-            try:
-                pair = vdw_set_pairs[sorted_name]
-                # distance = np.linalg.norm(
-                #     pos_mat[atom1.get_id()] - pos_mat[atom2.get_id()]
-                # )
-                # if distance == 0:
-                #     print("what")
+            if len(guest_estrings) != 1:
+                continue
 
-                for pot in pair:
-                    vdw_string += (
-                        f"{name1} {name2}  {pot.epsilon} {pot.sigma} "
-                        f"{self._lj_cutoff}\n"
-                    )
+            try:
+                cgbead1 = self._param_pool[estring1]
+                cgbead2 = self._param_pool[estring2]
+                sigma = lorentz_berthelot_sigma_mixing(
+                    sigma1=cgbead1.sigma,
+                    sigma2=cgbead2.sigma,
+                )
+                epsilon = self._param_pool[guest_estrings[0]].epsilon
+                vdw_string += (
+                    f"{name1} {name2}  {epsilon} {sigma} "
+                    f"{self._lj_cutoff}\n"
+                )
+
             except KeyError:
                 # logging.info(f"OPT: {sorted_name} vdw not assigned.")
                 continue
 
         return vdw_string
+
+    def _get_fix_atom_string(self, mol):
+
+        string = "\n"
+        count = 0
+        for atom in mol.get_atoms():
+            atom_no = atom.get_id() + 1
+            estring = atom.__class__.__name__
+            if estring in self._vdw_on_types:
+                string += f"fix_atom {atom_no}\n"
+                count += 1
+
+        logging.info(f"OPT: fixing {count} guest beads.")
+        return string
 
     def _update_bonds(self, bonds):
         new_bonds = []
@@ -531,6 +555,7 @@ class CGGulpOptimizer:
         angle_string = self._get_angle_string(mol)
         torsion_string = self._get_torsion_string(mol)
         vdw_string = self._get_vdw_string(mol)
+        fix_string = self._get_fix_atom_string(mol)
         settings_string = (
             f"\nmaxcyc {self._maxcycles}\n"
             # f'output xyz movie {filename}_traj.xyz\n'
@@ -545,6 +570,7 @@ class CGGulpOptimizer:
             f.write(angle_string)
             f.write(torsion_string)
             f.write(vdw_string)
+            f.write(fix_string)
             f.write(settings_string)
 
     def optimize(self, molecule):
