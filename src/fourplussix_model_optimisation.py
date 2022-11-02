@@ -256,9 +256,8 @@ def get_final_energy(molecule_record):
     return res_dict["fin_energy"]
 
 
-def get_fitness_value(molecule_record):
+def fitness_from_dictionary(res_dict):
 
-    res_dict = get_results_dictionary(molecule_record)
     target_pore_diameter = 5
 
     pore_radius = res_dict["opt_pore_data"]["pore_max_rad"]
@@ -272,6 +271,12 @@ def get_fitness_value(molecule_record):
         + pore_size_diff * 100
     )
     return score
+
+
+def get_fitness_value(molecule_record):
+
+    res_dict = get_results_dictionary(molecule_record)
+    return fitness_from_dictionary(res_dict)
 
 
 def mutator(generator, cage_topologies):
@@ -365,6 +370,7 @@ def main():
         plot_existing_data_distributions(
             calculation_dir=calculation_output,
             figures_dir=figure_output,
+            # fitness_function=fitness_from_dictionary,
         )
 
         mutation_selector = stk.Roulette(
@@ -373,7 +379,7 @@ def main():
             batch_size=1,
             duplicate_batches=False,
             duplicate_molecules=False,
-            # random_seed=generator.randint(0, 1000),
+            random_seed=generator.randint(0, 1000),
         )
 
         crossover_selector = stk.Roulette(
@@ -463,6 +469,7 @@ def main():
         plot_existing_data_distributions(
             calculation_dir=calculation_output,
             figures_dir=figure_output,
+            # fitness_function=fitness_from_dictionary,
         )
 
 
