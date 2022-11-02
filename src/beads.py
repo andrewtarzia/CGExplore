@@ -21,6 +21,13 @@ class CgBead:
     angle_centered: Union[float, Tuple[float]]
 
 
+@dataclass
+class GuestBead:
+    element_string: str
+    sigma: float
+    epsilon: float
+
+
 # Mn = CgBead("F", sigma=2.0, connectivity=0, angle_centered=180)
 # Hg = CgBead("Hg", sigma=2.0, connectivity=0, angle_centered=180)
 # Mo = CgBead("Mo", sigma=2.0, connectivity=0, angle_centered=180)
@@ -30,7 +37,6 @@ class CgBead:
 # Nb = CgBead("Nb", sigma=2.0, connectivity=0, angle_centered=180)
 # N = CgBead("N", sigma=2.0, connectivity=0, angle_centered=180)
 # Os = CgBead("Os", sigma=2.0, connectivity=0, angle_centered=180)
-# O = CgBead("Li", sigma=2.0, connectivity=0, angle_centered=180)
 # Pd = CgBead("Pd", sigma=2.0, connectivity=0, angle_centered=180)
 # P = CgBead("P", sigma=2.0, connectivity=0, angle_centered=180)
 # Pt = CgBead("Pt", sigma=2.0, connectivity=0, angle_centered=180)
@@ -41,6 +47,10 @@ class CgBead:
 # CgBead("Dy", sigma=2.0, connectivity=3, angle_centered=60),
 # CgBead("Cl", sigma=2.0, connectivity=3, angle_centered=60),
 # CgBead("Lu", sigma=2.0, connectivity=3, angle_centered=60),
+
+
+def guest_beads():
+    return (GuestBead("Li", sigma=3.0, epsilon=1.0),)
 
 
 def core_beads():
