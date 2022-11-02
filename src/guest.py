@@ -13,6 +13,7 @@ import sys
 import stk
 import molellipsize as mes
 from scipy.spatial import ConvexHull
+import numpy as np
 
 import logging
 
@@ -36,6 +37,9 @@ class PointCloud:
 
     def get_convexhull(self):
         return self._convexhull
+
+    def get_convexhull_volume(self):
+        return self._convexhull.volume
 
     def write_convexhull_to_xyz(self, filename, atomtype):
         with open(filename, "w") as f:
@@ -66,6 +70,9 @@ class Guest:
     def get_mes_molecule(self):
         return self._mes_molecule
 
+    def get_ch_volume(self):
+        return self._pointcloud.get_convexhull_volume()
+
     def _get_hitpoints(self):
         box, sideLen, shape = self._mes_molecule.get_molecule_shape(
             conformer=self._stk_molecule.to_rdkit_mol().GetConformer(0),
@@ -83,6 +90,24 @@ class Guest:
 
     def write_convexhul(self, filename, atomtype):
         self._pointcloud.write_convexhull_to_xyz(filename, atomtype)
+
+    def get_convexhul_stk_molecule(self):
+        logging.info("no charge on guest molecules yet; future patches")
+        ch = self._pointcloud.get_convexhull()
+        pts = self._pointcloud.get_points()
+        atoms = []
+        position_matrix = []
+        for i, gs in enumerate(ch.vertices):
+            x, y, z = pts[gs]
+            atoms.append(stk.Li(id=i, charge=0))
+            position_matrix.append(np.array((x, y, z)))
+
+        ch_molecule = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=(),
+            position_matrix=np.asarray(position_matrix),
+        )
+        return ch_molecule
 
 
 def main():
