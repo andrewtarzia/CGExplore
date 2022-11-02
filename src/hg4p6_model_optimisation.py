@@ -277,12 +277,19 @@ def get_fitness_value(molecule_record):
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    first_line = f"Usage: {__file__}.py mode"
+    if not len(sys.argv) == 2:
         print(f"{first_line}")
+        print(
+            "\nmode must be either `run` or `plot`, where `plot` just "
+            "outputs known distributions."
+        )
         sys.exit()
     else:
-        pass
+        mode = sys.argv[1]
+
+    if mode not in ("run", "plot"):
+        raise ValueError(f"mode must be run or plot, not {mode}")
 
     struct_output = fourplussix_hg_optimisation()
     figure_output = fourplussix_figures()
@@ -300,6 +307,15 @@ def main():
             str(guest_structures() / "3.mol")
         )
     )
+
+    plot_existing_guest_data_distributions(
+        calculation_dir=calculation_output,
+        figures_dir=figure_output,
+        suffix="hgres",
+        # fitness_function=fitness_from_dictionary,
+    )
+    if mode == "plot":
+        raise SystemExit("done plotting, bye!")
 
     # Settings for runs.
     population_size_per_step = 100
@@ -324,13 +340,6 @@ def main():
                 num_population=population_size_per_step,
                 generator=generator,
             )
-        )
-
-        plot_existing_guest_data_distributions(
-            calculation_dir=calculation_output,
-            figures_dir=figure_output,
-            suffix="hgres",
-            # fitness_function=fitness_from_dictionary,
         )
 
         mutation_selector = stk.Roulette(

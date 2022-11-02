@@ -324,12 +324,19 @@ def crosser(generator):
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    first_line = f"Usage: {__file__}.py mode"
+    if not len(sys.argv) == 2:
         print(f"{first_line}")
+        print(
+            "\nmode must be either `run` or `plot`, where `plot` just "
+            "outputs known distributions."
+        )
         sys.exit()
     else:
-        pass
+        mode = sys.argv[1]
+
+    if mode not in ("run", "plot"):
+        raise ValueError(f"mode must be run or plot, not {mode}")
 
     struct_output = fourplussix_optimisation()
     figure_output = fourplussix_figures()
@@ -341,6 +348,14 @@ def main():
     # Define precursor topologies.
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
+
+    plot_existing_data_distributions(
+        calculation_dir=calculation_output,
+        figures_dir=figure_output,
+        # fitness_function=fitness_from_dictionary,
+    )
+    if mode == "plot":
+        raise SystemExit("done plotting, bye!")
 
     # Settings for runs.
     population_size_per_step = 100
@@ -365,12 +380,6 @@ def main():
                 num_population=population_size_per_step,
                 generator=generator,
             )
-        )
-
-        plot_existing_data_distributions(
-            calculation_dir=calculation_output,
-            figures_dir=figure_output,
-            # fitness_function=fitness_from_dictionary,
         )
 
         mutation_selector = stk.Roulette(
