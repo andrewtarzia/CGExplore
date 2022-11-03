@@ -10,6 +10,14 @@ def project_dir():
     return path
 
 
+def sphere():
+    path = project_dir() / pathlib.Path("spheres/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
 def cubism():
     path = project_dir() / pathlib.Path("cubism/")
     if not os.path.exists(path):
