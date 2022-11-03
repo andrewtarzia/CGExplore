@@ -198,6 +198,10 @@ def get_results_dictionary(molecule_record):
                 param_pool=core_beads() + beads_2c() + beads_3c(),
                 max_cycles=1000,
                 conjugate_gradient=True,
+                bonds=True,
+                angles=True,
+                torsions=False,
+                vdw=False,
             )
             run_data = opt.optimize(molecule)
             molecule = molecule.with_structure_from_file(opt_xyz_file)
@@ -209,6 +213,10 @@ def get_results_dictionary(molecule_record):
             param_pool=core_beads() + beads_2c() + beads_3c(),
             max_cycles=1000,
             conjugate_gradient=False,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
         )
         if os.path.exists(opt2_mol_file):
             molecule = molecule.with_structure_from_file(opt2_mol_file)
