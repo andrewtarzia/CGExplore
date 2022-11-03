@@ -161,6 +161,10 @@ class CGGulpOptimizer:
         fileprefix,
         output_dir,
         param_pool,
+        bonds,
+        angles,
+        torsions,
+        vdw,
         max_cycles=500,
         conjugate_gradient=False,
     ):
@@ -186,6 +190,10 @@ class CGGulpOptimizer:
         self._vdw_on_types = tuple(
             i.element_string for i in guest_beads()
         )
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
 
     def _run_gulp(self):
         os.system(f"{gulp_path()} < {self._gulp_in} > {self._gulp_out}")
@@ -248,6 +256,8 @@ class CGGulpOptimizer:
         return coord_string, mass_string
 
     def _get_bond_string(self, mol):
+        if self._bonds is False:
+            return ""
         logging.info(
             "OPT: you are not yet assigning different k values"
         )
@@ -284,6 +294,8 @@ class CGGulpOptimizer:
         return bond_string
 
     def _get_angle_string(self, mol):
+        if self._angles is False:
+            return ""
         logging.info(
             "OPT: you are not yet assigning different k values"
         )
@@ -356,10 +368,11 @@ class CGGulpOptimizer:
         return angle_string
 
     def _get_torsion_string(self, mol):
-        logging.info("OPT: no torsion interactions yet.")
-        return ""
-        torsion_set = self.define_torsion_potentials()
-        torsion_set_dict = torsion_set.get_set_dict()
+        if self._torsions is False:
+            return ""
+        logging.info("OPT: not setting torsion ks yet.")
+        torsion_k = 1
+        torsion_n = 1
 
         torsion_string = "torsion\n"
         torsions = get_all_torsions(mol)
@@ -370,52 +383,40 @@ class CGGulpOptimizer:
             name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
             name3 = f"{atom3.__class__.__name__}{atom3.get_id()+1}"
             name4 = f"{atom4.__class__.__name__}{atom4.get_id()+1}"
-            table = str.maketrans("", "", digits)
-            sorted_name = tuple(
-                sorted(
-                    [
-                        i.translate(table)
-                        for i in (name1, name2, name3, name4)
-                    ]
-                )
-            )
+
+            atom2_estring = atom2.__class__.__name__
+            atom3_estring = atom3.__class__.__name__
 
             try:
-                tset = torsion_set_dict[sorted_name]
+                cgbead2 = self._param_pool[atom2_estring]
+                cgbead3 = self._param_pool[atom3_estring]
 
-                for pot in tset:
-                    # Want to check ordering here.
-                    if pot.atom2_type in name2:
-                        centre_atom1 = name2
-                        centre_atom2 = name3
-                        outer1 = name1
-                        outer2 = name4
-                    elif pot.atom2_type in name3:
-                        centre_atom1 = name3
-                        centre_atom2 = name2
-                        outer1 = name4
-                        outer2 = name1
+                phi0 = lorentz_berthelot_sigma_mixing(
+                    sigma1=cgbead2.angle_centered,
+                    sigma2=cgbead3.angle_centered,
+                )
 
-                    n = pot.n
-                    k = pot.k
-                    phi0 = pot.phi0
-
-                    torsion_string += (
-                        f"{outer1} {centre_atom1} {centre_atom2} "
-                        f"{outer2} {k} {n} {phi0} "
-                        f"{self._torsion_cutoff} "
-                        f"{self._torsion_cutoff} "
-                        f"{self._torsion_cutoff} "
-                        f"{self._torsion_cutoff} \n"
-                    )
+                torsion_string += (
+                    f"{name1} {name2} {name3} "
+                    f"{name4} {torsion_k} {torsion_n} {phi0} "
+                    f"{self._torsion_cutoff} "
+                    f"{self._torsion_cutoff} "
+                    f"{self._torsion_cutoff} "
+                    f"{self._torsion_cutoff} \n"
+                )
 
             except KeyError:
-                # logging.info(f"OPT: {sorted_name} torsion not assigned.")
+                logging.info(
+                    f"OPT: {(name1, name2, name3, name4)} "
+                    f"angle not assigned."
+                )
                 continue
 
         return torsion_string
 
     def _get_vdw_string(self, mol):
+        if self._vdw is False:
+            return ""
         logging.info(
             "OPT: only vdw interactions between host and guest."
         )
