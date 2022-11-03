@@ -11,6 +11,7 @@ Author: Andrew Tarzia
 
 import sys
 import stk
+import stko
 import os
 import json
 from collections import Counter
@@ -28,6 +29,7 @@ from env_set import (
     fourplussix_calculations,
     fourplussix_backmap,
     guest_structures,
+    gulp_path,
 )
 
 from gulp_optimizer import CGGulpOptimizer
@@ -54,30 +56,109 @@ from ea_plotters import (
     CgProgressPlotter,
     plot_existing_guest_data_distributions,
 )
+from fourplussix_model_optimisation import get_molecule_name_from_record
 
-from guest import Guest
-from fourplussix_model_optimisation import (
-    mutator,
-    crosser,
-    get_molecule_name_from_record,
-    calculate_pore,
-    get_shape_atom_numbers,
-    get_initial_population,
-    get_final_energy,
-    get_OH6_measure,
-)
+
+class FixedGulpUFFOptimizer(stko.GulpUFFOptimizer):
+    def _position_section(self, mol, type_translator):
+        position_section = "\ncartesian\n"
+        count = 0
+        for atom in mol.get_atoms():
+            atom_type = type_translator[
+                self.atom_labels[atom.get_id()][0]
+            ]
+            position = mol.get_centroid(atom_ids=atom.get_id())
+
+            if atom.get_id() in self._fixed_ids:
+                count += 1
+                position_section += (
+                    f"{atom_type} core {round(position[0], 5)} "
+                    f"{round(position[1], 5)} {round(position[2], 5)} "
+                    "0 0 0 \n"
+                )
+            else:
+
+                position_section += (
+                    f"{atom_type} core {round(position[0], 5)} "
+                    f"{round(position[1], 5)} {round(position[2], 5)} "
+                    "1 1 1\n"
+                )
+
+        logging.info(f"OPT: fixing {count} atoms.")
+        return position_section
+
+    def _write_gulp_file(
+        self,
+        mol,
+        metal_atoms,
+        in_file,
+        output_xyz,
+        unit_cell=None,
+    ):
+
+        type_translator = self._type_translator()
+
+        top_line = "opti "
+
+        if self._conjugate_gradient:
+            top_line += "conj unit "
+
+        if unit_cell is not None:
+            # Constant pressure.
+            top_line += "conp "
+            cell_section = self._cell_section(unit_cell)
+            # Output CIF.
+            output_cif = output_xyz.replace("xyz", "cif")
+            periodic_output = f"output cif {output_cif}\n"
+        else:
+            # Constant volume.
+            top_line += " "
+            cell_section = ""
+            periodic_output = ""
+
+        top_line += "noautobond fix molmec cartesian\n"
+
+        position_section = self._position_section(mol, type_translator)
+        bond_section = self._bond_section(mol, metal_atoms)
+        species_section = self._species_section(type_translator)
+
+        library = "\nlibrary uff4mof.lib\n"
+
+        output_section = (
+            "\n"
+            f"maxcyc {self._maxcyc}\n"
+            "terse inout potentials\n"
+            "terse in cell\n"
+            "terse in structure\n"
+            "terse inout derivatives\n"
+            f"output xyz {output_xyz}\n"
+            f"{periodic_output}"
+            # 'output movie xyz steps_.xyz\n'
+        )
+
+        with open(in_file, "w") as f:
+            f.write(top_line)
+            f.write(cell_section)
+            f.write(position_section)
+            f.write(bond_section)
+            f.write(species_section)
+            f.write(library)
+            f.write(output_section)
+
+    def fix_atoms(self, mol, fixed_ids):
+        self._fixed_ids = fixed_ids
 
 
 def get_a_cage():
 
-    # Define list of topology functions.
+    # # Define list of topology functions.
     cage_topologies = cage_topology_options()
 
     bb_2c = stk.BuildingBlock.init_from_file(
-        path="temp_bbc2.mol",
+        path="temp_bbc2_2.mol",
         functional_groups=(
             stk.SmartsFunctionalGroupFactory(
-                smarts=("[Ce][Eu]"),
+                smarts=("[Bi][Mn]"),
                 bonders=(0,),
                 deleters=(),
                 placers=(0, 1),
@@ -86,10 +167,10 @@ def get_a_cage():
     )
 
     bb_3c = stk.BuildingBlock.init_from_file(
-        path="temp_bbc3.mol",
+        path="temp_bbc3_2.mol",
         functional_groups=(
             stk.SmartsFunctionalGroupFactory(
-                smarts=("[Ir][Sb]"),
+                smarts=("[Bi][Ho]"),
                 bonders=(0,),
                 deleters=(),
                 placers=(0, 1),
@@ -97,14 +178,14 @@ def get_a_cage():
         ),
     )
 
-    mol_rec = stk.MoleculeRecord(
+    const_mol = stk.ConstructedMolecule(
         topology_graph=cage_topologies["FourPlusSix"](
             building_blocks=(bb_2c, bb_3c),
         ),
     )
-    return mol_rec
+    return const_mol
 
-    # generator = np.random.RandomState(4)
+    # generator = np.random.RandomState(23)
     # # Define precursor topologies.
     # three_precursor_topologies = three_precursor_topology_options()
     # two_precursor_topologies = two_precursor_topology_options()
@@ -137,11 +218,11 @@ def get_a_cage():
     #     )
     #     mol_name = get_molecule_name_from_record(mol_rec)
     #     print(mol_name)
-    #     if mol_name == "FourPlusSix_Ce12Eu6Ir4Sb12":
+    #     if mol_name == "FourPlusSix_Bi24Ho4Mn6":
     #         print(bb_2c)
     #         print(bb_3c)
-    #         bb_3c.write("temp_bbc3.mol")
-    #         bb_2c.write("temp_bbc2.mol")
+    #         bb_3c.write("temp_bbc3_2.mol")
+    #         bb_2c.write("temp_bbc2_2.mol")
     #         return mol_rec
 
     # print("failed")
@@ -161,337 +242,201 @@ def main():
     figure_output = fourplussix_figures()
     calculation_output = fourplussix_calculations()
 
+    # test_bb2 = stk.BuildingBlock(
+    #     smiles="C1C(N([H])[H])=CC=C(C2C=CC(N([H])[H])=CC=2)C=1",
+    #     functional_groups=(stk.PrimaryAminoFactory(),),
+    # )
+    # test_bb3 = stk.BuildingBlock(
+    #     smiles="C1C(C=O)=CC(C=O)=CC=1C=O",
+    #     functional_groups=(stk.AldehydeFactory(),),
+    # )
     test_bb2 = stk.BuildingBlock(
-        smiles="C1C(N([H])[H])=CC=C(C2C=CC(N([H])[H])=CC=2)C=1",
+        smiles="NCCN",
         functional_groups=(stk.PrimaryAminoFactory(),),
     )
     test_bb3 = stk.BuildingBlock(
         smiles="C1C(C=O)=CC(C=O)=CC=1C=O",
         functional_groups=(stk.AldehydeFactory(),),
     )
-    test_bb2.write("test_bb2.mol")
-    test_bb3.write("test_bb3.mol")
+    test_bb2.write("test_bb2_2.mol")
+    test_bb3.write("test_bb3_2.mol")
     topology_graph = stk.cage.FourPlusSix((test_bb2, test_bb3))
     construction_result = topology_graph.construct()
     test_cage = stk.ConstructedMolecule.init_from_construction_result(
         construction_result=construction_result,
     ).with_centroid((0, 0, 0))
-    test_cage.write("test_cage.mol")
+    test_cage.write("test_cage_2.mol")
 
-    temp_mol_rec = get_a_cage()
+    temp_const_mol = get_a_cage()
+    temp_const_mol.write("temp_constmol_2.mol")
 
     temp_host_molecule = stk.BuildingBlock.init_from_file(
         str(
             cage_struct_output
-            / "g_99_m_0_FourPlusSix_Ce12Eu6Ir4Sb12.mol"
+            # / "g_99_m_0_FourPlusSix_Ce12Eu6Ir4Sb12.mol"
+            / "g_15_m_0_FourPlusSix_Bi24Ho4Mn6.mol"
         )
     ).with_centroid((0, 0, 0))
-    temp_host_molecule.write("temp_host.mol")
+    temp_host_molecule.write("temp_host_2.mol")
 
-    print(
-        "you have AA as ConstructedMolecule..."
-        "you have CG as MolRecord...\n\n"
-        "This gives you all BB ids, plus AtomInfos- \n\n"
-        "you could technically do MolRecord as ConstructedMolecule\n\n"
-        "What needs doing is - match BB_id=0 in AA with BB_id=0 in CG\n\n"
-        "Set positions of conneciton atoms of AA BB_ID to CG postions\n\n"
-        "Set Centroid of AA BB to match CG BB\n\n"
-        "Optimise -- this requires a UFF Gulp optimiser with "
-        "opt.fix_atoms(atom_ids=()) as a new method, that fixes the "
-        "placed atoms.\n\n"
-        "Calculate strain relative to input?\n\n"
-    )
-    raise SystemExit()
+    cg_bb_ids = {}
+    for atom_info in temp_const_mol.get_atom_infos():
+        bb_id = atom_info.get_building_block_id()
+        if bb_id not in cg_bb_ids:
+            cg_bb_ids[bb_id] = []
+        cg_bb_ids[bb_id].append(atom_info)
 
-    connection_beads = beads_2c()
-    connection_bead_strings = tuple(
-        i.element_string for i in connection_beads
-    )
-    present_connection_beads = {}
-    for atom in temp_host_molecule.get_atoms():
-        acname = atom.__class__.__name__
-        if acname in connection_bead_strings:
-            if acname not in present_connection_beads:
-                present_connection_beads[acname] = []
-            present_connection_beads[acname].append(atom)
+    print(cg_bb_ids.keys())
 
-    print(present_connection_beads)
+    cg_bonded_atoms = []
+    for bond_info in temp_const_mol.get_bond_infos():
+        if bond_info.get_building_block() is not None:
+            continue
+        cg_bonded_atoms.append(bond_info.get_bond().get_atom1())
+        cg_bonded_atoms.append(bond_info.get_bond().get_atom2())
 
-    cg_beads_counts = Counter(
-        tuple(
-            i.__class__.__name__ for i in temp_host_molecule.get_atoms()
-        )
-    )
-    print(cg_beads_counts)
-    bb3_centre_atom_string = list(cg_beads_counts.keys())[
-        list(cg_beads_counts.values()).index(4)
-    ]
-    bb2_centre_atom_string = list(cg_beads_counts.keys())[
-        list(cg_beads_counts.values()).index(6)
-    ]
-    print(bb3_centre_atom_string)
-    print(bb2_centre_atom_string)
+    print(cg_bonded_atoms)
 
-    selected_bead_string = list(present_connection_beads.keys())[0]
-    print(selected_bead_string)
+    bb_ids = {}
+    for atom_info in test_cage.get_atom_infos():
+        bb_id = atom_info.get_building_block_id()
+        if bb_id not in bb_ids:
+            bb_ids[bb_id] = []
+        bb_ids[bb_id].append(atom_info)
 
-    connection_atoms = present_connection_beads[selected_bead_string]
-    print(connection_atoms)
-    connection_pos_mat = np.array(
-        tuple(
-            temp_host_molecule.get_atomic_positions(
-                atom_ids=(i.get_id() for i in connection_atoms)
-            )
-        )
-    )
-    print(connection_pos_mat)
-    temp_host_molecule.write(
-        "temp_connections.mol",
-        atom_ids=tuple(i.get_id() for i in connection_atoms),
-    )
+    print(bb_ids.keys())
 
-    tpg_bbs = list(topology_graph.get_building_blocks())
-    print(tpg_bbs)
-    for bb_id in tpg_bbs:
-        print(bb_id, tpg_bbs[bb_id])
-
-    raise SystemExit()
-
-    placed_atom_ids = set()
+    bonded_atoms = []
     for bond_info in test_cage.get_bond_infos():
         if bond_info.get_building_block() is not None:
             continue
+        bonded_atoms.append(bond_info.get_bond().get_atom1())
+        bonded_atoms.append(bond_info.get_bond().get_atom2())
 
-        target_bond_info = bond_info
-        print(target_bond_info)
-        associated_atom_1 = target_bond_info.get_bond().get_atom1()
-        associated_atom_2 = target_bond_info.get_bond().get_atom2()
-        assoc_ids = tuple(
-            i.get_id()
-            for i in (
-                associated_atom_1,
-                associated_atom_2,
-            )
-        )
-        if (
-            assoc_ids[0] in placed_atom_ids
-            or assoc_ids[1] in placed_atom_ids
-        ):
-            continue
+    print(bonded_atoms)
+    bonded_atom_ids = tuple(i.get_id() for i in bonded_atoms)
+    other_atom_ids = tuple(
+        i.get_id()
+        for i in test_cage.get_atoms()
+        if i.get_id() not in bonded_atom_ids
+    )
 
-        average_position = np.array(
-            (
-                test_cage.get_centroid(
-                    atom_ids=assoc_ids,
-                )
-            )
-        ).reshape(1, 3)
-        print(average_position)
-        atom_positions = tuple(
-            test_cage.get_atomic_positions(atom_ids=assoc_ids)
-        )
-        atom_atom_vector = atom_positions[0] - atom_positions[1]
-        print(atom_atom_vector)
-        atom_atom_vector = atom_atom_vector / np.linalg.norm(
-            atom_atom_vector
-        )
-        print(atom_atom_vector)
+    cg_pos_mat = temp_host_molecule.get_position_matrix()
+    for bb_id in bb_ids:
+        print(bb_id)
+        bb_ais = bb_ids[bb_id]
+        bb_a_ids = tuple(i.get_atom().get_id() for i in bb_ais)
+        bb_ = bb_ais[0].get_building_block()
+        print(bb_)
+        cg_ais = cg_bb_ids[bb_id]
+        cg_a_ids = tuple(i.get_atom().get_id() for i in cg_ais)
+        cg_bb_ = cg_ais[0].get_building_block()
+        print(cg_bb_)
 
-        conn_distances = cdist(
-            average_position,
-            connection_pos_mat,
+        bb_connectors = tuple(
+            i for i in bonded_atoms if i.get_id() in bb_a_ids
         )
-        print(conn_distances)
-        conn_pos_mat_id = conn_distances.argmin()
-        print(conn_pos_mat_id)
-        connection_atom = connection_atoms[conn_pos_mat_id]
-        print(connection_atom)
-        connection_atom_pos = connection_pos_mat[conn_pos_mat_id]
-        print(connection_atom_pos)
+        bb_connectors_ids = tuple(i.get_id() for i in bb_connectors)
+        cg_connectors = tuple(
+            i for i in cg_bonded_atoms if i.get_id() in cg_a_ids
+        )
+        print(bb_connectors)
+        print(cg_connectors)
 
+        bb_nonconnectors = tuple(
+            i
+            for i in bb_ais
+            if i.get_atom().get_id() not in bonded_atoms
+        )
+        cg_nonconnectors = tuple(
+            i
+            for i in cg_ais
+            if i.get_atom().get_id() not in cg_bonded_atoms
+        )
+        print(bb_nonconnectors, cg_nonconnectors)
+
+        # Set position of bb_connectors to cg_connectors.
         new_posmat = []
         for i, pos in enumerate(test_cage.get_position_matrix()):
-            if i in assoc_ids:
-                new_posmat.append(connection_atom_pos)
-            else:
+            if i not in bb_connectors_ids:
                 new_posmat.append(pos)
-
+            else:
+                bb_conn = bb_connectors[bb_connectors_ids.index(i)]
+                cg_conn = cg_connectors[bb_connectors_ids.index(i)]
+                cg_conn_pos = cg_pos_mat[cg_conn.get_id()]
+                new_posmat.append(cg_conn_pos)
         new_posmat = np.array(new_posmat)
         test_cage = test_cage.with_position_matrix(new_posmat)
 
-        placed_atom_ids.add(associated_atom_1.get_id())
-        placed_atom_ids.add(associated_atom_2.get_id())
+    test_cage.write("updated_2.mol")
 
-    test_cage.write("updated.mol")
-
-    raise SystemExit()
-
-    # Define list of topology functions.
-    cage_topologies = cage_topology_options()
-
-    # Define precursor topologies.
-    three_precursor_topologies = three_precursor_topology_options()
-    two_precursor_topologies = two_precursor_topology_options()
-
-    target_guest = Guest(
-        stk.BuildingBlock.init_from_file(
-            str(guest_structures() / "3.mol")
-        )
+    opt = FixedGulpUFFOptimizer(
+        gulp_path=gulp_path(),
+        maxcyc=500,
+        metal_FF={},
+        output_dir=os.path.join(
+            fourplussix_calculations(),
+            "test_uffopt1_2",
+        ),
+        conjugate_gradient=True,
     )
-
-    plot_existing_guest_data_distributions(
-        calculation_dir=calculation_output,
-        figures_dir=figure_output,
-        suffix="hgres",
-        # fitness_function=fitness_from_dictionary,
+    opt.assign_FF(test_cage)
+    opt.fix_atoms(
+        mol=test_cage,
+        fixed_ids=bonded_atom_ids,
     )
-    if mode == "plot":
-        raise SystemExit("done plotting, bye!")
+    test_cage = opt.optimize(test_cage)
+    test_cage.write("updated_optimised1_2.mol")
 
-    # Settings for runs.
-    population_size_per_step = 100
-    num_generations = 100
-    # Set seeds for reproducible results.
-    seeds = [32, 2, 1223, 442, 5, 895]
+    opt = FixedGulpUFFOptimizer(
+        gulp_path=gulp_path(),
+        maxcyc=500,
+        metal_FF={},
+        output_dir=os.path.join(
+            fourplussix_calculations(),
+            "test_uffopt2_2",
+        ),
+        conjugate_gradient=True,
+    )
+    opt.assign_FF(test_cage)
+    opt.fix_atoms(
+        mol=test_cage,
+        fixed_ids=other_atom_ids,
+    )
+    test_cage = opt.optimize(test_cage)
+    test_cage.write("updated_optimised2_2.mol")
 
-    for seed in seeds:
-        logging.info(f"setting up the EA for seed {seed}...")
-        run_name = f"hg_s{seed}"
-        generator = np.random.RandomState(seed)
+    opt = FixedGulpUFFOptimizer(
+        gulp_path=gulp_path(),
+        maxcyc=500,
+        metal_FF={},
+        output_dir=os.path.join(
+            fourplussix_calculations(),
+            "test_uffopt3_2",
+        ),
+        conjugate_gradient=True,
+    )
+    opt.assign_FF(test_cage)
+    opt.fix_atoms(
+        mol=test_cage,
+        fixed_ids=bonded_atom_ids,
+    )
+    test_cage = opt.optimize(test_cage)
+    test_cage.write("updated_optimised3_2.mol")
 
-        # For now, just build N options and calculate properties.
-        logging.info(
-            f"building population of {population_size_per_step}..."
-        )
-        initial_population = tuple(
-            get_initial_population(
-                cage_topologies=cage_topologies,
-                three_precursor_topologies=three_precursor_topologies,
-                two_precursor_topologies=two_precursor_topologies,
-                num_population=population_size_per_step,
-                generator=generator,
-            )
-        )
-
-        mutation_selector = stk.Roulette(
-            num_batches=40,
-            # Small batch sizes are MUCH more efficient.
-            batch_size=1,
-            duplicate_batches=False,
-            duplicate_molecules=False,
-            random_seed=generator.randint(0, 1000),
-        )
-
-        crossover_selector = stk.Roulette(
-            num_batches=40,
-            # Small batch sizes are MUCH more efficient.
-            batch_size=1,
-            duplicate_batches=False,
-            duplicate_molecules=False,
-            random_seed=generator.randint(0, 1000),
-        )
-
-        ea = CgEvolutionaryAlgorithm(
-            initial_population=initial_population,
-            fitness_calculator=RecordFitnessFunction(get_fitness_value),
-            mutator=mutator(generator, cage_topologies),
-            crosser=crosser(generator),
-            generation_selector=stk.Best(
-                num_batches=population_size_per_step,
-                batch_size=1,
-            ),
-            mutation_selector=mutation_selector,
-            crossover_selector=crossover_selector,
-            num_processes=1,
-        )
-
-        writer = stk.MolWriter()
-        generations = []
-        logging.info(f"running EA for {num_generations} generations...")
-        for i, generation in enumerate(
-            ea.get_generations(num_generations)
-        ):
-            generations.append(generation)
-
-            fitness_progress = CgProgressPlotter(
-                generations=generations,
-                get_property=lambda record: record.get_fitness_value(),
-                y_label="fitness value",
-            )
-            fitness_progress.write(
-                str(figure_output / f"fitness_progress_{run_name}.pdf")
-            )
-
-            for molecule_id, molecule_record in enumerate(
-                generation.get_molecule_records()
-            ):
-                molecule_name = get_molecule_name_from_record(
-                    molecule_record
-                )
-                opt2_mol_file = os.path.join(
-                    fourplussix_calculations(),
-                    f"{molecule_name}_hg.mol",
-                )
-                mol = molecule_record.get_molecule()
-                opt_mol = mol.with_structure_from_file(opt2_mol_file)
-                hgcomplex = stk.ConstructedMolecule(
-                    topology_graph=stk.host_guest.Complex(
-                        host=stk.BuildingBlock.init_from_molecule(
-                            opt_mol
-                        ),
-                        guests=stk.host_guest.Guest(
-                            building_block=(
-                                target_guest.get_convexhul_stk_molecule()
-                            ),
-                        ),
-                    ),
-                )
-                writer.write(
-                    molecule=hgcomplex,
-                    path=os.path.join(
-                        struct_output,
-                        f"HG_g_{i}_m_{molecule_id}_{molecule_name}.mol",
-                    ),
-                )
-
-        logging.info("EA done!")
-
-        fitness_progress.write(
-            str(figure_output / f"fitness_progress_{run_name}.pdf")
-        )
-
-        CgProgressPlotter(
-            generations=generations,
-            get_property=lambda record: get_min_distance(record),
-            y_label="min distance",
-        ).write(
-            str(figure_output / f"distance_progress_{run_name}.pdf")
-        )
-
-        CgProgressPlotter(
-            generations=generations,
-            get_property=lambda record: get_OH6_measure(record),
-            y_label="OH6 measure",
-        ).write(str(figure_output / f"shape_progress_{run_name}.pdf"))
-
-        CgProgressPlotter(
-            generations=generations,
-            get_property=lambda record: get_final_energy(record),
-            y_label="final energy",
-        ).write(str(figure_output / f"energy_progress_{run_name}.pdf"))
-
-        CgProgressPlotter(
-            generations=generations,
-            get_property=lambda record: get_volume_ratio(record),
-            y_label="volume ratio",
-        ).write(str(figure_output / f"volume_progress_{run_name}.pdf"))
-
-        plot_existing_guest_data_distributions(
-            calculation_dir=calculation_output,
-            figures_dir=figure_output,
-            suffix="hgres",
-            # fitness_function=fitness_from_dictionary,
-        )
+    print(
+        # "you have AA as ConstructedMolecule..."
+        # "you have CG as ConstructedMolecule...\n\n"
+        # "This gives you all BB ids, plus AtomInfos- \n\n"
+        # "you could technically do MolRecord as ConstructedMolecule\n\n"
+        # "What needs doing is - match BB_id=0 in AA with BB_id=0 in CG\n\n"
+        # "Set positions of conneciton atoms of AA BB_ID to CG postions\n\n"
+        "Set Centroid of AA BB to match CG BB\n\n"
+        # "Optimise -- this requires a UFF Gulp optimiser with "
+        # "opt.fix_atoms(atom_ids=()) as a new method, that fixes the "
+        # "placed atoms.\n\n"
+        "Calculate strain relative to input?\n\n"
+    )
 
 
 if __name__ == "__main__":
