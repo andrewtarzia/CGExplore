@@ -41,8 +41,10 @@ class ShapeMeasure:
                 shape_string: self.reference_shape_dict()[shape_string]
             }
         self._num_vertex_options = tuple(
-            int(self._shape_dict[i]["vertices"])
-            for i in self._shape_dict
+            set(
+                int(self._shape_dict[i]["vertices"])
+                for i in self._shape_dict
+            )
         )
 
     def reference_shape_dict(self):

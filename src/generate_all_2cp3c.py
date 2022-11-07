@@ -36,31 +36,34 @@ from beads import beads_2c, beads_3c
 def get_shape_calculation_molecule(const_mol, name):
     splits = name.split("_")
     topo_str = splits[0]
-    c3_name = splits[1]
-    c3_topo_str = c3_name[:3]
-
-    central_c3_name = tuple(
-        i.element_string
-        for i in beads_3c()
-        if i.element_string in c3_name.replace(c3_topo_str, "")[:2]
-    )[0]
+    bbs = list(const_mol.get_building_blocks())
     old_position_matrix = const_mol.get_position_matrix()
 
+    three_c_bb = bbs[0]
     atoms = []
     position_matrix = []
-    for a in const_mol.get_atoms():
-        if a.__class__.__name__ == central_c3_name:
-            new_atom = stk.Atom(
-                id=len(atoms),
-                atomic_number=a.get_atomic_number(),
-                charge=a.get_charge(),
-            )
-            atoms.append(new_atom)
-            position_matrix.append(old_position_matrix[a.get_id()])
+
+    c3_name = splits[1]
+    c3_topo_str = c3_name[:3]
+    if c3_topo_str == "3C0":
+        target_id = 1
+    else:
+        target_id = 0
+    for ai in const_mol.get_atom_infos():
+        if ai.get_building_block() == three_c_bb:
+            # The atom to use is always the first in the building
+            # block.
+            if ai.get_building_block_atom().get_id() == target_id:
+                a = ai.get_atom()
+                new_atom = stk.Atom(
+                    id=len(atoms),
+                    atomic_number=a.get_atomic_number(),
+                    charge=a.get_charge(),
+                )
+                atoms.append(new_atom)
+                position_matrix.append(old_position_matrix[a.get_id()])
 
     if topo_str in ("TwoPlusThree",):
-
-        bbs = list(const_mol.get_building_blocks())
         two_c_bb = bbs[1]
         for ai in const_mol.get_atom_infos():
             if ai.get_building_block() == two_c_bb:
