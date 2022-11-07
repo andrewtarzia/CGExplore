@@ -15,7 +15,13 @@ import stk
 
 from .facebuildingblock import FaceBuildingBlock
 from .utilities import reorient_linker
-from .topologies import ThreeCPrecursorTemplate, TwoCPrecursorTemplate
+from .topologies import (
+    ThreeC0Arm,
+    ThreeC1Arm,
+    TwoC0Arm,
+    TwoC1Arm,
+    TwoC2Arm,
+)
 
 
 def precursor_dir():
@@ -34,38 +40,6 @@ def lambda_bb():
         path=os.path.join(precursor_dir(), "corner_lambda.mol"),
         functional_groups=(stk.BromoFactory(),),
     )
-
-
-def twoc_bb(sites):
-    if sites == 3:
-        bb = stk.BuildingBlock(
-            smiles="[Br][N][B][N][Br]",
-            functional_groups=(stk.BromoFactory(),),
-            position_matrix=[
-                [2, 1, 0],
-                [1, 0, 0],
-                [0, 0, 0],
-                [-1, 0, 0],
-                [-2, 1, 0],
-            ],
-        )
-        bb.write(os.path.join(precursor_dir(), f"twoc_{sites}_bb.mol"))
-    elif sites == 5:
-        bb = stk.BuildingBlock(
-            smiles="[Br][N][C][B][C][N][Br]",
-            functional_groups=(stk.BromoFactory(),),
-            position_matrix=[
-                [2, 1, 0],
-                [2, 0, 0],
-                [1, 0, 0],
-                [0, 0, 0],
-                [-1, 0, 0],
-                [-2, 0, 0],
-                [-2, 1, 0],
-            ],
-        )
-        bb.write(os.path.join(precursor_dir(), f"twoc_{sites}_bb.mol"))
-    return bb
 
 
 def threec_bb():
@@ -93,18 +67,6 @@ def threec_bb():
         ],
     )
     bb.write(os.path.join(precursor_dir(), "threec_bb.mol"))
-    return bb
-
-
-def fourc_bb():
-    bb = stk.BuildingBlock(
-        smiles="[Pd+2]",
-        functional_groups=(
-            stk.SingleAtom(stk.Pd(0, charge=2)) for i in range(4)
-        ),
-        position_matrix=[[0, 0, 0]],
-    )
-    bb.write(os.path.join(precursor_dir(), "fourc_bb.mol"))
     return bb
 
 
@@ -150,8 +112,9 @@ def plane_bb():
 
 def three_precursor_topology_options():
     topologies = {
-        "3c-1": ThreeCPrecursorTemplate(arm_length=1),
-        "3c-2": ThreeCPrecursorTemplate(arm_length=2),
+        "3c-0": ThreeC0Arm,
+        "3c-1": ThreeC1Arm,
+        # "3c-2": ThreeC2Arm,
     }
 
     return topologies
@@ -159,9 +122,10 @@ def three_precursor_topology_options():
 
 def two_precursor_topology_options():
     topologies = {
-        "2c-1": TwoCPrecursorTemplate(arm_length=1),
-        "2c-2": TwoCPrecursorTemplate(arm_length=2),
-        "2c-3": TwoCPrecursorTemplate(arm_length=1),
+        "2c-0": TwoC0Arm,
+        "2c-1": TwoC1Arm,
+        "2c-2": TwoC2Arm,
+        # "2c-3": TwoC3Arm,
     }
 
     return topologies

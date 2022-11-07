@@ -163,20 +163,46 @@ class Core2Arm(stk.cage.Cage):
     )
 
 
-class ThreeCPrecursorTemplate:
-    def __init__(self, arm_length):
-        self._arm_length = arm_length
-        if arm_length == 1:
-            self._internal_topology = Core1Arm
-        elif arm_length == 2:
-            self._internal_topology = Core2Arm
-
-    def get_building_block(self, bead_2c_lib, bead_3c_lib, generator):
-        factories = (stk.BromoFactory(placers=(0, 1)),)
-
-        three_c = generator.choice(bead_3c_lib)
+class ThreeC0Arm:
+    def __init__(self, bead):
+        self._bead = bead
+        self._name = f"3C0{bead.element_string}"
         three_c_bb = stk.BuildingBlock(
-            smiles=f"[Br][{three_c.element_string}]([Br])[Br]",
+            smiles=f"[Br][{bead.element_string}]([Br])[Br]",
+            position_matrix=[
+                [-1.8, 0, 0],
+                [0, 0, 0],
+                [-1.2, 1, 0],
+                [-1.2, -1, 0],
+            ],
+        )
+
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(f"[{bead.element_string}]" f"[Br]"),
+            bonders=(0,),
+            deleters=(1,),
+            placers=(0, 1),
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=three_c_bb,
+            functional_groups=(new_fgs,),
+        )
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
+
+
+class ThreeC1Arm:
+    def __init__(self, bead, abead1):
+        self._bead = bead
+        self._abead1 = abead1
+        self._name = f"3C1{bead.element_string}{abead1.element_string}"
+        factories = (stk.BromoFactory(placers=(0, 1)),)
+        three_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{bead.element_string}]([Br])[Br]",
             functional_groups=factories,
             position_matrix=[
                 [-2, 0, 0],
@@ -185,163 +211,278 @@ class ThreeCPrecursorTemplate:
                 [-1.2, -1, 0],
             ],
         )
-
-        if self._arm_length == 1:
-            two_cs = generator.choice(bead_2c_lib)
-            bb_tuple = (
-                three_c_bb,
-                stk.BuildingBlock(
-                    smiles=f"[{two_cs.element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
-                ),
-            )
-            new_fgs = stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{three_c.element_string}]"
-                    f"[{two_cs.element_string}]"
-                ),
-                bonders=(1,),
-                deleters=(),
-            )
-
-        elif self._arm_length == 2:
-            two_cs = generator.choice(bead_2c_lib, 2)
-            bb_tuple = (
-                three_c_bb,
-                stk.BuildingBlock(
-                    smiles=f"[Br][{two_cs[0].element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
-                ),
-                stk.BuildingBlock(
-                    smiles=f"[{two_cs[1].element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
-                ),
-            )
-            new_fgs = stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{two_cs[0].element_string}]"
-                    f"[{two_cs[1].element_string}]"
-                ),
-                bonders=(1,),
-                deleters=(),
-            )
-
+        bb_tuple = (
+            three_c_bb,
+            stk.BuildingBlock(
+                smiles=f"[{abead1.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+            ),
+        )
         const_mol = stk.ConstructedMolecule(
-            topology_graph=self._internal_topology(bb_tuple)
+            topology_graph=Core1Arm(bb_tuple)
         )
 
-        building_block = stk.BuildingBlock.init_from_molecule(
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(
+                f"[{bead.element_string}]" f"[{abead1.element_string}]"
+            ),
+            bonders=(1,),
+            deleters=(),
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
             molecule=const_mol,
             functional_groups=(new_fgs,),
         )
-        return building_block
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
 
 
-class TwoCPrecursorTemplate:
-    def __init__(self, arm_length):
-        self._arm_length = arm_length
-        self._internal_topology = stk.polymer.Linear
-
-    def get_building_block(self, core_bead_lib, bead_2c_lib, generator):
+class ThreeC2Arm:
+    def __init__(self, bead, abead1, abead2):
+        self._bead = bead
+        self._abead1 = abead1
+        self._abead2 = abead2
+        self._name = (
+            f"3C2{bead.element_string}{abead1.element_string}"
+            f"{abead2.element_string}"
+        )
         factories = (stk.BromoFactory(placers=(0, 1)),)
+        three_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{bead.element_string}]([Br])[Br]",
+            functional_groups=factories,
+            position_matrix=[
+                [-2, 0, 0],
+                [0, 0, 0],
+                [-1.2, 1, 0],
+                [-1.2, -1, 0],
+            ],
+        )
+        bb_tuple = (
+            three_c_bb,
+            stk.BuildingBlock(
+                smiles=f"[Br][{abead1.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+            ),
+            stk.BuildingBlock(
+                smiles=f"[{abead2.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+            ),
+        )
+        const_mol = stk.ConstructedMolecule(
+            topology_graph=Core2Arm(bb_tuple)
+        )
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(
+                f"[{abead1.element_string}]"
+                f"[{abead2.element_string}]"
+            ),
+            bonders=(1,),
+            deleters=(),
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=const_mol,
+            functional_groups=(new_fgs,),
+        )
 
-        core_c = generator.choice(core_bead_lib)
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
+
+
+class TwoC0Arm:
+    def __init__(self, bead):
+        self._bead = bead
+        self._name = f"2C0{bead.element_string}"
         core_c_bb = stk.BuildingBlock(
-            smiles=f"[Br][{core_c.element_string}][Br]",
+            smiles=f"[Br][{bead.element_string}][Br]",
+            position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+        )
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(f"[Br][{bead.element_string}]"),
+            bonders=(1,),
+            deleters=(0,),
+            placers=(0, 1),
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=core_c_bb,
+            functional_groups=(new_fgs,),
+        )
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
+
+
+class TwoC1Arm:
+    def __init__(self, bead, abead1):
+        self._bead = bead
+        self._abead1 = abead1
+        self._name = f"2C1{bead.element_string}{abead1.element_string}"
+        factories = (stk.BromoFactory(placers=(0, 1)),)
+        core_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{bead.element_string}][Br]",
             functional_groups=factories,
             position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
         )
-        if self._arm_length == 1:
-            repeating_unit = "ABA"
-            two_cs = generator.choice(bead_2c_lib)
-            bb_tuple = (
-                stk.BuildingBlock(
-                    smiles=f"[{two_cs.element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
-                ),
-                core_c_bb,
-            )
-            new_fgs = stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{two_cs.element_string}]"
-                    f"[{core_c.element_string}]"
-                ),
-                bonders=(0,),
-                deleters=(),
-                placers=(0, 1),
-            )
-
-        elif self._arm_length == 2:
-            repeating_unit = "ABCBA"
-            two_cs = generator.choice(bead_2c_lib, 2)
-            bb_tuple = (
-                stk.BuildingBlock(
-                    smiles=f"[{two_cs[0].element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
-                ),
-                stk.BuildingBlock(
-                    smiles=f"[Br][{two_cs[1].element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
-                ),
-                core_c_bb,
-            )
-            new_fgs = stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{two_cs[0].element_string}]"
-                    f"[{two_cs[1].element_string}]"
-                ),
-                bonders=(0,),
-                deleters=(),
-                placers=(0, 1),
-            )
-
-        elif self._arm_length == 3:
-            repeating_unit = "ABCDCBA"
-            two_cs = generator.choice(bead_2c_lib, 3)
-            bb_tuple = (
-                stk.BuildingBlock(
-                    smiles=f"[{two_cs[0].element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
-                ),
-                stk.BuildingBlock(
-                    smiles=f"[Br][{two_cs[1].element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
-                ),
-                stk.BuildingBlock(
-                    smiles=f"[Br][{two_cs[2].element_string}][Br]",
-                    functional_groups=factories,
-                    position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
-                ),
-                core_c_bb,
-            )
-            new_fgs = stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{two_cs[0].element_string}]"
-                    f"[{two_cs[1].element_string}]"
-                ),
-                bonders=(0,),
-                deleters=(),
-                placers=(0, 1),
-            )
-
+        bb_tuple = (
+            stk.BuildingBlock(
+                smiles=f"[{abead1.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+            ),
+            core_c_bb,
+        )
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(
+                f"[{abead1.element_string}][{bead.element_string}]"
+            ),
+            bonders=(0,),
+            deleters=(),
+            placers=(0, 1),
+        )
         const_mol = stk.ConstructedMolecule(
-            topology_graph=self._internal_topology(
+            topology_graph=stk.polymer.Linear(
                 building_blocks=bb_tuple,
-                repeating_unit=repeating_unit,
+                repeating_unit="ABA",
                 num_repeating_units=1,
             )
         )
-
-        building_block = stk.BuildingBlock.init_from_molecule(
+        self._building_block = stk.BuildingBlock.init_from_molecule(
             molecule=const_mol,
             functional_groups=(new_fgs,),
         )
-        return building_block
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
+
+
+class TwoC2Arm:
+    def __init__(self, bead, abead1, abead2):
+        self._bead = bead
+        self._abead1 = abead1
+        self._abead2 = abead2
+        self._name = (
+            f"2C2{bead.element_string}{abead1.element_string}"
+            f"{abead2.element_string}"
+        )
+        factories = (stk.BromoFactory(placers=(0, 1)),)
+        core_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{bead.element_string}][Br]",
+            functional_groups=factories,
+            position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+        )
+        bb_tuple = (
+            stk.BuildingBlock(
+                smiles=f"[{abead2.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+            ),
+            stk.BuildingBlock(
+                smiles=f"[Br][{abead1.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+            ),
+            core_c_bb,
+        )
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(
+                f"[{abead2.element_string}X1]"
+                f"[{abead1.element_string}]"
+            ),
+            bonders=(0,),
+            deleters=(),
+            placers=(0, 1),
+        )
+        const_mol = stk.ConstructedMolecule(
+            topology_graph=stk.polymer.Linear(
+                building_blocks=bb_tuple,
+                repeating_unit="ABCBA",
+                num_repeating_units=1,
+            )
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=const_mol,
+            functional_groups=(new_fgs,),
+        )
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
+
+
+class TwoC3Arm:
+    def __init__(self, bead, abead1, abead2, abead3):
+        self._bead = bead
+        self._abead1 = abead1
+        self._abead2 = abead2
+        self._abead3 = abead3
+        self._name = (
+            f"2C3{bead.element_string}{abead1.element_string}"
+            f"{abead2.element_string}{abead2.element_string}"
+        )
+        factories = (stk.BromoFactory(placers=(0, 1)),)
+        core_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{bead.element_string}][Br]",
+            functional_groups=factories,
+            position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+        )
+        bb_tuple = (
+            stk.BuildingBlock(
+                smiles=f"[{abead3.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+            ),
+            stk.BuildingBlock(
+                smiles=f"[Br][{abead2.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+            ),
+            stk.BuildingBlock(
+                smiles=f"[Br][{abead1.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
+            ),
+            core_c_bb,
+        )
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(
+                f"[{abead3.element_string}X1]"
+                f"[{abead2.element_string}]"
+            ),
+            bonders=(0,),
+            deleters=(),
+            placers=(0, 1),
+        )
+        const_mol = stk.ConstructedMolecule(
+            topology_graph=stk.polymer.Linear(
+                building_blocks=bb_tuple,
+                repeating_unit="ABCDCBA",
+                num_repeating_units=1,
+            )
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=const_mol,
+            functional_groups=(new_fgs,),
+        )
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
