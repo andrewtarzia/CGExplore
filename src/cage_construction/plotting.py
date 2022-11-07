@@ -18,53 +18,6 @@ import matplotlib.pyplot as plt
 plt.set_loglevel("WARNING")
 
 
-def merge_bond_types(s):
-
-    translation = {
-        "CP": "intra-3c",
-        "CS": "intra-3c",
-        "PS": "intra-3c",
-        "CFe": "core-3c",
-        "FeS": "core-3c",
-        "FeP": "core-3c",
-        "BN": "ligand",
-        "CN": "inter-BB",
-        "NP": "inter-BB",
-        "NS": "inter-BB",
-    }
-
-    return translation[s]
-
-
-def merge_angle_types(s):
-
-    translation = {
-        "BNN": "ligand",
-        "CPS": "outer-3c",
-        "FePS": "inner-3c",
-        "CFeP": "inner-3c",
-        "CFeS": "inner-3c",
-        "CFeN": "inner-3c",
-        "FeNP": "inner-3c",
-        "FeNS": "inner-3c",
-        "BNP": "inter-BB",
-        "BNS": "inter-BB",
-        "BCN": "inter-BB",
-    }
-
-    return translation[s]
-
-
-def convert_topo_names(topo_str):
-
-    new_names = {
-        "FourPlusSix": "4+6",
-        "FourPlusSix2": "4+6_2",
-    }
-
-    return new_names[topo_str]
-
-
 def scatter(
     topo_to_c,
     results,
