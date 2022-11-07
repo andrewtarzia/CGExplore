@@ -12,7 +12,6 @@ Author: Andrew Tarzia
 import os
 import numpy as np
 import re
-from string import digits
 from dataclasses import dataclass
 from itertools import combinations
 import logging

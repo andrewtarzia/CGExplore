@@ -13,7 +13,7 @@ import subprocess as sp
 import os
 import shutil
 
-import env_set
+from env_set import shape_path
 
 
 class ShapeMeasure:
@@ -685,7 +685,7 @@ class ShapeMeasure:
             structure_string=structure_string,
         )
 
-        cmd = f"{env_set.shape_path()} {input_file}"
+        cmd = f"{shape_path()} {input_file}"
         with open(std_out, "w") as f:
             # Note that sp.call will hold the program until completion
             # of the calculation.

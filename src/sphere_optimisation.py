@@ -19,7 +19,7 @@ from scipy.spatial.distance import cdist
 
 
 from env_set import sphere
-
+import utilities
 from gulp_optimizer import CGGulpOptimizer
 
 from beads import CgBead
@@ -344,14 +344,11 @@ def main():
         pass
 
     struct_output = sphere() / "structures"
-    if not os.path.exists(struct_output):
-        os.mkdir(struct_output)
+    utilities.check_directory(struct_output)
     figure_output = sphere() / "figures"
-    if not os.path.exists(figure_output):
-        os.mkdir(figure_output)
+    utilities.check_directory(figure_output)
     calculation_output = sphere() / "calculations"
-    if not os.path.exists(calculation_output):
-        os.mkdir(calculation_output)
+    utilities.check_directory(calculation_output)
 
     # Settings for runs.
     population_size_per_step = 10

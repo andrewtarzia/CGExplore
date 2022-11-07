@@ -20,11 +20,8 @@ import numpy as np
 
 from shape import ShapeMeasure
 
-from env_set import (
-    fourplussix_figures,
-    fourplussix_optimisation,
-    fourplussix_calculations,
-)
+from env_set import fourplussix
+from utilities import check_directory
 
 from gulp_optimizer import CGGulpOptimizer
 
@@ -346,9 +343,12 @@ def main():
     if mode not in ("run", "plot"):
         raise ValueError(f"mode must be run or plot, not {mode}")
 
-    struct_output = fourplussix_optimisation()
-    figure_output = fourplussix_figures()
-    calculation_output = fourplussix_calculations()
+    struct_output = fourplussix() / "optimisation"
+    check_directory(struct_output)
+    figure_output = fourplussix() / "figures"
+    check_directory(struct_output)
+    calculation_output = fourplussix() / "calculations"
+    check_directory(struct_output)
 
     # Define list of topology functions.
     cage_topologies = cage_topology_options()
@@ -446,7 +446,7 @@ def main():
                     molecule_record
                 )
                 opt2_mol_file = os.path.join(
-                    fourplussix_calculations(),
+                    calculation_output,
                     f"{molecule_name}_opted2.mol",
                 )
                 mol = molecule_record.get_molecule()

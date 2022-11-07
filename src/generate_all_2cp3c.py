@@ -19,12 +19,8 @@ import itertools
 
 from shape import ShapeMeasure
 from pore import PoreMeasure
-from env_set import (
-    cage_figures,
-    cage_structures,
-    cage_calculations,
-)
-
+from env_set import cages
+from utilities import check_directory
 from gulp_optimizer import CGGulpOptimizer
 
 from cage_construction.topologies import cage_topology_options
@@ -196,9 +192,12 @@ def main():
     if mode not in ("run", "plot"):
         raise ValueError(f"mode must be run or plot, not {mode}")
 
-    struct_output = cage_structures()
-    figure_output = cage_figures()
-    calculation_output = cage_calculations()
+    struct_output = cages() / "structures"
+    check_directory(struct_output)
+    figure_output = cages() / "figures"
+    check_directory(figure_output)
+    calculation_output = cages() / "calculations"
+    check_directory(calculation_output)
 
     # Define list of topology functions.
     cage_topologies = cage_topology_options()

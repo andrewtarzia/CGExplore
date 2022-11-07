@@ -23,15 +23,8 @@ from itertools import combinations
 
 from shape import ShapeMeasure
 
-from env_set import (
-    fourplussix_figures,
-    fourplussix_optimisation,
-    fourplussix_calculations,
-    fourplussix_backmap,
-    guest_structures,
-    gulp_path,
-)
-
+from env_set import fourplussix, guests, gulp_path
+from utilities import check_directory
 from gulp_optimizer import CGGulpOptimizer
 
 from fourplusix_construction.topologies import cage_topology_options
@@ -237,10 +230,14 @@ def main():
     else:
         pass
 
-    struct_output = fourplussix_backmap()
-    cage_struct_output = fourplussix_optimisation()
-    figure_output = fourplussix_figures()
-    calculation_output = fourplussix_calculations()
+    struct_output = fourplussix() / "backmap"
+    check_directory(struct_output)
+    figure_output = fourplussix() / "figures"
+    check_directory(struct_output)
+    calculation_output = fourplussix() / "calculations"
+    check_directory(struct_output)
+    cage_struct_output = fourplussix() / "optimisation"
+    check_directory(cage_struct_output)
 
     # test_bb2 = stk.BuildingBlock(
     #     smiles="C1C(N([H])[H])=CC=C(C2C=CC(N([H])[H])=CC=2)C=1",
@@ -375,7 +372,7 @@ def main():
         maxcyc=500,
         metal_FF={},
         output_dir=os.path.join(
-            fourplussix_calculations(),
+            calculation_output,
             "test_uffopt1_2",
         ),
         conjugate_gradient=True,
@@ -393,7 +390,7 @@ def main():
         maxcyc=500,
         metal_FF={},
         output_dir=os.path.join(
-            fourplussix_calculations(),
+            calculation_output,
             "test_uffopt2_2",
         ),
         conjugate_gradient=True,
@@ -411,7 +408,7 @@ def main():
         maxcyc=500,
         metal_FF={},
         output_dir=os.path.join(
-            fourplussix_calculations(),
+            calculation_output,
             "test_uffopt3_2",
         ),
         conjugate_gradient=True,

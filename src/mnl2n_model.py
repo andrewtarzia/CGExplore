@@ -18,13 +18,11 @@ import pore_mapper as pm
 import logging
 import multiprocessing
 
-from env_set import (
-    mnl2n_figures,
-    mnl2n_structures,
-)
+from env_set import mnl2n
 from utilities import (
     get_distances,
     get_angles,
+    check_directory,
 )
 from gulp_optimizer import (
     CGGulpOptimizer,
@@ -309,8 +307,10 @@ def main():
     else:
         pass
 
-    struct_output = mnl2n_structures()
-    figure_output = mnl2n_figures()
+    struct_output = mnl2n() / "structures"
+    check_directory(struct_output)
+    figure_output = mnl2n() / "figures"
+    check_directory(figure_output)
 
     # Make cage of each symmetry.
     topologies = cage_topologies(fourc_bb(), twoc_bb(sites=5))

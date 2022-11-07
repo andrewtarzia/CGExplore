@@ -15,9 +15,7 @@ import logging
 import pandas as pd
 
 
-from env_set import (
-    fourplussix_calculations,
-)
+from env_set import fourplussix
 
 
 def survey_existing_data_distributions(
@@ -67,7 +65,7 @@ def main():
     else:
         target_diameter = float(sys.argv[1])
 
-    calculation_output = fourplussix_calculations()
+    calculation_output = fourplussix() / "calculations"
 
     N = 10
 

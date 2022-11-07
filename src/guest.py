@@ -17,7 +17,8 @@ import numpy as np
 
 import logging
 
-from env_set import guest_structures
+from env_set import guests
+from utilities import check_directory
 
 
 class PointCloud:
@@ -118,8 +119,10 @@ def main():
     else:
         pass
 
-    struct_output = guest_structures()
+    struct_output = guests() / "structures"
+    check_directory(struct_output)
     manual_structures = struct_output / "manual_builds"
+    check_directory(manual_structures)
 
     guest_bbs = {
         "1": stk.BuildingBlock("CN1C=NC2=C1C(=O)N(C(=O)N2C)C"),

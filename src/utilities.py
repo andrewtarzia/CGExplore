@@ -14,6 +14,12 @@ import json
 import logging
 from rdkit.Chem import AllChem as rdkit
 from scipy.spatial.distance import euclidean
+import os
+
+
+def check_directory(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
 
 
 def get_distances(optimizer, cage):

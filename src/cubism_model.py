@@ -18,14 +18,11 @@ import logging
 
 from shape import ShapeMeasure
 
-from env_set import (
-    cubism_figures,
-    cubism_structures,
-    cubism_calculations,
-)
+from env_set import cubism
 from utilities import (
     get_distances,
     get_angles,
+    check_directory,
 )
 from gulp_optimizer import CGGulpOptimizer
 
@@ -125,6 +122,7 @@ def run_optimisation(
     ortho_k,
     o_angle_k,
     output_dir,
+    calculation_dir,
 ):
 
     run_prefix = f"{symm}_{aniso}_{flex}"
@@ -151,7 +149,7 @@ def run_optimisation(
         opted.write(os.path.join(output_dir, f"{run_prefix}_final.mol"))
 
         cu8_measure = ShapeMeasure(
-            output_dir=cubism_calculations() / f"{run_prefix}_shape",
+            output_dir=calculation_dir / f"{run_prefix}_shape",
             target_atmnum=30,
             shape_string="cube",
         ).calculate(opted)
@@ -187,8 +185,12 @@ def main():
     else:
         pass
 
-    struct_output = cubism_structures()
-    figure_output = cubism_figures()
+    struct_output = cubism() / "structures"
+    check_directory(struct_output)
+    figure_output = cubism() / "figures"
+    check_directory(figure_output)
+    calculation_output = cubism() / "calculations"
+    check_directory(calculation_output)
 
     # Make cage of each symmetry.
     symms = symmetries(delta_bb(), lambda_bb(), plane_bb())
@@ -219,6 +221,7 @@ def main():
                     ortho_k=flexes[flex][0],
                     o_angle_k=flexes[flex][1],
                     output_dir=struct_output,
+                    calculation_output=calculation_output,
                 )
                 results[aniso][symm] = res_dict
 

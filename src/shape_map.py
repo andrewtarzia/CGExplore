@@ -21,6 +21,7 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
 from env_set import project_dir
+import utilities
 from shape import ShapeMeasure
 
 
@@ -75,14 +76,11 @@ def main():
         pass
 
     struct_output = project_dir() / "shape_structures"
-    if not os.path.exists(struct_output):
-        os.mkdir(struct_output)
+    utilities.check_directory(struct_output)
     figure_output = project_dir() / "figures"
-    if not os.path.exists(figure_output):
-        os.mkdir(figure_output)
+    utilities.check_directory(figure_output)
     test_templates = struct_output / "tests"
-    if not os.path.exists(test_templates):
-        os.mkdir(test_templates)
+    utilities.check_directory(test_templates)
 
     all_templates = get_all_templates(test_templates)
 

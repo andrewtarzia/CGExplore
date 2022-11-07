@@ -21,12 +21,8 @@ from itertools import combinations
 
 from shape import ShapeMeasure
 
-from env_set import (
-    fourplussix_figures,
-    fourplussix_hg_optimisation,
-    fourplussix_calculations,
-    guest_structures,
-)
+from env_set import fourplussix, guests
+import utilities
 
 from gulp_optimizer import CGGulpOptimizer
 
@@ -299,9 +295,14 @@ def main():
     if mode not in ("run", "plot"):
         raise ValueError(f"mode must be run or plot, not {mode}")
 
-    struct_output = fourplussix_hg_optimisation()
-    figure_output = fourplussix_figures()
-    calculation_output = fourplussix_calculations()
+    struct_output = fourplussix() / "hg_optimisation"
+    utilities.check_directory(struct_output)
+    figure_output = fourplussix() / "figures"
+    utilities.check_directory(figure_output)
+    calculation_output = fourplussix() / "calculations"
+    utilities.check_directory(calculation_output)
+    guest_structures = guests() / "structures"
+    utilities.check_directory(guest_structures)
 
     # Define list of topology functions.
     cage_topologies = cage_topology_options()
@@ -312,7 +313,7 @@ def main():
 
     target_guest = Guest(
         stk.BuildingBlock.init_from_file(
-            str(guest_structures() / "3.mol")
+            str(guest_structures / "3.mol")
         )
     )
 
@@ -406,7 +407,7 @@ def main():
                     molecule_record
                 )
                 opt2_mol_file = os.path.join(
-                    fourplussix_calculations(),
+                    calculation_output,
                     f"{molecule_name}_hg.mol",
                 )
                 mol = molecule_record.get_molecule()
