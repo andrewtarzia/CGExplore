@@ -162,6 +162,38 @@ def fourplussix_calculations():
     return path
 
 
+def cages():
+    path = project_dir() / pathlib.Path("cages/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def cage_figures():
+    path = cages() / pathlib.Path("figures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def cage_structures():
+    path = cages() / pathlib.Path("structures/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
+def cage_calculations():
+    path = cages() / pathlib.Path("calculations/")
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+    return path
+
+
 def gulp_path():
     return pathlib.Path("/home/atarzia/software/gulp-6.1/Src/gulp")
 
