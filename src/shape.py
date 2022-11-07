@@ -26,7 +26,12 @@ class ShapeMeasure:
 
     """
 
-    def __init__(self, output_dir, target_atmnums, shape_string):
+    def __init__(
+        self,
+        output_dir,
+        target_atmnums=None,
+        shape_string=None,
+    ):
         self._output_dir = output_dir
         self._target_atmnums = target_atmnums
         if shape_string is None:
@@ -35,6 +40,10 @@ class ShapeMeasure:
             self._shape_dict = {
                 shape_string: self.reference_shape_dict()[shape_string]
             }
+        self._num_vertex_options = tuple(
+            int(self._shape_dict[i]["vertices"])
+            for i in self._shape_dict
+        )
 
     def reference_shape_dict(self):
         return {
@@ -737,12 +746,18 @@ class ShapeMeasure:
             num_centroids = 0
             pos_mat = molecule.get_position_matrix()
             for a in molecule.get_atoms():
-                if a.get_atomic_number() in self._target_atmnums:
-                    c = pos_mat[a.get_id()]
-                    structure_string += (
-                        f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
-                    )
-                    num_centroids += 1
+                c = pos_mat[a.get_id()]
+                structure_string += (
+                    f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
+                )
+                num_centroids += 1
+
+            if num_centroids not in self._num_vertex_options:
+                raise ValueError(
+                    f"you gave {num_centroids} vertices, but expected "
+                    "to calculate shapes with "
+                    f"{self._num_vertex_options} options"
+                )
 
             shapes = self._run_calculation(structure_string)
 
@@ -752,6 +767,11 @@ class ShapeMeasure:
         return shapes
 
     def calculate_from_centroids(self, constructed_molecule):
+        if self._target_atmnums is None:
+            raise ValueError(
+                "you need to set the atom numbers to use to "
+                "calculate centroids."
+            )
         output_dir = os.path.abspath(self._output_dir)
 
         if os.path.exists(output_dir):
@@ -767,6 +787,13 @@ class ShapeMeasure:
             for c in centroids:
                 structure_string += f"Zn {c[0]} {c[1]} {c[2]}\n"
                 num_centroids += 1
+
+            if num_centroids not in self._num_vertex_options:
+                raise ValueError(
+                    f"you gave {num_centroids} vertices, but expected "
+                    "to calculate shapes with "
+                    f"{self._num_vertex_options} options"
+                )
 
             shapes = self._run_calculation(structure_string)
 
