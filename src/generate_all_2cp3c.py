@@ -196,11 +196,12 @@ def analyse_cage(molecule, name, output_dir):
         run_data = opt.extract_gulp()
         fin_energy = run_data["final_energy"]
 
+        shape_mol = get_shape_calculation_molecule(molecule, name)
         shape_measures = ShapeMeasure(
             output_dir=(output_dir / f"{name}_shape"),
             target_atmnums=None,
             shape_string=None,
-        ).calculate(get_shape_calculation_molecule(molecule, name))
+        ).calculate(shape_mol)
 
         opt_pore_data = PoreMeasure().calculate_pore(
             molecule=molecule,
