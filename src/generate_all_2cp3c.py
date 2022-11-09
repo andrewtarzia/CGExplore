@@ -219,19 +219,12 @@ def analyse_cage(molecule, name, output_dir):
 
 
 def main():
-    first_line = f"Usage: {__file__}.py mode"
-    if not len(sys.argv) == 2:
+    first_line = f"Usage: {__file__}.py"
+    if not len(sys.argv) == 1:
         logging.info(f"{first_line}")
-        logging.info(
-            "\nmode must be either `run` or `plot`, where `plot` just "
-            "outputs known distributions."
-        )
         sys.exit()
     else:
-        mode = sys.argv[1]
-
-    if mode not in ("run", "plot"):
-        raise ValueError(f"mode must be run or plot, not {mode}")
+        pass
 
     struct_output = cages() / "structures"
     check_directory(struct_output)
@@ -251,71 +244,64 @@ def main():
     beads_3c_lib = beads_3c()
     beads_2c_lib = beads_2c()
 
-    if mode == "run":
-        # For now, just build N options and calculate properties.
-        logging.info("building building blocks...")
-        c2_blocks = {}
-        c2_products = itertools.product(beads_2c_lib, repeat=3)
-        for c2_options in c2_products:
-            c2_topo = two_precursor_topologies["2c-0"]
-            temp = c2_topo(bead=c2_options[0])
-            c2_blocks[temp.get_name()] = temp.get_building_block()
+    # For now, just build N options and calculate properties.
+    logging.info("building building blocks...")
+    c2_blocks = {}
+    c2_products = itertools.product(beads_2c_lib, repeat=3)
+    for c2_options in c2_products:
+        c2_topo = two_precursor_topologies["2c-0"]
+        temp = c2_topo(bead=c2_options[0])
+        c2_blocks[temp.get_name()] = temp.get_building_block()
 
-            c2_topo = two_precursor_topologies["2c-1"]
-            temp = c2_topo(bead=c2_options[0], abead1=c2_options[1])
-            c2_blocks[temp.get_name()] = temp.get_building_block()
+        c2_topo = two_precursor_topologies["2c-1"]
+        temp = c2_topo(bead=c2_options[0], abead1=c2_options[1])
+        c2_blocks[temp.get_name()] = temp.get_building_block()
+        continue
+        c2_topo = two_precursor_topologies["2c-2"]
+        temp = c2_topo(
+            bead=c2_options[0],
+            abead1=c2_options[1],
+            abead2=c2_options[2],
+        )
+        c2_blocks[temp.get_name()] = temp.get_building_block()
 
-            c2_topo = two_precursor_topologies["2c-2"]
-            temp = c2_topo(
-                bead=c2_options[0],
-                abead1=c2_options[1],
-                abead2=c2_options[2],
-            )
-            c2_blocks[temp.get_name()] = temp.get_building_block()
-
-        c3_blocks = {}
-        for core_bead in beads_3c_lib:
-            c3_topo = three_precursor_topologies["3c-0"]
-            temp = c3_topo(bead=core_bead)
+    c3_blocks = {}
+    for core_bead in beads_3c_lib:
+        c3_topo = three_precursor_topologies["3c-0"]
+        temp = c3_topo(bead=core_bead)
+        c3_blocks[temp.get_name()] = temp.get_building_block()
+        for c2 in beads_2c_lib:
+            c3_topo = three_precursor_topologies["3c-1"]
+            temp = c3_topo(bead=core_bead, abead1=c2)
             c3_blocks[temp.get_name()] = temp.get_building_block()
 
-            for c2 in beads_2c_lib:
-                c3_topo = three_precursor_topologies["3c-1"]
-                temp = c3_topo(bead=core_bead, abead1=c2)
-                c3_blocks[temp.get_name()] = temp.get_building_block()
-
-        logging.info(
-            f"there are {len(c2_blocks)} 2-C and "
-            f"{len(c3_blocks)} 3-C building blocks."
-        )
-
-        logging.info("building population...")
-        popn_iterator = itertools.product(
-            cage_topologies, c2_blocks, c3_blocks
-        )
-        count = 0
-        for iteration in popn_iterator:
-            cage_topo_str, bb2_str, bb3_str = iteration
-            name = f"{cage_topo_str}_{bb3_str}_{bb2_str}"
-            cage = stk.ConstructedMolecule(
-                topology_graph=cage_topologies[cage_topo_str](
-                    building_blocks=(
-                        c2_blocks[bb2_str],
-                        c3_blocks[bb3_str],
-                    ),
-                ),
-            )
-            cage = optimise_cage(cage, name, calculation_output)
-            cage.write(str(struct_output / f"{name}_optc.mol"))
-            analyse_cage(cage, name, calculation_output)
-            count += 1
-
-        logging.info(f"{count} cages built.")
-
-    plot_existing_data_distributions(
-        calculation_dir=calculation_output,
-        figures_dir=figure_output,
+    logging.info(
+        f"there are {len(c2_blocks)} 2-C and "
+        f"{len(c3_blocks)} 3-C building blocks."
     )
+
+    logging.info("building population...")
+    popn_iterator = itertools.product(
+        cage_topologies, c2_blocks, c3_blocks
+    )
+    count = 0
+    for iteration in popn_iterator:
+        cage_topo_str, bb2_str, bb3_str = iteration
+        name = f"{cage_topo_str}_{bb3_str}_{bb2_str}"
+        cage = stk.ConstructedMolecule(
+            topology_graph=cage_topologies[cage_topo_str](
+                building_blocks=(
+                    c2_blocks[bb2_str],
+                    c3_blocks[bb3_str],
+                ),
+            ),
+        )
+        cage = optimise_cage(cage, name, calculation_output)
+        cage.write(str(struct_output / f"{name}_optc.mol"))
+        analyse_cage(cage, name, calculation_output)
+        count += 1
+
+    logging.info(f"{count} cages built.")
 
 
 if __name__ == "__main__":
