@@ -256,7 +256,7 @@ def main():
         c2_topo = two_precursor_topologies["2c-1"]
         temp = c2_topo(bead=c2_options[0], abead1=c2_options[1])
         c2_blocks[temp.get_name()] = temp.get_building_block()
-        continue
+
         c2_topo = two_precursor_topologies["2c-2"]
         temp = c2_topo(
             bead=c2_options[0],
