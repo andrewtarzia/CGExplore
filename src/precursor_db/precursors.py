@@ -17,10 +17,10 @@ from .facebuildingblock import FaceBuildingBlock
 from .utilities import reorient_linker
 from .topologies import (
     ThreeC0Arm,
-    ThreeC1Arm,
     TwoC0Arm,
     TwoC1Arm,
     TwoC2Arm,
+    TwoC3Arm,
 )
 
 
@@ -113,8 +113,6 @@ def plane_bb():
 def three_precursor_topology_options():
     topologies = {
         "3c-0": ThreeC0Arm,
-        "3c-1": ThreeC1Arm,
-        # "3c-2": ThreeC2Arm,
     }
 
     return topologies
@@ -125,7 +123,7 @@ def two_precursor_topology_options():
         "2c-0": TwoC0Arm,
         "2c-1": TwoC1Arm,
         "2c-2": TwoC2Arm,
-        # "2c-3": TwoC3Arm,
+        "2c-3": TwoC3Arm,
     }
 
     return topologies

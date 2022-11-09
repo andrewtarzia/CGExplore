@@ -36,16 +36,11 @@ def identity_distributions(all_data, figure_output):
         "4p62": 0,
         "6p9": 0,
         "8p12": 0,
-        "2p3-3C0": 0,
-        "4p6-3C0": 0,
-        "4p62-3C0": 0,
-        "6p9-3C0": 0,
-        "8p12-3C0": 0,
         "3C0": 0,
-        "3C1": 0,
         "2C0": 0,
         "2C1": 0,
         "2C2": 0,
+        "2C3": 0,
     }
     num_cages = len(all_data)
     for cage in all_data:
@@ -57,29 +52,17 @@ def identity_distributions(all_data, figure_output):
 
         if topo_name == "TwoPlusThree":
             categories["2p3"] += 1
-            if "3C0" in c3_bbname:
-                categories["2p3-3C0"] += 1
         if topo_name == "FourPlusSix":
             categories["4p6"] += 1
-            if "3C0" in c3_bbname:
-                categories["4p6-3C0"] += 1
         if topo_name == "FourPlusSix2":
             categories["4p62"] += 1
-            if "3C0" in c3_bbname:
-                categories["4p62-3C0"] += 1
         if topo_name == "SixPlusNine":
             categories["6p9"] += 1
-            if "3C0" in c3_bbname:
-                categories["6p9-3C0"] += 1
         if topo_name == "EightPlusTwelve":
             categories["8p12"] += 1
-            if "3C0" in c3_bbname:
-                categories["8p12-3C0"] += 1
 
         if "3C0" in c3_bbname:
             categories["3C0"] += 1
-        if "3C1" in c3_bbname:
-            categories["3C1"] += 1
 
         if "2C0" in c2_bbname:
             categories["2C0"] += 1
@@ -87,19 +70,26 @@ def identity_distributions(all_data, figure_output):
             categories["2C1"] += 1
         if "2C2" in c2_bbname:
             categories["2C2"] += 1
+        if "2C3" in c2_bbname:
+            categories["2C3"] += 1
 
-    if sum((categories["3C0"], categories["3C1"])) != num_cages:
-        raise ValueError(
-            f'{categories["3C0"]} + {categories["3C1"]} != {num_cages}'
-        )
+    if categories["3C0"] != num_cages:
+        raise ValueError(f'{categories["3C0"]} != {num_cages}')
 
     if (
-        sum((categories["2C0"], categories["2C1"], categories["2C2"]))
+        sum(
+            (
+                categories["2C0"],
+                categories["2C1"],
+                categories["2C2"],
+                categories["2C3"],
+            )
+        )
         != num_cages
     ):
         raise ValueError(
             f'{categories["2C0"]} + {categories["2C1"]} + '
-            f'{categories["2C2"]} != {num_cages}'
+            f'{categories["2C2"]} + {categories["2C3"]} != {num_cages}'
         )
 
     ax.bar(
@@ -116,7 +106,6 @@ def identity_distributions(all_data, figure_output):
     ax.set_xlabel("cage identity", fontsize=16)
     ax.set_ylabel("count", fontsize=16)
     ax.set_title(f"total cages: {num_cages}", fontsize=16)
-    ax.set_xticklabels(categories.keys(), rotation=45, ha="right")
     ax.set_yscale("log")
 
     fig.tight_layout()
@@ -133,6 +122,9 @@ def single_value_distributions(all_data, figure_output):
         "energy": {"xtitle": "energy"},
         "pore_diameter": {"xtitle": "pore diameter"},
         "pore_volume": {"xtitle": "pore volume"},
+        "energy_barm": {"xtitle": "energy"},
+        "pore_diameter_barm": {"xtitle": "pore diameter"},
+        "pore_volume_barm": {"xtitle": "pore volume"},
     }
 
     color_map = {
@@ -142,23 +134,41 @@ def single_value_distributions(all_data, figure_output):
         "SixPlusNine": "#320E3B",
         "EightPlusTwelve": "#CE7B91",
     }
+    color_map_barm = {
+        "2C0": "#06AED5",
+        "2C1": "#086788",
+        "2C2": "#DD1C1A",
+        "2C3": "#320E3B",
+    }
 
     for tp in to_plot:
         fig, ax = plt.subplots(figsize=(8, 5))
         # zoom_values = [i for i in values if i < 1]
         xtitle = to_plot[tp]["xtitle"]
-        for topo in color_map:
-            values = [
-                all_data[i][tp]
-                for i in all_data
-                if i.split("_")[0] == topo
-            ]
+        if "barm" in tp:
+            cmapp = color_map_barm
+        else:
+            cmapp = color_map
+
+        for topo in cmapp:
+            if "barm" in tp:
+                values = [
+                    all_data[i][tp.replace("_barm", "")]
+                    for i in all_data
+                    if topo in i.split("_")[2]
+                ]
+            else:
+                values = [
+                    all_data[i][tp]
+                    for i in all_data
+                    if i.split("_")[0] == topo
+                ]
             ax.hist(
                 x=values,
                 bins=50,
                 density=False,
                 histtype="step",
-                color=color_map[topo],
+                color=cmapp[topo],
                 lw=3,
                 label=topo,
             )
@@ -168,19 +178,6 @@ def single_value_distributions(all_data, figure_output):
         ax.set_ylabel("count", fontsize=16)
         ax.set_yscale("log")
         ax.legend(fontsize=16)
-        # # Add an inset.
-        # axins = inset_axes(ax, width=4, height=2.5)
-        # axins.hist(
-        #     x=zoom_values,
-        #     bins=50,
-        #     density=False,
-        #     histtype="step",
-        #     color="k",
-        #     lw=3,
-        # )
-        # axins.tick_params(axis="both", which="major", labelsize=16)
-        # axins.set_xlabel(xtitle, fontsize=16)
-        # axins.set_ylabel("count", fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
@@ -542,23 +539,119 @@ def phase_space_1(bb_data, figure_output):
 
 
 def phase_space_2(bb_data, figure_output):
+    for i in ("shape", "energy"):
+        fig, axs = plt.subplots(
+            nrows=1,
+            ncols=4,
+            figsize=(16, 5),
+        )
+        flat_axs = axs.flatten()
+
+        sc_3c0_2c0 = []
+        sc_3c0_2c1 = []
+        sc_3c0_2c2 = []
+        sc_3c0_2c3 = []
+        for bb_pair in bb_data:
+            bb_dict = bb_data[bb_pair]
+            c2_bbname = bb_pair[0]
+            c3_bbname = bb_pair[1]
+
+            min_energy = min(tuple(i[1] for i in bb_dict.values()))
+            min_e_dict = {
+                i: bb_dict[i]
+                for i in bb_dict
+                if bb_dict[i][1] == min_energy
+            }
+            min_shape_value = min(
+                (i[0] for i in list(min_e_dict.values()))
+            )
+            if i == "energy":
+                x = min_energy
+            elif i == "shape":
+                x = min_shape_value
+            y = list(min_e_dict.values())[0][2]
+
+            if "2C0" in c2_bbname:
+                if "3C0" in c3_bbname:
+                    sc_3c0_2c0.append((x, y))
+                else:
+                    raise ValueError()
+            elif "2C1" in c2_bbname:
+                if "3C0" in c3_bbname:
+                    sc_3c0_2c1.append((x, y))
+                else:
+                    raise ValueError()
+            elif "2C2" in c2_bbname:
+                if "3C0" in c3_bbname:
+                    sc_3c0_2c2.append((x, y))
+                else:
+                    raise ValueError()
+            elif "2C3" in c2_bbname:
+                if "3C0" in c3_bbname:
+                    sc_3c0_2c3.append((x, y))
+                else:
+                    raise ValueError()
+
+        shape_coords = (
+            (f"3C0-2C0 ({len(sc_3c0_2c0)})", sc_3c0_2c0),
+            (f"3C0-2C1 ({len(sc_3c0_2c1)})", sc_3c0_2c1),
+            (f"3C0-2C2 ({len(sc_3c0_2c2)})", sc_3c0_2c2),
+            (f"3C0-2C3 ({len(sc_3c0_2c3)})", sc_3c0_2c3),
+        )
+
+        for ax, (title, coords) in zip(flat_axs, shape_coords):
+
+            if len(coords) != 0:
+                hb = ax.hexbin(
+                    [i[0] for i in coords],
+                    [i[1] for i in coords],
+                    gridsize=20,
+                    cmap="inferno",
+                    bins="log",
+                )
+                cbar = fig.colorbar(hb, ax=ax, label="log10(N)")
+
+            cbar.ax.tick_params(labelsize=16)
+            ax.set_title(title, fontsize=16)
+            ax.tick_params(axis="both", which="major", labelsize=16)
+            if i == "energy":
+                ax.set_xlabel("min. energy", fontsize=16)
+            elif i == "shape":
+                ax.set_xlabel("min. shape", fontsize=16)
+            ax.set_ylabel("pore radius", fontsize=16)
+
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"ps_2_{i}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
+def phase_space_3(bb_data, figure_output):
     fig, axs = plt.subplots(
         nrows=1,
-        ncols=3,
+        ncols=4,
         figsize=(16, 5),
     )
     flat_axs = axs.flatten()
 
-    shape_coordinates_2c0 = []
-    shape_coordinates_2c1 = []
-    shape_coordinates_2c2 = []
+    topologies = {
+        "5": "2p3",
+        "4": "4p6",
+        "b": "4p62",
+        "6": "6p9",
+        "8": "8p12",
+    }
+
+    sc_3c0_2c0 = {}
+    sc_3c0_2c1 = {}
+    sc_3c0_2c2 = {}
+    sc_3c0_2c3 = {}
     for bb_pair in bb_data:
         bb_dict = bb_data[bb_pair]
         c2_bbname = bb_pair[0]
-        c3_bbname = bb_pair[1]
-
-        # if "3C0" not in c3_bbname:
-        #     continue
 
         min_energy = min(tuple(i[1] for i in bb_dict.values()))
         min_e_dict = {
@@ -566,44 +659,52 @@ def phase_space_2(bb_data, figure_output):
             for i in bb_dict
             if bb_dict[i][1] == min_energy
         }
-        min_shape_value = min((i[0] for i in list(min_e_dict.values())))
-        x = min_shape_value
-        y = list(min_e_dict.values())[0][2]
+        keys = list(min_e_dict.keys())
+        topo_str = topologies[keys[0][-1]]
 
-        if "C0" in c2_bbname:
-            shape_coordinates_2c0.append((x, y))
-        elif "C1" in c2_bbname:
-            shape_coordinates_2c1.append((x, y))
-        elif "C2" in c2_bbname:
-            shape_coordinates_2c2.append((x, y))
+        if "2C0" in c2_bbname:
+            if topo_str not in sc_3c0_2c0:
+                sc_3c0_2c0[topo_str] = 0
+            sc_3c0_2c0[topo_str] += 1
+        elif "2C1" in c2_bbname:
+            if topo_str not in sc_3c0_2c1:
+                sc_3c0_2c1[topo_str] = 0
+            sc_3c0_2c1[topo_str] += 1
+        elif "2C2" in c2_bbname:
+            if topo_str not in sc_3c0_2c2:
+                sc_3c0_2c2[topo_str] = 0
+            sc_3c0_2c2[topo_str] += 1
+        elif "2C3" in c2_bbname:
+            if topo_str not in sc_3c0_2c3:
+                sc_3c0_2c3[topo_str] = 0
+            sc_3c0_2c3[topo_str] += 1
 
     shape_coords = (
-        ("2C0", shape_coordinates_2c0),
-        ("2C1", shape_coordinates_2c1),
-        ("2C2", shape_coordinates_2c2),
+        ("3C0-2C0", sc_3c0_2c0),
+        ("3C0-2C1", sc_3c0_2c1),
+        ("3C0-2C2", sc_3c0_2c2),
+        ("3C0-2C3", sc_3c0_2c3),
     )
 
     for ax, (title, coords) in zip(flat_axs, shape_coords):
 
-        if len(coords) != 0:
-            hb = ax.hexbin(
-                [i[0] for i in coords],
-                [i[1] for i in coords],
-                gridsize=20,
-                cmap="inferno",
-                bins="log",
-            )
-            cbar = fig.colorbar(hb, ax=ax, label="log10(N)")
+        ax.bar(
+            coords.keys(),
+            coords.values(),
+            # color="#06AED5",
+            color="#086788",
+            # color="#DD1C1A",
+            # color="#320E3B",
+            edgecolor="k",
+        )
 
-        cbar.ax.tick_params(labelsize=16)
         ax.set_title(title, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("min. shape", fontsize=16)
-        ax.set_ylabel("pore radius", fontsize=16)
+        ax.set_ylabel("count", fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "ps_2.pdf"),
+        os.path.join(figure_output, "ps_3.pdf"),
         dpi=720,
         bbox_inches="tight",
     )
@@ -657,10 +758,11 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
 
     identity_distributions(all_data, figure_output)
-    phase_space_1(bb_data, figure_output)
-    phase_space_2(bb_data, figure_output)
     single_value_distributions(all_data, figure_output)
     shape_vector_distributions(all_data, figure_output)
+    phase_space_1(bb_data, figure_output)
+    phase_space_2(bb_data, figure_output)
+    phase_space_3(bb_data, figure_output)
     raise SystemExit()
     shape_vector_cluster(
         all_data=all_data,
