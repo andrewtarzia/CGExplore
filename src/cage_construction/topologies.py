@@ -23,3 +23,19 @@ def cage_topology_options():
     }
 
     return topologies
+
+
+class CGM12L24(stk.cage.M12L24):
+    def _get_scale(self, building_block_vertices):
+        return 15
+
+    def get_vertex_alignments(self):
+        return self._vertex_alignments
+
+
+def unsymm_topology_options():
+    topologies = {
+        "CGM12L24": CGM12L24,
+    }
+
+    return topologies
