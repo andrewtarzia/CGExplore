@@ -587,3 +587,166 @@ def plot_existing_guest_data_distributions(
         bbox_inches="tight",
     )
     plt.close()
+
+
+def plot_existing_M12_data_distributions(
+    calculation_dir,
+    figures_dir,
+    target_orderings,
+    suffix=None,
+):
+    if suffix is None:
+        suffix = "res"
+    all_jsons = list(calculation_dir.glob(f"*_{suffix}.json"))
+    count = len(all_jsons)
+    logging.info(f"there are {count} existing data points")
+
+    if count == 0:
+        return
+
+    target_size = 43.2
+    target_energy = 0
+
+    scores = []
+    energies = []
+    sizes = []
+    tord_values = {}
+    for json_file in all_jsons:
+        with open(json_file, "r") as f:
+            res_dict = json.load(f)
+
+        size = res_dict["max_size"]
+        size_score = abs(target_size - size)
+        score = 1 / (res_dict["fin_energy"] * 10 + size_score)
+        scores.append(score)
+        energies.append(res_dict["fin_energy"])
+        sizes.append(size)
+        name = (json_file.name).replace("_res.json", "")
+
+        if name in target_orderings:
+            tord_values[target_orderings[name]] = (
+                size,
+                res_dict["fin_energy"],
+                score,
+            )
+
+    fig, axs = plt.subplots(
+        nrows=3,
+        ncols=1,
+        figsize=(8, 10),
+    )
+
+    axs[0].hist(
+        x=scores,
+        bins=50,
+        # range=(0, 4.4),
+        density=True,
+        histtype="step",
+        color="k",
+        lw=3,
+    )
+    axs[0].tick_params(axis="both", which="major", labelsize=16)
+    axs[0].set_xlabel("fitness", fontsize=16)
+    axs[0].set_ylabel("frequency", fontsize=16)
+
+    axs[1].hist(
+        x=energies,
+        bins=50,
+        # range=(0, 4.4),
+        density=True,
+        histtype="step",
+        color="k",
+        lw=3,
+    )
+    axs[1].tick_params(axis="both", which="major", labelsize=16)
+    axs[1].set_xlabel("energies", fontsize=16)
+    axs[1].set_ylabel("frequency", fontsize=16)
+    axs[1].axvline(x=target_energy, linestyle="--", lw=2, c="k")
+
+    axs[2].hist(
+        x=size,
+        bins=50,
+        # range=(0, 4.4),
+        density=True,
+        histtype="step",
+        color="k",
+        lw=3,
+    )
+    axs[2].tick_params(axis="both", which="major", labelsize=16)
+    axs[2].set_xlabel("size", fontsize=16)
+    axs[2].set_ylabel("frequency", fontsize=16)
+    axs[2].axvline(x=target_size, linestyle="--", lw=2, c="k")
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figures_dir, "known_library_unsymm.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    fig, axs = plt.subplots(
+        nrows=1,
+        ncols=3,
+        figsize=(16, 5),
+    )
+
+    hb = axs[0].hexbin(
+        energies,
+        scores,
+        gridsize=20,
+        cmap="inferno",
+        bins="log",
+    )
+    axs[0].tick_params(axis="both", which="major", labelsize=16)
+    axs[0].set_xlabel("energies", fontsize=16)
+    axs[0].set_ylabel("fitness", fontsize=16)
+    fig.colorbar(hb, ax=axs[0], label="log10(N)")
+    axs[0].axvline(x=target_energy, linestyle="--", lw=2, c="k")
+
+    hb = axs[1].hexbin(
+        sizes,
+        scores,
+        gridsize=20,
+        cmap="inferno",
+        bins="log",
+    )
+    axs[1].tick_params(axis="both", which="major", labelsize=16)
+    axs[1].set_xlabel("size", fontsize=16)
+    axs[1].set_ylabel("fitness", fontsize=16)
+    fig.colorbar(hb, ax=axs[1], label="log10(N)")
+    axs[1].axvline(x=target_size, linestyle="--", lw=2, c="k")
+
+    hb = axs[2].hexbin(
+        energies,
+        sizes,
+        gridsize=20,
+        cmap="inferno",
+        bins="log",
+    )
+    axs[2].tick_params(axis="both", which="major", labelsize=16)
+    axs[2].set_xlabel("energy", fontsize=16)
+    axs[2].set_ylabel("size", fontsize=16)
+    fig.colorbar(hb, ax=axs[2], label="log10(N)")
+    axs[2].axvline(x=target_energy, linestyle="--", lw=2, c="k")
+    axs[2].axhline(y=target_size, linestyle="--", lw=2, c="k")
+
+    for tord in tord_values:
+        size, energy, fitness = tord_values[tord]
+        s = tord
+        axs[0].scatter(energy, fitness, c="r", edgecolor="white", s=120)
+        axs[0].text(energy, fitness, s, fontsize=16)
+
+        axs[1].scatter(size, fitness, c="r", edgecolor="white", s=120)
+        axs[1].text(size, fitness, s, fontsize=16)
+
+        axs[2].scatter(energy, size, c="r", edgecolor="white", s=120)
+        axs[2].text(energy, size, s, fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figures_dir, "known_library_unsymmhex.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()

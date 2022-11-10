@@ -27,6 +27,12 @@ def mnl2n():
     return path
 
 
+def unsymm():
+    path = project_dir() / pathlib.Path("unsymm/")
+    check_directory(path)
+    return path
+
+
 def guests():
     path = project_dir() / pathlib.Path("guest/")
     check_directory(path)
