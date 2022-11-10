@@ -223,4 +223,4 @@ def beads_3c():
 
 
 def beads_4c():
-    return (CgBead("Pt", 2.0, 4, (90, 180, 130)),)
+    return (CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),)

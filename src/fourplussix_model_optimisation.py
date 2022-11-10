@@ -346,9 +346,9 @@ def main():
     struct_output = fourplussix() / "optimisation"
     check_directory(struct_output)
     figure_output = fourplussix() / "figures"
-    check_directory(struct_output)
+    check_directory(figure_output)
     calculation_output = fourplussix() / "calculations"
-    check_directory(struct_output)
+    check_directory(calculation_output)
 
     # Define list of topology functions.
     cage_topologies = cage_topology_options()
