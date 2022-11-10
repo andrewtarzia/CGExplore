@@ -247,16 +247,17 @@ def main():
     # For now, just build N options and calculate properties.
     logging.info("building building blocks...")
     c2_blocks = {}
-    c2_products = itertools.product(beads_2c_lib, repeat=3)
-    for c2_options in c2_products:
+    for c2_option in beads_2c_lib:
         c2_topo = two_precursor_topologies["2c-0"]
-        temp = c2_topo(bead=c2_options[0])
+        temp = c2_topo(bead=c2_option)
         c2_blocks[temp.get_name()] = temp.get_building_block()
 
+    for c2_options in itertools.product(beads_2c_lib, repeat=2):
         c2_topo = two_precursor_topologies["2c-1"]
         temp = c2_topo(bead=c2_options[0], abead1=c2_options[1])
         c2_blocks[temp.get_name()] = temp.get_building_block()
 
+    for c2_options in itertools.product(beads_2c_lib, repeat=3):
         c2_topo = two_precursor_topologies["2c-2"]
         temp = c2_topo(
             bead=c2_options[0],
@@ -265,15 +266,21 @@ def main():
         )
         c2_blocks[temp.get_name()] = temp.get_building_block()
 
+    for c2_options in itertools.product(beads_2c_lib, repeat=4):
+        c2_topo = two_precursor_topologies["2c-3"]
+        temp = c2_topo(
+            bead=c2_options[0],
+            abead1=c2_options[1],
+            abead2=c2_options[2],
+            abead3=c2_options[3],
+        )
+        c2_blocks[temp.get_name()] = temp.get_building_block()
+
     c3_blocks = {}
     for core_bead in beads_3c_lib:
         c3_topo = three_precursor_topologies["3c-0"]
         temp = c3_topo(bead=core_bead)
         c3_blocks[temp.get_name()] = temp.get_building_block()
-        for c2 in beads_2c_lib:
-            c3_topo = three_precursor_topologies["3c-1"]
-            temp = c3_topo(bead=core_bead, abead1=c2)
-            c3_blocks[temp.get_name()] = temp.get_building_block()
 
     logging.info(
         f"there are {len(c2_blocks)} 2-C and "
