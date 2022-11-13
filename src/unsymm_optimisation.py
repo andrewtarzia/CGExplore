@@ -13,13 +13,14 @@ import sys
 import stk
 import os
 import json
+from rdkit.Chem import AllChem as rdkit
 from collections import defaultdict
 import logging
 import numpy as np
 
 
 from env_set import unsymm
-from utilities import check_directory
+from utilities import check_directory, angle_between
 
 from gulp_optimizer import CGGulpOptimizer
 
@@ -101,6 +102,58 @@ def get_molecule_name_from_record(record):
     return f"{tg.__class__.__name__}_{bb4_str}_{bb2_str}_{va_str}"
 
 
+def get_centre_dists(molecule, tg, run_prefix):
+
+    num_nodes = {
+        "CGM12L24": 12,
+    }
+    pos_mat = molecule.get_position_matrix()
+
+    bb2_atoms = tuple(
+        tuple(
+            i
+            for i in tg.get_building_blocks()
+            if i.get_num_functional_groups() == 2
+        )[0].get_atoms()
+    )
+
+    tg_str, cent_name, _, _ = run_prefix.split("_")
+
+    query = (
+        f"[{bb2_atoms[2].__class__.__name__}]~"
+        f"[{cent_name}]"
+        f"(~[{bb2_atoms[2].__class__.__name__}])"
+        f"(~[{bb2_atoms[0].__class__.__name__}])"
+        f"~[{bb2_atoms[0].__class__.__name__}]"
+    )
+    rdkit_mol = molecule.to_rdkit_mol()
+    rdkit.SanitizeMol(rdkit_mol)
+    num_matches = 0
+    num_cis = 0
+    num_trans = 0
+    for match in rdkit_mol.GetSubstructMatches(
+        query=rdkit.MolFromSmarts(query),
+    ):
+        num_matches += 1
+
+        # Get angle between same atom types, defined in smarts.
+        vector1 = pos_mat[match[1]] - pos_mat[match[0]]
+        vector2 = pos_mat[match[1]] - pos_mat[match[2]]
+        curr_angle = np.degrees(angle_between(vector1, vector2))
+
+        # Set cis or trans based on this angle.
+        if curr_angle < 130:
+            num_cis += 1
+        elif curr_angle > 130:
+            num_trans += 1
+
+    return {
+        "num_notcisortrans": num_nodes[tg_str] - num_matches,
+        "num_trans": num_trans,
+        "num_cis": num_cis,
+    }
+
+
 def get_results_dictionary(molecule_record):
     output_dir = unsymm() / "calculations"
 
@@ -157,9 +210,15 @@ def get_results_dictionary(molecule_record):
 
         fin_energy = run_data["final_energy"]
         max_size = molecule.get_maximum_diameter()
+        centre_dists = get_centre_dists(
+            molecule=molecule,
+            tg=molecule_record.get_topology_graph(),
+            run_prefix=run_prefix,
+        )
         res_dict = {
             "fin_energy": fin_energy,
             "max_size": max_size,
+            "centre_dists": centre_dists,
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
@@ -172,11 +231,34 @@ def get_final_energy(molecule_record):
     return res_dict["fin_energy"]
 
 
+def get_num_trans(molecule_record):
+    res_dict = get_results_dictionary(molecule_record)
+    return res_dict["num_trans"]
+
+
+def get_num_cis(molecule_record):
+    res_dict = get_results_dictionary(molecule_record)
+    return res_dict["num_cis"]
+
+
+def get_num_notcisortrans(molecule_record):
+    res_dict = get_results_dictionary(molecule_record)
+    return res_dict["num_notcisortrans"]
+
+
 def fitness_from_dictionary(res_dict):
-    size = res_dict["max_size"]
-    target_size = 43.2
-    size_score = abs(target_size - size)
-    score = 1 / (res_dict["fin_energy"] * 10 + size_score)
+    # size = res_dict["max_size"]
+    # target_size = 43.2
+    # size_score = abs(target_size - size)
+    # score = 1 / (res_dict["fin_energy"] * 10 + size_score)
+
+    target_notcisortrans = 0
+    cdists = res_dict["centre_dists"]
+
+    score = 1 / (
+        res_dict["fin_energy"] * 1
+        + abs(cdists["num_notcisortrans"] - target_notcisortrans) * 100
+    )
     return score
 
 
@@ -205,16 +287,12 @@ def crosser(generator, topology_options):
     )
 
 
-def get_twoc():
-    bead_lib = beads_2c()
-    central = tuple(i for i in bead_lib if i.element_string == "Be")[0]
-    abead1 = tuple(i for i in bead_lib if i.element_string == "Eu")[0]
-    abead2 = tuple(i for i in bead_lib if i.element_string == "He")[0]
-
+def build_from_beads(abead1, central, abead2):
     new_fgs = (
         stk.SmartsFunctionalGroupFactory(
             smarts=(
-                f"[{abead1.element_string}][{central.element_string}]"
+                f"[{abead1.element_string}]"
+                f"[{central.element_string}]"
             ),
             bonders=(0,),
             deleters=(),
@@ -222,7 +300,8 @@ def get_twoc():
         ),
         stk.SmartsFunctionalGroupFactory(
             smarts=(
-                f"[{abead2.element_string}][{central.element_string}]"
+                f"[{abead2.element_string}]"
+                f"[{central.element_string}]"
             ),
             bonders=(0,),
             deleters=(),
@@ -238,6 +317,23 @@ def get_twoc():
         functional_groups=new_fgs,
         position_matrix=[[-5, 0, 0], [0, 0, 0], [5, 0, 0]],
     )
+
+
+def get_twocs():
+    bead_lib = beads_2c()
+    abead2 = tuple(i for i in bead_lib if i.element_string == "Ce")[0]
+    central = tuple(i for i in bead_lib if i.element_string == "Eu")[0]
+    abead1 = tuple(i for i in bead_lib if i.element_string == "Ge")[0]
+    yield build_from_beads(abead1, central, abead2)
+
+    central = tuple(i for i in bead_lib if i.element_string == "Be")[0]
+    abead2 = tuple(i for i in bead_lib if i.element_string == "He")[0]
+
+    for abead1_estring in ("Eu", "Ce", "Lu"):
+        abead1 = tuple(
+            i for i in bead_lib if i.element_string == abead1_estring
+        )[0]
+        yield build_from_beads(abead1, central, abead2)
 
 
 def get_fourc():
@@ -265,14 +361,13 @@ def get_fourc():
     )
 
 
-def build_get_fitness_of_top(
+def build_experimentals(
     cage_topology_function,
     twoc_precursor,
     fourc_precursor,
 ):
 
     orderings = {
-        "def": {i: 0 for i in range(12, 36)},
         "E1": {
             # Right.
             12: 0,
@@ -415,7 +510,6 @@ def build_get_fitness_of_top(
         target_orderings[get_molecule_name_from_record(molrec)] = name
         fv = get_fitness_value(molrec)
         logging.info(f"for {name}, fitness: {fv}")
-    return target_orderings
 
 
 def main():
@@ -436,125 +530,115 @@ def main():
     # Define list of topology functions.
     cage_topology_function = CGM12L24
 
+    seed_sets = {
+        0: [256, 9, 123, 986],
+        1: [12, 673, 98, 22],
+        2: [726, 23, 44, 1],
+        3: [14, 33, 2, 4122],
+    }
+
     # Define precursor topologies.
-    twoc_precursor = get_twoc()
-    twoc_precursor.write(str(struct_output / "twoc.mol"))
     fourc_precursor = get_fourc()
-    fourc_precursor.write(str(struct_output / "fourc.mol"))
-
-    target_orderings = build_get_fitness_of_top(
-        cage_topology_function=cage_topology_function,
-        twoc_precursor=twoc_precursor,
-        fourc_precursor=fourc_precursor,
-    )
-
-    plot_existing_M12_data_distributions(
-        calculation_dir=calculation_output,
-        figures_dir=figure_output,
-        target_orderings=target_orderings,
-    )
-
-    # Settings for runs.
-    population_size_per_step = 20
-    num_generations = 100
-    # Set seeds for reproducible results.
-    seeds = [256, 2909, 123, 986, 7823, 271541]
-    for seed in seeds:
-        logging.info(f"setting up the EA for seed {seed}...")
-        run_name = f"s{seed}"
-        generator = np.random.RandomState(seed)
-
-        # For now, just build N options and calculate properties.
-        logging.info(
-            f"building population of {population_size_per_step}..."
+    for iname, twoc_precursor in enumerate(get_twocs()):
+        seeds = seed_sets[iname]
+        build_experimentals(
+            cage_topology_function=cage_topology_function,
+            twoc_precursor=twoc_precursor,
+            fourc_precursor=fourc_precursor,
         )
-        initial_population = tuple(
-            get_initial_population(
-                cage_topology_function=cage_topology_function,
-                twoc_precursor=twoc_precursor,
-                fourc_precursor=fourc_precursor,
-                num_population=population_size_per_step,
-                generator=generator,
+
+        plot_existing_M12_data_distributions(
+            calculation_dir=calculation_output,
+            figures_dir=figure_output,
+        )
+
+        # Settings for runs.
+        population_size_per_step = 40
+        num_generations = 40
+        # Set seeds for reproducible results.
+        for seed in seeds:
+            logging.info(
+                f"setting up the EA for seed {seed} and {iname}..."
             )
-        )
+            run_name = f"s{seed}_i{iname}"
+            generator = np.random.RandomState(seed)
 
-        mutation_selector = VaRoulette(
-            num_batches=10,
-            # Small batch sizes are MUCH more efficient.
-            batch_size=1,
-            duplicate_batches=False,
-            duplicate_molecules=False,
-            random_seed=generator.randint(0, 1000),
-            key_maker=VaKeyMaker(),
-        )
+            # For now, just build N options and calculate properties.
+            logging.info(
+                f"building population of {population_size_per_step}..."
+            )
+            initial_population = tuple(
+                get_initial_population(
+                    cage_topology_function=cage_topology_function,
+                    twoc_precursor=twoc_precursor,
+                    fourc_precursor=fourc_precursor,
+                    num_population=population_size_per_step,
+                    generator=generator,
+                )
+            )
 
-        crossover_selector = VaRoulette(
-            num_batches=10,
-            # Small batch sizes are MUCH more efficient.
-            batch_size=1,
-            duplicate_batches=False,
-            duplicate_molecules=False,
-            random_seed=generator.randint(0, 1000),
-            key_maker=VaKeyMaker(),
-        )
-
-        ea = CgEvolutionaryAlgorithm(
-            initial_population=initial_population,
-            fitness_calculator=RecordFitnessFunction(get_fitness_value),
-            mutator=mutator(generator, unsymm_topology_options()),
-            crosser=crosser(generator, unsymm_topology_options()),
-            generation_selector=VaBest(
-                num_batches=population_size_per_step,
+            mutation_selector = VaRoulette(
+                num_batches=30,
+                # Small batch sizes are MUCH more efficient.
                 batch_size=1,
-            ),
-            mutation_selector=mutation_selector,
-            crossover_selector=crossover_selector,
-            key_maker=VaKeyMaker(),
-            num_processes=1,
-        )
-
-        writer = stk.MolWriter()
-        generations = []
-        logging.info(f"running EA for {num_generations} generations...")
-        for i, generation in enumerate(
-            ea.get_generations(num_generations)
-        ):
-            generations.append(generation)
-
-            fitness_progress = CgProgressPlotter(
-                generations=generations,
-                get_property=lambda record: record.get_fitness_value(),
-                y_label="fitness value",
+                duplicate_batches=False,
+                duplicate_molecules=False,
+                random_seed=generator.randint(0, 1000),
+                key_maker=VaKeyMaker(),
             )
+
+            crossover_selector = VaRoulette(
+                num_batches=30,
+                # Small batch sizes are MUCH more efficient.
+                batch_size=1,
+                duplicate_batches=False,
+                duplicate_molecules=False,
+                random_seed=generator.randint(0, 1000),
+                key_maker=VaKeyMaker(),
+            )
+
+            ea = CgEvolutionaryAlgorithm(
+                initial_population=initial_population,
+                fitness_calculator=RecordFitnessFunction(
+                    get_fitness_value
+                ),
+                mutator=mutator(generator, unsymm_topology_options()),
+                crosser=crosser(generator, unsymm_topology_options()),
+                generation_selector=VaBest(
+                    num_batches=population_size_per_step,
+                    batch_size=1,
+                ),
+                mutation_selector=mutation_selector,
+                crossover_selector=crossover_selector,
+                key_maker=VaKeyMaker(),
+                num_processes=1,
+            )
+
+            generations = []
+            logging.info(
+                f"running EA for {num_generations} generations..."
+            )
+            for i, generation in enumerate(
+                ea.get_generations(num_generations)
+            ):
+                generations.append(generation)
+
+                fitness_progress = CgProgressPlotter(
+                    generations=generations,
+                    get_property=lambda record: record.get_fitness_value(),
+                    y_label="fitness value",
+                )
+                fitness_progress.write(
+                    str(
+                        figure_output / f"unsymm_fitness_{run_name}.pdf"
+                    )
+                )
+
+            logging.info("EA done!")
+
             fitness_progress.write(
                 str(figure_output / f"unsymm_fitness_{run_name}.pdf")
             )
-
-            for molecule_id, molecule_record in enumerate(
-                generation.get_molecule_records()
-            ):
-                molecule_name = get_molecule_name_from_record(
-                    molecule_record
-                )
-                opt2_mol_file = os.path.join(
-                    calculation_output,
-                    f"{molecule_name}_opted2.mol",
-                )
-                mol = molecule_record.get_molecule()
-                opt_mol = mol.with_structure_from_file(opt2_mol_file)
-                writer.write(
-                    molecule=opt_mol,
-                    path=os.path.join(
-                        struct_output,
-                        f"g_{i}_m_{molecule_id}_{molecule_name}.mol",
-                    ),
-                )
-
-        logging.info("EA done!")
-
-        fitness_progress.write(
-            str(figure_output / f"fitness_progress_{run_name}.pdf")
-        )
 
         plot_existing_M12_data_distributions(
             calculation_dir=calculation_output,
