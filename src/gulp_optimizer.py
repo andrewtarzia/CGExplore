@@ -180,8 +180,8 @@ class CGGulpOptimizer:
             self._output_dir, f"{self._fileprefix}_opted.xyz"
         )
         self._mass = 1
-        self._bond_cutoff = 50
-        self._angle_cutoff = 50
+        self._bond_cutoff = 80
+        self._angle_cutoff = 80
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
         self._maxcycles = max_cycles
