@@ -159,9 +159,8 @@ class GuestBead:
 # Nb = CgBead("Nb", sigma=2.0, connectivity=0, angle_centered=180)
 # N = CgBead("N", sigma=2.0, connectivity=0, angle_centered=180)
 # Os = CgBead("Os", sigma=2.0, connectivity=0, angle_centered=180)
-# Pd = CgBead("Pd", sigma=2.0, connectivity=0, angle_centered=180)
+# Pd =        CgBead("Pd", sigma=1.0, angle_centered=120),
 # P = CgBead("P", sigma=2.0, connectivity=0, angle_centered=180)
-# Pt = CgBead("Pt", sigma=2.0, connectivity=0, angle_centered=180)
 # K = CgBead("K", sigma=2.0, connectivity=0, angle_centered=180)
 # CgBead("H", sigma=2.0, connectivity=3, angle_centered=60),
 # CgBead("Kr", sigma=2.0, connectivity=3, angle_centered=60),
@@ -169,10 +168,6 @@ class GuestBead:
 # CgBead("Dy", sigma=2.0, connectivity=3, angle_centered=60),
 # CgBead("Cl", sigma=2.0, connectivity=3, angle_centered=60),
 # CgBead("Lu", sigma=2.0, connectivity=3, angle_centered=60),
-# CgBead("Ni", sigma=2.0, angle_centered=160),
-# CgBead("Be", sigma=3.0, angle_centered=160),
-# CgBead("Er", sigma=5.0, angle_centered=160),
-# CgBead("C", sigma=4.0, angle_centered=160),
 
 
 def guest_beads():
@@ -205,6 +200,7 @@ def beads_2c():
         CgBead("Be", sigma=5.0, angle_centered=120),
         CgBead("Pb", sigma=5.0, angle_centered=150),
         CgBead("Eu", sigma=5.0, angle_centered=180),
+        CgBead("Lu", sigma=6.0, angle_centered=180),
     )
 
 
