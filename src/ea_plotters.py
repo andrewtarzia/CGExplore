@@ -592,9 +592,9 @@ def plot_existing_guest_data_distributions(
 def plot_existing_M12_data_distributions(
     calculation_dir,
     figures_dir,
-    target_orderings,
     suffix=None,
 ):
+
     if suffix is None:
         suffix = "res"
     all_jsons = list(calculation_dir.glob(f"*_{suffix}.json"))
@@ -604,28 +604,70 @@ def plot_existing_M12_data_distributions(
     if count == 0:
         return
 
-    target_size = 43.2
+    bb2_cols = {
+        "BeEuHe": "k",
+        "BeCeHe": "r",
+        "BeLuHe": "b",
+        "EuGeCe": "g",
+    }
+    bb2_labels = {
+        "BeEuHe": "r=1.85",
+        "BeCeHe": "r=1.57",
+        "BeLuHe": "r=2.14",
+        "EuGeCe": "r=high",
+    }
+
+    target_orderings = {
+        "CGM12L24_Pt_BeEuHe_001111000011110001010101": "E1",
+        "CGM12L24_Pt_BeEuHe_010110100011110001000111": "E2",
+        "CGM12L24_Pt_BeEuHe_101001010101101000111100": "E3",
+        "CGM12L24_Pt_BeEuHe_001111000011110010101010": "G1",
+        "CGM12L24_Pt_BeCeHe_001111000011110001010101": "E1",
+        "CGM12L24_Pt_BeCeHe_010110100011110001000111": "E2",
+        "CGM12L24_Pt_BeCeHe_101001010101101000111100": "E3",
+        "CGM12L24_Pt_BeCeHe_001111000011110010101010": "G1",
+        "CGM12L24_Pt_BeLuHe_001111000011110001010101": "E1",
+        "CGM12L24_Pt_BeLuHe_010110100011110001000111": "E2",
+        "CGM12L24_Pt_BeLuHe_101001010101101000111100": "E3",
+        "CGM12L24_Pt_BeLuHe_001111000011110010101010": "G1",
+        "CGM12L24_Pt_EuGeCe_001111000011110001010101": "E1",
+        "CGM12L24_Pt_EuGeCe_010110100011110001000111": "E2",
+        "CGM12L24_Pt_EuGeCe_101001010101101000111100": "E3",
+        "CGM12L24_Pt_EuGeCe_001111000011110010101010": "G1",
+    }
+
+    target_notct = 0
     target_energy = 0
 
-    scores = []
-    energies = []
-    sizes = []
+    scores = {i: [] for i in bb2_cols}
+    energies = {i: [] for i in bb2_cols}
+    num_cistrans = {i: [] for i in bb2_cols}
     tord_values = {}
     for json_file in all_jsons:
         with open(json_file, "r") as f:
             res_dict = json.load(f)
-
-        size = res_dict["max_size"]
-        size_score = abs(target_size - size)
-        score = 1 / (res_dict["fin_energy"] * 10 + size_score)
-        scores.append(score)
-        energies.append(res_dict["fin_energy"])
-        sizes.append(size)
         name = (json_file.name).replace("_res.json", "")
+        bb2_name = name.split("_")[2]
+
+        cdists = res_dict["centre_dists"]
+        # size_score = abs(target_size - size)
+        # score = 1 / (res_dict["fin_energy"] * 10 + size_score)
+        # score = 1 / (res_dict["fin_energy"] * 10)
+        score = 1 / (
+            res_dict["fin_energy"] * 1
+            + abs(cdists["num_notcisortrans"] - target_notct) * 100
+        )
+        scores[bb2_name].append(score)
+        energies[bb2_name].append(res_dict["fin_energy"])
+        num_cistrans[bb2_name].append(cdists["num_notcisortrans"])
 
         if name in target_orderings:
-            tord_values[target_orderings[name]] = (
-                size,
+            spec_name = (
+                f"{target_orderings[name]}-{bb2_labels[bb2_name]}"
+            )
+            tord_values[spec_name] = {}
+            tord_values[spec_name][bb2_name] = (
+                cdists["num_notcisortrans"],
                 res_dict["fin_energy"],
                 score,
             )
@@ -636,47 +678,54 @@ def plot_existing_M12_data_distributions(
         figsize=(8, 10),
     )
 
-    axs[0].hist(
-        x=scores,
-        bins=50,
-        # range=(0, 4.4),
-        density=True,
-        histtype="step",
-        color="k",
-        lw=3,
-    )
-    axs[0].tick_params(axis="both", which="major", labelsize=16)
-    axs[0].set_xlabel("fitness", fontsize=16)
-    axs[0].set_ylabel("frequency", fontsize=16)
+    for bb2_name in bb2_cols:
+        if len(scores[bb2_name]) == 0:
+            continue
+        axs[0].hist(
+            x=scores[bb2_name],
+            bins=50,
+            # range=(0, 1.0),
+            density=True,
+            histtype="step",
+            color=bb2_cols[bb2_name],
+            lw=3,
+            label=bb2_labels[bb2_name],
+        )
+        axs[0].tick_params(axis="both", which="major", labelsize=16)
+        axs[0].set_xlabel("fitness", fontsize=16)
+        axs[0].set_ylabel("frequency", fontsize=16)
 
-    axs[1].hist(
-        x=energies,
-        bins=50,
-        # range=(0, 4.4),
-        density=True,
-        histtype="step",
-        color="k",
-        lw=3,
-    )
-    axs[1].tick_params(axis="both", which="major", labelsize=16)
-    axs[1].set_xlabel("energies", fontsize=16)
-    axs[1].set_ylabel("frequency", fontsize=16)
-    axs[1].axvline(x=target_energy, linestyle="--", lw=2, c="k")
+        axs[1].hist(
+            x=energies[bb2_name],
+            bins=50,
+            # range=(0, 4.4),
+            density=True,
+            histtype="step",
+            color=bb2_cols[bb2_name],
+            lw=3,
+            label=bb2_labels[bb2_name],
+        )
+        axs[1].tick_params(axis="both", which="major", labelsize=16)
+        axs[1].set_xlabel("energies", fontsize=16)
+        axs[1].set_ylabel("frequency", fontsize=16)
+        axs[1].axvline(x=target_energy, linestyle="--", lw=2, c="k")
 
-    axs[2].hist(
-        x=size,
-        bins=50,
-        # range=(0, 4.4),
-        density=True,
-        histtype="step",
-        color="k",
-        lw=3,
-    )
-    axs[2].tick_params(axis="both", which="major", labelsize=16)
-    axs[2].set_xlabel("size", fontsize=16)
-    axs[2].set_ylabel("frequency", fontsize=16)
-    axs[2].axvline(x=target_size, linestyle="--", lw=2, c="k")
+        axs[2].hist(
+            x=num_cistrans[bb2_name],
+            bins=50,
+            # range=(0, 4.4),
+            density=True,
+            histtype="step",
+            color=bb2_cols[bb2_name],
+            lw=3,
+            label=bb2_labels[bb2_name],
+        )
+        axs[2].tick_params(axis="both", which="major", labelsize=16)
+        axs[2].set_xlabel("num cis/trans", fontsize=16)
+        axs[2].set_ylabel("frequency", fontsize=16)
+        axs[2].axvline(x=target_notct, linestyle="--", lw=2, c="k")
 
+    axs[0].legend(fontsize=16)
     fig.tight_layout()
     fig.savefig(
         os.path.join(figures_dir, "known_library_unsymm.pdf"),
@@ -686,66 +735,162 @@ def plot_existing_M12_data_distributions(
     plt.close()
 
     fig, axs = plt.subplots(
-        nrows=1,
+        nrows=4,
         ncols=3,
-        figsize=(16, 5),
+        figsize=(16, 10),
     )
 
-    hb = axs[0].hexbin(
-        energies,
-        scores,
-        gridsize=20,
-        cmap="inferno",
-        bins="log",
-    )
-    axs[0].tick_params(axis="both", which="major", labelsize=16)
-    axs[0].set_xlabel("energies", fontsize=16)
-    axs[0].set_ylabel("fitness", fontsize=16)
-    fig.colorbar(hb, ax=axs[0], label="log10(N)")
-    axs[0].axvline(x=target_energy, linestyle="--", lw=2, c="k")
+    for axr, bb2_name in zip(axs, bb2_cols):
+        if len(scores[bb2_name]) == 0:
+            continue
+        hb = axr[0].hexbin(
+            energies[bb2_name],
+            scores[bb2_name],
+            gridsize=20,
+            cmap="inferno",
+            bins="log",
+        )
+        axr[0].tick_params(axis="both", which="major", labelsize=16)
+        axr[0].set_xlabel("energies", fontsize=16)
+        axr[0].set_ylabel("fitness", fontsize=16)
+        fig.colorbar(hb, ax=axr[0], label="log10(N)")
+        axr[0].set_title(bb2_labels[bb2_name], fontsize=16)
+        axr[0].axvline(x=target_energy, linestyle="--", lw=2, c="k")
 
-    hb = axs[1].hexbin(
-        sizes,
-        scores,
-        gridsize=20,
-        cmap="inferno",
-        bins="log",
-    )
-    axs[1].tick_params(axis="both", which="major", labelsize=16)
-    axs[1].set_xlabel("size", fontsize=16)
-    axs[1].set_ylabel("fitness", fontsize=16)
-    fig.colorbar(hb, ax=axs[1], label="log10(N)")
-    axs[1].axvline(x=target_size, linestyle="--", lw=2, c="k")
+        hb = axr[1].hexbin(
+            num_cistrans[bb2_name],
+            scores[bb2_name],
+            gridsize=20,
+            cmap="inferno",
+            bins="log",
+        )
+        axr[1].tick_params(axis="both", which="major", labelsize=16)
+        axr[1].set_xlabel("num cis/trans", fontsize=16)
+        axr[1].set_ylabel("fitness", fontsize=16)
+        fig.colorbar(hb, ax=axr[1], label="log10(N)")
+        axr[1].set_title(bb2_labels[bb2_name], fontsize=16)
+        axr[1].axvline(x=target_notct, linestyle="--", lw=2, c="k")
 
-    hb = axs[2].hexbin(
-        energies,
-        sizes,
-        gridsize=20,
-        cmap="inferno",
-        bins="log",
-    )
-    axs[2].tick_params(axis="both", which="major", labelsize=16)
-    axs[2].set_xlabel("energy", fontsize=16)
-    axs[2].set_ylabel("size", fontsize=16)
-    fig.colorbar(hb, ax=axs[2], label="log10(N)")
-    axs[2].axvline(x=target_energy, linestyle="--", lw=2, c="k")
-    axs[2].axhline(y=target_size, linestyle="--", lw=2, c="k")
+        hb = axr[2].hexbin(
+            energies[bb2_name],
+            num_cistrans[bb2_name],
+            gridsize=20,
+            cmap="inferno",
+            bins="log",
+        )
+        axr[2].tick_params(axis="both", which="major", labelsize=16)
+        axr[2].set_xlabel("energy", fontsize=16)
+        axr[2].set_ylabel("num cis/trans", fontsize=16)
+        fig.colorbar(hb, ax=axr[2], label="log10(N)")
+        axr[2].set_title(bb2_labels[bb2_name], fontsize=16)
+        axr[2].axvline(x=target_energy, linestyle="--", lw=2, c="k")
+        axr[2].axhline(y=target_notct, linestyle="--", lw=2, c="k")
 
-    for tord in tord_values:
-        size, energy, fitness = tord_values[tord]
-        s = tord
-        axs[0].scatter(energy, fitness, c="r", edgecolor="white", s=120)
-        axs[0].text(energy, fitness, s, fontsize=16)
+        for tord in tord_values:
+            try:
+                num_ct, energy, fitness = tord_values[tord][bb2_name]
+            except KeyError:
+                continue
+            s = tord.split("-")[0]
+            axr[0].scatter(
+                energy,
+                fitness,
+                c="r",
+                edgecolor="white",
+                s=120,
+            )
+            axr[0].text(
+                energy,
+                fitness,
+                s,
+                fontsize=16,
+            )
 
-        axs[1].scatter(size, fitness, c="r", edgecolor="white", s=120)
-        axs[1].text(size, fitness, s, fontsize=16)
+            axr[1].scatter(
+                num_ct,
+                fitness,
+                c="r",
+                edgecolor="white",
+                s=120,
+            )
+            axr[1].text(
+                num_ct,
+                fitness,
+                s,
+                fontsize=16,
+            )
 
-        axs[2].scatter(energy, size, c="r", edgecolor="white", s=120)
-        axs[2].text(energy, size, s, fontsize=16)
+            axr[2].scatter(
+                energy,
+                num_ct,
+                c="r",
+                edgecolor="white",
+                s=120,
+            )
+            axr[2].text(
+                energy,
+                num_ct,
+                s,
+                fontsize=16,
+            )
 
     fig.tight_layout()
     fig.savefig(
         os.path.join(figures_dir, "known_library_unsymmhex.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    fig, axs = plt.subplots(
+        nrows=2,
+        ncols=2,
+        figsize=(16, 10),
+    )
+
+    flat_axs = flatten(axs)
+
+    for axr, bb2_name in zip(flat_axs, bb2_cols):
+        if len(scores[bb2_name]) == 0:
+            continue
+        axr.scatter(
+            energies[bb2_name],
+            scores[bb2_name],
+            c="gray",
+            edgecolor="k",
+            s=100,
+        )
+        axr.tick_params(axis="both", which="major", labelsize=16)
+        axr.set_xlabel("energies", fontsize=16)
+        axr.set_ylabel("fitness", fontsize=16)
+        axr.set_title(bb2_labels[bb2_name], fontsize=16)
+
+        max_incl = 0
+        for tord in tord_values:
+            try:
+                num_ct, energy, fitness = tord_values[tord][bb2_name]
+            except KeyError:
+                continue
+            s = tord.split("-")[0]
+            axr.scatter(
+                energy,
+                fitness,
+                c="r",
+                edgecolor="white",
+                s=120,
+            )
+            axr.text(
+                energy,
+                fitness,
+                s,
+                fontsize=16,
+            )
+            max_incl = max((max_incl, energy))
+        axr.set_xlim(0, max_incl + (max_incl * 0.1))
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figures_dir, "known_library_unsymmenergy.pdf"),
         dpi=720,
         bbox_inches="tight",
     )
