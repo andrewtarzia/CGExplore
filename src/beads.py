@@ -174,49 +174,27 @@ def guest_beads():
     return (GuestBead("Li", sigma=3.0, epsilon=1.0),)
 
 
-def beads_2c():
-    return (
-        CgBead("Mn", sigma=2.0, angle_centered=40),
-        CgBead("Gd", sigma=2.0, angle_centered=60),
-        CgBead("Ga", sigma=2.0, angle_centered=90),
-        CgBead("Ge", sigma=2.0, angle_centered=120),
-        CgBead("Au", sigma=2.0, angle_centered=150),
-        CgBead("He", sigma=2.0, angle_centered=180),
-        CgBead("Al", sigma=3.0, angle_centered=40),
-        CgBead("Sb", sigma=3.0, angle_centered=60),
-        CgBead("Ar", sigma=3.0, angle_centered=90),
-        CgBead("As", sigma=3.0, angle_centered=120),
-        CgBead("Ba", sigma=3.0, angle_centered=150),
-        CgBead("Bi", sigma=3.0, angle_centered=180),
-        CgBead("B", sigma=4.0, angle_centered=40),
-        CgBead("Mg", sigma=4.0, angle_centered=60),
-        CgBead("Cd", sigma=4.0, angle_centered=90),
-        CgBead("Hf", sigma=4.0, angle_centered=120),
-        CgBead("Ca", sigma=4.0, angle_centered=150),
-        CgBead("Ce", sigma=4.0, angle_centered=180),
-        CgBead("O", sigma=5.0, angle_centered=40),
-        CgBead("Cr", sigma=5.0, angle_centered=60),
-        CgBead("Co", sigma=5.0, angle_centered=90),
-        CgBead("Be", sigma=5.0, angle_centered=120),
-        CgBead("Pb", sigma=5.0, angle_centered=150),
-        CgBead("Eu", sigma=5.0, angle_centered=180),
-        CgBead("Lu", sigma=6.0, angle_centered=180),
-    )
+def sets_in_library(library, sigma=None, angle=None):
+    set_beads = set()
+    for cgbead in library:
+        sig_p = False
+        if sigma is None:
+            sig_p = True
+        else:
+            if cgbead.sigma == sigma:
+                sig_p = True
+            else:
+                sig_p = False
 
+        if angle is None:
+            ang_p = True
+        else:
+            if cgbead.angle_centered == angle:
+                ang_p = True
+            else:
+                ang_p = False
 
-def beads_3c():
-    return (
-        CgBead("Ho", sigma=2.0, angle_centered=120),
-        CgBead("Fe", sigma=2.5, angle_centered=120),
-        CgBead("In", sigma=3.0, angle_centered=120),
-        CgBead("I", sigma=3.5, angle_centered=120),
-        CgBead("Ir", sigma=4.0, angle_centered=120),
-        CgBead("Ni", sigma=4.5, angle_centered=120),
-        CgBead("Cu", sigma=5.0, angle_centered=120),
-        CgBead("Er", sigma=5.5, angle_centered=120),
-        CgBead("C", sigma=6.0, angle_centered=120),
-    )
+        if ang_p and sig_p:
+            set_beads.add(cgbead.element_string)
 
-
-def beads_4c():
-    return (CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),)
+    return set_beads

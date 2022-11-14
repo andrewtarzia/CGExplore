@@ -22,7 +22,7 @@ import pandas as pd
 
 # from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from beads import beads_2c  # , beads_3c
+from generate_all_2cp3c import core_2c_beads, arm_2c_beads
 from env_set import cages
 
 
@@ -36,19 +36,19 @@ def identity_distributions(all_data, figure_output):
         "4p62": 0,
         "6p9": 0,
         "8p12": 0,
-        "3C0": 0,
-        "2C0": 0,
-        "2C1": 0,
-        "2C2": 0,
-        "2C3": 0,
+        # "3C0": 0,
+        # "2C0": 0,
+        # "2C1": 0,
+        # "2C2": 0,
+        # "2C3": 0,
     }
     num_cages = len(all_data)
     for cage in all_data:
-        cage_dict = all_data[cage]
+        # cage_dict = all_data[cage]
 
         topo_name = cage.split("_")[0]
-        c2_bbname = cage_dict["c2bb"]
-        c3_bbname = cage_dict["c3bb"]
+        # c2_bbname = cage_dict["c2bb"]
+        # c3_bbname = cage_dict["c3bb"]
 
         if topo_name == "TwoPlusThree":
             categories["2p3"] += 1
@@ -61,36 +61,35 @@ def identity_distributions(all_data, figure_output):
         if topo_name == "EightPlusTwelve":
             categories["8p12"] += 1
 
-        if "3C0" in c3_bbname:
-            categories["3C0"] += 1
+        # if "3C0" in c3_bbname:
+        #     categories["3C0"] += 1
+        # if "2C0" in c2_bbname:
+        #     categories["2C0"] += 1
+        # if "2C1" in c2_bbname:
+        #     categories["2C1"] += 1
+        # if "2C2" in c2_bbname:
+        #     categories["2C2"] += 1
+        # if "2C3" in c2_bbname:
+        #     categories["2C3"] += 1
 
-        if "2C0" in c2_bbname:
-            categories["2C0"] += 1
-        if "2C1" in c2_bbname:
-            categories["2C1"] += 1
-        if "2C2" in c2_bbname:
-            categories["2C2"] += 1
-        if "2C3" in c2_bbname:
-            categories["2C3"] += 1
+    # if categories["3C0"] != num_cages:
+    #     raise ValueError(f'{categories["3C0"]} != {num_cages}')
 
-    if categories["3C0"] != num_cages:
-        raise ValueError(f'{categories["3C0"]} != {num_cages}')
-
-    if (
-        sum(
-            (
-                categories["2C0"],
-                categories["2C1"],
-                categories["2C2"],
-                categories["2C3"],
-            )
-        )
-        != num_cages
-    ):
-        raise ValueError(
-            f'{categories["2C0"]} + {categories["2C1"]} + '
-            f'{categories["2C2"]} + {categories["2C3"]} != {num_cages}'
-        )
+    # if (
+    #     sum(
+    #         (
+    #             categories["2C0"],
+    #             categories["2C1"],
+    #             categories["2C2"],
+    #             categories["2C3"],
+    #         )
+    #     )
+    #     != num_cages
+    # ):
+    #     raise ValueError(
+    #         f'{categories["2C0"]} + {categories["2C1"]} + '
+    #         f'{categories["2C2"]} + {categories["2C3"]} != {num_cages}'
+    #     )
 
     ax.bar(
         categories.keys(),
@@ -419,6 +418,7 @@ def get_CGBead_from_string(string, bead_library):
 
 
 def phase_space_1(bb_data, figure_output):
+
     target_individuals = (
         "TBPY-5",
         "T-4",
@@ -426,42 +426,48 @@ def phase_space_1(bb_data, figure_output):
         "TPR-6",
         "CU-8",
     )
+
     fig, axs = plt.subplots(
-        nrows=len(target_individuals) + 1,
+        nrows=3,
+        ncols=2,
         sharex=True,
         sharey=True,
-        figsize=(8, 10),
+        figsize=(16, 10),
     )
     flat_axs = axs.flatten()
 
-    shape_coordinates_2c0 = {i: [] for i in target_individuals}
-    shape_coordinates_2c1 = {i: [] for i in target_individuals}
-    shape_coordinates_2c0["other"] = []
-    shape_coordinates_2c1["other"] = []
+    shape_coordinates = {i: [] for i in target_individuals}
+    shape_coordinates["other"] = []
     for bb_pair in bb_data:
-
         c2_bbname = bb_pair[0]
-        c3_bbname = bb_pair[1]
 
-        if c3_bbname[2] != "0":
-            continue
-        if c2_bbname[2] not in ("0", "1"):
-            continue
+        wtopo = c2_bbname[3:]
+        present_beads_names = []
+        while len(wtopo) > 0:
+            if len(wtopo) == 1:
+                bead_name = wtopo[0]
+                wtopo = ""
+            elif wtopo[1].islower():
+                bead_name = wtopo[:2]
+                wtopo = wtopo[2:]
+            else:
+                bead_name = wtopo[0]
+                wtopo = wtopo[1:]
 
-        if c2_bbname[-1].islower():
-            c2_core_name = c2_bbname[-2:]
-        else:
-            c2_core_name = c2_bbname[-1]
+            present_beads_names.append(bead_name)
 
-        if c3_bbname[-1].islower():
-            c3_core_name = c3_bbname[-2:]
-        else:
-            c3_core_name = c3_bbname[-1]
+        if len(present_beads_names) != int(c2_bbname[2]) + 1:
+            raise ValueError(
+                f"{present_beads_names} length != {c2_bbname}"
+            )
 
         x = get_CGBead_from_string(
-            c2_core_name, beads_2c()
-        ).angle_centered
+            present_beads_names[0], core_2c_beads()
+        ).sigma
         # y = get_CGBead_from_string(c3_core_name, beads_3c()).sigma
+        y = get_CGBead_from_string(
+            present_beads_names[-1], arm_2c_beads()
+        ).angle_centered
 
         bb_dict = bb_data[bb_pair]
         min_energy = min(tuple(i[1] for i in bb_dict.values()))
@@ -470,33 +476,25 @@ def phase_space_1(bb_data, figure_output):
             for i in bb_dict
             if bb_dict[i][1] == min_energy
         }
-        # if c3_bbname == "3C0C" and c2_bbname == "2C0Eu":
-        #     print(bb_dict, min_e_dict, min_energy)
-        y = min_energy
-
         min_shape = min(min_e_dict, key=bb_dict.get)
+
         if min_shape.replace("b", "") not in target_individuals:
-            if c2_bbname[2] == "0":
-                shape_coordinates_2c0["other"].append((x, y))
-            elif c2_bbname[2] == "1":
-                shape_coordinates_2c1["other"].append((x, y))
+            shape_coordinates["other"].append((x, y))
         else:
-            if c2_bbname[2] == "0":
-                shape_coordinates_2c0[
-                    min_shape.replace("b", "")
-                ].append((x, y))
-            elif c2_bbname[2] == "1":
-                shape_coordinates_2c1[
-                    min_shape.replace("b", "")
-                ].append((x, y))
+            shape_coordinates[min_shape.replace("b", "")].append((x, y))
 
-    for ax, shape1, shape2 in zip(
-        flat_axs, shape_coordinates_2c0, shape_coordinates_2c1
-    ):
-        coords1 = shape_coordinates_2c0[shape1]
-        coords2 = shape_coordinates_2c1[shape2]
+    for ax, shape in zip(flat_axs, shape_coordinates):
+        coords = shape_coordinates[shape]
 
-        # if len(coords) != 0:
+        ax.set_title(shape, fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        # ax.set_xlabel("target 2c core angle", fontsize=16)
+        ax.set_xlabel("target 2c core size", fontsize=16)
+        # ax.set_ylabel("tritopic core size", fontsize=16)
+        ax.set_ylabel("target 2c binder angle", fontsize=16)
+
+        if len(coords) == 0:
+            continue
         # hb = ax.hexbin(
         #     [i[0] for i in coords],
         #     [i[1] for i in coords],
@@ -506,26 +504,19 @@ def phase_space_1(bb_data, figure_output):
         # )
         # fig.colorbar(hb, ax=ax, label="log10(N)")
         ax.scatter(
-            [i[0] for i in coords1],
-            [i[1] for i in coords1],
+            [i[0] for i in coords],
+            [i[1] for i in coords],
             c="r",
             alpha=0.2,
             s=60,
         )
-        ax.scatter(
-            [i[0] for i in coords2],
-            [i[1] for i in coords2],
-            c="b",
-            alpha=0.2,
-            s=60,
-        )
-
-        ax.set_title(shape1, fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("target 2c core angle", fontsize=16)
-        # ax.set_ylabel("tritopic core size", fontsize=16)
-        ax.set_ylabel("min. energy", fontsize=16)
-        ax.set_ylim(0, 50)
+        # ax.scatter(
+        #     [i[0] for i in coords2],
+        #     [i[1] for i in coords2],
+        #     c="b",
+        #     alpha=0.2,
+        #     s=60,
+        # )
 
     # fig.legend(ncol=4, fontsize=16)
 
@@ -539,22 +530,27 @@ def phase_space_1(bb_data, figure_output):
 
 
 def phase_space_2(bb_data, figure_output):
-    for i in ("shape", "energy"):
-        fig, axs = plt.subplots(
-            nrows=1,
-            ncols=4,
-            figsize=(16, 5),
-        )
-        flat_axs = axs.flatten()
+    for i in ("shape", "energy", "se"):
+        ncols = 1
 
-        sc_3c0_2c0 = []
+        if ncols == 1:
+            fig, ax = plt.subplots(
+                figsize=(8, 5),
+            )
+            flat_axs = [ax]
+        else:
+            fig, axs = plt.subplots(
+                nrows=1,
+                ncols=ncols,
+                figsize=(16, 5),
+            )
+            flat_axs = axs.flatten()
+
         sc_3c0_2c1 = []
-        sc_3c0_2c2 = []
-        sc_3c0_2c3 = []
         for bb_pair in bb_data:
             bb_dict = bb_data[bb_pair]
-            c2_bbname = bb_pair[0]
-            c3_bbname = bb_pair[1]
+            # c2_bbname = bb_pair[0]
+            # c3_bbname = bb_pair[1]
 
             min_energy = min(tuple(i[1] for i in bb_dict.values()))
             min_e_dict = {
@@ -567,36 +563,21 @@ def phase_space_2(bb_data, figure_output):
             )
             if i == "energy":
                 x = min_energy
+                y = list(min_e_dict.values())[0][2]
             elif i == "shape":
                 x = min_shape_value
-            y = list(min_e_dict.values())[0][2]
+                y = list(min_e_dict.values())[0][2]
+            elif i == "se":
+                x = min_shape_value
+                y = min_energy
 
-            if "2C0" in c2_bbname:
-                if "3C0" in c3_bbname:
-                    sc_3c0_2c0.append((x, y))
-                else:
-                    raise ValueError()
-            elif "2C1" in c2_bbname:
-                if "3C0" in c3_bbname:
-                    sc_3c0_2c1.append((x, y))
-                else:
-                    raise ValueError()
-            elif "2C2" in c2_bbname:
-                if "3C0" in c3_bbname:
-                    sc_3c0_2c2.append((x, y))
-                else:
-                    raise ValueError()
-            elif "2C3" in c2_bbname:
-                if "3C0" in c3_bbname:
-                    sc_3c0_2c3.append((x, y))
-                else:
-                    raise ValueError()
+            sc_3c0_2c1.append((x, y))
 
         shape_coords = (
-            (f"3C0-2C0 ({len(sc_3c0_2c0)})", sc_3c0_2c0),
+            # (f"3C0-2C0 ({len(sc_3c0_2c0)})", sc_3c0_2c0),
             (f"3C0-2C1 ({len(sc_3c0_2c1)})", sc_3c0_2c1),
-            (f"3C0-2C2 ({len(sc_3c0_2c2)})", sc_3c0_2c2),
-            (f"3C0-2C3 ({len(sc_3c0_2c3)})", sc_3c0_2c3),
+            # (f"3C0-2C2 ({len(sc_3c0_2c2)})", sc_3c0_2c2),
+            # (f"3C0-2C3 ({len(sc_3c0_2c3)})", sc_3c0_2c3),
         )
 
         for ax, (title, coords) in zip(flat_axs, shape_coords):
@@ -616,9 +597,13 @@ def phase_space_2(bb_data, figure_output):
             ax.tick_params(axis="both", which="major", labelsize=16)
             if i == "energy":
                 ax.set_xlabel("min. energy", fontsize=16)
+                ax.set_ylabel("pore radius", fontsize=16)
             elif i == "shape":
                 ax.set_xlabel("min. shape", fontsize=16)
-            ax.set_ylabel("pore radius", fontsize=16)
+                ax.set_ylabel("pore radius", fontsize=16)
+            elif i == "se":
+                ax.set_xlabel("min. shape", fontsize=16)
+                ax.set_ylabel("min. energy", fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
@@ -636,6 +621,7 @@ def phase_space_3(bb_data, figure_output):
         figsize=(16, 5),
     )
     flat_axs = axs.flatten()
+    raise SystemExit("here")
 
     topologies = {
         "5": "2p3",
@@ -686,7 +672,11 @@ def phase_space_3(bb_data, figure_output):
         ("3C0-2C3", sc_3c0_2c3),
     )
 
+    tot_pairs = 0
     for ax, (title, coords) in zip(flat_axs, shape_coords):
+        for i in coords:
+            dd = coords[i]
+            tot_pairs += dd
 
         ax.bar(
             coords.keys(),
@@ -701,6 +691,12 @@ def phase_space_3(bb_data, figure_output):
         ax.set_title(title, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel("count", fontsize=16)
+
+    if tot_pairs != len(bb_data):
+        raise ValueError(
+            f"extracted {tot_pairs} pairs, but there should be "
+            f"{len(bb_data)}!"
+        )
 
     fig.tight_layout()
     fig.savefig(

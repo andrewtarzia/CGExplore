@@ -19,8 +19,8 @@ from .topologies import (
     ThreeC0Arm,
     TwoC0Arm,
     TwoC1Arm,
-    TwoC2Arm,
-    TwoC3Arm,
+    # TwoC2Arm,
+    # TwoC3Arm,
 )
 
 
@@ -122,8 +122,8 @@ def two_precursor_topology_options():
     topologies = {
         "2c-0": TwoC0Arm,
         "2c-1": TwoC1Arm,
-        "2c-2": TwoC2Arm,
-        "2c-3": TwoC3Arm,
+        # "2c-2": TwoC2Arm,
+        # "2c-3": TwoC3Arm,
     }
 
     return topologies

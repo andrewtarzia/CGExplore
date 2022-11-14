@@ -29,10 +29,7 @@ from cage_construction.topologies import (
     unsymm_topology_options,
 )
 
-from beads import (
-    beads_2c,
-    beads_4c,
-)
+from beads import CgBead
 
 from ea_module import (
     RandomVA,
@@ -47,6 +44,21 @@ from ea_plotters import (
     CgProgressPlotter,
     plot_existing_M12_data_distributions,
 )
+
+
+def beads_2c():
+    return (
+        CgBead("Ge", sigma=2.0, angle_centered=120),
+        CgBead("Eu", sigma=5.0, angle_centered=180),
+        CgBead("Lu", sigma=6.0, angle_centered=180),
+        CgBead("Ce", sigma=4.0, angle_centered=180),
+        CgBead("He", sigma=2.0, angle_centered=180),
+        CgBead("Be", sigma=5.0, angle_centered=120),
+    )
+
+
+def beads_4c():
+    return (CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),)
 
 
 def get_initial_population(
@@ -625,7 +637,9 @@ def main():
 
                 fitness_progress = CgProgressPlotter(
                     generations=generations,
-                    get_property=lambda record: record.get_fitness_value(),
+                    get_property=(
+                        lambda record: record.get_fitness_value()
+                    ),
                     y_label="fitness value",
                 )
                 fitness_progress.write(

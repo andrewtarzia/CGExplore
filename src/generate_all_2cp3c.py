@@ -30,7 +30,56 @@ from precursor_db.precursors import (
     two_precursor_topology_options,
 )
 
-from beads import beads_2c, beads_3c
+from beads import CgBead
+
+
+def core_2c_beads():
+    return (
+        CgBead("He", sigma=2.0, angle_centered=180),
+        CgBead("Bi", sigma=3.0, angle_centered=180),
+        CgBead("Ce", sigma=4.0, angle_centered=180),
+        CgBead("Eu", sigma=5.0, angle_centered=180),
+        CgBead("Lu", sigma=6.0, angle_centered=180),
+    )
+
+
+def arm_2c_beads():
+    return (
+        CgBead("Mn", sigma=2.0, angle_centered=90),
+        CgBead("Gd", sigma=2.0, angle_centered=105),
+        CgBead("Ga", sigma=2.0, angle_centered=120),
+        CgBead("Ge", sigma=2.0, angle_centered=135),
+        CgBead("Au", sigma=2.0, angle_centered=180),
+        CgBead("Al", sigma=3.0, angle_centered=90),
+        CgBead("Sb", sigma=3.0, angle_centered=105),
+        CgBead("Ar", sigma=3.0, angle_centered=120),
+        CgBead("As", sigma=3.0, angle_centered=135),
+        CgBead("Ba", sigma=3.0, angle_centered=180),
+        CgBead("B", sigma=4.0, angle_centered=90),
+        CgBead("Mg", sigma=4.0, angle_centered=105),
+        CgBead("Cd", sigma=4.0, angle_centered=120),
+        CgBead("Hf", sigma=4.0, angle_centered=135),
+        CgBead("Ca", sigma=4.0, angle_centered=180),
+        CgBead("O", sigma=5.0, angle_centered=90),
+        CgBead("Cr", sigma=5.0, angle_centered=105),
+        CgBead("Co", sigma=5.0, angle_centered=120),
+        CgBead("Be", sigma=5.0, angle_centered=135),
+        CgBead("Pb", sigma=5.0, angle_centered=180),
+    )
+
+
+def beads_3c():
+    return (
+        CgBead("Ho", sigma=2.0, angle_centered=120),
+        CgBead("Fe", sigma=2.5, angle_centered=120),
+        CgBead("In", sigma=3.0, angle_centered=120),
+        CgBead("I", sigma=3.5, angle_centered=120),
+        CgBead("Ir", sigma=4.0, angle_centered=120),
+        CgBead("Ni", sigma=4.5, angle_centered=120),
+        CgBead("Cu", sigma=5.0, angle_centered=120),
+        CgBead("Er", sigma=5.5, angle_centered=120),
+        CgBead("C", sigma=6.0, angle_centered=120),
+    )
 
 
 def get_shape_calculation_molecule(const_mol, name):
@@ -138,7 +187,7 @@ def optimise_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=beads_2c() + beads_3c(),
+            param_pool=beads_3c() + core_2c_beads() + arm_2c_beads(),
             max_cycles=1000,
             conjugate_gradient=True,
             bonds=True,
@@ -157,7 +206,7 @@ def optimise_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=beads_2c() + beads_3c(),
+            param_pool=beads_3c() + core_2c_beads() + arm_2c_beads(),
             max_cycles=1000,
             conjugate_gradient=False,
             bonds=True,
@@ -185,7 +234,7 @@ def analyse_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=beads_2c() + beads_3c(),
+            param_pool=beads_3c() + core_2c_beads() + arm_2c_beads(),
             max_cycles=1000,
             conjugate_gradient=False,
             bonds=True,
@@ -242,39 +291,39 @@ def main():
 
     # Define bead libraries.
     beads_3c_lib = beads_3c()
-    beads_2c_lib = beads_2c()
+    beads_core_2c_lib = core_2c_beads()
+    beads_arm_2c_lib = arm_2c_beads()
 
     # For now, just build N options and calculate properties.
     logging.info("building building blocks...")
     c2_blocks = {}
-    for c2_option in beads_2c_lib:
-        c2_topo = two_precursor_topologies["2c-0"]
-        temp = c2_topo(bead=c2_option)
-        c2_blocks[temp.get_name()] = temp.get_building_block()
 
-    for c2_options in itertools.product(beads_2c_lib, repeat=2):
+    for c2_options in itertools.product(
+        beads_core_2c_lib,
+        beads_arm_2c_lib,
+    ):
         c2_topo = two_precursor_topologies["2c-1"]
         temp = c2_topo(bead=c2_options[0], abead1=c2_options[1])
         c2_blocks[temp.get_name()] = temp.get_building_block()
 
-    for c2_options in itertools.product(beads_2c_lib, repeat=3):
-        c2_topo = two_precursor_topologies["2c-2"]
-        temp = c2_topo(
-            bead=c2_options[0],
-            abead1=c2_options[1],
-            abead2=c2_options[2],
-        )
-        c2_blocks[temp.get_name()] = temp.get_building_block()
+    # for c2_options in itertools.product(beads_2c_lib, repeat=3):
+    #     c2_topo = two_precursor_topologies["2c-2"]
+    #     temp = c2_topo(
+    #         bead=c2_options[0],
+    #         abead1=c2_options[1],
+    #         abead2=c2_options[2],
+    #     )
+    #     c2_blocks[temp.get_name()] = temp.get_building_block()
 
-    for c2_options in itertools.product(beads_2c_lib, repeat=4):
-        c2_topo = two_precursor_topologies["2c-3"]
-        temp = c2_topo(
-            bead=c2_options[0],
-            abead1=c2_options[1],
-            abead2=c2_options[2],
-            abead3=c2_options[3],
-        )
-        c2_blocks[temp.get_name()] = temp.get_building_block()
+    # for c2_options in itertools.product(beads_2c_lib, repeat=4):
+    #     c2_topo = two_precursor_topologies["2c-3"]
+    #     temp = c2_topo(
+    #         bead=c2_options[0],
+    #         abead1=c2_options[1],
+    #         abead2=c2_options[2],
+    #         abead3=c2_options[3],
+    #     )
+    #     c2_blocks[temp.get_name()] = temp.get_building_block()
 
     c3_blocks = {}
     for core_bead in beads_3c_lib:
@@ -289,7 +338,9 @@ def main():
 
     logging.info("building population...")
     popn_iterator = itertools.product(
-        cage_topologies, c2_blocks, c3_blocks
+        cage_topologies,
+        c2_blocks,
+        c3_blocks,
     )
     count = 0
     for iteration in popn_iterator:
