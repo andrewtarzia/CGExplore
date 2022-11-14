@@ -434,7 +434,7 @@ class TwoC3Arm:
         self._abead3 = abead3
         self._name = (
             f"2C3{bead.element_string}{abead1.element_string}"
-            f"{abead2.element_string}{abead2.element_string}"
+            f"{abead2.element_string}{abead3.element_string}"
         )
         factories = (stk.BromoFactory(placers=(0, 1)),)
         core_c_bb = stk.BuildingBlock(
