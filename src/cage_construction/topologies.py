@@ -12,15 +12,23 @@ Author: Andrew Tarzia
 import stk
 
 
-def cage_topology_options():
-    topologies = {
-        "TwoPlusThree": stk.cage.TwoPlusThree,
-        "FourPlusSix": stk.cage.FourPlusSix,
-        "FourPlusSix2": stk.cage.FourPlusSix2,
-        "SixPlusNine": stk.cage.SixPlusNine,
-        "EightPlusTwelve": stk.cage.EightPlusTwelve,
-        # "TwentyPlusThirty": stk.cage.TwentyPlusThirty,
-    }
+def cage_topology_options(fg_set):
+    if fg_set == "2p3":
+        topologies = {
+            "TwoPlusThree": stk.cage.TwoPlusThree,
+            "FourPlusSix": stk.cage.FourPlusSix,
+            "FourPlusSix2": stk.cage.FourPlusSix2,
+            "SixPlusNine": stk.cage.SixPlusNine,
+            "EightPlusTwelve": stk.cage.EightPlusTwelve,
+            # "TwentyPlusThirty": stk.cage.TwentyPlusThirty,
+        }
+    if fg_set == "2p4":
+        topologies = {
+            "M2L4": stk.cage.M2L4Lantern,
+            "M3L6": stk.cage.M3L6,
+            "M4L8": stk.cage.M4L8,
+            "M6L12": stk.cage.M6L12Cube,
+        }
 
     return topologies
 

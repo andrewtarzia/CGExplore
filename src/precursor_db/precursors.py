@@ -21,6 +21,7 @@ from .topologies import (
     TwoC1Arm,
     # TwoC2Arm,
     # TwoC3Arm,
+    FourC0Arm,
 )
 
 
@@ -108,6 +109,14 @@ def plane_bb():
     )
 
     return bb
+
+
+def four_precursor_topology_options():
+    topologies = {
+        "4c-0": FourC0Arm,
+    }
+
+    return topologies
 
 
 def three_precursor_topology_options():

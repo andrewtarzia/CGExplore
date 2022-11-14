@@ -22,7 +22,7 @@ import pandas as pd
 
 # from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
-from generate_all_2cp3c import core_2c_beads, arm_2c_beads
+from generate_all_cages import core_2c_beads, arm_2c_beads
 from env_set import cages
 
 
@@ -36,7 +36,12 @@ def identity_distributions(all_data, figure_output):
         "4p62": 0,
         "6p9": 0,
         "8p12": 0,
-        # "3C0": 0,
+        "m2l4": 0,
+        "m3l6": 0,
+        "m4l8": 0,
+        "m6l12": 0,
+        "3C0": 0,
+        "4C0": 0,
         # "2C0": 0,
         # "2C1": 0,
         # "2C2": 0,
@@ -44,11 +49,11 @@ def identity_distributions(all_data, figure_output):
     }
     num_cages = len(all_data)
     for cage in all_data:
-        # cage_dict = all_data[cage]
+        cage_dict = all_data[cage]
 
         topo_name = cage.split("_")[0]
         # c2_bbname = cage_dict["c2bb"]
-        # c3_bbname = cage_dict["c3bb"]
+        cl_bbname = cage_dict["clbb"]
 
         if topo_name == "TwoPlusThree":
             categories["2p3"] += 1
@@ -61,35 +66,24 @@ def identity_distributions(all_data, figure_output):
         if topo_name == "EightPlusTwelve":
             categories["8p12"] += 1
 
-        # if "3C0" in c3_bbname:
-        #     categories["3C0"] += 1
-        # if "2C0" in c2_bbname:
-        #     categories["2C0"] += 1
-        # if "2C1" in c2_bbname:
-        #     categories["2C1"] += 1
-        # if "2C2" in c2_bbname:
-        #     categories["2C2"] += 1
-        # if "2C3" in c2_bbname:
-        #     categories["2C3"] += 1
+        if topo_name == "M2L4":
+            categories["m2l4"] += 1
+        if topo_name == "M3L6":
+            categories["m3l6"] += 1
+        if topo_name == "M4L8":
+            categories["m4l8"] += 1
+        if topo_name == "M6L12":
+            categories["m6l12"] += 1
 
-    # if categories["3C0"] != num_cages:
-    #     raise ValueError(f'{categories["3C0"]} != {num_cages}')
+        if "3C0" in cl_bbname:
+            categories["3C0"] += 1
+        if "4C0" in cl_bbname:
+            categories["4C0"] += 1
 
-    # if (
-    #     sum(
-    #         (
-    #             categories["2C0"],
-    #             categories["2C1"],
-    #             categories["2C2"],
-    #             categories["2C3"],
-    #         )
-    #     )
-    #     != num_cages
-    # ):
-    #     raise ValueError(
-    #         f'{categories["2C0"]} + {categories["2C1"]} + '
-    #         f'{categories["2C2"]} + {categories["2C3"]} != {num_cages}'
-    #     )
+    if categories["3C0"] + categories["4C0"] != num_cages:
+        raise ValueError(
+            f'{categories["3C0"]} + {categories["4C0"]} != {num_cages}'
+        )
 
     ax.bar(
         categories.keys(),
@@ -132,12 +126,14 @@ def single_value_distributions(all_data, figure_output):
         "FourPlusSix2": "#DD1C1A",
         "SixPlusNine": "#320E3B",
         "EightPlusTwelve": "#CE7B91",
+        "M2L4": "#6969B3",
+        "M3L6": "#B279A7",
+        "M4L8": "#C3423F",
+        "M6L12": "#9BC53D",
     }
     color_map_barm = {
-        "2C0": "#06AED5",
-        "2C1": "#086788",
-        "2C2": "#DD1C1A",
-        "2C3": "#320E3B",
+        "3C0": "#06AED5",
+        "4C0": "#086788",
     }
 
     for tp in to_plot:
@@ -154,7 +150,7 @@ def single_value_distributions(all_data, figure_output):
                 values = [
                     all_data[i][tp.replace("_barm", "")]
                     for i in all_data
-                    if topo in i.split("_")[2]
+                    if topo in i.split("_")[1]
                 ]
             else:
                 values = [
@@ -162,6 +158,7 @@ def single_value_distributions(all_data, figure_output):
                     for i in all_data
                     if i.split("_")[0] == topo
                 ]
+
             ax.hist(
                 x=values,
                 bins=50,
@@ -176,7 +173,7 @@ def single_value_distributions(all_data, figure_output):
         ax.set_xlabel(xtitle, fontsize=16)
         ax.set_ylabel("count", fontsize=16)
         ax.set_yscale("log")
-        ax.legend(fontsize=16)
+        ax.legend(ncol=2, fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
@@ -320,10 +317,10 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
         data=pcs,
         columns=["pc1", "pc2"],
     )
-    pcindexed_df = pd.concat(
-        [pc_df, data_array[["index"]]],
-        axis=1,
-    )
+    # pcindexed_df = pd.concat(
+    #     [pc_df, data_array[["index"]]],
+    #     axis=1,
+    # )
     ax.scatter(
         pc_df["pc1"],
         pc_df["pc2"],
@@ -531,7 +528,7 @@ def phase_space_1(bb_data, figure_output):
 
 def phase_space_2(bb_data, figure_output):
     for i in ("shape", "energy", "se"):
-        ncols = 1
+        ncols = 2
 
         if ncols == 1:
             fig, ax = plt.subplots(
@@ -547,10 +544,11 @@ def phase_space_2(bb_data, figure_output):
             flat_axs = axs.flatten()
 
         sc_3c0_2c1 = []
+        sc_4c0_2c1 = []
         for bb_pair in bb_data:
             bb_dict = bb_data[bb_pair]
             # c2_bbname = bb_pair[0]
-            # c3_bbname = bb_pair[1]
+            cl_bbname = bb_pair[1]
 
             min_energy = min(tuple(i[1] for i in bb_dict.values()))
             min_e_dict = {
@@ -571,12 +569,15 @@ def phase_space_2(bb_data, figure_output):
                 x = min_shape_value
                 y = min_energy
 
-            sc_3c0_2c1.append((x, y))
+            if "3C0" in cl_bbname:
+                sc_3c0_2c1.append((x, y))
+            elif "4C0" in cl_bbname:
+                sc_4c0_2c1.append((x, y))
 
         shape_coords = (
             # (f"3C0-2C0 ({len(sc_3c0_2c0)})", sc_3c0_2c0),
             (f"3C0-2C1 ({len(sc_3c0_2c1)})", sc_3c0_2c1),
-            # (f"3C0-2C2 ({len(sc_3c0_2c2)})", sc_3c0_2c2),
+            (f"4C0-2C1 ({len(sc_4c0_2c1)})", sc_4c0_2c1),
             # (f"3C0-2C3 ({len(sc_3c0_2c3)})", sc_3c0_2c3),
         )
 
@@ -707,6 +708,26 @@ def phase_space_3(bb_data, figure_output):
     plt.close()
 
 
+def phase_space_4(bb_data, figure_output):
+    fig, axs = plt.subplots(
+        nrows=1,
+        ncols=4,
+        figsize=(16, 5),
+    )
+    # flat_axs = axs.flatten()
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_4.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+    raise SystemExit(
+        "this plot should be preferred shape over Lig props ignoring "
+        "other topologies"
+    )
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -724,7 +745,7 @@ def main():
         with open(j_file, "r") as f:
             res_dict = json.load(f)
         name = str(j_file.name).replace("_res.json", "")
-        _, c3bb_name, c2bb_name = name.split("_")
+        _, clbb_name, c2bb_name = name.split("_")
         all_data[name] = {}
         all_data[name]["energy"] = res_dict["fin_energy"]
         all_data[name]["pore_diameter"] = (
@@ -734,10 +755,10 @@ def main():
             "pore_volume"
         ]
         all_data[name]["shape_vector"] = res_dict["shape_measures"]
-        all_data[name]["c3bb"] = c3bb_name
+        all_data[name]["clbb"] = clbb_name
         all_data[name]["c2bb"] = c2bb_name
 
-        bb_pair = (c2bb_name, c3bb_name)
+        bb_pair = (c2bb_name, clbb_name)
         if bb_pair not in bb_data:
             bb_data[bb_pair] = {}
         for sv in res_dict["shape_measures"]:
@@ -759,7 +780,16 @@ def main():
     phase_space_1(bb_data, figure_output)
     phase_space_2(bb_data, figure_output)
     phase_space_3(bb_data, figure_output)
-    raise SystemExit()
+    phase_space_4(bb_data, figure_output)
+    raise SystemExit(
+        "next I want map of target bite angle to actual bite angle "
+    )
+    raise SystemExit(
+        "next I want PCA maps of shapes for all in each topology "
+    )
+    raise SystemExit(
+        "next I want PCA maps of all shapes for each BB property "
+    )
     shape_vector_cluster(
         all_data=all_data,
         c2bb="2C0Mn",

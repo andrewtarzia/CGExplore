@@ -163,6 +163,39 @@ class Core2Arm(stk.cage.Cage):
     )
 
 
+class FourC0Arm:
+    def __init__(self, bead):
+        self._bead = bead
+        self._name = f"4C0{bead.element_string}"
+        four_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{bead.element_string}]([Br])([Br])[Br]",
+            position_matrix=[
+                [-2, 0, 0],
+                [0, 0, 0],
+                [0, -2, 0],
+                [2, 0, 0],
+                [0, 2, 0],
+            ],
+        )
+
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(f"[{bead.element_string}]" f"[Br]"),
+            bonders=(0,),
+            deleters=(1,),
+            placers=(0, 1),
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=four_c_bb,
+            functional_groups=(new_fgs,),
+        )
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
+
+
 class ThreeC0Arm:
     def __init__(self, bead):
         self._bead = bead

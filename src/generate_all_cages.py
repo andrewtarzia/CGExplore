@@ -26,6 +26,7 @@ from gulp_optimizer import CGGulpOptimizer
 from cage_construction.topologies import cage_topology_options
 
 from precursor_db.precursors import (
+    four_precursor_topology_options,
     three_precursor_topology_options,
     two_precursor_topology_options,
 )
@@ -82,11 +83,29 @@ def beads_3c():
     )
 
 
+def beads_4c():
+    return (
+        CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
+        CgBead("Hg", sigma=2.5, angle_centered=(90, 180, 130)),
+        CgBead("Mo", sigma=3.0, angle_centered=(90, 180, 130)),
+        CgBead("Nd", sigma=3.5, angle_centered=(90, 180, 130)),
+        CgBead("Ne", sigma=4.0, angle_centered=(90, 180, 130)),
+        CgBead("Ni", sigma=4.5, angle_centered=(90, 180, 130)),
+        CgBead("Nb", sigma=5.0, angle_centered=(90, 180, 130)),
+        CgBead("Pd", sigma=5.5, angle_centered=(90, 180, 130)),
+        CgBead("Os", sigma=6.0, angle_centered=(90, 180, 130)),
+    )
+
+
 def get_shape_calculation_molecule(const_mol, name):
     splits = name.split("_")
     topo_str = splits[0]
     bbs = list(const_mol.get_building_blocks())
     old_position_matrix = const_mol.get_position_matrix()
+
+    if "4C0" in name:
+        const_mol.write("temp.mol")
+        raise SystemExit("you need ot check this")
 
     three_c_bb = bbs[0]
     atoms = []
@@ -165,6 +184,23 @@ def get_shape_calculation_molecule(const_mol, name):
             f"{topo_str} needs 8 atoms, not {num_atoms}; name={name}"
         )
 
+    if topo_str == "M2L4" and num_atoms != 6:
+        raise ValueError(
+            f"{topo_str} needs 5 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "M3L6" and num_atoms != 3:
+        raise ValueError(
+            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "M4L8" and num_atoms != 4:
+        raise ValueError(
+            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "M6L12" and num_atoms != 6:
+        raise ValueError(
+            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
+        )
+
     subset_molecule = stk.BuildingBlock.init(
         atoms=atoms,
         bonds=(),
@@ -187,7 +223,12 @@ def optimise_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=beads_3c() + core_2c_beads() + arm_2c_beads(),
+            param_pool=(
+                beads_3c()
+                + core_2c_beads()
+                + arm_2c_beads()
+                + beads_4c()
+            ),
             max_cycles=1000,
             conjugate_gradient=True,
             bonds=True,
@@ -206,7 +247,12 @@ def optimise_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=beads_3c() + core_2c_beads() + arm_2c_beads(),
+            param_pool=(
+                beads_3c()
+                + core_2c_beads()
+                + arm_2c_beads()
+                + beads_4c()
+            ),
             max_cycles=1000,
             conjugate_gradient=False,
             bonds=True,
@@ -234,7 +280,12 @@ def analyse_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=beads_3c() + core_2c_beads() + arm_2c_beads(),
+            param_pool=(
+                beads_3c()
+                + core_2c_beads()
+                + arm_2c_beads()
+                + beads_4c()
+            ),
             max_cycles=1000,
             conjugate_gradient=False,
             bonds=True,
@@ -283,21 +334,24 @@ def main():
     check_directory(calculation_output)
 
     # Define list of topology functions.
-    cage_topologies = cage_topology_options()
+    cage_3p2_topologies = cage_topology_options("2p3")
+    cage_4p2_topologies = cage_topology_options("2p4")
 
     # Define precursor topologies.
+    four_precursor_topologies = four_precursor_topology_options()
     three_precursor_topologies = three_precursor_topology_options()
     two_precursor_topologies = two_precursor_topology_options()
 
     # Define bead libraries.
+    beads_4c_lib = beads_4c()
     beads_3c_lib = beads_3c()
     beads_core_2c_lib = core_2c_beads()
     beads_arm_2c_lib = arm_2c_beads()
 
     # For now, just build N options and calculate properties.
     logging.info("building building blocks...")
-    c2_blocks = {}
 
+    c2_blocks = {}
     for c2_options in itertools.product(
         beads_core_2c_lib,
         beads_arm_2c_lib,
@@ -331,14 +385,21 @@ def main():
         temp = c3_topo(bead=core_bead)
         c3_blocks[temp.get_name()] = temp.get_building_block()
 
+    c4_blocks = {}
+    for core_bead in beads_4c_lib:
+        c4_topo = four_precursor_topologies["4c-0"]
+        temp = c4_topo(bead=core_bead)
+        c4_blocks[temp.get_name()] = temp.get_building_block()
+
     logging.info(
         f"there are {len(c2_blocks)} 2-C and "
-        f"{len(c3_blocks)} 3-C building blocks."
+        f"{len(c3_blocks)} 3-C and "
+        f"{len(c4_blocks)} 3-C building blocks."
     )
 
-    logging.info("building population...")
+    logging.info("building 3 + 2 population...")
     popn_iterator = itertools.product(
-        cage_topologies,
+        cage_3p2_topologies,
         c2_blocks,
         c3_blocks,
     )
@@ -347,7 +408,7 @@ def main():
         cage_topo_str, bb2_str, bb3_str = iteration
         name = f"{cage_topo_str}_{bb3_str}_{bb2_str}"
         cage = stk.ConstructedMolecule(
-            topology_graph=cage_topologies[cage_topo_str](
+            topology_graph=cage_3p2_topologies[cage_topo_str](
                 building_blocks=(
                     c2_blocks[bb2_str],
                     c3_blocks[bb3_str],
@@ -359,7 +420,32 @@ def main():
         analyse_cage(cage, name, calculation_output)
         count += 1
 
-    logging.info(f"{count} cages built.")
+    logging.info(f"{count} 2 + 3 cages built.")
+
+    logging.info("building 4 + 2 population...")
+    popn_iterator = itertools.product(
+        cage_4p2_topologies,
+        c2_blocks,
+        c4_blocks,
+    )
+    count = 0
+    for iteration in popn_iterator:
+        cage_topo_str, bb2_str, bb4_str = iteration
+        name = f"{cage_topo_str}_{bb3_str}_{bb2_str}"
+        cage = stk.ConstructedMolecule(
+            topology_graph=cage_4p2_topologies[cage_topo_str](
+                building_blocks=(
+                    c2_blocks[bb2_str],
+                    c4_blocks[bb4_str],
+                ),
+            ),
+        )
+        cage = optimise_cage(cage, name, calculation_output)
+        cage.write(str(struct_output / f"{name}_optc.mol"))
+        analyse_cage(cage, name, calculation_output)
+        count += 1
+
+    logging.info(f"{count} 2 + 4 cages built.")
 
 
 if __name__ == "__main__":
