@@ -31,7 +31,7 @@ from precursor_db.precursors import (
     two_precursor_topology_options,
 )
 
-from beads import CgBead
+from beads import CgBead, bead_library_check
 
 
 def core_2c_beads():
@@ -50,21 +50,25 @@ def arm_2c_beads():
         CgBead("Gd", sigma=2.0, angle_centered=105),
         CgBead("Ga", sigma=2.0, angle_centered=120),
         CgBead("Ge", sigma=2.0, angle_centered=135),
+        CgBead("La", sigma=2.0, angle_centered=150),
         CgBead("Au", sigma=2.0, angle_centered=180),
         CgBead("Al", sigma=3.0, angle_centered=90),
         CgBead("Sb", sigma=3.0, angle_centered=105),
         CgBead("Ar", sigma=3.0, angle_centered=120),
         CgBead("As", sigma=3.0, angle_centered=135),
+        CgBead("K", sigma=3.0, angle_centered=150),
         CgBead("Ba", sigma=3.0, angle_centered=180),
         CgBead("B", sigma=4.0, angle_centered=90),
         CgBead("Mg", sigma=4.0, angle_centered=105),
         CgBead("Cd", sigma=4.0, angle_centered=120),
         CgBead("Hf", sigma=4.0, angle_centered=135),
+        CgBead("P", sigma=4.0, angle_centered=150),
         CgBead("Ca", sigma=4.0, angle_centered=180),
         CgBead("O", sigma=5.0, angle_centered=90),
         CgBead("Cr", sigma=5.0, angle_centered=105),
         CgBead("Co", sigma=5.0, angle_centered=120),
         CgBead("Be", sigma=5.0, angle_centered=135),
+        CgBead("Kr", sigma=5.0, angle_centered=150),
         CgBead("Pb", sigma=5.0, angle_centered=180),
     )
 
@@ -90,7 +94,7 @@ def beads_4c():
         CgBead("Mo", sigma=3.0, angle_centered=(90, 180, 130)),
         CgBead("Nd", sigma=3.5, angle_centered=(90, 180, 130)),
         CgBead("Ne", sigma=4.0, angle_centered=(90, 180, 130)),
-        CgBead("Ni", sigma=4.5, angle_centered=(90, 180, 130)),
+        CgBead("Sn", sigma=4.5, angle_centered=(90, 180, 130)),
         CgBead("Nb", sigma=5.0, angle_centered=(90, 180, 130)),
         CgBead("Pd", sigma=5.5, angle_centered=(90, 180, 130)),
         CgBead("Os", sigma=6.0, angle_centered=(90, 180, 130)),
@@ -103,27 +107,21 @@ def get_shape_calculation_molecule(const_mol, name):
     bbs = list(const_mol.get_building_blocks())
     old_position_matrix = const_mol.get_position_matrix()
 
-    if "4C0" in name:
-        const_mol.write("temp.mol")
-        raise SystemExit("you need ot check this")
-
-    three_c_bb = bbs[0]
+    large_c_bb = bbs[0]
     atoms = []
     position_matrix = []
     # print(name)
 
-    c3_name = splits[1]
-    c3_topo_str = c3_name[:3]
-    if c3_topo_str == "3C0":
+    cl_name = splits[1]
+    cl_topo_str = cl_name[:3]
+    if cl_topo_str in ("3C0", "4C0"):
         target_id = 1
     else:
         target_id = 0
     for ai in const_mol.get_atom_infos():
-        # print(three_c_bb == ai.get_building_block())
-        if ai.get_building_block() == three_c_bb:
+        if ai.get_building_block() == large_c_bb:
             # The atom to use is always the first in the building
             # block.
-            # print(target_id, ai.get_building_block_atom().get_id())
             if ai.get_building_block_atom().get_id() == target_id:
                 a = ai.get_atom()
                 new_atom = stk.Atom(
@@ -134,7 +132,7 @@ def get_shape_calculation_molecule(const_mol, name):
                 atoms.append(new_atom)
                 position_matrix.append(old_position_matrix[a.get_id()])
 
-    if topo_str in ("TwoPlusThree",):
+    if topo_str in ("TwoPlusThree", "M2L4"):
         c2_name = splits[2]
         c2_topo_str = c2_name[:3]
         if c2_topo_str == "2C0":
@@ -348,6 +346,13 @@ def main():
     beads_core_2c_lib = core_2c_beads()
     beads_arm_2c_lib = arm_2c_beads()
 
+    bead_library_check(
+        beads_3c_lib
+        + beads_4c_lib
+        + beads_arm_2c_lib
+        + beads_core_2c_lib
+    )
+
     # For now, just build N options and calculate properties.
     logging.info("building building blocks...")
 
@@ -431,7 +436,7 @@ def main():
     count = 0
     for iteration in popn_iterator:
         cage_topo_str, bb2_str, bb4_str = iteration
-        name = f"{cage_topo_str}_{bb3_str}_{bb2_str}"
+        name = f"{cage_topo_str}_{bb4_str}_{bb2_str}"
         cage = stk.ConstructedMolecule(
             topology_graph=cage_4p2_topologies[cage_topo_str](
                 building_blocks=(
