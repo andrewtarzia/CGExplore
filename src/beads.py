@@ -11,9 +11,11 @@ Author: Andrew Tarzia
 
 from dataclasses import dataclass
 from typing import Union, Tuple
+import logging
+from collections import Counter
 
 
-def string_to_atom_number(string):
+def periodic_table():
     return {
         "H": 1,
         "He": 2,
@@ -79,8 +81,6 @@ def string_to_atom_number(string):
         "Sm": 62,
         "Eu": 63,
         "Gd": 64,
-        "Tb": 65,
-        "Dy": 66,
         "Ho": 67,
         "Er": 68,
         "Tm": 69,
@@ -104,36 +104,21 @@ def string_to_atom_number(string):
         "Fr": 87,
         "Ra": 88,
         "Ac": 89,
-        "Th": 90,
         "Pa": 91,
-        "U": 92,
         "Np": 93,
         "Pu": 94,
         "Am": 95,
         "Cm": 96,
-        "Bk": 97,
         "Cf": 98,
-        "Es": 99,
-        "Fm": 100,
         "Md": 101,
         "No": 102,
         "Lr": 103,
-        "Rf": 104,
         "Db": 105,
-        "Sg": 106,
-        "Bh": 107,
-        "Hs": 108,
-        "Mt": 109,
-        "Ds": 110,
-        "Rg": 111,
-        "Cn": 112,
-        "Uut": 113,
-        "Fl": 114,
-        "Uup": 115,
-        "Lv": 116,
-        "Uus": 117,
-        "Uuo": 118,
-    }[string]
+    }
+
+
+def string_to_atom_number(string):
+    return periodic_table()[string]
 
 
 @dataclass
@@ -148,26 +133,6 @@ class GuestBead:
     element_string: str
     sigma: float
     epsilon: float
-
-
-# Mn = CgBead("F", sigma=2.0, connectivity=0, angle_centered=180)
-# Hg = CgBead("Hg", sigma=2.0, connectivity=0, angle_centered=180)
-# Mo = CgBead("Mo", sigma=2.0, connectivity=0, angle_centered=180)
-# Nd = CgBead("Nd", sigma=2.0, connectivity=0, angle_centered=180)
-# Ne = CgBead("Ne", sigma=2.0, connectivity=0, angle_centered=180)
-# Ni = CgBead("Cs", sigma=2.0, connectivity=0, angle_centered=180)
-# Nb = CgBead("Nb", sigma=2.0, connectivity=0, angle_centered=180)
-# N = CgBead("N", sigma=2.0, connectivity=0, angle_centered=180)
-# Os = CgBead("Os", sigma=2.0, connectivity=0, angle_centered=180)
-# Pd =        CgBead("Pd", sigma=1.0, angle_centered=120),
-# P = CgBead("P", sigma=2.0, connectivity=0, angle_centered=180)
-# K = CgBead("K", sigma=2.0, connectivity=0, angle_centered=180)
-# CgBead("H", sigma=2.0, connectivity=3, angle_centered=60),
-# CgBead("Kr", sigma=2.0, connectivity=3, angle_centered=60),
-# CgBead("La", sigma=2.0, connectivity=3, angle_centered=60),
-# CgBead("Dy", sigma=2.0, connectivity=3, angle_centered=60),
-# CgBead("Cl", sigma=2.0, connectivity=3, angle_centered=60),
-# CgBead("Lu", sigma=2.0, connectivity=3, angle_centered=60),
 
 
 def guest_beads():
@@ -198,3 +163,24 @@ def sets_in_library(library, sigma=None, angle=None):
             set_beads.add(cgbead.element_string)
 
     return set_beads
+
+
+def bead_library_check(bead_libraries):
+    logging.info(f"there are {len(bead_libraries)} beads")
+    used_strings = tuple(i.element_string for i in bead_libraries)
+    counts = Counter(used_strings)
+    if any((i > 1 for i in counts.values())):
+        raise ValueError(
+            f"you used a bead twice in your library: {counts}"
+        )
+
+    for string in used_strings:
+        if string not in periodic_table():
+            raise ValueError(
+                f"you used a bead not available in PoreMapper: {string}"
+            )
+
+    unused_beads = tuple(
+        i for i in periodic_table() if i not in used_strings
+    )
+    logging.info(f"unused beads: {unused_beads}")
