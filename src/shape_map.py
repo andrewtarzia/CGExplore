@@ -63,7 +63,7 @@ def get_shape(coords, num_vertices, name):
     return shape_measures
 
 
-def get_cmap(n, name="viridis"):
+def get_cmap(n, name="cool"):
     return plt.cm.get_cmap(name, n)
 
 
@@ -86,7 +86,21 @@ def main():
 
     # Iterate over vertices.
     # vertex_nums = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 20, 24)
-    vertex_nums = (4, 5, 6, 8)
+    vertex_nums = (3, 4, 5, 6, 8)
+    target_individuals = (
+        "CU-8",
+        "JETBPY-8",
+        "OP-8",
+        "OC-6",
+        "PPY-6",
+        "HP-6",
+        "TBPY-5",
+        "PP-5",
+        "T-4",
+        "SP-4",
+        "TP-3",
+        "mvOC-3",
+    )
 
     # Start with an initial geometry with N vertices, and
     # interpolate (linearly or stochatstically) between possible
@@ -112,8 +126,10 @@ def main():
                 )
 
         target_row_names = list(vn_temps.keys())
-        target_individuals = ("CU-8", "OC-6", "TBPY-5", "T-4")
-        cmap = get_cmap(len(target_row_names))
+        vn_individuals = tuple(
+            i for i in target_individuals if int(i[-1]) == vn
+        )
+        cmap = get_cmap(len(vn_individuals))
 
         # Plot shape map for N vertices.
         data_array = pd.DataFrame.from_dict(
@@ -152,26 +168,27 @@ def main():
             if row["index"] not in target_row_names:
                 continue
             print(row["index"], n_shape_arrays[row["index"]])
-            if row["index"] in target_individuals:
-                ax.scatter(
-                    row["pc1"],
-                    row["pc2"],
-                    color="r",
-                    edgecolor="k",
-                    marker="D",
-                    s=60,
-                    label=row["index"],
-                )
-            else:
+            if row["index"] in vn_individuals:
                 ax.scatter(
                     row["pc1"],
                     row["pc2"],
                     color=cmap(count),
                     edgecolor="k",
+                    marker="D",
                     s=60,
                     label=row["index"],
                 )
-            count += 1
+                count += 1
+            else:
+                ax.scatter(
+                    row["pc1"],
+                    row["pc2"],
+                    color="k",
+                    edgecolor="None",
+                    s=60,
+                    marker="X",
+                    # label=row["index"],
+                )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("principal component 1", fontsize=16)
