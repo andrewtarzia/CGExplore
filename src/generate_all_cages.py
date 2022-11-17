@@ -36,6 +36,8 @@ from beads import CgBead, bead_library_check
 
 def core_2c_beads():
     return (
+        CgBead("Ag", sigma=0.5, angle_centered=180),
+        CgBead("Zn", sigma=1.0, angle_centered=180),
         CgBead("He", sigma=2.0, angle_centered=180),
         CgBead("Bi", sigma=3.0, angle_centered=180),
         CgBead("Ce", sigma=4.0, angle_centered=180),
@@ -211,7 +213,6 @@ def optimise_cage(molecule, name, output_dir):
 
     opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
-    opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
 
     # Does optimisation.
     if os.path.exists(opt1_mol_file):
@@ -227,31 +228,7 @@ def optimise_cage(molecule, name, output_dir):
                 + arm_2c_beads()
                 + beads_4c()
             ),
-            max_cycles=1000,
-            conjugate_gradient=True,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=False,
-        )
-        _ = opt.optimize(molecule)
-        molecule = molecule.with_structure_from_file(opt_xyz_file)
-        molecule.write(opt1_mol_file)
-        os.system(f"rm {opt_xyz_file}")
-
-    if os.path.exists(opt2_mol_file):
-        molecule = molecule.with_structure_from_file(opt2_mol_file)
-    else:
-        opt = CGGulpOptimizer(
-            fileprefix=name,
-            output_dir=output_dir,
-            param_pool=(
-                beads_3c()
-                + core_2c_beads()
-                + arm_2c_beads()
-                + beads_4c()
-            ),
-            max_cycles=1000,
+            max_cycles=2000,
             conjugate_gradient=False,
             bonds=True,
             angles=True,
@@ -260,7 +237,7 @@ def optimise_cage(molecule, name, output_dir):
         )
         _ = opt.optimize(molecule)
         molecule = molecule.with_structure_from_file(opt_xyz_file)
-        molecule.write(opt2_mol_file)
+        molecule.write(opt1_mol_file)
         os.system(f"rm {opt_xyz_file}")
 
     return molecule
@@ -399,58 +376,52 @@ def main():
     logging.info(
         f"there are {len(c2_blocks)} 2-C and "
         f"{len(c3_blocks)} 3-C and "
-        f"{len(c4_blocks)} 3-C building blocks."
+        f"{len(c4_blocks)} 4-C building blocks."
     )
 
-    logging.info("building 3 + 2 population...")
-    popn_iterator = itertools.product(
-        cage_3p2_topologies,
-        c2_blocks,
-        c3_blocks,
-    )
-    count = 0
-    for iteration in popn_iterator:
-        cage_topo_str, bb2_str, bb3_str = iteration
-        name = f"{cage_topo_str}_{bb3_str}_{bb2_str}"
-        cage = stk.ConstructedMolecule(
-            topology_graph=cage_3p2_topologies[cage_topo_str](
-                building_blocks=(
-                    c2_blocks[bb2_str],
-                    c3_blocks[bb3_str],
-                ),
-            ),
+    populations = {
+        "3 + 2": {
+            "t": cage_3p2_topologies,
+            "c2": c2_blocks,
+            "cl": c3_blocks,
+        },
+        "4 + 2": {
+            "t": cage_4p2_topologies,
+            "c2": c2_blocks,
+            "cl": c4_blocks,
+        },
+    }
+
+    for popn in populations:
+
+        logging.info(f"building {popn} population...")
+        popn_iterator = itertools.product(
+            populations[popn]["t"],
+            populations[popn]["c2"],
+            populations[popn]["cl"],
         )
-        cage = optimise_cage(cage, name, calculation_output)
-        cage.write(str(struct_output / f"{name}_optc.mol"))
-        analyse_cage(cage, name, calculation_output)
-        count += 1
-
-    logging.info(f"{count} 2 + 3 cages built.")
-
-    logging.info("building 4 + 2 population...")
-    popn_iterator = itertools.product(
-        cage_4p2_topologies,
-        c2_blocks,
-        c4_blocks,
-    )
-    count = 0
-    for iteration in popn_iterator:
-        cage_topo_str, bb2_str, bb4_str = iteration
-        name = f"{cage_topo_str}_{bb4_str}_{bb2_str}"
-        cage = stk.ConstructedMolecule(
-            topology_graph=cage_4p2_topologies[cage_topo_str](
-                building_blocks=(
-                    c2_blocks[bb2_str],
-                    c4_blocks[bb4_str],
+        count = 0
+        for iteration in popn_iterator:
+            cage_topo_str, bb2_str, bbl_str = iteration
+            name = f"{cage_topo_str}_{bbl_str}_{bb2_str}"
+            cage = stk.ConstructedMolecule(
+                topology_graph=populations[popn]["t"][cage_topo_str](
+                    building_blocks=(
+                        populations[popn]["c2"][bb2_str],
+                        populations[popn]["cl"][bbl_str],
+                    ),
+                    # optimizer=stk.Collapser(
+                    #     scale_steps=False,
+                    #     distance_threshold=5,
+                    # ),
                 ),
-            ),
-        )
-        cage = optimise_cage(cage, name, calculation_output)
-        cage.write(str(struct_output / f"{name}_optc.mol"))
-        analyse_cage(cage, name, calculation_output)
-        count += 1
+            )
+            cage = optimise_cage(cage, name, calculation_output)
+            cage.write(str(struct_output / f"{name}_optc.mol"))
+            analyse_cage(cage, name, calculation_output)
+            count += 1
 
-    logging.info(f"{count} 2 + 4 cages built.")
+        logging.info(f"{count} {popn} cages built.")
 
 
 if __name__ == "__main__":
