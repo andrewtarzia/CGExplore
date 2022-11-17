@@ -13,6 +13,7 @@ import sys
 import os
 import json
 import logging
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
@@ -40,8 +41,8 @@ def identity_distributions(all_data, figure_output):
         "m3l6": 0,
         "m4l8": 0,
         "m6l12": 0,
-        "3C0": 0,
-        "4C0": 0,
+        # "3C0": 0,
+        # "4C0": 0,
         # "2C0": 0,
         # "2C1": 0,
         # "2C2": 0,
@@ -49,11 +50,11 @@ def identity_distributions(all_data, figure_output):
     }
     num_cages = len(all_data)
     for cage in all_data:
-        cage_dict = all_data[cage]
+        # cage_dict = all_data[cage]
 
         topo_name = cage.split("_")[0]
         # c2_bbname = cage_dict["c2bb"]
-        cl_bbname = cage_dict["clbb"]
+        # cl_bbname = cage_dict["clbb"]
 
         if topo_name == "TwoPlusThree":
             categories["2p3"] += 1
@@ -75,15 +76,15 @@ def identity_distributions(all_data, figure_output):
         if topo_name == "M6L12":
             categories["m6l12"] += 1
 
-        if "3C0" in cl_bbname:
-            categories["3C0"] += 1
-        if "4C0" in cl_bbname:
-            categories["4C0"] += 1
+    #     if "3C0" in cl_bbname:
+    #         categories["3C0"] += 1
+    #     if "4C0" in cl_bbname:
+    #         categories["4C0"] += 1
 
-    if categories["3C0"] + categories["4C0"] != num_cages:
-        raise ValueError(
-            f'{categories["3C0"]} + {categories["4C0"]} != {num_cages}'
-        )
+    # if categories["3C0"] + categories["4C0"] != num_cages:
+    #     raise ValueError(
+    #         f'{categories["3C0"]} + {categories["4C0"]} != {num_cages}'
+    #     )
 
     ax.bar(
         categories.keys(),
@@ -99,7 +100,7 @@ def identity_distributions(all_data, figure_output):
     ax.set_xlabel("cage identity", fontsize=16)
     ax.set_ylabel("count", fontsize=16)
     ax.set_title(f"total cages: {num_cages}", fontsize=16)
-    ax.set_yscale("log")
+    # ax.set_yscale("log")
 
     fig.tight_layout()
     fig.savefig(
@@ -137,15 +138,26 @@ def single_value_distributions(all_data, figure_output):
     }
 
     for tp in to_plot:
-        fig, ax = plt.subplots(figsize=(8, 5))
-        # zoom_values = [i for i in values if i < 1]
+
         xtitle = to_plot[tp]["xtitle"]
         if "barm" in tp:
             cmapp = color_map_barm
+            fig, axs = plt.subplots(
+                ncols=2,
+                nrows=1,
+                figsize=(16, 5),
+            )
+            flat_axs = axs.flatten()
         else:
             cmapp = color_map
+            fig, axs = plt.subplots(
+                ncols=3,
+                nrows=3,
+                figsize=(16, 10),
+            )
+            flat_axs = axs.flatten()
 
-        for topo in cmapp:
+        for i, topo in enumerate(cmapp):
             if "barm" in tp:
                 values = [
                     all_data[i][tp.replace("_barm", "")]
@@ -159,7 +171,7 @@ def single_value_distributions(all_data, figure_output):
                     if i.split("_")[0] == topo
                 ]
 
-            ax.hist(
+            flat_axs[i].hist(
                 x=values,
                 bins=50,
                 density=False,
@@ -169,11 +181,16 @@ def single_value_distributions(all_data, figure_output):
                 label=topo,
             )
 
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(xtitle, fontsize=16)
-        ax.set_ylabel("count", fontsize=16)
-        ax.set_yscale("log")
-        ax.legend(ncol=2, fontsize=16)
+            flat_axs[i].tick_params(
+                axis="both",
+                which="major",
+                labelsize=16,
+            )
+            flat_axs[i].set_xlabel(xtitle, fontsize=16)
+            flat_axs[i].set_ylabel("count", fontsize=16)
+            flat_axs[i].set_title(topo, fontsize=16)
+            # ax.set_yscale("log")
+            # ax.legend(ncol=2, fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
@@ -189,14 +206,15 @@ def shape_vector_distributions(all_data, figure_output):
         set([j for i in all_data.values() for j in i["shape_vector"]]),
         key=lambda i: int(i[-1]),
     )
-    num_cols = 3
-    num_rows = 9
+    num_cols = 4
+    num_rows = 8
 
     color_map = {
         4: "#06AED5",
         5: "#086788",
         6: "#DD1C1A",
         8: "#320E3B",
+        3: "#6969B3",
     }
     xmax = 50
 
@@ -416,106 +434,107 @@ def get_CGBead_from_string(string, bead_library):
 
 def phase_space_1(bb_data, figure_output):
 
-    target_individuals = (
-        "TBPY-5",
-        "T-4",
-        "OC-6",
-        "TPR-6",
-        "CU-8",
+    topologies = (
+        "TwoPlusThree",
+        "FourPlusSix",
+        "FourPlusSix2",
+        "SixPlusNine",
+        "EightPlusTwelve",
+        "M2L4",
+        "M3L6",
+        "M4L8",
+        "M6L12",
     )
+
+    t_map = {
+        "3C0": {
+            "4": "FourPlusSix",
+            "5": "TwoPlusThree",
+            "6": "SixPlusNine",
+            "8": "EightPlusTwelve",
+            "b": "FourPlusSix2",
+        },
+        "4C0": {
+            "3": "M3L6",
+            "4": "M4L8",
+            "6": "M6L12",
+            "b": "M2L4",
+        },
+    }
+
+    # color_map = {
+    #     "3C0": {
+    #         "TwoPlusThree": "#06AED5",
+    #         "FourPlusSix": "#086788",
+    #         "FourPlusSix2": "#DD1C1A",
+    #         "SixPlusNine": "#320E3B",
+    #         "EightPlusTwelve": "#CE7B91",
+    #     },
+    #     "4C0": {
+    #         "M2L4": "#6969B3",
+    #         "M3L6": "#B279A7",
+    #         "M4L8": "#C3423F",
+    #         "M6L12": "#9BC53D",
+    #     },
+    # }
 
     fig, axs = plt.subplots(
         nrows=3,
-        ncols=2,
+        ncols=3,
         sharex=True,
         sharey=True,
         figsize=(16, 10),
     )
     flat_axs = axs.flatten()
 
-    shape_coordinates = {i: [] for i in target_individuals}
-    shape_coordinates["other"] = []
+    data_dict = {}
     for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+        cl_bbname = bb_pair[1]
         c2_bbname = bb_pair[0]
-
-        wtopo = c2_bbname[3:]
-        present_beads_names = []
-        while len(wtopo) > 0:
-            if len(wtopo) == 1:
-                bead_name = wtopo[0]
-                wtopo = ""
-            elif wtopo[1].islower():
-                bead_name = wtopo[:2]
-                wtopo = wtopo[2:]
-            else:
-                bead_name = wtopo[0]
-                wtopo = wtopo[1:]
-
-            present_beads_names.append(bead_name)
-
-        if len(present_beads_names) != int(c2_bbname[2]) + 1:
-            raise ValueError(
-                f"{present_beads_names} length != {c2_bbname}"
-            )
+        present_beads_names = get_present_beads(c2_bbname)
 
         x = get_CGBead_from_string(
             present_beads_names[0], core_2c_beads()
         ).sigma
         # y = get_CGBead_from_string(c3_core_name, beads_3c()).sigma
-        y = get_CGBead_from_string(
-            present_beads_names[-1], arm_2c_beads()
-        ).angle_centered
+        y = (
+            get_CGBead_from_string(
+                present_beads_names[-1], arm_2c_beads()
+            ).angle_centered
+            - 90
+        ) * 2
 
-        bb_dict = bb_data[bb_pair]
-        min_energy = min(tuple(i[1] for i in bb_dict.values()))
+        min_energy = min(tuple(i[1] for i in b_dict.values()))
         min_e_dict = {
-            i: bb_dict[i]
-            for i in bb_dict
-            if bb_dict[i][1] == min_energy
+            i: b_dict[i] for i in b_dict if b_dict[i][1] == min_energy
         }
-        min_shape = min(min_e_dict, key=bb_dict.get)
+        keys = list(min_e_dict.keys())
+        min_energy_topo = keys[0][-1]
 
-        if min_shape.replace("b", "") not in target_individuals:
-            shape_coordinates["other"].append((x, y))
-        else:
-            shape_coordinates[min_shape.replace("b", "")].append((x, y))
+        if "3C0" in cl_bbname:
+            if t_map["3C0"][min_energy_topo] not in data_dict:
+                data_dict[t_map["3C0"][min_energy_topo]] = []
+            data_dict[t_map["3C0"][min_energy_topo]].append((x, y))
+        elif "4C0" in cl_bbname:
+            if t_map["4C0"][min_energy_topo] not in data_dict:
+                data_dict[t_map["4C0"][min_energy_topo]] = []
+            data_dict[t_map["4C0"][min_energy_topo]].append((x, y))
 
-    for ax, shape in zip(flat_axs, shape_coordinates):
-        coords = shape_coordinates[shape]
-
-        ax.set_title(shape, fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        # ax.set_xlabel("target 2c core angle", fontsize=16)
-        ax.set_xlabel("target 2c core size", fontsize=16)
-        # ax.set_ylabel("tritopic core size", fontsize=16)
-        ax.set_ylabel("target 2c binder angle", fontsize=16)
-
-        if len(coords) == 0:
-            continue
-        # hb = ax.hexbin(
-        #     [i[0] for i in coords],
-        #     [i[1] for i in coords],
-        #     gridsize=20,
-        #     cmap="inferno",
-        #     bins="log",
-        # )
-        # fig.colorbar(hb, ax=ax, label="log10(N)")
+    for ax, t_str in zip(flat_axs, topologies):
         ax.scatter(
-            [i[0] for i in coords],
-            [i[1] for i in coords],
-            c="r",
+            [i[0] for i in data_dict[t_str]],
+            [i[1] for i in data_dict[t_str]],
+            c="gray",
+            edgecolor="none",
+            s=30,
             alpha=0.2,
-            s=60,
         )
-        # ax.scatter(
-        #     [i[0] for i in coords2],
-        #     [i[1] for i in coords2],
-        #     c="b",
-        #     alpha=0.2,
-        #     s=60,
-        # )
 
-    # fig.legend(ncol=4, fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("target 2c core size", fontsize=16)
+        ax.set_ylabel("target 2c bite angle", fontsize=16)
+        ax.set_title(t_str, fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -618,27 +637,32 @@ def phase_space_2(bb_data, figure_output):
 def phase_space_3(bb_data, figure_output):
     fig, axs = plt.subplots(
         nrows=1,
-        ncols=4,
+        ncols=2,
         figsize=(16, 5),
     )
     flat_axs = axs.flatten()
-    raise SystemExit("here")
 
     topologies = {
-        "5": "2p3",
-        "4": "4p6",
-        "b": "4p62",
-        "6": "6p9",
-        "8": "8p12",
+        "3C0": {
+            "5": "2+3",
+            "4": "4+6",
+            "b": "4+6-2",
+            "6": "6+9",
+            "8": "8+12",
+        },
+        "4C0": {
+            "b": "M2L4",
+            "4": "M4L8",
+            "3": "M3L6",
+            "6": "M6L12",
+        },
     }
 
-    sc_3c0_2c0 = {}
-    sc_3c0_2c1 = {}
-    sc_3c0_2c2 = {}
-    sc_3c0_2c3 = {}
+    sc_3c0 = {topologies["3C0"][i]: 0 for i in topologies["3C0"]}
+    sc_4c0 = {topologies["4C0"][i]: 0 for i in topologies["4C0"]}
     for bb_pair in bb_data:
         bb_dict = bb_data[bb_pair]
-        c2_bbname = bb_pair[0]
+        cl_bbname = bb_pair[1]
 
         min_energy = min(tuple(i[1] for i in bb_dict.values()))
         min_e_dict = {
@@ -647,30 +671,17 @@ def phase_space_3(bb_data, figure_output):
             if bb_dict[i][1] == min_energy
         }
         keys = list(min_e_dict.keys())
-        topo_str = topologies[keys[0][-1]]
 
-        if "2C0" in c2_bbname:
-            if topo_str not in sc_3c0_2c0:
-                sc_3c0_2c0[topo_str] = 0
-            sc_3c0_2c0[topo_str] += 1
-        elif "2C1" in c2_bbname:
-            if topo_str not in sc_3c0_2c1:
-                sc_3c0_2c1[topo_str] = 0
-            sc_3c0_2c1[topo_str] += 1
-        elif "2C2" in c2_bbname:
-            if topo_str not in sc_3c0_2c2:
-                sc_3c0_2c2[topo_str] = 0
-            sc_3c0_2c2[topo_str] += 1
-        elif "2C3" in c2_bbname:
-            if topo_str not in sc_3c0_2c3:
-                sc_3c0_2c3[topo_str] = 0
-            sc_3c0_2c3[topo_str] += 1
+        if "3C0" in cl_bbname:
+            topo_str = topologies["3C0"][keys[0][-1]]
+            sc_3c0[topo_str] += 1
+        elif "4C0" in cl_bbname:
+            topo_str = topologies["4C0"][keys[0][-1]]
+            sc_4c0[topo_str] += 1
 
     shape_coords = (
-        ("3C0-2C0", sc_3c0_2c0),
-        ("3C0-2C1", sc_3c0_2c1),
-        ("3C0-2C2", sc_3c0_2c2),
-        ("3C0-2C3", sc_3c0_2c3),
+        ("3C0", sc_3c0),
+        ("4C0", sc_4c0),
     )
 
     tot_pairs = 0
@@ -708,13 +719,117 @@ def phase_space_3(bb_data, figure_output):
     plt.close()
 
 
+def get_shape_vector(shape_dictionary):
+    target_shapes = (
+        "CU-8",
+        "JETBPY-8",
+        "OP-8",
+        "OC-6",
+        "PPY-6",
+        "HP-6",
+        "TBPY-5",
+        "PP-5",
+        "T-4",
+        "SP-4",
+        "TP-3",
+        "mvOC-3",
+    )
+    shape_vector = {}
+    for i in target_shapes:
+        if i in shape_dictionary:
+            shape_vector[i] = shape_dictionary[i][0]
+        if i + "b" in shape_dictionary:
+            shape_vector[i + "b"] = shape_dictionary[i + "b"][0]
+
+    return shape_vector
+
+
 def phase_space_4(bb_data, figure_output):
+    color_map = {
+        "3": "#F9A03F",
+        "4": "#0B2027",
+        "5": "#86626E",
+        "6": "#CA1551",
+        "8": "#345995",
+        "b": "#7A8B99",
+    }
+
     fig, axs = plt.subplots(
         nrows=1,
-        ncols=4,
+        ncols=2,
         figsize=(16, 5),
     )
-    # flat_axs = axs.flatten()
+    flat_axs = axs.flatten()
+
+    s_vectors_3c0 = {}
+    s_vectors_4c0 = {}
+    row_3c0 = set()
+    row_4c0 = set()
+    for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+        cl_bbname = bb_pair[1]
+
+        min_energy = min(tuple(i[1] for i in b_dict.values()))
+        min_e_dict = {
+            i: b_dict[i] for i in b_dict if b_dict[i][1] == min_energy
+        }
+        keys = list(min_e_dict.keys())
+        min_energy_topo = keys[0][-1]
+
+        shape_vector = get_shape_vector(b_dict)
+        if "3C0" in cl_bbname:
+            s_vectors_3c0[
+                (bb_pair[0], bb_pair[1], min_energy_topo)
+            ] = shape_vector
+            for i in shape_vector:
+                row_3c0.add(i)
+        elif "4C0" in cl_bbname:
+            s_vectors_4c0[
+                (bb_pair[0], bb_pair[1], min_energy_topo)
+            ] = shape_vector
+            for i in shape_vector:
+                row_4c0.add(i)
+
+    shape_vector_dicts = (
+        ("3C0", s_vectors_3c0, row_3c0),
+        ("4C0", s_vectors_4c0, row_4c0),
+    )
+    for ax, (title, coords, row_names) in zip(
+        flat_axs, shape_vector_dicts
+    ):
+        data_array = pd.DataFrame.from_dict(
+            coords,
+            orient="index",
+        ).reset_index()
+
+        # Separating out the features
+        x = data_array.loc[:, row_names].values
+        # Standardizing the features
+        x = StandardScaler().fit_transform(x)
+        pca = PCA(n_components=2)
+        pcs = pca.fit_transform(x)
+        pc_df = pd.DataFrame(
+            data=pcs,
+            columns=["pc1", "pc2"],
+        )
+
+        for t_final in color_map:
+            ax.scatter(
+                pc_df["pc1"][data_array["level_2"] == t_final],
+                pc_df["pc2"][data_array["level_2"] == t_final],
+                c=color_map[str(t_final)],
+                edgecolor="none",
+                s=30,
+                alpha=1.0,
+                label=t_final,
+            )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("principal component 1", fontsize=16)
+        ax.set_ylabel("principal component 2", fontsize=16)
+        ax.set_title(f"PCA: {title}", fontsize=16)
+        ax.legend(ncol=2, fontsize=16)
+
     fig.tight_layout()
     fig.savefig(
         os.path.join(figure_output, "ps_4.pdf"),
@@ -722,10 +837,513 @@ def phase_space_4(bb_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
-    raise SystemExit(
-        "this plot should be preferred shape over Lig props ignoring "
-        "other topologies"
+
+
+def get_present_beads(c2_bbname):
+    wtopo = c2_bbname[3:]
+    present_beads_names = []
+    while len(wtopo) > 0:
+        if len(wtopo) == 1:
+            bead_name = wtopo[0]
+            wtopo = ""
+        elif wtopo[1].islower():
+            bead_name = wtopo[:2]
+            wtopo = wtopo[2:]
+        else:
+            bead_name = wtopo[0]
+            wtopo = wtopo[1:]
+
+        present_beads_names.append(bead_name)
+
+    if len(present_beads_names) != int(c2_bbname[2]) + 1:
+        raise ValueError(f"{present_beads_names} length != {c2_bbname}")
+    return present_beads_names
+
+
+def phase_space_5(bb_data, figure_output):
+    fig, axs = plt.subplots(
+        nrows=3,
+        ncols=3,
+        figsize=(16, 10),
     )
+    flat_axs = axs.flatten()
+
+    target_individuals = {
+        "TBPY-5": "TwoPlusThree",
+        "T-4": "FourPlusSix",
+        "T-4b": "FourPlusSix2",
+        "TPR-6": "SixPlusNine",
+        "CU-8": "EightPlusTwelve",
+        "OC-6b": "M2L4",
+        "TP-3": "M3L6",
+        "SP-4": "M4L8",
+        "OC-6": "M6L12",
+    }
+
+    # target_size = {"3C0": "Ir", "4C0": "Ne"}
+
+    shape_coordinates = {
+        target_individuals[i]: [] for i in target_individuals
+    }
+    for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+        if "4C0" in bb_pair[1]:
+            # if target_size["4C0"] not in bb_pair[1]:
+            #     continue
+            shapes = ("OC-6b", "TP-3", "SP-4", "OC-6")
+        elif "3C0" in bb_pair[1]:
+            # if target_size["3C0"] not in bb_pair[1]:
+            #     continue
+            shapes = ("TBPY-5", "T-4", "T-4b", "TPR-6", "CU-8")
+
+        present_beads_names = get_present_beads(c2_bbname=bb_pair[0])
+        for shape in shapes:
+            topo_str = target_individuals[shape]
+            try:
+                shape_value = b_dict[shape][0]
+            except KeyError:
+                continue
+            energy = b_dict[shape][1]
+            x = shape_value
+            y = (
+                get_CGBead_from_string(
+                    present_beads_names[-1], arm_2c_beads()
+                ).angle_centered
+                - 90
+            ) * 2
+            z = energy
+            shape_coordinates[topo_str].append((x, y, z))
+
+    for ax, topo_str in zip(flat_axs, shape_coordinates):
+        coords = shape_coordinates[topo_str]
+        shape_str = list(target_individuals.keys())[
+            list(target_individuals.values()).index(topo_str)
+        ]
+        ax.set_title(topo_str, fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel(shape_str, fontsize=16)
+        ax.set_ylabel("target bite angle", fontsize=16)
+
+        ax.scatter(
+            [i[0] for i in coords],
+            [i[1] for i in coords],
+            c=[i[2] for i in coords],
+            vmin=0,
+            vmax=30,
+            alpha=0.4,
+            edgecolor="none",
+            s=30,
+            cmap="inferno",
+        )
+
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.inferno
+    norm = mpl.colors.Normalize(vmin=0, vmax=30)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label("energy (eV)", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_5.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_6(bb_data, figure_output):
+    fig, axs = plt.subplots(
+        nrows=3,
+        ncols=3,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    target_individuals = {
+        "TBPY-5": "TwoPlusThree",
+        "T-4": "FourPlusSix",
+        "T-4b": "FourPlusSix2",
+        "TPR-6": "SixPlusNine",
+        "CU-8": "EightPlusTwelve",
+        "OC-6b": "M2L4",
+        "TP-3": "M3L6",
+        "SP-4": "M4L8",
+        "OC-6": "M6L12",
+    }
+
+    shape_coordinates = {
+        target_individuals[i]: [] for i in target_individuals
+    }
+    for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+        if "4C0" in bb_pair[1]:
+            shapes = ("OC-6b", "TP-3", "SP-4", "OC-6")
+        elif "3C0" in bb_pair[1]:
+            shapes = ("TBPY-5", "T-4", "T-4b", "TPR-6", "CU-8")
+
+        for shape in shapes:
+            topo_str = target_individuals[shape]
+            try:
+                shape_value = b_dict[shape][0]
+            except KeyError:
+                continue
+            energy = b_dict[shape][1]
+            pore_radius = b_dict[shape][2]
+            x = shape_value
+            y = pore_radius
+            z = energy
+            shape_coordinates[topo_str].append((x, y, z))
+
+    for ax, topo_str in zip(flat_axs, shape_coordinates):
+        coords = shape_coordinates[topo_str]
+        shape_str = list(target_individuals.keys())[
+            list(target_individuals.values()).index(topo_str)
+        ]
+        ax.set_title(topo_str, fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel(shape_str, fontsize=16)
+        ax.set_ylabel("pore radius [A]", fontsize=16)
+
+        ax.scatter(
+            [i[0] for i in coords],
+            [i[1] for i in coords],
+            c=[i[2] for i in coords],
+            vmin=0,
+            vmax=30,
+            alpha=0.4,
+            edgecolor="none",
+            s=30,
+            cmap="inferno",
+        )
+
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.inferno
+    norm = mpl.colors.Normalize(vmin=0, vmax=30)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label("energy (eV)", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_6.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_7(bb_data, figure_output):
+
+    topologies = {
+        "TwoPlusThree": "TBPY-5",
+        "FourPlusSix": "T-4",
+        "FourPlusSix2": "T-4b",
+        "SixPlusNine": "TPR-6",
+        "EightPlusTwelve": "CU-8",
+        "M2L4": "OC-6b",
+        "M3L6": "TP-3",
+        "M4L8": "SP-4",
+        "M6L12": "OC-6",
+    }
+
+    t_map = {
+        "3C0": {
+            "4": "FourPlusSix",
+            "5": "TwoPlusThree",
+            "6": "SixPlusNine",
+            "8": "EightPlusTwelve",
+            "b": "FourPlusSix2",
+        },
+        "4C0": {
+            "3": "M3L6",
+            "4": "M4L8",
+            "6": "M6L12",
+            "b": "M2L4",
+        },
+    }
+
+    # color_map = {
+    #     "3C0": {
+    #         "TwoPlusThree": "#06AED5",
+    #         "FourPlusSix": "#086788",
+    #         "FourPlusSix2": "#DD1C1A",
+    #         "SixPlusNine": "#320E3B",
+    #         "EightPlusTwelve": "#CE7B91",
+    #     },
+    #     "4C0": {
+    #         "M2L4": "#6969B3",
+    #         "M3L6": "#B279A7",
+    #         "M4L8": "#C3423F",
+    #         "M6L12": "#9BC53D",
+    #     },
+    # }
+
+    fig, axs = plt.subplots(
+        nrows=3,
+        ncols=3,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    data_dict = {}
+    for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+        cl_bbname = bb_pair[1]
+        c2_bbname = bb_pair[0]
+        present_beads_names = get_present_beads(c2_bbname)
+
+        x = get_CGBead_from_string(
+            present_beads_names[0], core_2c_beads()
+        ).sigma
+        # y = get_CGBead_from_string(c3_core_name, beads_3c()).sigma
+        y = (
+            get_CGBead_from_string(
+                present_beads_names[-1], arm_2c_beads()
+            ).angle_centered
+            - 90
+        ) * 2
+
+        min_energy = min(tuple(i[1] for i in b_dict.values()))
+        min_e_dict = {
+            i: b_dict[i] for i in b_dict if b_dict[i][1] == min_energy
+        }
+        keys = list(min_e_dict.keys())
+        min_energy_topo = keys[0][-1]
+
+        if "3C0" in cl_bbname:
+            topology = t_map["3C0"][min_energy_topo]
+        elif "4C0" in cl_bbname:
+            topology = t_map["4C0"][min_energy_topo]
+
+        target_shape = topologies[topology]
+        s = min_e_dict[target_shape][0]
+
+        if topology not in data_dict:
+            data_dict[topology] = []
+        data_dict[topology].append((x, y, s))
+
+    for ax, t_str in zip(flat_axs, topologies):
+        ax.scatter(
+            [i[0] for i in data_dict[t_str]],
+            [i[1] for i in data_dict[t_str]],
+            c=[i[2] for i in data_dict[t_str]],
+            edgecolor="none",
+            s=30,
+            alpha=1.0,
+            vmin=0,
+            vmax=20,
+            cmap="viridis",
+        )
+
+        title = t_str + ": " + topologies[t_str].rstrip("b")
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("target 2c core size", fontsize=16)
+        ax.set_ylabel("target 2c bite angle", fontsize=16)
+        ax.set_title(title, fontsize=16)
+
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.viridis
+    norm = mpl.colors.Normalize(vmin=0, vmax=20)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label("target shape", fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_7.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_8(bb_data, figure_output):
+
+    t_map = {
+        "3C0": {
+            "4": "FourPlusSix",
+            "5": "TwoPlusThree",
+            "6": "SixPlusNine",
+            "8": "EightPlusTwelve",
+            "b": "FourPlusSix2",
+        },
+        "4C0": {
+            "3": "M3L6",
+            "4": "M4L8",
+            "6": "M6L12",
+            "b": "M2L4",
+        },
+    }
+
+    color_map = {
+        "3C0": {
+            "TwoPlusThree": "#06AED5",
+            "FourPlusSix": "#086788",
+            "FourPlusSix2": "#DD1C1A",
+            "SixPlusNine": "#320E3B",
+            "EightPlusTwelve": "#CE7B91",
+        },
+        "4C0": {
+            "M2L4": "#6969B3",
+            "M3L6": "#B279A7",
+            "M4L8": "#C3423F",
+            "M6L12": "#9BC53D",
+        },
+    }
+
+    target_3or4_beads = ("Ho", "Pt")
+    target_arm_sigma = 4.0
+    max_energy = 10
+    isomer_energy = 0.05
+
+    fig, axs = plt.subplots(
+        nrows=1,
+        ncols=2,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 5),
+    )
+    flat_axs = axs.flatten()
+
+    data_dict = {}
+    for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+        cl_bbname = bb_pair[1]
+        c2_bbname = bb_pair[0]
+
+        if "3C0" in cl_bbname and target_3or4_beads[0] in cl_bbname:
+            title = "3C0"
+
+        elif "4C0" in cl_bbname and target_3or4_beads[1] in cl_bbname:
+            title = "4C0"
+
+        else:
+            continue
+
+        present_beads_names = get_present_beads(c2_bbname)
+        core_bead_s = present_beads_names[0]
+        arm_bead_s = present_beads_names[-1]
+        x = get_CGBead_from_string(core_bead_s, core_2c_beads()).sigma
+        # y = get_CGBead_from_string(c3_core_name, beads_3c()).sigma
+        y = (
+            get_CGBead_from_string(
+                arm_bead_s, arm_2c_beads()
+            ).angle_centered
+            - 90
+        ) * 2
+
+        if (
+            get_CGBead_from_string(arm_bead_s, arm_2c_beads()).sigma
+            != target_arm_sigma
+        ):
+            continue
+
+        all_energies = set(
+            b_dict[i][1] / int(i.rstrip("b")[-1]) for i in b_dict
+        )
+        if len(tuple(i for i in all_energies if i < isomer_energy)) > 1:
+            s = "black"
+        else:
+            min_energy = min(tuple(i[1] for i in b_dict.values()))
+            min_e_dict = {
+                i: b_dict[i]
+                for i in b_dict
+                if b_dict[i][1] == min_energy
+            }
+            keys = list(min_e_dict.keys())
+            min_energy_topo = keys[0][-1]
+            topology = t_map[title][min_energy_topo]
+
+            if min_energy > max_energy:
+                s = "gray"
+            else:
+                s = color_map[title][topology]
+
+        if title not in data_dict:
+            data_dict[title] = []
+        data_dict[title].append((x, y, s))
+
+    for ax, title in zip(flat_axs, data_dict):
+        ax.scatter(
+            [i[0] for i in data_dict[title]],
+            [i[1] for i in data_dict[title]],
+            c=[i[2] for i in data_dict[title]],
+            edgecolor="none",
+            s=300,
+            marker="s",
+            alpha=1.0,
+        )
+        target_bead = ",".join(target_3or4_beads)
+        title = (
+            f"{title} : {target_bead} : {target_arm_sigma} : "
+            f"{max_energy}eV : {isomer_energy}eV"
+        )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("target 2c core size", fontsize=16)
+        ax.set_ylabel("target 2c bite angle", fontsize=16)
+        ax.set_title(title, fontsize=16)
+
+    for i in color_map:
+        for j in color_map[i]:
+            ax.scatter(
+                None,
+                None,
+                c=color_map[i][j],
+                edgecolor="none",
+                s=300,
+                marker="s",
+                alpha=1.0,
+                label=j,
+            )
+    ax.scatter(
+        None,
+        None,
+        c="gray",
+        edgecolor="none",
+        s=300,
+        marker="s",
+        alpha=1.0,
+        label="unstable",
+    )
+    ax.scatter(
+        None,
+        None,
+        c="k",
+        edgecolor="none",
+        s=300,
+        marker="s",
+        alpha=1.0,
+        label="mixed",
+    )
+    fig.legend(
+        bbox_to_anchor=(0, 1.02, 2, 0.2),
+        loc="lower left",
+        ncol=5,
+        fontsize=16,
+    )
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_8.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 def main():
@@ -764,6 +1382,8 @@ def main():
         for sv in res_dict["shape_measures"]:
             if "FourPlusSix2" in name:
                 svb = sv + "b"
+            elif "M2L4" in name:
+                svb = sv + "b"
             else:
                 svb = sv
             bb_data[bb_pair][svb] = (
@@ -773,14 +1393,19 @@ def main():
             )
 
     logging.info(f"there are {len(all_data)} collected data")
+    phase_space_8(bb_data, figure_output)
 
     identity_distributions(all_data, figure_output)
     single_value_distributions(all_data, figure_output)
     shape_vector_distributions(all_data, figure_output)
     phase_space_1(bb_data, figure_output)
-    phase_space_2(bb_data, figure_output)
     phase_space_3(bb_data, figure_output)
     phase_space_4(bb_data, figure_output)
+    phase_space_5(bb_data, figure_output)
+    phase_space_6(bb_data, figure_output)
+    phase_space_7(bb_data, figure_output)
+    raise SystemExit()
+    phase_space_2(bb_data, figure_output)
     raise SystemExit(
         "next I want map of target bite angle to actual bite angle "
     )
