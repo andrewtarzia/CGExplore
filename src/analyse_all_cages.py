@@ -1191,22 +1191,28 @@ def phase_space_8(bb_data, figure_output):
 
     color_map = {
         "3C0": {
-            "TwoPlusThree": "#06AED5",
-            "FourPlusSix": "#086788",
-            "FourPlusSix2": "#DD1C1A",
-            "SixPlusNine": "#320E3B",
-            "EightPlusTwelve": "#CE7B91",
+            "TwoPlusThree": "#448947",
+            "FourPlusSix": "#73A775",
+            "FourPlusSix2": "#8AB58C",
+            "SixPlusNine": "#B9D3BA",
+            "EightPlusTwelve": "#E8F0E8",
         },
         "4C0": {
-            "M2L4": "#6969B3",
-            "M3L6": "#B279A7",
-            "M4L8": "#C3423F",
-            "M6L12": "#9BC53D",
+            "M2L4": "#0A5F92",
+            "M3L6": "#4787AD",
+            "M4L8": "#85AFC9",
+            "M6L12": "#C2D7E4",
+        },
+        "mixed": {
+            "2": "#894487",
+            "3": "#B58AB4",
+            "4": "#D3B9D2",
+            ">4": "white",
         },
     }
 
     target_3or4_beads = ("Ho", "Pt")
-    target_arm_sigma = 4.0
+    target_arm_sigma = 2.0
     max_energy = 10
     isomer_energy = 0.05
 
@@ -1255,8 +1261,19 @@ def phase_space_8(bb_data, figure_output):
         all_energies = set(
             b_dict[i][1] / int(i.rstrip("b")[-1]) for i in b_dict
         )
-        if len(tuple(i for i in all_energies if i < isomer_energy)) > 1:
-            s = "black"
+        num_mixed = len(
+            tuple(i for i in all_energies if i < isomer_energy)
+        )
+        if num_mixed > 1:
+            if num_mixed == 2:
+                s = color_map["mixed"]["2"]
+            elif num_mixed == 3:
+                s = color_map["mixed"]["3"]
+            elif num_mixed == 4:
+                s = color_map["mixed"]["4"]
+            else:
+                s = color_map["mixed"][">4"]
+
         else:
             min_energy = min(tuple(i[1] for i in b_dict.values()))
             min_e_dict = {
@@ -1277,12 +1294,12 @@ def phase_space_8(bb_data, figure_output):
             data_dict[title] = []
         data_dict[title].append((x, y, s))
 
-    for ax, title in zip(flat_axs, data_dict):
+    for ax, title in zip(flat_axs, t_map):
         ax.scatter(
             [i[0] for i in data_dict[title]],
             [i[1] for i in data_dict[title]],
             c=[i[2] for i in data_dict[title]],
-            edgecolor="none",
+            edgecolor="k",
             s=300,
             marker="s",
             alpha=1.0,
@@ -1300,36 +1317,31 @@ def phase_space_8(bb_data, figure_output):
 
     for i in color_map:
         for j in color_map[i]:
+            if i == "mixed":
+                string = f"mixed: {j}"
+            else:
+                string = j
             ax.scatter(
                 None,
                 None,
                 c=color_map[i][j],
-                edgecolor="none",
+                edgecolor="k",
                 s=300,
                 marker="s",
                 alpha=1.0,
-                label=j,
+                label=string,
             )
     ax.scatter(
         None,
         None,
         c="gray",
-        edgecolor="none",
+        edgecolor="k",
         s=300,
         marker="s",
         alpha=1.0,
         label="unstable",
     )
-    ax.scatter(
-        None,
-        None,
-        c="k",
-        edgecolor="none",
-        s=300,
-        marker="s",
-        alpha=1.0,
-        label="mixed",
-    )
+
     fig.legend(
         bbox_to_anchor=(0, 1.02, 2, 0.2),
         loc="lower left",
@@ -1340,6 +1352,224 @@ def phase_space_8(bb_data, figure_output):
     fig.tight_layout()
     fig.savefig(
         os.path.join(figure_output, "ps_8.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_9(bb_data, figure_output):
+
+    topologies = (
+        ("4C0", "M2L4"),
+        ("4C0", "M3L6"),
+        ("4C0", "M4L8"),
+        ("4C0", "M6L12"),
+        ("3C0", "TwoPlusThree"),
+        ("3C0", "FourPlusSix"),
+        ("3C0", "FourPlusSix2"),
+        ("3C0", "SixPlusNine"),
+        ("3C0", "EightPlusTwelve"),
+    )
+    t_map = {
+        "3C0": {
+            "4": "FourPlusSix",
+            "5": "TwoPlusThree",
+            "6": "SixPlusNine",
+            "8": "EightPlusTwelve",
+            "b": "FourPlusSix2",
+        },
+        "4C0": {
+            "3": "M3L6",
+            "4": "M4L8",
+            "6": "M6L12",
+            "b": "M2L4",
+        },
+    }
+
+    color_map = {
+        "3C0": {
+            "TwoPlusThree": "#448947",
+            "FourPlusSix": "#73A775",
+            "FourPlusSix2": "#8AB58C",
+            "SixPlusNine": "#B9D3BA",
+            "EightPlusTwelve": "#E8F0E8",
+        },
+        "4C0": {
+            "M2L4": "#0A5F92",
+            "M3L6": "#4787AD",
+            "M4L8": "#85AFC9",
+            "M6L12": "#C2D7E4",
+        },
+    }
+
+    t_3or4_beads = ("Ho", "Pt")
+    t_arm_sigma = 2.0
+    max_energy = 10
+
+    for title, tstring in topologies:
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        data_dict = {}
+        for bb_pair in bb_data:
+            b_dict = bb_data[bb_pair]
+            cl_bbname = bb_pair[1]
+            c2_bbname = bb_pair[0]
+            if title not in data_dict:
+                data_dict[title] = []
+
+            if t_3or4_beads[0] in cl_bbname and title == "3C0":
+                pass
+            elif t_3or4_beads[1] in cl_bbname and title == "4C0":
+                pass
+            else:
+                continue
+
+            present_beads_names = get_present_beads(c2_bbname)
+            core_bead_s = present_beads_names[0]
+            arm_bead_s = present_beads_names[-1]
+            x = get_CGBead_from_string(
+                core_bead_s, core_2c_beads()
+            ).sigma
+            # y = get_CGBead_from_string(c3_core_name, beads_3c()).sigma
+            y = (
+                get_CGBead_from_string(
+                    arm_bead_s, arm_2c_beads()
+                ).angle_centered
+                - 90
+            ) * 2
+
+            if (
+                get_CGBead_from_string(arm_bead_s, arm_2c_beads()).sigma
+                != t_arm_sigma
+            ):
+                continue
+
+            for i in b_dict:
+                topology_ey = b_dict[i][1] / int(i.rstrip("b")[-1])
+                if i[-1] in t_map[title]:
+                    topology = t_map[title][i[-1]]
+                    break
+
+            if topology != tstring:
+                continue
+
+            if topology_ey > max_energy:
+                s = "gray"
+            else:
+                s = color_map[title][topology]
+
+            data_dict[title].append((x, y, s))
+
+        ax.scatter(
+            [i[0] for i in data_dict[title]],
+            [i[1] for i in data_dict[title]],
+            c=[i[2] for i in data_dict[title]],
+            edgecolor="k",
+            s=300,
+            marker="s",
+            alpha=1.0,
+        )
+        target_bead = ",".join(t_3or4_beads)
+        title = (
+            f"{title} : {target_bead} : {t_arm_sigma} : "
+            f"{max_energy}eV"
+        )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("target 2c core size", fontsize=16)
+        ax.set_ylabel("target 2c bite angle", fontsize=16)
+        ax.set_title(title, fontsize=16)
+
+        for i in color_map:
+            for j in color_map[i]:
+                if j != tstring:
+                    continue
+                ax.scatter(
+                    None,
+                    None,
+                    c=color_map[i][j],
+                    edgecolor="k",
+                    s=300,
+                    marker="s",
+                    alpha=1.0,
+                    label=j,
+                )
+        ax.scatter(
+            None,
+            None,
+            c="gray",
+            edgecolor="k",
+            s=300,
+            marker="s",
+            alpha=1.0,
+            label="unstable",
+        )
+
+        fig.legend(
+            bbox_to_anchor=(0, 1.02, 2, 0.2),
+            loc="lower left",
+            ncol=5,
+            fontsize=16,
+        )
+
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"ps_9_{tstring}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
+def parity_1(bb_data, figure_output):
+
+    x_target = ("T-4", "4", "FourPlusSix")
+    y_targets = (
+        ("TBPY-5", "5", "TwoPlusThree"),
+        ("T-4b", "b", "FourPlusSix2"),
+        ("OC-6", "6", "SixPlusNine"),
+        ("CU-8", "8", "EightPlusTwelve"),
+    )
+
+    fig, axs = plt.subplots(
+        ncols=len(y_targets),
+        figsize=(16, 5),
+    )
+    flat_axs = axs.flatten()
+
+    ax_datas = {i: [] for i in range(len(y_targets))}
+    for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+
+        for i, yt in enumerate(y_targets):
+            if x_target[0] in b_dict and yt[0] in b_dict:
+                x1 = b_dict[x_target[0]][1]
+                y1 = b_dict[yt[0]][1]
+                ax_datas[i].append((x1, y1))
+
+    title = "energy [eV]"
+    lim = (-0.1, 10)
+    for ax, (yid, yinfo) in zip(flat_axs, enumerate(y_targets)):
+        ax.scatter(
+            [i[0] for i in ax_datas[yid]],
+            [i[1] for i in ax_datas[yid]],
+            c="gray",
+            edgecolor="none",
+            s=30,
+            alpha=1.0,
+        )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel(x_target[2], fontsize=16)
+        ax.set_ylabel(yinfo[2], fontsize=16)
+        ax.set_title(title, fontsize=16)
+        ax.set_xlim(lim)
+        ax.set_ylim(lim)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "par_1.pdf"),
         dpi=720,
         bbox_inches="tight",
     )
@@ -1394,7 +1624,9 @@ def main():
 
     logging.info(f"there are {len(all_data)} collected data")
     phase_space_8(bb_data, figure_output)
+    phase_space_9(bb_data, figure_output)
 
+    parity_1(bb_data, figure_output)
     identity_distributions(all_data, figure_output)
     single_value_distributions(all_data, figure_output)
     shape_vector_distributions(all_data, figure_output)
