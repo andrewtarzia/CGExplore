@@ -45,7 +45,7 @@ class TerminalVertex(_CageVertex):
         }
 
 
-class Core1Arm(stk.cage.Cage):
+class Core3Arm1(stk.cage.Cage):
     # Special vertex definitions to be maintained.
     # Vertex ID, position.
     # Note the classes are Cage specific!
@@ -89,7 +89,61 @@ class Core1Arm(stk.cage.Cage):
     )
 
 
-class Core2Arm(stk.cage.Cage):
+class Core4Arm1(stk.cage.Cage):
+    # Special vertex definitions to be maintained.
+    # Vertex ID, position.
+    # Note the classes are Cage specific!
+    _vertex_prototypes = (
+        stk.cage.NonLinearVertex(0, (0, 0, 0)),
+        TerminalVertex(
+            id=1,
+            position=(2, 0, 0),
+            use_neighbor_placement=False,
+        ),
+        TerminalVertex(
+            id=2,
+            position=(0, 2, 0),
+            use_neighbor_placement=False,
+        ),
+        TerminalVertex(
+            id=3,
+            position=(-2, 0, 0),
+            use_neighbor_placement=False,
+        ),
+        TerminalVertex(
+            id=4,
+            position=(0, -2, 0),
+            use_neighbor_placement=False,
+        ),
+    )
+
+    # But Edges are not!
+    _edge_prototypes = (
+        # Edge ID, connected vertices by ID above.
+        stk.Edge(
+            id=0,
+            vertex1=_vertex_prototypes[0],
+            vertex2=_vertex_prototypes[1],
+        ),
+        stk.Edge(
+            id=1,
+            vertex1=_vertex_prototypes[0],
+            vertex2=_vertex_prototypes[2],
+        ),
+        stk.Edge(
+            id=2,
+            vertex1=_vertex_prototypes[0],
+            vertex2=_vertex_prototypes[3],
+        ),
+        stk.Edge(
+            id=3,
+            vertex1=_vertex_prototypes[0],
+            vertex2=_vertex_prototypes[4],
+        ),
+    )
+
+
+class Core3Arm2(stk.cage.Cage):
     # Special vertex definitions to be maintained.
     # Vertex ID, position.
     # Note the classes are Cage specific!
@@ -163,7 +217,18 @@ class Core2Arm(stk.cage.Cage):
     )
 
 
-class FourC0Arm:
+class Precursor:
+    def __init__(self):
+        raise NotImplementedError()
+
+    def get_building_block(self):
+        return self._building_block
+
+    def get_name(self):
+        return self._name
+
+
+class FourC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
         self._name = f"4C0{bead.element_string}"
@@ -189,14 +254,50 @@ class FourC0Arm:
             functional_groups=(new_fgs,),
         )
 
-    def get_building_block(self):
-        return self._building_block
 
-    def get_name(self):
-        return self._name
+class FourC1Arm(Precursor):
+    def __init__(self, bead, abead1):
+        self._bead = bead
+        self._abead1 = abead1
+        self._name = f"4C1{bead.element_string}{abead1.element_string}"
+        factories = (stk.BromoFactory(placers=(0, 1)),)
+        four_c_bb = stk.BuildingBlock(
+            smiles=f"[Br][{bead.element_string}]([Br])([Br])[Br]",
+            functional_groups=factories,
+            position_matrix=[
+                [-2, 0, 0],
+                [0, 0, 0],
+                [0, -2, 0],
+                [2, 0, 0],
+                [0, 2, 0],
+            ],
+        )
+        bb_tuple = (
+            four_c_bb,
+            stk.BuildingBlock(
+                smiles=f"[{abead1.element_string}][Br]",
+                functional_groups=factories,
+                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+            ),
+        )
+        const_mol = stk.ConstructedMolecule(
+            topology_graph=Core4Arm1(bb_tuple)
+        )
+
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=(
+                f"[{bead.element_string}]" f"[{abead1.element_string}]"
+            ),
+            bonders=(1,),
+            deleters=(),
+        )
+        self._building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=const_mol,
+            functional_groups=(new_fgs,),
+        )
 
 
-class ThreeC0Arm:
+class ThreeC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
         self._name = f"3C0{bead.element_string}"
@@ -221,14 +322,8 @@ class ThreeC0Arm:
             functional_groups=(new_fgs,),
         )
 
-    def get_building_block(self):
-        return self._building_block
 
-    def get_name(self):
-        return self._name
-
-
-class ThreeC1Arm:
+class ThreeC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
@@ -253,7 +348,7 @@ class ThreeC1Arm:
             ),
         )
         const_mol = stk.ConstructedMolecule(
-            topology_graph=Core1Arm(bb_tuple)
+            topology_graph=Core3Arm1(bb_tuple)
         )
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
@@ -268,14 +363,8 @@ class ThreeC1Arm:
             functional_groups=(new_fgs,),
         )
 
-    def get_building_block(self):
-        return self._building_block
 
-    def get_name(self):
-        return self._name
-
-
-class ThreeC2Arm:
+class ThreeC2Arm(Precursor):
     def __init__(self, bead, abead1, abead2):
         self._bead = bead
         self._abead1 = abead1
@@ -309,7 +398,7 @@ class ThreeC2Arm:
             ),
         )
         const_mol = stk.ConstructedMolecule(
-            topology_graph=Core2Arm(bb_tuple)
+            topology_graph=Core3Arm2(bb_tuple)
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
             smarts=(
@@ -324,14 +413,8 @@ class ThreeC2Arm:
             functional_groups=(new_fgs,),
         )
 
-    def get_building_block(self):
-        return self._building_block
 
-    def get_name(self):
-        return self._name
-
-
-class TwoC0Arm:
+class TwoC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
         self._name = f"2C0{bead.element_string}"
@@ -350,14 +433,8 @@ class TwoC0Arm:
             functional_groups=(new_fgs,),
         )
 
-    def get_building_block(self):
-        return self._building_block
 
-    def get_name(self):
-        return self._name
-
-
-class TwoC1Arm:
+class TwoC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
@@ -396,14 +473,8 @@ class TwoC1Arm:
             functional_groups=(new_fgs,),
         )
 
-    def get_building_block(self):
-        return self._building_block
 
-    def get_name(self):
-        return self._name
-
-
-class TwoC2Arm:
+class TwoC2Arm(Precursor):
     def __init__(self, bead, abead1, abead2):
         self._bead = bead
         self._abead1 = abead1
@@ -452,14 +523,8 @@ class TwoC2Arm:
             functional_groups=(new_fgs,),
         )
 
-    def get_building_block(self):
-        return self._building_block
 
-    def get_name(self):
-        return self._name
-
-
-class TwoC3Arm:
+class TwoC3Arm(Precursor):
     def __init__(self, bead, abead1, abead2, abead3):
         self._bead = bead
         self._abead1 = abead1
@@ -513,9 +578,3 @@ class TwoC3Arm:
             molecule=const_mol,
             functional_groups=(new_fgs,),
         )
-
-    def get_building_block(self):
-        return self._building_block
-
-    def get_name(self):
-        return self._name

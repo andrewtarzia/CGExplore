@@ -25,81 +25,67 @@ from gulp_optimizer import CGGulpOptimizer
 
 from cage_construction.topologies import cage_topology_options
 
-from precursor_db.precursors import (
-    four_precursor_topology_options,
-    three_precursor_topology_options,
-    two_precursor_topology_options,
-)
+from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
 
 from beads import CgBead, bead_library_check
 
 
 def core_2c_beads():
     return (
-        CgBead("Ag", sigma=0.5, angle_centered=180),
-        CgBead("Zn", sigma=1.0, angle_centered=180),
-        CgBead("He", sigma=2.0, angle_centered=180),
-        CgBead("Bi", sigma=3.0, angle_centered=180),
+        # CgBead("Ag", sigma=0.5, angle_centered=180),
+        # CgBead("Zn", sigma=1.0, angle_centered=180),
+        # CgBead("He", sigma=2.0, angle_centered=180),
+        # CgBead("Bi", sigma=3.0, angle_centered=180),
         CgBead("Ce", sigma=4.0, angle_centered=180),
-        CgBead("Eu", sigma=5.0, angle_centered=180),
-        CgBead("Lu", sigma=6.0, angle_centered=180),
+        # CgBead("Eu", sigma=5.0, angle_centered=180),
+        # CgBead("Lu", sigma=6.0, angle_centered=180),
     )
 
 
 def arm_2c_beads():
     return (
         CgBead("Mn", sigma=2.0, angle_centered=90),
-        CgBead("Gd", sigma=2.0, angle_centered=105),
+        CgBead("Gd", sigma=2.0, angle_centered=100),
+        CgBead("Al", sigma=2.0, angle_centered=110),
         CgBead("Ga", sigma=2.0, angle_centered=120),
-        CgBead("Ge", sigma=2.0, angle_centered=135),
-        CgBead("La", sigma=2.0, angle_centered=150),
+        CgBead("Ge", sigma=2.0, angle_centered=130),
+        CgBead("As", sigma=2.0, angle_centered=140),
+        CgBead("Ba", sigma=2.0, angle_centered=150),
+        CgBead("La", sigma=2.0, angle_centered=160),
+        CgBead("B", sigma=2.0, angle_centered=170),
         CgBead("Au", sigma=2.0, angle_centered=180),
-        CgBead("Al", sigma=3.0, angle_centered=90),
-        CgBead("Sb", sigma=3.0, angle_centered=105),
-        CgBead("Ar", sigma=3.0, angle_centered=120),
-        CgBead("As", sigma=3.0, angle_centered=135),
-        CgBead("K", sigma=3.0, angle_centered=150),
-        CgBead("Ba", sigma=3.0, angle_centered=180),
-        CgBead("B", sigma=4.0, angle_centered=90),
-        CgBead("Mg", sigma=4.0, angle_centered=105),
-        CgBead("Cd", sigma=4.0, angle_centered=120),
-        CgBead("Hf", sigma=4.0, angle_centered=135),
-        CgBead("P", sigma=4.0, angle_centered=150),
-        CgBead("Ca", sigma=4.0, angle_centered=180),
-        CgBead("O", sigma=5.0, angle_centered=90),
-        CgBead("Cr", sigma=5.0, angle_centered=105),
-        CgBead("Co", sigma=5.0, angle_centered=120),
-        CgBead("Be", sigma=5.0, angle_centered=135),
-        CgBead("Kr", sigma=5.0, angle_centered=150),
-        CgBead("Pb", sigma=5.0, angle_centered=180),
     )
+
+
+def binder_beads():
+    return (CgBead("Pb", sigma=2.0, angle_centered=180),)
 
 
 def beads_3c():
     return (
-        CgBead("Ho", sigma=2.0, angle_centered=120),
+        # CgBead("Ho", sigma=2.0, angle_centered=120),
         CgBead("Fe", sigma=2.5, angle_centered=120),
-        CgBead("In", sigma=3.0, angle_centered=120),
-        CgBead("I", sigma=3.5, angle_centered=120),
-        CgBead("Ir", sigma=4.0, angle_centered=120),
-        CgBead("Ni", sigma=4.5, angle_centered=120),
-        CgBead("Cu", sigma=5.0, angle_centered=120),
-        CgBead("Er", sigma=5.5, angle_centered=120),
-        CgBead("C", sigma=6.0, angle_centered=120),
+        # CgBead("In", sigma=3.0, angle_centered=120),
+        # CgBead("I", sigma=3.5, angle_centered=120),
+        # CgBead("Ir", sigma=4.0, angle_centered=120),
+        # CgBead("Ni", sigma=4.5, angle_centered=120),
+        # CgBead("Cu", sigma=5.0, angle_centered=120),
+        # CgBead("Er", sigma=5.5, angle_centered=120),
+        # CgBead("C", sigma=6.0, angle_centered=120),
     )
 
 
 def beads_4c():
     return (
-        CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
+        # CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
         CgBead("Hg", sigma=2.5, angle_centered=(90, 180, 130)),
-        CgBead("Mo", sigma=3.0, angle_centered=(90, 180, 130)),
-        CgBead("Nd", sigma=3.5, angle_centered=(90, 180, 130)),
-        CgBead("Ne", sigma=4.0, angle_centered=(90, 180, 130)),
-        CgBead("Sn", sigma=4.5, angle_centered=(90, 180, 130)),
-        CgBead("Nb", sigma=5.0, angle_centered=(90, 180, 130)),
-        CgBead("Pd", sigma=5.5, angle_centered=(90, 180, 130)),
-        CgBead("Os", sigma=6.0, angle_centered=(90, 180, 130)),
+        # CgBead("Mo", sigma=3.0, angle_centered=(90, 180, 130)),
+        # CgBead("Nd", sigma=3.5, angle_centered=(90, 180, 130)),
+        # CgBead("Ne", sigma=4.0, angle_centered=(90, 180, 130)),
+        # CgBead("Sn", sigma=4.5, angle_centered=(90, 180, 130)),
+        # CgBead("Nb", sigma=5.0, angle_centered=(90, 180, 130)),
+        # CgBead("Pd", sigma=5.5, angle_centered=(90, 180, 130)),
+        # CgBead("Os", sigma=6.0, angle_centered=(90, 180, 130)),
     )
 
 
@@ -209,7 +195,7 @@ def get_shape_calculation_molecule(const_mol, name):
     return subset_molecule
 
 
-def optimise_cage(molecule, name, output_dir):
+def optimise_cage(molecule, name, output_dir, full_bead_library):
 
     opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
@@ -222,12 +208,7 @@ def optimise_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=(
-                beads_3c()
-                + core_2c_beads()
-                + arm_2c_beads()
-                + beads_4c()
-            ),
+            param_pool=full_bead_library,
             max_cycles=2000,
             conjugate_gradient=False,
             bonds=True,
@@ -237,13 +218,14 @@ def optimise_cage(molecule, name, output_dir):
         )
         _ = opt.optimize(molecule)
         molecule = molecule.with_structure_from_file(opt_xyz_file)
+        molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
         os.system(f"rm {opt_xyz_file}")
 
     return molecule
 
 
-def analyse_cage(molecule, name, output_dir):
+def analyse_cage(molecule, name, output_dir, full_bead_library):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
     pm_output_file = os.path.join(output_dir, f"{name}_opted.json")
@@ -255,12 +237,7 @@ def analyse_cage(molecule, name, output_dir):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=(
-                beads_3c()
-                + core_2c_beads()
-                + arm_2c_beads()
-                + beads_4c()
-            ),
+            param_pool=full_bead_library,
             max_cycles=1000,
             conjugate_gradient=False,
             bonds=True,
@@ -312,23 +289,20 @@ def main():
     cage_3p2_topologies = cage_topology_options("2p3")
     cage_4p2_topologies = cage_topology_options("2p4")
 
-    # Define precursor topologies.
-    four_precursor_topologies = four_precursor_topology_options()
-    three_precursor_topologies = three_precursor_topology_options()
-    two_precursor_topologies = two_precursor_topology_options()
-
     # Define bead libraries.
     beads_4c_lib = beads_4c()
     beads_3c_lib = beads_3c()
     beads_core_2c_lib = core_2c_beads()
     beads_arm_2c_lib = arm_2c_beads()
-
-    bead_library_check(
+    beads_binder_lib = binder_beads()
+    full_bead_library = (
         beads_3c_lib
         + beads_4c_lib
         + beads_arm_2c_lib
         + beads_core_2c_lib
+        + beads_binder_lib
     )
+    bead_library_check(full_bead_library)
 
     # For now, just build N options and calculate properties.
     logging.info("building building blocks...")
@@ -338,8 +312,7 @@ def main():
         beads_core_2c_lib,
         beads_arm_2c_lib,
     ):
-        c2_topo = two_precursor_topologies["2c-1"]
-        temp = c2_topo(bead=c2_options[0], abead1=c2_options[1])
+        temp = TwoC1Arm(bead=c2_options[0], abead1=c2_options[1])
         c2_blocks[temp.get_name()] = temp.get_building_block()
 
     # for c2_options in itertools.product(beads_2c_lib, repeat=3):
@@ -362,15 +335,19 @@ def main():
     #     c2_blocks[temp.get_name()] = temp.get_building_block()
 
     c3_blocks = {}
-    for core_bead in beads_3c_lib:
-        c3_topo = three_precursor_topologies["3c-0"]
-        temp = c3_topo(bead=core_bead)
+    for c3_options in itertools.product(
+        beads_3c_lib,
+        beads_binder_lib,
+    ):
+        temp = ThreeC1Arm(bead=c3_options[0], abead1=c3_options[1])
         c3_blocks[temp.get_name()] = temp.get_building_block()
 
     c4_blocks = {}
-    for core_bead in beads_4c_lib:
-        c4_topo = four_precursor_topologies["4c-0"]
-        temp = c4_topo(bead=core_bead)
+    for c4_options in itertools.product(
+        beads_4c_lib,
+        beads_binder_lib,
+    ):
+        temp = FourC1Arm(bead=c4_options[0], abead1=c4_options[1])
         c4_blocks[temp.get_name()] = temp.get_building_block()
 
     logging.info(
@@ -416,9 +393,19 @@ def main():
                     # ),
                 ),
             )
-            cage = optimise_cage(cage, name, calculation_output)
+            cage = optimise_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
             cage.write(str(struct_output / f"{name}_optc.mol"))
-            analyse_cage(cage, name, calculation_output)
+            analyse_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
             count += 1
 
         logging.info(f"{count} {popn} cages built.")
