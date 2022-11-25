@@ -32,60 +32,90 @@ from beads import CgBead, bead_library_check
 
 def core_2c_beads():
     return (
-        # CgBead("Ag", sigma=0.5, angle_centered=180),
-        # CgBead("Zn", sigma=1.0, angle_centered=180),
-        # CgBead("He", sigma=2.0, angle_centered=180),
-        # CgBead("Bi", sigma=3.0, angle_centered=180),
+        CgBead("Ag", sigma=0.5, angle_centered=180),
+        CgBead("Zn", sigma=1.0, angle_centered=180),
+        CgBead("He", sigma=2.0, angle_centered=180),
+        CgBead("Bi", sigma=3.0, angle_centered=180),
         CgBead("Ce", sigma=4.0, angle_centered=180),
-        # CgBead("Eu", sigma=5.0, angle_centered=180),
-        # CgBead("Lu", sigma=6.0, angle_centered=180),
+        CgBead("Eu", sigma=5.0, angle_centered=180),
+        CgBead("Lu", sigma=6.0, angle_centered=180),
     )
 
 
 def arm_2c_beads():
     return (
-        CgBead("Mn", sigma=2.0, angle_centered=90),
-        CgBead("Gd", sigma=2.0, angle_centered=100),
-        CgBead("Al", sigma=2.0, angle_centered=110),
-        CgBead("Ga", sigma=2.0, angle_centered=120),
-        CgBead("Ge", sigma=2.0, angle_centered=130),
-        CgBead("As", sigma=2.0, angle_centered=140),
-        CgBead("Ba", sigma=2.0, angle_centered=150),
-        CgBead("La", sigma=2.0, angle_centered=160),
-        CgBead("B", sigma=2.0, angle_centered=170),
-        CgBead("Au", sigma=2.0, angle_centered=180),
+        CgBead("Mn", sigma=1.0, angle_centered=90),
+        CgBead("Gd", sigma=1.0, angle_centered=100),
+        CgBead("Al", sigma=1.0, angle_centered=110),
+        CgBead("Ga", sigma=1.0, angle_centered=120),
+        CgBead("Ge", sigma=1.0, angle_centered=130),
+        CgBead("As", sigma=1.0, angle_centered=140),
+        CgBead("Ba", sigma=1.0, angle_centered=150),
+        CgBead("La", sigma=1.0, angle_centered=160),
+        CgBead("B", sigma=1.0, angle_centered=170),
+        CgBead("Au", sigma=1.0, angle_centered=180),
     )
 
 
 def binder_beads():
-    return (CgBead("Pb", sigma=2.0, angle_centered=180),)
+    return (CgBead("Pb", sigma=1.0, angle_centered=180),)
 
 
 def beads_3c():
     return (
-        # CgBead("Ho", sigma=2.0, angle_centered=120),
+        CgBead("Cr", sigma=0.5, angle_centered=120),
+        CgBead("Co", sigma=1.0, angle_centered=120),
+        CgBead("Ti", sigma=1.5, angle_centered=120),
+        CgBead("Ho", sigma=2.0, angle_centered=120),
         CgBead("Fe", sigma=2.5, angle_centered=120),
-        # CgBead("In", sigma=3.0, angle_centered=120),
-        # CgBead("I", sigma=3.5, angle_centered=120),
-        # CgBead("Ir", sigma=4.0, angle_centered=120),
-        # CgBead("Ni", sigma=4.5, angle_centered=120),
-        # CgBead("Cu", sigma=5.0, angle_centered=120),
-        # CgBead("Er", sigma=5.5, angle_centered=120),
-        # CgBead("C", sigma=6.0, angle_centered=120),
+        CgBead("In", sigma=3.0, angle_centered=120),
+        CgBead("I", sigma=3.5, angle_centered=120),
+        CgBead("Ir", sigma=4.0, angle_centered=120),
+        CgBead("Ni", sigma=4.5, angle_centered=120),
+        CgBead("Cu", sigma=5.0, angle_centered=120),
+        CgBead("Er", sigma=5.5, angle_centered=120),
+        CgBead("C", sigma=6.0, angle_centered=120),
+        CgBead("Hf", sigma=0.5, angle_centered=60),
+        CgBead("Tm", sigma=1.0, angle_centered=60),
+        CgBead("P", sigma=1.5, angle_centered=60),
+        CgBead("S", sigma=2.0, angle_centered=60),
+        CgBead("Se", sigma=2.5, angle_centered=60),
+        CgBead("V", sigma=3.0, angle_centered=60),
+        CgBead("Re", sigma=3.5, angle_centered=60),
+        CgBead("Po", sigma=4.0, angle_centered=60),
+        CgBead("Y", sigma=4.5, angle_centered=60),
+        CgBead("Zr", sigma=5.0, angle_centered=60),
+        CgBead("Rh", sigma=5.5, angle_centered=60),
+        CgBead("Cd", sigma=6.0, angle_centered=60),
+        CgBead("Sm", sigma=0.5, angle_centered=90),
+        CgBead("Ac", sigma=1.0, angle_centered=90),
+        CgBead("Pa", sigma=1.5, angle_centered=90),
+        CgBead("Np", sigma=2.0, angle_centered=90),
+        CgBead("Pu", sigma=2.5, angle_centered=90),
+        CgBead("Am", sigma=3.0, angle_centered=90),
+        CgBead("Cm", sigma=3.5, angle_centered=90),
+        CgBead("Cf", sigma=4.0, angle_centered=90),
+        CgBead("Md", sigma=4.5, angle_centered=90),
+        CgBead("No", sigma=5.0, angle_centered=90),
+        CgBead("Lr", sigma=5.5, angle_centered=90),
+        CgBead("Pr", sigma=6.0, angle_centered=90),
     )
 
 
 def beads_4c():
     return (
-        # CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
+        CgBead("Si", sigma=0.5, angle_centered=(90, 180, 130)),
+        CgBead("Ru", sigma=1.0, angle_centered=(90, 180, 130)),
+        CgBead("Yb", sigma=1.5, angle_centered=(90, 180, 130)),
+        CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
         CgBead("Hg", sigma=2.5, angle_centered=(90, 180, 130)),
-        # CgBead("Mo", sigma=3.0, angle_centered=(90, 180, 130)),
-        # CgBead("Nd", sigma=3.5, angle_centered=(90, 180, 130)),
-        # CgBead("Ne", sigma=4.0, angle_centered=(90, 180, 130)),
-        # CgBead("Sn", sigma=4.5, angle_centered=(90, 180, 130)),
-        # CgBead("Nb", sigma=5.0, angle_centered=(90, 180, 130)),
-        # CgBead("Pd", sigma=5.5, angle_centered=(90, 180, 130)),
-        # CgBead("Os", sigma=6.0, angle_centered=(90, 180, 130)),
+        CgBead("Mo", sigma=3.0, angle_centered=(90, 180, 130)),
+        CgBead("Nd", sigma=3.5, angle_centered=(90, 180, 130)),
+        CgBead("Ne", sigma=4.0, angle_centered=(90, 180, 130)),
+        CgBead("Sn", sigma=4.5, angle_centered=(90, 180, 130)),
+        CgBead("Nb", sigma=5.0, angle_centered=(90, 180, 130)),
+        CgBead("Pd", sigma=5.5, angle_centered=(90, 180, 130)),
+        CgBead("Os", sigma=6.0, angle_centered=(90, 180, 130)),
     )
 
 
@@ -102,7 +132,7 @@ def get_shape_calculation_molecule(const_mol, name):
 
     cl_name = splits[1]
     cl_topo_str = cl_name[:3]
-    if cl_topo_str in ("3C0", "4C0"):
+    if cl_topo_str in ("3C1", "4C1"):
         target_id = 1
     else:
         target_id = 0
@@ -172,11 +202,11 @@ def get_shape_calculation_molecule(const_mol, name):
 
     if topo_str == "M2L4" and num_atoms != 6:
         raise ValueError(
-            f"{topo_str} needs 5 atoms, not {num_atoms}; name={name}"
+            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
         )
     if topo_str == "M3L6" and num_atoms != 3:
         raise ValueError(
-            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
+            f"{topo_str} needs 3 atoms, not {num_atoms}; name={name}"
         )
     if topo_str == "M4L8" and num_atoms != 4:
         raise ValueError(
