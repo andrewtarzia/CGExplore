@@ -225,6 +225,36 @@ def get_shape_calculation_molecule(const_mol, name):
     return subset_molecule
 
 
+def optimise_ligand(molecule, name, output_dir, full_bead_library):
+
+    opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
+    opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
+
+    # Does optimisation.
+    if os.path.exists(opt1_mol_file):
+        molecule = molecule.with_structure_from_file(opt1_mol_file)
+    else:
+        logging.info(f"optimising {name}...")
+        opt = CGGulpOptimizer(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=full_bead_library,
+            max_cycles=2000,
+            conjugate_gradient=False,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+        _ = opt.optimize(molecule)
+        molecule = molecule.with_structure_from_file(opt_xyz_file)
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt1_mol_file)
+        os.system(f"rm {opt_xyz_file}")
+
+    return molecule
+
+
 def optimise_cage(molecule, name, output_dir, full_bead_library):
 
     opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
@@ -314,6 +344,8 @@ def main():
     check_directory(figure_output)
     calculation_output = cages() / "calculations"
     check_directory(calculation_output)
+    ligand_output = cages() / "ligands"
+    check_directory(ligand_output)
 
     # Define list of topology functions.
     cage_3p2_topologies = cage_topology_options("2p3")
@@ -343,7 +375,14 @@ def main():
         beads_arm_2c_lib,
     ):
         temp = TwoC1Arm(bead=c2_options[0], abead1=c2_options[1])
-        c2_blocks[temp.get_name()] = temp.get_building_block()
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            full_bead_library=full_bead_library,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        c2_blocks[temp.get_name()] = opt_bb
 
     # for c2_options in itertools.product(beads_2c_lib, repeat=3):
     #     c2_topo = two_precursor_topologies["2c-2"]
@@ -370,7 +409,14 @@ def main():
         beads_binder_lib,
     ):
         temp = ThreeC1Arm(bead=c3_options[0], abead1=c3_options[1])
-        c3_blocks[temp.get_name()] = temp.get_building_block()
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            full_bead_library=full_bead_library,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        c3_blocks[temp.get_name()] = opt_bb
 
     c4_blocks = {}
     for c4_options in itertools.product(
@@ -378,7 +424,14 @@ def main():
         beads_binder_lib,
     ):
         temp = FourC1Arm(bead=c4_options[0], abead1=c4_options[1])
-        c4_blocks[temp.get_name()] = temp.get_building_block()
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            full_bead_library=full_bead_library,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        c4_blocks[temp.get_name()] = opt_bb
 
     logging.info(
         f"there are {len(c2_blocks)} 2-C and "
@@ -400,7 +453,6 @@ def main():
     }
 
     for popn in populations:
-
         logging.info(f"building {popn} population...")
         popn_iterator = itertools.product(
             populations[popn]["t"],
@@ -417,10 +469,6 @@ def main():
                         populations[popn]["c2"][bb2_str],
                         populations[popn]["cl"][bbl_str],
                     ),
-                    # optimizer=stk.Collapser(
-                    #     scale_steps=False,
-                    #     distance_threshold=5,
-                    # ),
                 ),
             )
             cage = optimise_cage(

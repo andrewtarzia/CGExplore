@@ -53,17 +53,17 @@ class Core3Arm1(stk.cage.Cage):
         stk.cage.NonLinearVertex(0, (0, 0, 0)),
         TerminalVertex(
             id=1,
-            position=(2, 0, 0),
+            position=(2, 0, 0.5),
             use_neighbor_placement=False,
         ),
         TerminalVertex(
             id=2,
-            position=(-1.2, 1.0, 0),
+            position=(-1.2, 1.0, 0.5),
             use_neighbor_placement=False,
         ),
         TerminalVertex(
             id=3,
-            position=(-1.2, -1.0, 0),
+            position=(-1.2, -1.0, 0.5),
             use_neighbor_placement=False,
         ),
     )
@@ -151,17 +151,17 @@ class Core3Arm2(stk.cage.Cage):
         stk.cage.NonLinearVertex(0, (0, 0, 0)),
         stk.cage.LinearVertex(
             id=1,
-            position=(2, 0, 0),
+            position=(2, 0, 0.5),
             use_neighbor_placement=False,
         ),
         stk.cage.LinearVertex(
             id=2,
-            position=(-1.2, 1.0, 0),
+            position=(-1.2, 1.0, 0.5),
             use_neighbor_placement=False,
         ),
         stk.cage.LinearVertex(
             id=3,
-            position=(-1.2, -1.0, 0),
+            position=(-1.2, -1.0, 0.5),
             use_neighbor_placement=False,
         ),
         TerminalVertex(
@@ -304,7 +304,7 @@ class ThreeC0Arm(Precursor):
         three_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])[Br]",
             position_matrix=[
-                [-1.8, 0, 0],
+                [-2, 0, 0],
                 [0, 0, 0],
                 [-1.2, 1, 0],
                 [-1.2, -1, 0],
