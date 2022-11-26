@@ -32,45 +32,252 @@ from generate_all_cages import (
 from env_set import cages
 
 
+def topology_labels(short=False):
+    if short:
+        return (
+            "2+3",
+            "4+6",
+            "4+6(2)",
+            "6+9",
+            "8+12",
+            "M2L4",
+            "M3L6",
+            "M4L8",
+            "M6L12",
+        )
+    else:
+        return (
+            "TwoPlusThree",
+            "FourPlusSix",
+            "FourPlusSix2",
+            "SixPlusNine",
+            "EightPlusTwelve",
+            "M2L4",
+            "M3L6",
+            "M4L8",
+            "M6L12",
+        )
+
+
+def convert_topo_to_label(topo_str):
+    return {
+        "TwoPlusThree": "2+3",
+        "FourPlusSix": "4+6",
+        "FourPlusSix2": "4+6(2)",
+        "SixPlusNine": "6+9",
+        "EightPlusTwelve": "8+12",
+        "M2L4": "M2L4",
+        "M3L6": "M3L6",
+        "M4L8": "M4L8",
+        "M6L12": "M6L12",
+        "mixed": "mixed",
+    }[topo_str]
+
+
+def topo_to_colormap():
+    return {
+        "TwoPlusThree": "#06AED5",
+        "FourPlusSix": "#086788",
+        "FourPlusSix2": "#DD1C1A",
+        "SixPlusNine": "#320E3B",
+        "EightPlusTwelve": "#CE7B91",
+        "M2L4": "#6969B3",
+        "M3L6": "#B279A7",
+        "M4L8": "#C3423F",
+        "M6L12": "#9BC53D",
+    }
+
+
+def cltype_to_colormap():
+    return {
+        "3C1": "#06AED5",
+        "4C1": "#086788",
+    }
+
+
+def cltypetopo_to_colormap():
+    return {
+        "3C1": {
+            "TwoPlusThree": "#1f77b4",
+            "FourPlusSix": "#ff7f0e",
+            "FourPlusSix2": "#2ca02c",
+            "SixPlusNine": "#d62728",
+            "EightPlusTwelve": "#17becf",
+        },
+        "4C1": {
+            "M2L4": "#aec7e8",
+            "M3L6": "#ffbb78",
+            "M4L8": "#98df8a",
+            "M6L12": "#ff9896",
+        },
+        "mixed": {
+            "2": "#7b4173",
+            ">2": "#de9ed6",
+        },
+    }
+
+
+def shapevertices_to_colormap():
+    return {
+        4: "#06AED5",
+        5: "#086788",
+        6: "#DD1C1A",
+        8: "#320E3B",
+        3: "#6969B3",
+    }
+
+
+def shapelabels_to_colormap():
+    return {
+        "3": "#F9A03F",
+        "4": "#0B2027",
+        "5": "#86626E",
+        "6": "#CA1551",
+        "8": "#345995",
+        "b": "#7A8B99",
+    }
+
+
+def target_shapes():
+    return (
+        "CU-8",
+        "JETBPY-8",
+        "OP-8",
+        "OC-6",
+        "PPY-6",
+        "HP-6",
+        "TBPY-5",
+        "PP-5",
+        "T-4",
+        "SP-4",
+        "TP-3",
+        "mvOC-3",
+    )
+
+
+def target_shapes_by_cltype(cltype):
+    if cltype == "4C1":
+        return ("OC-6b", "TP-3", "SP-4", "OC-6")
+    elif cltype == "3C1":
+        return ("TBPY-5", "T-4", "T-4b", "TPR-6", "CU-8")
+
+
+def shapetarget_to_colormap():
+    return {
+        "CU-8": "#06AED5",
+        "OC-6": "#086788",
+        "TBPY-5": "#DD1C1A",
+        "T-4": "#320E3B",
+        "TPR-6": "#CE7B91",
+    }
+
+
+def map_cltype_to_shapetopology():
+    return {
+        "3C1": {
+            "5": "TwoPlusThree",
+            "4": "FourPlusSix",
+            "b": "FourPlusSix2",
+            "6": "SixPlusNine",
+            "8": "EightPlusTwelve",
+        },
+        "4C1": {
+            "b": "M2L4",
+            "4": "M4L8",
+            "3": "M3L6",
+            "6": "M6L12",
+        },
+    }
+
+
+def mapshape_to_topology(reverse=False):
+    if reverse:
+        return {
+            "TwoPlusThree": "TBPY-5",
+            "FourPlusSix": "T-4",
+            "FourPlusSix2": "T-4b",
+            "SixPlusNine": "TPR-6",
+            "EightPlusTwelve": "CU-8",
+            "M2L4": "OC-6b",
+            "M3L6": "TP-3",
+            "M4L8": "SP-4",
+            "M6L12": "OC-6",
+        }
+    else:
+        return {
+            "TBPY-5": "TwoPlusThree",
+            "T-4": "FourPlusSix",
+            "T-4b": "FourPlusSix2",
+            "TPR-6": "SixPlusNine",
+            "CU-8": "EightPlusTwelve",
+            "OC-6b": "M2L4",
+            "TP-3": "M3L6",
+            "SP-4": "M4L8",
+            "OC-6": "M6L12",
+        }
+
+
+def collate_cage_vector_from_bb(data, test_bb):
+    tbb_dict = {}
+    for cage in data:
+        if test_bb in cage:
+            cage_dict = data[cage]
+            for sv in cage_dict["shape_vector"]:
+                if "FourPlusSix2" in cage:
+                    svb = sv + "b"
+                else:
+                    svb = sv
+                tbb_dict[svb] = cage_dict["shape_vector"][sv]
+    return tbb_dict
+
+
+def get_CGBead_from_string(string, bead_library):
+    return tuple(i for i in bead_library if i.element_string == string)[
+        0
+    ]
+
+
+def get_shape_vector(shape_dictionary):
+    shape_vector = {}
+    for i in target_shapes():
+        if i in shape_dictionary:
+            shape_vector[i] = shape_dictionary[i][0]
+        if i + "b" in shape_dictionary:
+            shape_vector[i + "b"] = shape_dictionary[i + "b"][0]
+
+    return shape_vector
+
+
+def get_present_beads(c2_bbname):
+    wtopo = c2_bbname[3:]
+    present_beads_names = []
+    while len(wtopo) > 0:
+        if len(wtopo) == 1:
+            bead_name = wtopo[0]
+            wtopo = ""
+        elif wtopo[1].islower():
+            bead_name = wtopo[:2]
+            wtopo = wtopo[2:]
+        else:
+            bead_name = wtopo[0]
+            wtopo = wtopo[1:]
+
+        present_beads_names.append(bead_name)
+
+    if len(present_beads_names) != int(c2_bbname[2]) + 1:
+        raise ValueError(f"{present_beads_names} length != {c2_bbname}")
+    return present_beads_names
+
+
 def identity_distributions(all_data, figure_output):
 
     fig, ax = plt.subplots(figsize=(16, 5))
 
-    categories = {
-        "2p3": 0,
-        "4p6": 0,
-        "4p62": 0,
-        "6p9": 0,
-        "8p12": 0,
-        "m2l4": 0,
-        "m3l6": 0,
-        "m4l8": 0,
-        "m6l12": 0,
-    }
+    categories = {i: 0 for i in topology_labels(short=True)}
     num_cages = len(all_data)
     for cage in all_data:
-
         topo_name = cage.split("_")[0]
-
-        if topo_name == "TwoPlusThree":
-            categories["2p3"] += 1
-        if topo_name == "FourPlusSix":
-            categories["4p6"] += 1
-        if topo_name == "FourPlusSix2":
-            categories["4p62"] += 1
-        if topo_name == "SixPlusNine":
-            categories["6p9"] += 1
-        if topo_name == "EightPlusTwelve":
-            categories["8p12"] += 1
-
-        if topo_name == "M2L4":
-            categories["m2l4"] += 1
-        if topo_name == "M3L6":
-            categories["m3l6"] += 1
-        if topo_name == "M4L8":
-            categories["m4l8"] += 1
-        if topo_name == "M6L12":
-            categories["m6l12"] += 1
+        categories[convert_topo_to_label(topo_name)] += 1
 
     ax.bar(
         categories.keys(),
@@ -107,21 +314,8 @@ def single_value_distributions(all_data, figure_output):
         "pore_volume_barm": {"xtitle": "pore volume"},
     }
 
-    color_map = {
-        "TwoPlusThree": "#06AED5",
-        "FourPlusSix": "#086788",
-        "FourPlusSix2": "#DD1C1A",
-        "SixPlusNine": "#320E3B",
-        "EightPlusTwelve": "#CE7B91",
-        "M2L4": "#6969B3",
-        "M3L6": "#B279A7",
-        "M4L8": "#C3423F",
-        "M6L12": "#9BC53D",
-    }
-    color_map_barm = {
-        "3C1": "#06AED5",
-        "4C1": "#086788",
-    }
+    color_map = topo_to_colormap()
+    color_map_barm = cltype_to_colormap()
 
     for tp in to_plot:
 
@@ -195,13 +389,7 @@ def shape_vector_distributions(all_data, figure_output):
     num_cols = 4
     num_rows = 8
 
-    color_map = {
-        4: "#06AED5",
-        5: "#086788",
-        6: "#DD1C1A",
-        8: "#320E3B",
-        3: "#6969B3",
-    }
+    color_map = shapevertices_to_colormap()
     xmax = 50
 
     fig, axs = plt.subplots(
@@ -268,15 +456,8 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
 
     shape_array = {}
     target_row_names = set()
-    target_individuals = ("CU-8", "OC-6", "TBPY-5", "T-4", "TPR-6")
-    color_map = {
-        "CU-8": "#06AED5",
-        "OC-6": "#086788",
-        "TBPY-5": "#DD1C1A",
-        "T-4": "#320E3B",
-        "TPR-6": "#CE7B91",
-    }
-    min_of_each_shape_plot = {i: None for i in target_individuals}
+    color_map = shapetarget_to_colormap()
+    min_of_each_shape_plot = {i: None for i in target_shapes()}
     for test_bb in list_of_test_bbs:
         tbb_dict = {}
         for cage in bb_data:
@@ -289,7 +470,7 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
                         svb = sv
                     tbb_dict[svb] = cage_dict["shape_vector"][sv]
                     target_row_names.add(svb)
-                    if sv in target_individuals:
+                    if sv in target_shapes():
                         if min_of_each_shape_plot[sv] is None:
                             min_of_each_shape_plot[sv] = (
                                 test_bb,
@@ -398,56 +579,8 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
     plt.close()
 
 
-def collate_cage_vector_from_bb(data, test_bb):
-    tbb_dict = {}
-    for cage in data:
-        if test_bb in cage:
-            cage_dict = data[cage]
-            for sv in cage_dict["shape_vector"]:
-                if "FourPlusSix2" in cage:
-                    svb = sv + "b"
-                else:
-                    svb = sv
-                tbb_dict[svb] = cage_dict["shape_vector"][sv]
-    return tbb_dict
-
-
-def get_CGBead_from_string(string, bead_library):
-    return tuple(i for i in bead_library if i.element_string == string)[
-        0
-    ]
-
-
 def phase_space_1(bb_data, figure_output):
-
-    topologies = (
-        "TwoPlusThree",
-        "FourPlusSix",
-        "FourPlusSix2",
-        "SixPlusNine",
-        "EightPlusTwelve",
-        "M2L4",
-        "M3L6",
-        "M4L8",
-        "M6L12",
-    )
-
-    t_map = {
-        "3C1": {
-            "4": "FourPlusSix",
-            "5": "TwoPlusThree",
-            "6": "SixPlusNine",
-            "8": "EightPlusTwelve",
-            "b": "FourPlusSix2",
-        },
-        "4C1": {
-            "3": "M3L6",
-            "4": "M4L8",
-            "6": "M6L12",
-            "b": "M2L4",
-        },
-    }
-
+    t_map = map_cltype_to_shapetopology()
     fig, axs = plt.subplots(
         nrows=3,
         ncols=3,
@@ -491,7 +624,7 @@ def phase_space_1(bb_data, figure_output):
                 data_dict[t_map["4C1"][min_energy_topo]] = []
             data_dict[t_map["4C1"][min_energy_topo]].append((x, y))
 
-    for ax, t_str in zip(flat_axs, topologies):
+    for ax, t_str in zip(flat_axs, topology_labels()):
         ax.scatter(
             [i[0] for i in data_dict[t_str]],
             [i[1] for i in data_dict[t_str]],
@@ -614,26 +747,12 @@ def phase_space_3(bb_data, figure_output):
 
     isomer_energy = 0.05
 
-    topologies = {
-        "3C1": {
-            "5": "2+3",
-            "4": "4+6",
-            "b": "4+6-2",
-            "6": "6+9",
-            "8": "8+12",
-            "mixed": "mixed",
-        },
-        "4C1": {
-            "b": "M2L4",
-            "4": "M4L8",
-            "3": "M3L6",
-            "6": "M6L12",
-            "mixed": "mixed",
-        },
-    }
+    topologies = map_cltype_to_shapetopology()
 
     sc_3c0 = {topologies["3C1"][i]: 0 for i in topologies["3C1"]}
+    sc_3c0["mixed"] = 0
     sc_4c0 = {topologies["4C1"][i]: 0 for i in topologies["4C1"]}
+    sc_4c0["mixed"] = 0
     for bb_pair in bb_data:
         bb_dict = bb_data[bb_pair]
         cl_bbname = bb_pair[1]
@@ -677,7 +796,7 @@ def phase_space_3(bb_data, figure_output):
             tot_pairs += dd
 
         ax.bar(
-            coords.keys(),
+            [convert_topo_to_label(i) for i in coords.keys()],
             coords.values(),
             # color="#06AED5",
             # color="#086788",
@@ -715,40 +834,8 @@ def phase_space_3(bb_data, figure_output):
     plt.close()
 
 
-def get_shape_vector(shape_dictionary):
-    target_shapes = (
-        "CU-8",
-        "JETBPY-8",
-        "OP-8",
-        "OC-6",
-        "PPY-6",
-        "HP-6",
-        "TBPY-5",
-        "PP-5",
-        "T-4",
-        "SP-4",
-        "TP-3",
-        "mvOC-3",
-    )
-    shape_vector = {}
-    for i in target_shapes:
-        if i in shape_dictionary:
-            shape_vector[i] = shape_dictionary[i][0]
-        if i + "b" in shape_dictionary:
-            shape_vector[i + "b"] = shape_dictionary[i + "b"][0]
-
-    return shape_vector
-
-
 def phase_space_4(bb_data, figure_output):
-    color_map = {
-        "3": "#F9A03F",
-        "4": "#0B2027",
-        "5": "#86626E",
-        "6": "#CA1551",
-        "8": "#345995",
-        "b": "#7A8B99",
-    }
+    color_map = shapelabels_to_colormap()
 
     fig, axs = plt.subplots(
         nrows=1,
@@ -835,27 +922,6 @@ def phase_space_4(bb_data, figure_output):
     plt.close()
 
 
-def get_present_beads(c2_bbname):
-    wtopo = c2_bbname[3:]
-    present_beads_names = []
-    while len(wtopo) > 0:
-        if len(wtopo) == 1:
-            bead_name = wtopo[0]
-            wtopo = ""
-        elif wtopo[1].islower():
-            bead_name = wtopo[:2]
-            wtopo = wtopo[2:]
-        else:
-            bead_name = wtopo[0]
-            wtopo = wtopo[1:]
-
-        present_beads_names.append(bead_name)
-
-    if len(present_beads_names) != int(c2_bbname[2]) + 1:
-        raise ValueError(f"{present_beads_names} length != {c2_bbname}")
-    return present_beads_names
-
-
 def phase_space_5(bb_data, figure_output):
     fig, axs = plt.subplots(
         nrows=3,
@@ -864,19 +930,7 @@ def phase_space_5(bb_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    target_individuals = {
-        "TBPY-5": "TwoPlusThree",
-        "T-4": "FourPlusSix",
-        "T-4b": "FourPlusSix2",
-        "TPR-6": "SixPlusNine",
-        "CU-8": "EightPlusTwelve",
-        "OC-6b": "M2L4",
-        "TP-3": "M3L6",
-        "SP-4": "M4L8",
-        "OC-6": "M6L12",
-    }
-
-    # target_size = {"3C1": "Ir", "4C1": "Ne"}
+    target_individuals = mapshape_to_topology()
 
     shape_coordinates = {
         target_individuals[i]: [] for i in target_individuals
@@ -884,13 +938,9 @@ def phase_space_5(bb_data, figure_output):
     for bb_pair in bb_data:
         b_dict = bb_data[bb_pair]
         if "4C1" in bb_pair[1]:
-            # if target_size["4C1"] not in bb_pair[1]:
-            #     continue
-            shapes = ("OC-6b", "TP-3", "SP-4", "OC-6")
+            shapes = target_shapes_by_cltype("4C1")
         elif "3C1" in bb_pair[1]:
-            # if target_size["3C1"] not in bb_pair[1]:
-            #     continue
-            shapes = ("TBPY-5", "T-4", "T-4b", "TPR-6", "CU-8")
+            shapes = target_shapes_by_cltype("3C1")
 
         present_beads_names = get_present_beads(c2_bbname=bb_pair[0])
         for shape in shapes:
@@ -959,17 +1009,7 @@ def phase_space_6(bb_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    target_individuals = {
-        "TBPY-5": "TwoPlusThree",
-        "T-4": "FourPlusSix",
-        "T-4b": "FourPlusSix2",
-        "TPR-6": "SixPlusNine",
-        "CU-8": "EightPlusTwelve",
-        "OC-6b": "M2L4",
-        "TP-3": "M3L6",
-        "SP-4": "M4L8",
-        "OC-6": "M6L12",
-    }
+    target_individuals = mapshape_to_topology()
 
     shape_coordinates = {
         target_individuals[i]: [] for i in target_individuals
@@ -977,9 +1017,9 @@ def phase_space_6(bb_data, figure_output):
     for bb_pair in bb_data:
         b_dict = bb_data[bb_pair]
         if "4C1" in bb_pair[1]:
-            shapes = ("OC-6b", "TP-3", "SP-4", "OC-6")
+            shapes = target_shapes_by_cltype("4C1")
         elif "3C1" in bb_pair[1]:
-            shapes = ("TBPY-5", "T-4", "T-4b", "TPR-6", "CU-8")
+            shapes = target_shapes_by_cltype("3C1")
 
         for shape in shapes:
             topo_str = target_individuals[shape]
@@ -1037,49 +1077,9 @@ def phase_space_6(bb_data, figure_output):
 
 def phase_space_7(bb_data, figure_output):
 
-    topologies = {
-        "TwoPlusThree": "TBPY-5",
-        "FourPlusSix": "T-4",
-        "FourPlusSix2": "T-4b",
-        "SixPlusNine": "TPR-6",
-        "EightPlusTwelve": "CU-8",
-        "M2L4": "OC-6b",
-        "M3L6": "TP-3",
-        "M4L8": "SP-4",
-        "M6L12": "OC-6",
-    }
+    topologies = mapshape_to_topology(reverse=True)
 
-    t_map = {
-        "3C1": {
-            "4": "FourPlusSix",
-            "5": "TwoPlusThree",
-            "6": "SixPlusNine",
-            "8": "EightPlusTwelve",
-            "b": "FourPlusSix2",
-        },
-        "4C1": {
-            "3": "M3L6",
-            "4": "M4L8",
-            "6": "M6L12",
-            "b": "M2L4",
-        },
-    }
-
-    # color_map = {
-    #     "3C1": {
-    #         "TwoPlusThree": "#06AED5",
-    #         "FourPlusSix": "#086788",
-    #         "FourPlusSix2": "#DD1C1A",
-    #         "SixPlusNine": "#320E3B",
-    #         "EightPlusTwelve": "#CE7B91",
-    #     },
-    #     "4C1": {
-    #         "M2L4": "#6969B3",
-    #         "M3L6": "#B279A7",
-    #         "M4L8": "#C3423F",
-    #         "M6L12": "#9BC53D",
-    #     },
-    # }
+    t_map = map_cltype_to_shapetopology()
 
     fig, axs = plt.subplots(
         nrows=3,
@@ -1169,41 +1169,9 @@ def phase_space_7(bb_data, figure_output):
 
 def phase_space_8(bb_data, figure_output):
 
-    t_map = {
-        "3C1": {
-            "4": "FourPlusSix",
-            "5": "TwoPlusThree",
-            "6": "SixPlusNine",
-            "8": "EightPlusTwelve",
-            "b": "FourPlusSix2",
-        },
-        "4C1": {
-            "3": "M3L6",
-            "4": "M4L8",
-            "6": "M6L12",
-            "b": "M2L4",
-        },
-    }
+    t_map = map_cltype_to_shapetopology()
 
-    color_map = {
-        "3C1": {
-            "TwoPlusThree": "#1f77b4",
-            "FourPlusSix": "#ff7f0e",
-            "FourPlusSix2": "#2ca02c",
-            "SixPlusNine": "#d62728",
-            "EightPlusTwelve": "#17becf",
-        },
-        "4C1": {
-            "M2L4": "#aec7e8",
-            "M3L6": "#ffbb78",
-            "M4L8": "#98df8a",
-            "M6L12": "#ff9896",
-        },
-        "mixed": {
-            "2": "#7b4173",
-            ">2": "#de9ed6",
-        },
-    }
+    color_map = cltypetopo_to_colormap()
     max_energy = 10
     isomer_energy = 0.05
 
@@ -1349,41 +1317,8 @@ def phase_space_8(bb_data, figure_output):
 
 def phase_space_9(bb_data, figure_output):
 
-    t_map = {
-        "3C1": {
-            "4": "FourPlusSix",
-            "5": "TwoPlusThree",
-            "6": "SixPlusNine",
-            "8": "EightPlusTwelve",
-            "b": "FourPlusSix2",
-        },
-        "4C1": {
-            "3": "M3L6",
-            "4": "M4L8",
-            "6": "M6L12",
-            "b": "M2L4",
-        },
-    }
-
-    color_map = {
-        "3C1": {
-            "TwoPlusThree": "#1f77b4",
-            "FourPlusSix": "#ff7f0e",
-            "FourPlusSix2": "#2ca02c",
-            "SixPlusNine": "#d62728",
-            "EightPlusTwelve": "#17becf",
-        },
-        "4C1": {
-            "M2L4": "#aec7e8",
-            "M3L6": "#ffbb78",
-            "M4L8": "#98df8a",
-            "M6L12": "#ff9896",
-        },
-        "mixed": {
-            "2": "#7b4173",
-            ">2": "#de9ed6",
-        },
-    }
+    t_map = map_cltype_to_shapetopology()
+    color_map = cltypetopo_to_colormap()
     max_energy = 10
     isomer_energy = 0.05
     min_radius = 0.5
@@ -1641,12 +1576,12 @@ def main():
             )
 
     logging.info(f"there are {len(all_data)} collected data")
-    phase_space_3(bb_data, figure_output)
-    phase_space_9(bb_data, figure_output)
     identity_distributions(all_data, figure_output)
     single_value_distributions(all_data, figure_output)
     shape_vector_distributions(all_data, figure_output)
     parity_1(bb_data, figure_output)
+    phase_space_3(bb_data, figure_output)
+    phase_space_9(bb_data, figure_output)
     phase_space_1(bb_data, figure_output)
     phase_space_5(bb_data, figure_output)
     phase_space_6(bb_data, figure_output)
