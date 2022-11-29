@@ -367,9 +367,10 @@ def single_value_distributions(all_data, figure_output):
                 labelsize=16,
             )
             flat_axs[i].set_xlabel(xtitle, fontsize=16)
-            flat_axs[i].set_ylabel("count", fontsize=16)
+            # flat_axs[i].set_ylabel("count", fontsize=16)
+            flat_axs[i].set_ylabel("log(count)", fontsize=16)
             flat_axs[i].set_title(topo, fontsize=16)
-            # ax.set_yscale("log")
+            flat_axs[i].set_yscale("log")
             # ax.legend(ncol=2, fontsize=16)
 
         fig.tight_layout()
