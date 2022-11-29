@@ -578,3 +578,103 @@ class TwoC3Arm(Precursor):
             molecule=const_mol,
             functional_groups=(new_fgs,),
         )
+
+
+class UnsymmLigand(Precursor):
+    def __init__(self, centre_bead, lhs_bead, rhs_bead, binder_bead):
+        self._centre_bead = centre_bead
+        self._lhs_bead = lhs_bead
+        self._rhs_bead = rhs_bead
+        self._binder_bead = binder_bead
+        self._name = (
+            f"UL{centre_bead.element_string}{lhs_bead.element_string}"
+            f"{rhs_bead.element_string}{binder_bead.element_string}"
+        )
+
+        new_fgs = (
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{binder_bead.element_string}X1]"
+                    f"[{rhs_bead.element_string}]"
+                ),
+                bonders=(0,),
+                deleters=(),
+                placers=(0, 1),
+            ),
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{binder_bead.element_string}X1]"
+                    f"[{lhs_bead.element_string}]"
+                ),
+                bonders=(0,),
+                deleters=(),
+                placers=(0, 1),
+            ),
+        )
+        self._building_block = stk.BuildingBlock(
+            smiles=(
+                f"[{binder_bead.element_string}]"
+                f"[{lhs_bead.element_string}]"
+                f"[{centre_bead.element_string}]"
+                f"[{rhs_bead.element_string}]"
+                f"[{binder_bead.element_string}]"
+            ),
+            functional_groups=new_fgs,
+            position_matrix=[
+                [-10, 0, 0],
+                [-5, 3, 0],
+                [0, 5, 0],
+                [5, 3, 0],
+                [10, 0, 0],
+            ],
+        )
+
+
+class UnsymmBiteLigand(Precursor):
+    def __init__(self, centre_bead, lhs_bead, rhs_bead, binder_bead):
+        self._centre_bead = centre_bead
+        self._lhs_bead = lhs_bead
+        self._rhs_bead = rhs_bead
+        self._binder_bead = binder_bead
+        self._name = (
+            f"BL{centre_bead.element_string}{lhs_bead.element_string}"
+            f"{rhs_bead.element_string}{binder_bead.element_string}"
+        )
+
+        new_fgs = (
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{binder_bead.element_string}X1]"
+                    f"[{rhs_bead.element_string}]"
+                ),
+                bonders=(0,),
+                deleters=(),
+                placers=(0, 1),
+            ),
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{binder_bead.element_string}X1]"
+                    f"[{lhs_bead.element_string}]"
+                ),
+                bonders=(0,),
+                deleters=(),
+                placers=(0, 1),
+            ),
+        )
+        self._building_block = stk.BuildingBlock(
+            smiles=(
+                f"[{binder_bead.element_string}]"
+                f"[{lhs_bead.element_string}]"
+                f"[{centre_bead.element_string}]"
+                f"[{rhs_bead.element_string}]"
+                f"[{binder_bead.element_string}]"
+            ),
+            functional_groups=new_fgs,
+            position_matrix=[
+                [-10, 0, 0],
+                [-5, 3, 0],
+                [0, 5, 0],
+                [5, 3, 0],
+                [10, 0, 0],
+            ],
+        )

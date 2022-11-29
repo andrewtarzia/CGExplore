@@ -11,6 +11,9 @@ Author: Andrew Tarzia
 
 import sys
 import stk
+import itertools
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 import os
 import json
 from rdkit.Chem import AllChem as rdkit
@@ -22,14 +25,19 @@ import numpy as np
 from env_set import unsymm
 from utilities import check_directory, angle_between
 
-from gulp_optimizer import CGGulpOptimizer
+from gulp_optimizer import (
+    CGGulpOptimizer,
+    lorentz_berthelot_sigma_mixing,
+)
 
 from cage_construction.topologies import (
     CGM12L24,
     unsymm_topology_options,
 )
 
-from beads import CgBead
+from beads import CgBead, bead_library_check
+
+from precursor_db.topologies import UnsymmLigand, UnsymmBiteLigand
 
 from ea_module import (
     RandomVA,
@@ -42,19 +50,73 @@ from ea_module import (
 )
 from ea_plotters import (
     CgProgressPlotter,
+    plot_existing_M2_data_distributions,
+    plot_existing_M6_data_distributions,
     plot_existing_M12_data_distributions,
 )
 
 
-def beads_2c():
+def lig_2c_beads():
     return (
-        CgBead("Ge", sigma=2.0, angle_centered=120),
-        CgBead("Eu", sigma=5.0, angle_centered=180),
-        CgBead("Lu", sigma=6.0, angle_centered=180),
-        CgBead("Ce", sigma=4.0, angle_centered=180),
-        CgBead("He", sigma=2.0, angle_centered=180),
-        CgBead("Be", sigma=5.0, angle_centered=120),
+        # CgBead("Ag", sigma=0.5, angle_centered=20),
+        # CgBead("Al", sigma=1.0, angle_centered=20),
+        # CgBead("Ac", sigma=2.0, angle_centered=20),
+        # CgBead("Am", sigma=3.0, angle_centered=20),
+        # CgBead("As", sigma=4.0, angle_centered=20),
+        # CgBead("Au", sigma=5.0, angle_centered=20),
+        CgBead("Ba", sigma=0.5, angle_centered=40),
+        CgBead("Bi", sigma=1.0, angle_centered=40),
+        CgBead("B", sigma=2.0, angle_centered=40),
+        CgBead("Cd", sigma=3.0, angle_centered=40),
+        CgBead("Ce", sigma=4.0, angle_centered=40),
+        CgBead("Cf", sigma=5.0, angle_centered=40),
+        CgBead("Cm", sigma=0.5, angle_centered=60),
+        CgBead("Co", sigma=1.0, angle_centered=60),
+        CgBead("Cu", sigma=2.0, angle_centered=60),
+        CgBead("Cr", sigma=3.0, angle_centered=60),
+        CgBead("Eu", sigma=4.0, angle_centered=60),
+        CgBead("Er", sigma=5.0, angle_centered=60),
+        CgBead("Fe", sigma=0.5, angle_centered=90),
+        CgBead("Ga", sigma=1.0, angle_centered=90),
+        CgBead("Gd", sigma=2.0, angle_centered=90),
+        CgBead("Ge", sigma=3.0, angle_centered=90),
+        CgBead("Hf", sigma=4.0, angle_centered=90),
+        CgBead("He", sigma=5.0, angle_centered=90),
+        CgBead("Hg", sigma=0.5, angle_centered=100),
+        CgBead("Ho", sigma=1.0, angle_centered=100),
+        CgBead("In", sigma=2.0, angle_centered=100),
+        CgBead("I", sigma=3.0, angle_centered=100),
+        CgBead("Ir", sigma=4.0, angle_centered=100),
+        CgBead("La", sigma=5.0, angle_centered=100),
+        CgBead("Lr", sigma=0.5, angle_centered=120),
+        CgBead("Lu", sigma=1.0, angle_centered=120),
+        CgBead("Mn", sigma=2.0, angle_centered=120),
+        CgBead("Mo", sigma=3.0, angle_centered=120),
+        CgBead("Nd", sigma=4.0, angle_centered=120),
+        CgBead("Ne", sigma=5.0, angle_centered=120),
+        CgBead("Md", sigma=0.5, angle_centered=130),
+        CgBead("Nb", sigma=1.0, angle_centered=130),
+        CgBead("Ni", sigma=2.0, angle_centered=130),
+        CgBead("No", sigma=3.0, angle_centered=130),
+        CgBead("Np", sigma=4.0, angle_centered=130),
+        CgBead("Os", sigma=5.0, angle_centered=130),
+        CgBead("Pa", sigma=0.5, angle_centered=150),
+        CgBead("Pd", sigma=1.0, angle_centered=150),
+        CgBead("Po", sigma=2.0, angle_centered=150),
+        CgBead("Pr", sigma=3.0, angle_centered=150),
+        CgBead("Pu", sigma=4.0, angle_centered=150),
+        CgBead("P", sigma=5.0, angle_centered=150),
+        CgBead("Re", sigma=0.5, angle_centered=180),
+        CgBead("Rh", sigma=1.0, angle_centered=180),
+        CgBead("Ru", sigma=2.0, angle_centered=180),
+        CgBead("Se", sigma=3.0, angle_centered=180),
+        CgBead("Si", sigma=4.0, angle_centered=180),
+        CgBead("Sm", sigma=5.0, angle_centered=180),
     )
+
+
+def binder_beads():
+    return (CgBead("C", sigma=2.0, angle_centered=180),)
 
 
 def beads_4c():
@@ -299,59 +361,9 @@ def crosser(generator, topology_options):
     )
 
 
-def build_from_beads(abead1, central, abead2):
-    new_fgs = (
-        stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{abead1.element_string}]"
-                f"[{central.element_string}]"
-            ),
-            bonders=(0,),
-            deleters=(),
-            placers=(0, 1),
-        ),
-        stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{abead2.element_string}]"
-                f"[{central.element_string}]"
-            ),
-            bonders=(0,),
-            deleters=(),
-            placers=(0, 1),
-        ),
-    )
-
-    return stk.BuildingBlock(
-        smiles=(
-            f"[{abead1.element_string}][{central.element_string}]"
-            f"[{abead2.element_string}]"
-        ),
-        functional_groups=new_fgs,
-        position_matrix=[[-5, 0, 0], [0, 0, 0], [5, 0, 0]],
-    )
-
-
-def get_twocs():
-    bead_lib = beads_2c()
-    abead2 = tuple(i for i in bead_lib if i.element_string == "Ce")[0]
-    central = tuple(i for i in bead_lib if i.element_string == "Eu")[0]
-    abead1 = tuple(i for i in bead_lib if i.element_string == "Ge")[0]
-    yield build_from_beads(abead1, central, abead2)
-
-    central = tuple(i for i in bead_lib if i.element_string == "Be")[0]
-    abead2 = tuple(i for i in bead_lib if i.element_string == "He")[0]
-
-    for abead1_estring in ("Eu", "Ce", "Lu"):
-        abead1 = tuple(
-            i for i in bead_lib if i.element_string == abead1_estring
-        )[0]
-        yield build_from_beads(abead1, central, abead2)
-
-
-def get_fourc():
-    bead = beads_4c()[0]
+def get_fourc(element_string):
     four_c_bb = stk.BuildingBlock(
-        smiles=f"[Br][{bead.element_string}]([Br])([Br])[Br]",
+        smiles=f"[Br][{element_string}]([Br])([Br])[Br]",
         position_matrix=[
             [-2, 0, 0],
             [0, 0, 0],
@@ -362,7 +374,7 @@ def get_fourc():
     )
 
     new_fgs = stk.SmartsFunctionalGroupFactory(
-        smarts=(f"[{bead.element_string}]" f"[Br]"),
+        smarts=(f"[{element_string}]" f"[Br]"),
         bonders=(0,),
         deleters=(1,),
         placers=(0, 1),
@@ -524,6 +536,1043 @@ def build_experimentals(
         logging.info(f"for {name}, fitness: {fv}")
 
 
+def optimise_ligand(molecule, name, output_dir, full_bead_library):
+
+    opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
+    opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
+
+    # Does optimisation.
+    if os.path.exists(opt1_mol_file):
+        molecule = molecule.with_structure_from_file(opt1_mol_file)
+    else:
+        logging.info(f"optimising {name}...")
+        opt = CGGulpOptimizer(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=full_bead_library,
+            max_cycles=2000,
+            conjugate_gradient=False,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+        _ = opt.optimize(molecule)
+        molecule = molecule.with_structure_from_file(opt_xyz_file)
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt1_mol_file)
+        os.system(f"rm {opt_xyz_file}")
+
+    return molecule
+
+
+def optimise_cage(molecule, name, output_dir, full_bead_library):
+
+    opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
+    opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
+
+    # Does optimisation.
+    if os.path.exists(opt1_mol_file):
+        molecule = molecule.with_structure_from_file(opt1_mol_file)
+    else:
+        logging.info(f"optimising {name}...")
+        opt = CGGulpOptimizer(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=full_bead_library,
+            max_cycles=2000,
+            conjugate_gradient=False,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+        _ = opt.optimize(molecule)
+        molecule = molecule.with_structure_from_file(opt_xyz_file)
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt1_mol_file)
+        os.system(f"rm {opt_xyz_file}")
+
+    return molecule
+
+
+def shortest_distance_to_plane(plane, point):
+    """
+    Calculate the perpendicular distance beween a point and a plane.
+
+    """
+
+    top = abs(
+        plane[0] * point[0]
+        + plane[1] * point[1]
+        + plane[2] * point[2]
+        - plane[3]
+    )
+    bottom = np.sqrt(plane[0] ** 2 + plane[1] ** 2 + plane[2] ** 2)
+    distance = top / bottom
+    return distance
+
+
+def analyse_cage(molecule, name, output_dir, full_bead_library):
+
+    output_file = os.path.join(output_dir, f"{name}_res.json")
+
+    if os.path.exists(output_file):
+        with open(output_file, "r") as f:
+            res_dict = json.load(f)
+    else:
+        opt = CGGulpOptimizer(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=full_bead_library,
+            max_cycles=1000,
+            conjugate_gradient=False,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+
+        ini_ids = []
+        for i in molecule.get_atoms():
+            if i.__class__.__name__ == "C":
+                ini_ids.append(i.get_id())
+
+            if i.__class__.__name__ == "Pt":
+                ini_ids.append(i.get_id())
+
+        centroid = molecule.get_centroid(atom_ids=ini_ids)
+        normal = molecule.get_plane_normal(atom_ids=ini_ids)
+        # Plane of equation ax + by + cz = d.
+        binder_atom_plane = np.append(normal, np.sum(normal * centroid))
+        # Define the plane deviation as the sum of the distance of all
+        # atoms from the plane defined by all atoms.
+        planarity_CPd = sum(
+            [
+                shortest_distance_to_plane(
+                    binder_atom_plane,
+                    tuple(
+                        molecule.get_atomic_positions(atom_ids=i),
+                    )[0],
+                )
+                for i in ini_ids
+            ]
+        )
+
+        run_data = opt.extract_gulp()
+        fin_energy = run_data["final_energy"]
+        res_dict = {
+            "fin_energy": fin_energy,
+            "planarity_CPd": planarity_CPd,
+        }
+        with open(output_file, "w") as f:
+            json.dump(res_dict, f, indent=4)
+
+    return res_dict
+
+
+def analyse_big_cage(molecule, name, output_dir, full_bead_library):
+
+    output_file = os.path.join(output_dir, f"{name}_res.json")
+
+    if os.path.exists(output_file):
+        with open(output_file, "r") as f:
+            res_dict = json.load(f)
+    else:
+        opt = CGGulpOptimizer(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=full_bead_library,
+            max_cycles=1000,
+            conjugate_gradient=False,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+
+        run_data = opt.extract_gulp()
+        fin_energy = run_data["final_energy"]
+        res_dict = {
+            "fin_energy": fin_energy,
+        }
+        with open(output_file, "w") as f:
+            json.dump(res_dict, f, indent=4)
+
+    return res_dict
+
+
+def get_CGBead_from_string(string, bead_library):
+    return tuple(i for i in bead_library if i.element_string == string)[
+        0
+    ]
+
+
+def get_present_beads(c2_bbname):
+    wtopo = c2_bbname[2:]
+    present_beads_names = []
+    while len(wtopo) > 0:
+        if len(wtopo) == 1:
+            bead_name = wtopo[0]
+            wtopo = ""
+        elif wtopo[1].islower():
+            bead_name = wtopo[:2]
+            wtopo = wtopo[2:]
+        else:
+            bead_name = wtopo[0]
+            wtopo = wtopo[1:]
+
+        present_beads_names.append(bead_name)
+
+    if len(present_beads_names) != 4:
+        raise ValueError(f"{present_beads_names} length != {c2_bbname}")
+    return present_beads_names
+
+
+def phase_space_1(cage_set_data, figure_output, m2l4_2_beads):
+    fig, axs = plt.subplots(
+        ncols=2,
+        sharey=True,
+        figsize=(16, 5),
+    )
+
+    vamap = {
+        "0000": "#1f77b4",
+        "1000": "#ff7f0e",
+        "1100": "#2ca02c",
+        "1010": "#d62728",
+    }
+    convert_vstrname = {
+        "0000": "A",
+        "1000": "B",
+        "1100": "C",
+        "1010": "D",
+    }
+
+    isomer_energy = 5
+    planarity_limit = 2
+    max_energy = 20
+    all_data = []
+    for cs in cage_set_data:
+        csd = cage_set_data[cs]
+        present_beads_names = get_present_beads(cs)
+
+        theta1 = get_CGBead_from_string(
+            present_beads_names[1], m2l4_2_beads
+        ).angle_centered
+
+        theta2 = get_CGBead_from_string(
+            present_beads_names[2], m2l4_2_beads
+        ).angle_centered
+
+        min_energy = 1e24
+        preferred_vastr = None
+        for i in csd:
+            energy = csd[i]["fin_energy"]
+            if energy < min_energy:
+                min_energy = energy
+                preferred_vastr = i
+
+        if min_energy > isomer_energy:
+            colour = "white"
+        else:
+            planarity = csd[preferred_vastr]["planarity_CPd"]
+            if planarity < planarity_limit:
+                colour = "k"
+            else:
+                colour = vamap[preferred_vastr]
+
+        cis_energy = csd["1100"]["fin_energy"]
+        other_energies = [
+            csd[i]["fin_energy"] - cis_energy
+            for i in csd
+            if i != "1100"
+        ]
+        cis_preference = min(other_energies)
+
+        if cis_preference >= isomer_energy:
+            planarity = csd["1100"]["planarity_CPd"]
+            if planarity >= planarity_limit:
+                all_data.append((theta1, theta2, cis_preference))
+
+        axs[0].scatter(
+            theta1,
+            theta2,
+            c=colour,
+            edgecolor="k",
+            s=50,
+            marker="s",
+        )
+
+    axs[1].scatter(
+        [i[0] for i in all_data],
+        [i[1] for i in all_data],
+        c=[i[2] for i in all_data],
+        vmin=isomer_energy,
+        vmax=max_energy,
+        alpha=1.0,
+        edgecolor="none",
+        marker="s",
+        s=50,
+        cmap="Blues",
+    )
+
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.Blues
+    norm = mpl.colors.Normalize(vmin=isomer_energy, vmax=max_energy)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label("cis preference (eV)", fontsize=16)
+
+    for i in vamap:
+        axs[0].scatter(
+            None,
+            None,
+            c=vamap[i],
+            edgecolor="k",
+            s=50,
+            marker="s",
+            alpha=1.0,
+            label=convert_vstrname[i],
+        )
+    axs[0].scatter(
+        None,
+        None,
+        c="white",
+        edgecolor="k",
+        s=50,
+        marker="s",
+        label="unstable",
+    )
+    axs[0].scatter(
+        None,
+        None,
+        c="k",
+        edgecolor="k",
+        s=50,
+        marker="s",
+        label="flat",
+    )
+
+    axs[0].tick_params(axis="both", which="major", labelsize=16)
+    axs[0].set_xlabel("theta1", fontsize=16)
+    axs[0].set_ylabel("theta2", fontsize=16)
+    axs[0].set_xlim(0, 180)
+    axs[0].set_ylim(0, 180)
+    axs[0].set_title(f"{isomer_energy}eV", fontsize=16)
+    axs[0].legend(fontsize=16)
+
+    axs[1].tick_params(axis="both", which="major", labelsize=16)
+    axs[1].set_xlabel("theta1", fontsize=16)
+    axs[1].set_ylabel("theta2", fontsize=16)
+    axs[1].set_xlim(0, 180)
+    axs[1].set_ylim(0, 180)
+    axs[1].set_title(f"{isomer_energy} to {max_energy}eV", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_1.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_2(
+    cage_set_data,
+    figure_output,
+    bead_library,
+):
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    vamap = {
+        "0000": "#1f77b4",
+        "1000": "#ff7f0e",
+        "1100": "#2ca02c",
+        "1010": "#d62728",
+    }
+    convert_vstrname = {
+        "0000": "A",
+        "1000": "B",
+        "1100": "C",
+        "1010": "D",
+    }
+
+    isomer_energy = 5
+    planarity_limit = 2
+    for cs in cage_set_data:
+        csd = cage_set_data[cs]
+        present_beads_names = get_present_beads(cs)
+        all_sigma = [
+            get_CGBead_from_string(i, bead_library).sigma
+            for i in present_beads_names
+        ]
+
+        bl1 = lorentz_berthelot_sigma_mixing(all_sigma[1], all_sigma[3])
+        bl2 = lorentz_berthelot_sigma_mixing(all_sigma[2], all_sigma[3])
+
+        angle = get_CGBead_from_string(
+            present_beads_names[2], bead_library
+        ).angle_centered
+
+        if angle == 90:
+            marker = "o"
+            geom_mismatch = bl1 - bl2
+        else:
+            marker = "s"
+            hyp = lorentz_berthelot_sigma_mixing(
+                all_sigma[2], all_sigma[0]
+            ) + lorentz_berthelot_sigma_mixing(
+                all_sigma[1], all_sigma[0]
+            )
+            extension = np.cos(np.radians(angle)) * hyp
+            mod_length = extension + bl1
+            geom_mismatch = mod_length - (bl2)
+
+        min_energy = 1e24
+        preferred_vastr = None
+        for i in csd:
+            energy = csd[i]["fin_energy"]
+            if energy < min_energy:
+                min_energy = energy
+                preferred_vastr = i
+
+        if min_energy > isomer_energy:
+            colour = "white"
+        else:
+            planarity = csd[preferred_vastr]["planarity_CPd"]
+            if planarity < planarity_limit:
+                colour = "k"
+            else:
+                colour = vamap[preferred_vastr]
+
+        cis_energy = csd["1100"]["fin_energy"]
+        other_energies = [
+            csd[i]["fin_energy"] - cis_energy
+            for i in csd
+            if i != "1100"
+        ]
+        cis_preference = min(other_energies)
+
+        ax.scatter(
+            geom_mismatch,
+            cis_preference,
+            c=colour,
+            edgecolor="k",
+            s=50,
+            marker=marker,
+        )
+
+    for i in vamap:
+        ax.scatter(
+            None,
+            None,
+            c=vamap[i],
+            edgecolor="k",
+            s=50,
+            marker="s",
+            alpha=1.0,
+            label=convert_vstrname[i],
+        )
+    ax.scatter(
+        None,
+        None,
+        c="white",
+        edgecolor="k",
+        s=50,
+        marker="s",
+        label="unstable",
+    )
+    ax.scatter(
+        None,
+        None,
+        c="k",
+        edgecolor="k",
+        s=50,
+        marker="s",
+        label="flat",
+    )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("geom. mismatch", fontsize=16)
+    ax.set_ylabel("cis preference", fontsize=16)
+    ax.set_title(f"{isomer_energy}eV", fontsize=16)
+    ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_2.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_3(cage_set_data, figure_output, bead_library):
+    fig, axs = plt.subplots(
+        ncols=2,
+        sharey=True,
+        figsize=(16, 5),
+    )
+
+    vamap = {
+        "M6A1": "#1f77b4",
+        "M6A2": "#9BC53D",
+        "M6def": "#C3423F",
+        "M12def": "#B279A7",
+        "M12E1": "#ff7f0e",
+        "M12E2": "#2ca02c",
+        "M12E3": "#d62728",
+        "M12G1": "#6969B3",
+    }
+
+    isomer_energy = 2
+    s = 120
+    all_data = []
+    for cs in cage_set_data:
+        csd = cage_set_data[cs]
+        present_beads_names = get_present_beads(cs)
+
+        min_energy = 1e24
+        preferred_tstr = None
+        for i in csd:
+            energy = csd[i]["fin_energy"]
+            if energy < min_energy:
+                min_energy = energy
+                preferred_tstr = i
+
+        all_sigma = [
+            get_CGBead_from_string(i, bead_library).sigma
+            for i in present_beads_names
+        ]
+        distance_1 = lorentz_berthelot_sigma_mixing(
+            all_sigma[2], all_sigma[3]
+        )
+
+        distance_2 = (
+            lorentz_berthelot_sigma_mixing(all_sigma[1], all_sigma[3])
+            + lorentz_berthelot_sigma_mixing(all_sigma[1], all_sigma[0])
+            + lorentz_berthelot_sigma_mixing(all_sigma[2], all_sigma[0])
+        )
+
+        distance_ratio = distance_2 / distance_1
+
+        theta = get_CGBead_from_string(
+            present_beads_names[2], bead_library
+        ).angle_centered
+
+        if min_energy > isomer_energy:
+            colour = "white"
+        else:
+            colour = vamap[preferred_tstr]
+        all_data.append((distance_ratio, theta, min_energy))
+
+        axs[0].scatter(
+            distance_ratio,
+            theta,
+            c=colour,
+            edgecolor="k",
+            s=s,
+            marker="s",
+        )
+
+    axs[1].scatter(
+        [i[0] for i in all_data],
+        [i[1] for i in all_data],
+        c=[i[2] for i in all_data],
+        vmin=0,
+        vmax=isomer_energy,
+        alpha=1.0,
+        edgecolor="k",
+        marker="s",
+        s=s,
+        cmap="Blues_r",
+    )
+
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.Blues_r
+    norm = mpl.colors.Normalize(vmin=0, vmax=isomer_energy)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label("energy (eV)", fontsize=16)
+
+    for i in vamap:
+        axs[0].scatter(
+            None,
+            None,
+            c=vamap[i],
+            edgecolor="k",
+            s=s,
+            marker="s",
+            alpha=1.0,
+            label=i,
+        )
+    axs[0].scatter(
+        None,
+        None,
+        c="white",
+        edgecolor="k",
+        s=s,
+        marker="s",
+        label=f"mixed ({isomer_energy}eV)",
+    )
+    axs[0].tick_params(axis="both", which="major", labelsize=16)
+    axs[0].set_xlabel("distance ratio", fontsize=16)
+    axs[0].set_ylabel("theta", fontsize=16)
+    axs[0].set_title(f"{isomer_energy}eV", fontsize=16)
+    axs[0].legend(fontsize=16)
+
+    axs[1].tick_params(axis="both", which="major", labelsize=16)
+    axs[1].set_xlabel("distance ratio", fontsize=16)
+    axs[1].set_ylabel("theta", fontsize=16)
+    axs[1].set_title(f"{isomer_energy}eV", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_3.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def unsymm_1():
+    struct_output = unsymm() / "structures"
+    check_directory(struct_output)
+    figure_output = unsymm() / "figures"
+    check_directory(figure_output)
+    calculation_output = unsymm() / "calculations"
+    check_directory(calculation_output)
+    ligand_output = unsymm() / "ligands"
+    check_directory(ligand_output)
+
+    # M2L4 problem, modelling theta, theta phase space.
+    m2l4_2_beads = (
+        CgBead("Ba", sigma=2, angle_centered=20),
+        CgBead("Bi", sigma=2, angle_centered=25),
+        CgBead("B", sigma=2, angle_centered=30),
+        CgBead("Cd", sigma=2, angle_centered=35),
+        CgBead("Ce", sigma=2, angle_centered=40),
+        CgBead("Cf", sigma=2, angle_centered=45),
+        CgBead("Cm", sigma=2, angle_centered=50),
+        CgBead("Co", sigma=2, angle_centered=55),
+        CgBead("Cu", sigma=2, angle_centered=60),
+        CgBead("Cr", sigma=2, angle_centered=65),
+        CgBead("Eu", sigma=2, angle_centered=70),
+        CgBead("Er", sigma=2, angle_centered=75),
+        CgBead("Fe", sigma=2, angle_centered=80),
+        CgBead("Ga", sigma=2, angle_centered=85),
+        CgBead("Gd", sigma=2, angle_centered=90),
+        CgBead("Ge", sigma=2, angle_centered=95),
+        CgBead("Hf", sigma=2, angle_centered=100),
+        CgBead("He", sigma=2, angle_centered=105),
+        CgBead("Hg", sigma=2, angle_centered=110),
+        CgBead("Ho", sigma=2, angle_centered=115),
+        CgBead("In", sigma=2, angle_centered=120),
+        CgBead("I", sigma=2, angle_centered=125),
+        CgBead("Ir", sigma=2, angle_centered=130),
+        CgBead("La", sigma=2, angle_centered=135),
+        CgBead("Lr", sigma=2, angle_centered=140),
+        CgBead("Lu", sigma=2, angle_centered=145),
+        CgBead("Md", sigma=2, angle_centered=150),
+        CgBead("Mn", sigma=2, angle_centered=155),
+        CgBead("Mo", sigma=2, angle_centered=160),
+        CgBead("Nb", sigma=2, angle_centered=165),
+        CgBead("Nd", sigma=2, angle_centered=170),
+    )
+    m2l4_4_beads = (
+        CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
+    )
+    m2l4_c_beads = (CgBead("C", sigma=6.0, angle_centered=180),)
+    m2l4_b_beads = (CgBead("N", sigma=2.0, angle_centered=180),)
+    full_bead_library = (
+        m2l4_2_beads + m2l4_4_beads + m2l4_c_beads + m2l4_b_beads
+    )
+    bead_library_check(full_bead_library)
+
+    c2_blocks = {}
+    for c2_options in itertools.combinations(m2l4_2_beads, r=2):
+        if c2_options[0].element_string == c2_options[1].element_string:
+            continue
+
+        temp = UnsymmLigand(
+            centre_bead=m2l4_c_beads[0],
+            lhs_bead=c2_options[0],
+            rhs_bead=c2_options[1],
+            binder_bead=m2l4_b_beads[0],
+        )
+
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            full_bead_library=full_bead_library,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        c2_blocks[temp.get_name()] = opt_bb
+
+    logging.info(f"there are {len(c2_blocks)} building blocks.")
+    fourc_precursor = get_fourc(m2l4_4_beads[0].element_string)
+
+    cage_set_data = {}
+    for c2blk in c2_blocks:
+        cage_set_data[c2blk] = {}
+        for vastr in ("0000", "1000", "1100", "1010"):
+            va_dict = {i: int(j) for i, j in zip(range(2, 6), vastr)}
+            cage_topo_str = "m2"
+            name = f"{cage_topo_str}_{c2blk}_{vastr}"
+            cage = stk.ConstructedMolecule(
+                topology_graph=stk.cage.M2L4Lantern(
+                    building_blocks=(
+                        c2_blocks[c2blk],
+                        fourc_precursor,
+                    ),
+                    vertex_alignments=va_dict,
+                ),
+            )
+            cage = optimise_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
+
+            cage.write(str(struct_output / f"{name}_optc.mol"))
+            symm_data = analyse_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
+
+            cage_set_data[c2blk][vastr] = symm_data
+
+    phase_space_1(cage_set_data, figure_output, m2l4_2_beads)
+
+
+def unsymm_2():
+    struct_output = unsymm() / "structures"
+    check_directory(struct_output)
+    figure_output = unsymm() / "figures"
+    check_directory(figure_output)
+    calculation_output = unsymm() / "calculations"
+    check_directory(calculation_output)
+    ligand_output = unsymm() / "ligands"
+    check_directory(ligand_output)
+
+    # M2L4 problem, modelling theta, r phase space.
+    m2l4_lhs_beads = (
+        CgBead("No", sigma=2, angle_centered=120),
+        CgBead("Ni", sigma=2, angle_centered=90),
+    )
+    m2l4_rhs_beads = (
+        CgBead("Np", sigma=0.5, angle_centered=60),
+        CgBead("Os", sigma=1.0, angle_centered=60),
+        CgBead("Pa", sigma=1.5, angle_centered=60),
+        CgBead("Pd", sigma=1.8, angle_centered=60),
+        CgBead("Po", sigma=2.0, angle_centered=60),
+        CgBead("Pr", sigma=2.2, angle_centered=60),
+        CgBead("Pu", sigma=2.5, angle_centered=60),
+        CgBead("P", sigma=3.0, angle_centered=60),
+        CgBead("Re", sigma=3.5, angle_centered=60),
+        CgBead("Rh", sigma=4.0, angle_centered=60),
+        CgBead("Ru", sigma=0.5, angle_centered=90),
+        CgBead("Se", sigma=1.0, angle_centered=90),
+        CgBead("Si", sigma=1.5, angle_centered=90),
+        CgBead("Sm", sigma=1.8, angle_centered=90),
+        CgBead("S", sigma=2.0, angle_centered=90),
+        CgBead("Ti", sigma=2.2, angle_centered=90),
+        CgBead("Tm", sigma=2.5, angle_centered=90),
+        CgBead("V", sigma=3.0, angle_centered=90),
+        CgBead("Y", sigma=3.5, angle_centered=90),
+        CgBead("Zr", sigma=4.0, angle_centered=90),
+    )
+    m2l4_4_beads = (
+        CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
+    )
+    m2l4_c_beads = (CgBead("C", sigma=6.0, angle_centered=180),)
+    m2l4_b_beads = (CgBead("N", sigma=2.0, angle_centered=180),)
+    full_bead_library = (
+        m2l4_rhs_beads
+        + m2l4_lhs_beads
+        + m2l4_4_beads
+        + m2l4_c_beads
+        + m2l4_b_beads
+    )
+    bead_library_check(full_bead_library)
+
+    c2_blocks = {}
+    for rhs_bead in m2l4_rhs_beads:
+        if rhs_bead.angle_centered == 60:
+            lhs_bead = m2l4_lhs_beads[0]
+        elif rhs_bead.angle_centered == 90:
+            lhs_bead = m2l4_lhs_beads[1]
+
+        temp = UnsymmLigand(
+            centre_bead=m2l4_c_beads[0],
+            lhs_bead=lhs_bead,
+            rhs_bead=rhs_bead,
+            binder_bead=m2l4_b_beads[0],
+        )
+
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            full_bead_library=full_bead_library,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        c2_blocks[temp.get_name()] = opt_bb
+
+    logging.info(f"there are {len(c2_blocks)} building blocks.")
+    fourc_precursor = get_fourc(m2l4_4_beads[0].element_string)
+
+    cage_set_data = {}
+    for c2blk in c2_blocks:
+        cage_set_data[c2blk] = {}
+        for vastr in ("0000", "1000", "1100", "1010"):
+            va_dict = {i: int(j) for i, j in zip(range(2, 6), vastr)}
+            cage_topo_str = "m2"
+            name = f"{cage_topo_str}_{c2blk}_{vastr}"
+            cage = stk.ConstructedMolecule(
+                topology_graph=stk.cage.M2L4Lantern(
+                    building_blocks=(
+                        c2_blocks[c2blk],
+                        fourc_precursor,
+                    ),
+                    vertex_alignments=va_dict,
+                ),
+            )
+            cage = optimise_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
+
+            cage.write(str(struct_output / f"{name}_optc.mol"))
+            symm_data = analyse_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
+
+            cage_set_data[c2blk][vastr] = symm_data
+
+    phase_space_2(
+        cage_set_data,
+        figure_output,
+        full_bead_library,
+    )
+
+
+def unsymm_3():
+    struct_output = unsymm() / "structures"
+    check_directory(struct_output)
+    figure_output = unsymm() / "figures"
+    check_directory(figure_output)
+    calculation_output = unsymm() / "calculations"
+    check_directory(calculation_output)
+    ligand_output = unsymm() / "ligands"
+    check_directory(ligand_output)
+
+    # Multi topo problem, higher bite angle: theta vs r1-r2 phase space.
+    m2l4_lhs_beads = (CgBead("No", sigma=2, angle_centered=180),)
+    m2l4_rhs_beads = (
+        CgBead("Ag", sigma=0.5, angle_centered=80),
+        CgBead("Al", sigma=1.0, angle_centered=80),
+        CgBead("Ac", sigma=1.5, angle_centered=80),
+        CgBead("Am", sigma=2.0, angle_centered=80),
+        CgBead("As", sigma=2.5, angle_centered=80),
+        CgBead("Au", sigma=3.0, angle_centered=80),
+        CgBead("Ba", sigma=3.5, angle_centered=80),
+        CgBead("Bi", sigma=4.0, angle_centered=80),
+        CgBead("B", sigma=0.5, angle_centered=90),
+        CgBead("Cd", sigma=1.0, angle_centered=90),
+        CgBead("Ce", sigma=1.5, angle_centered=90),
+        CgBead("Cf", sigma=2.0, angle_centered=90),
+        CgBead("Cm", sigma=2.5, angle_centered=90),
+        CgBead("Co", sigma=3.0, angle_centered=90),
+        CgBead("Cu", sigma=3.5, angle_centered=90),
+        CgBead("Cr", sigma=4.0, angle_centered=90),
+        CgBead("Eu", sigma=0.5, angle_centered=100),
+        CgBead("Er", sigma=1.0, angle_centered=100),
+        CgBead("Fe", sigma=1.5, angle_centered=100),
+        CgBead("Ga", sigma=2.0, angle_centered=100),
+        CgBead("Gd", sigma=2.5, angle_centered=100),
+        CgBead("Ge", sigma=3.0, angle_centered=100),
+        CgBead("Hf", sigma=3.5, angle_centered=100),
+        CgBead("He", sigma=4.0, angle_centered=100),
+        CgBead("Hg", sigma=0.5, angle_centered=110),
+        CgBead("Ho", sigma=1.0, angle_centered=110),
+        CgBead("In", sigma=1.5, angle_centered=110),
+        CgBead("I", sigma=2.0, angle_centered=110),
+        CgBead("Ir", sigma=2.5, angle_centered=110),
+        CgBead("La", sigma=3.0, angle_centered=110),
+        CgBead("Lr", sigma=3.5, angle_centered=110),
+        CgBead("Lu", sigma=4.0, angle_centered=110),
+        CgBead("Md", sigma=0.5, angle_centered=120),
+        CgBead("Mn", sigma=1.0, angle_centered=120),
+        CgBead("Mo", sigma=1.5, angle_centered=120),
+        CgBead("Nb", sigma=2.0, angle_centered=120),
+        CgBead("Nd", sigma=2.5, angle_centered=120),
+        CgBead("Ne", sigma=3.0, angle_centered=120),
+        CgBead("Ni", sigma=3.5, angle_centered=120),
+        CgBead("Np", sigma=4.0, angle_centered=120),
+        CgBead("Os", sigma=0.5, angle_centered=130),
+        CgBead("Pa", sigma=1.0, angle_centered=130),
+        CgBead("Pd", sigma=1.5, angle_centered=130),
+        CgBead("Po", sigma=2.0, angle_centered=130),
+        CgBead("Pr", sigma=2.5, angle_centered=130),
+        CgBead("Pu", sigma=3.0, angle_centered=130),
+        CgBead("P", sigma=3.5, angle_centered=130),
+        CgBead("Re", sigma=4.0, angle_centered=130),
+    )
+    m2l4_4_beads = (
+        CgBead("Pt", sigma=2.0, angle_centered=(90, 180, 130)),
+    )
+    m2l4_c_beads = (CgBead("C", sigma=4.0, angle_centered=180),)
+    m2l4_b_beads = (CgBead("N", sigma=2.0, angle_centered=180),)
+    full_bead_library = (
+        m2l4_rhs_beads
+        + m2l4_lhs_beads
+        + m2l4_4_beads
+        + m2l4_c_beads
+        + m2l4_b_beads
+    )
+    bead_library_check(full_bead_library)
+
+    c2_blocks = {}
+    for rhs_bead in m2l4_rhs_beads:
+        temp = UnsymmBiteLigand(
+            centre_bead=m2l4_c_beads[0],
+            lhs_bead=m2l4_lhs_beads[0],
+            rhs_bead=rhs_bead,
+            binder_bead=m2l4_b_beads[0],
+        )
+
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            full_bead_library=full_bead_library,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        c2_blocks[temp.get_name()] = opt_bb
+
+    logging.info(f"there are {len(c2_blocks)} building blocks.")
+    fourc_precursor = get_fourc(m2l4_4_beads[0].element_string)
+
+    experimental_structures = {
+        "M6A1": {
+            "tfunc": stk.cage.M6L12Cube,
+            "vastr": "010100101001",
+            "nmetals": 6,
+            "nvertices": 12,
+        },
+        "M6A2": {
+            "tfunc": stk.cage.M6L12Cube,
+            "vastr": "011000010110",
+            "nmetals": 6,
+            "nvertices": 12,
+        },
+        "M6def": {
+            "tfunc": stk.cage.M6L12Cube,
+            "vastr": "000000000000",
+            "nmetals": 6,
+            "nvertices": 12,
+        },
+        "M12def": {
+            "tfunc": CGM12L24,
+            "vastr": "000000000000000000000000",
+            "nmetals": 12,
+            "nvertices": 24,
+        },
+        "M12E1": {
+            "tfunc": CGM12L24,
+            "vastr": "001111000011110001010101",
+            "nmetals": 12,
+            "nvertices": 24,
+        },
+        "M12E2": {
+            "tfunc": CGM12L24,
+            "vastr": "010110100011110001000111",
+            "nmetals": 12,
+            "nvertices": 24,
+        },
+        "M12E3": {
+            "tfunc": CGM12L24,
+            "vastr": "101001010101101000111100",
+            "nmetals": 12,
+            "nvertices": 24,
+        },
+        "M12G1": {
+            "tfunc": CGM12L24,
+            "vastr": "001111000011110010101010",
+            "nmetals": 12,
+            "nvertices": 24,
+        },
+    }
+
+    cage_set_data = {}
+    for c2blk in c2_blocks:
+        cage_set_data[c2blk] = {}
+        for expt_struct in experimental_structures:
+            estruct_data = experimental_structures[expt_struct]
+            vastr = estruct_data["vastr"]
+            nmetals = estruct_data["nmetals"]
+            nvertices = estruct_data["nvertices"]
+            tfunc = estruct_data["tfunc"]
+
+            va_dict = {
+                i: int(j)
+                for i, j in zip(
+                    range(nmetals, nvertices + nmetals), vastr
+                )
+            }
+
+            name = f"{expt_struct}_{c2blk}_{vastr}"
+            cage = stk.ConstructedMolecule(
+                topology_graph=tfunc(
+                    building_blocks=(
+                        c2_blocks[c2blk],
+                        fourc_precursor,
+                    ),
+                    vertex_alignments=va_dict,
+                ),
+            )
+
+            cage = optimise_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
+
+            cage.write(str(struct_output / f"{name}_optc.mol"))
+            symm_data = analyse_big_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                full_bead_library=full_bead_library,
+            )
+
+            cage_set_data[c2blk][expt_struct] = symm_data
+
+    phase_space_3(
+        cage_set_data,
+        figure_output,
+        full_bead_library,
+    )
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -532,52 +1581,101 @@ def main():
     else:
         pass
 
-    struct_output = unsymm() / "optimisation"
-    check_directory(struct_output)
-    figure_output = unsymm() / "figures"
-    check_directory(figure_output)
-    calculation_output = unsymm() / "calculations"
-    check_directory(calculation_output)
+    unsymm_2()
+    unsymm_3()
+    unsymm_1()
 
-    # Define list of topology functions.
-    cage_topology_function = CGM12L24
+    raise SystemExit()
 
-    seed_sets = {
-        0: [256, 9, 123, 986],
-        1: [12, 673, 98, 22],
-        2: [726, 23, 44, 1],
-        3: [14, 33, 2, 4122],
+    # Define bead libraries.
+    beads_4c_lib = beads_4c()
+    beads_2c_lib = lig_2c_beads()
+    beads_binder_lib = binder_beads()
+    full_bead_library = beads_4c_lib + beads_2c_lib + beads_binder_lib
+    bead_library_check(full_bead_library)
+
+    # For now, just build N options and calculate properties.
+    logging.info("building building blocks...")
+
+    c2_blocks = {}
+    for c2_options in itertools.product(beads_2c_lib, repeat=3):
+        if c2_options[2].element_string == c2_options[1].element_string:
+            continue
+
+        temp = UnsymmLigand(
+            centre_bead=c2_options[0],
+            lhs_bead=c2_options[1],
+            rhs_bead=c2_options[2],
+            binder_bead=beads_binder_lib[0],
+        )
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            full_bead_library=full_bead_library,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        c2_blocks[temp.get_name()] = opt_bb
+
+    logging.info(f"there are {len(c2_blocks)} building blocks.")
+    fourc_precursor = get_fourc()
+
+    ga_run_infos = {
+        0: {
+            "tfunc": stk.cage.M2L4Lantern,
+            "plot_fun": plot_existing_M2_data_distributions,
+            "num_vertices": 4,
+            "seed_set": [256, 9, 123, 986],
+        },
+        1: {
+            "tfunc": stk.cage.M6L12Cube,
+            "plot_fun": plot_existing_M6_data_distributions,
+            "num_vertices": 12,
+            "seed_set": [12, 673, 98, 22],
+        },
+        2: {
+            "tfunc": CGM12L24,
+            "plot_fun": plot_existing_M12_data_distributions,
+            "num_vertices": 24,
+            "seed_set": [726, 23, 44, 1],
+        },
+        # 3: {
+        #     "tfunc": CGM4L8,
+        #     "seed_set": [14, 33, 2, 4122],
+        # },
     }
 
-    # Define precursor topologies.
-    fourc_precursor = get_fourc()
-    for iname, twoc_precursor in enumerate(get_twocs()):
-        seeds = seed_sets[iname]
-        build_experimentals(
-            cage_topology_function=cage_topology_function,
-            twoc_precursor=twoc_precursor,
-            fourc_precursor=fourc_precursor,
-        )
+    # Settings for runs.
+    population_size_per_step = 40
+    num_generations = 40
 
-        plot_existing_M12_data_distributions(
+    for ga_run in ga_run_infos:
+        ga_data = ga_run_infos[ga_run]
+        seeds = ga_data["seed_set"]
+        plot_fn = ga_data["plot_fun"]
+        plot_fn(
             calculation_dir=calculation_output,
             figures_dir=figure_output,
         )
+        cage_topology_function = ga_data["tfunc"]
 
-        # Settings for runs.
-        population_size_per_step = 40
-        num_generations = 40
         # Set seeds for reproducible results.
         for seed in seeds:
             logging.info(
-                f"setting up the EA for seed {seed} and {iname}..."
+                f"setting up the EA for seed {seed} and {ga_run}..."
             )
-            run_name = f"s{seed}_i{iname}"
+            run_name = f"s{seed}_i{ga_run}"
             generator = np.random.RandomState(seed)
 
             # For now, just build N options and calculate properties.
             logging.info(
                 f"building population of {population_size_per_step}..."
+            )
+
+            raise SystemExit(
+                "Won't work from here - you need to decide on approach!"
+                " either, one ligand, find symm or many ligands, find "
+                "best. The second approach needs to redefine GA! "
             )
             initial_population = tuple(
                 get_initial_population(
@@ -658,6 +1756,17 @@ def main():
             calculation_dir=calculation_output,
             figures_dir=figure_output,
         )
+
+        raise SystemExit(
+            "You want a set of ligands relevant to each cage type"
+        )
+
+        for iname, twoc_precursor in enumerate(get_twocs()):
+            build_experimentals(
+                cage_topology_function=cage_topology_function,
+                twoc_precursor=twoc_precursor,
+                fourc_precursor=fourc_precursor,
+            )
 
 
 if __name__ == "__main__":
