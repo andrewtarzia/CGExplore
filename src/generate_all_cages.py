@@ -21,7 +21,11 @@ from shape import ShapeMeasure
 from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory
-from gulp_optimizer import CGGulpOptimizer
+from gulp_optimizer import (
+    CGGulpOptimizer,
+    CGGulpMD,
+    MDEmptyTrajcetoryError,
+)
 
 from cage_construction.topologies import cage_topology_options
 
@@ -250,7 +254,6 @@ def optimise_ligand(molecule, name, output_dir, full_bead_library):
         molecule = molecule.with_structure_from_file(opt_xyz_file)
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
-        os.system(f"rm {opt_xyz_file}")
 
     return molecule
 
@@ -258,7 +261,10 @@ def optimise_ligand(molecule, name, output_dir, full_bead_library):
 def optimise_cage(molecule, name, output_dir, full_bead_library):
 
     opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
+    mdr_xyz_file = os.path.join(output_dir, f"{name}_final.xyz")
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
+    opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
+    opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
 
     # Does optimisation.
     if os.path.exists(opt1_mol_file):
@@ -280,7 +286,45 @@ def optimise_cage(molecule, name, output_dir, full_bead_library):
         molecule = molecule.with_structure_from_file(opt_xyz_file)
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
-        os.system(f"rm {opt_xyz_file}")
+
+    if os.path.exists(opt2_mol_file):
+        molecule = molecule.with_structure_from_file(opt2_mol_file)
+    else:
+        logging.info(f"optimising {name}...")
+
+        opt = CGGulpMD(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=full_bead_library,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+        _ = opt.optimize(molecule)
+        molecule = molecule.with_structure_from_file(mdr_xyz_file)
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt2_mol_file)
+
+    if os.path.exists(opt3_mol_file):
+        molecule = molecule.with_structure_from_file(opt3_mol_file)
+    else:
+        logging.info(f"optimising {name}...")
+        opt = CGGulpOptimizer(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=full_bead_library,
+            max_cycles=2000,
+            conjugate_gradient=False,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+        _ = opt.optimize(molecule)
+        molecule = molecule.with_structure_from_file(opt_xyz_file)
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt3_mol_file)
 
     return molecule
 
@@ -288,6 +332,7 @@ def optimise_cage(molecule, name, output_dir, full_bead_library):
 def analyse_cage(molecule, name, output_dir, full_bead_library):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
+    # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
     pm_output_file = os.path.join(output_dir, f"{name}_opted.json")
 
     if os.path.exists(output_file):
@@ -298,13 +343,12 @@ def analyse_cage(molecule, name, output_dir, full_bead_library):
             fileprefix=name,
             output_dir=output_dir,
             param_pool=full_bead_library,
-            max_cycles=1000,
-            conjugate_gradient=False,
             bonds=True,
             angles=True,
             torsions=False,
             vdw=False,
         )
+        # molecule.write(xyz_template)
         run_data = opt.extract_gulp()
         fin_energy = run_data["final_energy"]
 
@@ -471,12 +515,15 @@ def main():
                     ),
                 ),
             )
-            cage = optimise_cage(
-                molecule=cage,
-                name=name,
-                output_dir=calculation_output,
-                full_bead_library=full_bead_library,
-            )
+            try:
+                cage = optimise_cage(
+                    molecule=cage,
+                    name=name,
+                    output_dir=calculation_output,
+                    full_bead_library=full_bead_library,
+                )
+            except MDEmptyTrajcetoryError:
+                continue
             cage.write(str(struct_output / f"{name}_optc.mol"))
             analyse_cage(
                 molecule=cage,
