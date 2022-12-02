@@ -20,14 +20,22 @@ def cage_topology_options(fg_set):
             "FourPlusSix2": stk.cage.FourPlusSix2,
             "SixPlusNine": stk.cage.SixPlusNine,
             "EightPlusTwelve": stk.cage.EightPlusTwelve,
-            # "TwentyPlusThirty": stk.cage.TwentyPlusThirty,
         }
     if fg_set == "2p4":
         topologies = {
-            "M2L4": stk.cage.M2L4Lantern,
-            "M3L6": stk.cage.M3L6,
-            "M4L8": stk.cage.M4L8,
-            "M6L12": stk.cage.M6L12Cube,
+            "TwoPlusFour": stk.cage.TwoPlusFour,
+            "ThreePlusSix": stk.cage.ThreePlusSix,
+            "FourPlusEight": stk.cage.FourPlusEight,
+            "SixPlusTwelve": stk.cage.SixPlusTwelve,
+        }
+    if fg_set == "3p3":
+        topologies = {
+            "TwoPlusTwo": stk.cage.TwoPlusTwo,
+            "FourPlusFour": stk.cage.FourPlusFour,
+        }
+    if fg_set == "3p4":
+        topologies = {
+            "SixPlusEight": stk.cage.SixPlusEight,
         }
 
     return topologies
