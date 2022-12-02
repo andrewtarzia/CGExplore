@@ -12,7 +12,6 @@ Author: Andrew Tarzia
 import os
 import numpy as np
 import re
-from dataclasses import dataclass
 from itertools import combinations
 import logging
 
@@ -22,136 +21,12 @@ from utilities import get_all_angles, angle_between, get_all_torsions
 from beads import guest_beads
 
 
+class MDEmptyTrajcetoryError(Exception):
+    ...
+
+
 def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
     return (sigma1 + sigma2) / 2
-
-
-class IntSet:
-    def __init__(self, interactions: tuple):
-        self._interactions = interactions
-        int_set = {}
-        for inter in interactions:
-            if inter.get_types() not in int_set:
-                int_set[inter.get_types()] = []
-            int_set[inter.get_types()].append(inter)
-
-        self._int_set = int_set
-
-    def get_set_dict(self):
-        return self._int_set
-
-    def get_keys(self):
-        return self._int_set.keys()
-
-
-@dataclass
-class Pair:
-    atom1_type: str
-    atom2_type: str
-
-    def get_types(self):
-        return tuple(
-            sorted([i for i in (self.atom1_type, self.atom2_type)])
-        )
-
-    def get_unsortedtypes(self):
-        return tuple([i for i in (self.atom1_type, self.atom2_type)])
-
-
-@dataclass
-class HarmBond(Pair):
-    bond_r: float
-    bond_k: float
-
-
-@dataclass
-class LennardJones(Pair):
-    epsilon: float
-    sigma: float
-
-
-@dataclass
-class Angle:
-    atom1_type: str
-    atom2_type: str
-    atom3_type: str
-
-    def get_types(self):
-        return tuple(
-            [
-                i
-                for i in (
-                    self.atom1_type,
-                    self.atom2_type,
-                    self.atom3_type,
-                )
-            ]
-        )
-
-    def get_unsortedtypes(self):
-        return tuple(
-            [
-                i
-                for i in (
-                    self.atom1_type,
-                    self.atom2_type,
-                    self.atom3_type,
-                )
-            ]
-        )
-
-
-@dataclass
-class ThreeAngle(Angle):
-    theta: float
-    angle_k: float
-
-
-@dataclass
-class CheckedThreeAngle(Angle):
-    cut_angle: float
-    min_angle: float
-    max_angle: float
-    angle_k: float
-
-
-@dataclass
-class Torsion:
-    atom1_type: str
-    atom2_type: str
-    atom3_type: str
-    atom4_type: str
-    n: int
-    k: float
-    phi0: float
-
-    def get_types(self):
-        return tuple(
-            sorted(
-                [
-                    i
-                    for i in (
-                        self.atom1_type,
-                        self.atom2_type,
-                        self.atom3_type,
-                        self.atom4_type,
-                    )
-                ]
-            )
-        )
-
-    def get_unsortedtypes(self):
-        return tuple(
-            [
-                i
-                for i in (
-                    self.atom1_type,
-                    self.atom2_type,
-                    self.atom3_type,
-                    self.atom4_type,
-                )
-            ]
-        )
 
 
 class CGGulpOptimizer:
@@ -222,21 +97,6 @@ class CGGulpOptimizer:
                 run_data["final_gnorm"] = gnorm
 
         return run_data
-
-    def define_bond_potentials(self):
-        raise NotImplementedError()
-
-    def define_angle_potentials(self):
-        raise NotImplementedError()
-
-    def define_torsion_potentials(self):
-        torsions = ()
-        new_torsions = self._update_torsions(torsions)
-
-        return IntSet(new_torsions)
-
-    def define_vdw_potentials(self):
-        raise NotImplementedError()
 
     def _get_coord_mass_string(self, mol):
         coord_string = "cartesian\n"
@@ -470,81 +330,6 @@ class CGGulpOptimizer:
         logging.info(f"OPT: fixing {count} guest beads.")
         return string
 
-    def _update_bonds(self, bonds):
-        new_bonds = []
-        for bond in bonds:
-            bond_type = bond.get_unsortedtypes()
-            if bond_type in self._param_pool["bonds"]:
-                k, r = self._param_pool["bonds"][bond_type]
-                nbond = HarmBond(bond.atom1_type, bond.atom2_type, r, k)
-                new_bonds.append(nbond)
-            else:
-                new_bonds.append(bond)
-
-        new_bonds = tuple(new_bonds)
-        return new_bonds
-
-    def _update_angles(self, angles):
-        new_angles = []
-        for angle in angles:
-            angle_type = angle.get_unsortedtypes()
-            if angle_type in self._param_pool["angles"]:
-                k, theta = self._param_pool["angles"][angle_type]
-                nangle = ThreeAngle(
-                    angle.atom1_type,
-                    angle.atom2_type,
-                    angle.atom3_type,
-                    theta,
-                    k,
-                )
-                new_angles.append(nangle)
-            else:
-                new_angles.append(angle)
-
-        new_angles = tuple(new_angles)
-        return new_angles
-
-    def _update_torsions(self, torsions):
-        new_torsions = []
-        for torsion in torsions:
-            torsion_type = torsion.get_unsortedtypes()
-            if torsion_type in self._param_pool["torsions"]:
-                n, k, phi0 = self._param_pool["torsions"][torsion_type]
-                ntorsion = Torsion(
-                    torsion.atom1_type,
-                    torsion.atom2_type,
-                    torsion.atom3_type,
-                    torsion.atom4_type,
-                    n=n,
-                    k=k,
-                    phi0=phi0,
-                )
-                new_torsions.append(ntorsion)
-            else:
-                new_torsions.append(torsion)
-
-        new_torsions = tuple(new_torsions)
-        return new_torsions
-
-    def _update_pairs(self, pairs):
-        new_pairs = []
-        for pair in pairs:
-            pair_type = pair.get_unsortedtypes()
-            if pair_type in self._param_pool["pairs"]:
-                epsilon, sigma = self._param_pool["pairs"][pair_type]
-                npair = LennardJones(
-                    pair.atom1_type,
-                    pair.atom2_type,
-                    epsilon,
-                    sigma,
-                )
-                new_pairs.append(npair)
-            else:
-                new_pairs.append(pair)
-
-        new_pairs = tuple(new_pairs)
-        return new_pairs
-
     def _write_gulp_input(self, mol):
         if self._conjugate_gradient:
             top_string = "opti conj unit conv cartesian\n"
@@ -580,9 +365,20 @@ class CGGulpOptimizer:
 
 
 class CGGulpMD(CGGulpOptimizer):
-    def __init__(self, fileprefix, output_dir, param_pool):
+    def __init__(
+        self,
+        fileprefix,
+        output_dir,
+        param_pool,
+        bonds,
+        angles,
+        torsions,
+        vdw,
+    ):
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
+        self._param_pool = {i.element_string: i for i in param_pool}
 
-        super().__init__(fileprefix, output_dir, param_pool)
         self._gulp_in = os.path.join(
             self._output_dir, f"{self._fileprefix}_md.gin"
         )
@@ -598,13 +394,28 @@ class CGGulpMD(CGGulpOptimizer):
         self._output_xyz = os.path.join(
             self._output_dir, f"{self._fileprefix}_final.xyz"
         )
+        self._input_xyz_template = os.path.join(
+            self._output_dir, f"{self._fileprefix}_temp.xyz"
+        )
+        self._mass = 1
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+        self._lj_cutoff = 10
+        self._vdw_on_types = tuple(
+            i.element_string for i in guest_beads()
+        )
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
 
         self._integrator = "stochastic"
         self._ensemble = "nvt"
-        self._temperature = 100
+        self._temperature = 10
         self._equilbration = 1.0
-        self._production = 10.0
-        self._timestep = 1.0
+        self._production = 20.0
+        self._timestep = 0.5
         self._N_conformers = 20
         samples = float(self._production) / float(self._N_conformers)
         self._sample = samples
@@ -618,9 +429,9 @@ class CGGulpMD(CGGulpOptimizer):
                 atom_types.append(line.rstrip().split(" ")[0])
         return atom_types
 
-    def _convert_traj_to_xyz(self, input_xyz_template, output_traj):
+    def _convert_traj_to_xyz(self, output_traj):
 
-        atom_types = self.get_xyz_atom_types(input_xyz_template)
+        atom_types = self.get_xyz_atom_types(self._input_xyz_template)
 
         # Read in lines from trajectory file.
         with open(output_traj, "r") as f:
@@ -696,7 +507,12 @@ class CGGulpMD(CGGulpOptimizer):
 
     def _calculate_lowest_energy_conformer(self, trajectory_data):
         energies = [trajectory_data[ts]["E"] for ts in trajectory_data]
-        min_energy = min(energies)
+        try:
+            min_energy = min(energies)
+        except ValueError:
+            raise MDEmptyTrajcetoryError(
+                "MD failed to complete. Trajectory empty."
+            )
         min_ts = list(trajectory_data.keys())[
             energies.index(min_energy)
         ]
@@ -727,11 +543,10 @@ class CGGulpMD(CGGulpOptimizer):
         with open(filename, "w") as f:
             f.write(xyz_string)
 
-    def extract_gulp(self, input_xyz_template):
+    def extract_gulp(self):
 
         # Convert GULP trajectory file to xyz trajectory.
         atom_types, t_data, xyz_lines = self._convert_traj_to_xyz(
-            input_xyz_template=input_xyz_template,
             output_traj=self._output_traj,
         )
         # Write XYZ trajectory file.
@@ -784,8 +599,7 @@ class CGGulpMD(CGGulpOptimizer):
             f.write(settings_string)
 
     def optimize(self, molecule):
-        input_xyz_template = "gulp_template.xyz"
-        molecule.write(input_xyz_template)
+        molecule.write(self._input_xyz_template)
         self._write_gulp_input(mol=molecule)
         self._run_gulp()
-        return self.extract_gulp(input_xyz_template)
+        return self.extract_gulp()
