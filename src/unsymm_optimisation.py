@@ -14,6 +14,7 @@ import stk
 import itertools
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import networkx as nx
 import os
 import json
 from rdkit.Chem import AllChem as rdkit
@@ -729,7 +730,12 @@ def get_present_beads(c2_bbname):
     return present_beads_names
 
 
-def phase_space_1(cage_set_data, figure_output, m2l4_2_beads):
+def phase_space_1(
+    cage_set_data,
+    figure_output,
+    bead_library,
+    ligand_data,
+):
     fig, axs = plt.subplots(
         ncols=2,
         sharey=True,
@@ -758,11 +764,11 @@ def phase_space_1(cage_set_data, figure_output, m2l4_2_beads):
         present_beads_names = get_present_beads(cs)
 
         theta1 = get_CGBead_from_string(
-            present_beads_names[1], m2l4_2_beads
+            present_beads_names[1], bead_library
         ).angle_centered
 
         theta2 = get_CGBead_from_string(
-            present_beads_names[2], m2l4_2_beads
+            present_beads_names[2], bead_library
         ).angle_centered
 
         min_energy = 1e24
@@ -858,6 +864,29 @@ def phase_space_1(cage_set_data, figure_output, m2l4_2_beads):
         label="flat",
     )
 
+    lmarker = {1: "X", 2: "P"}
+    lcolour = {0: "gold", 1: "r"}
+    for i in ligand_data:
+        ldata = ligand_data[i]
+        x = min((ldata["angle1"], ldata["angle2"]))
+        y = max((ldata["angle1"], ldata["angle2"]))
+        c = lcolour[ldata["result"][1]]
+        m = lmarker[ldata["result"][0]]
+        axs[0].scatter(
+            x,
+            y,
+            c=c,
+            marker=m,
+            s=50,
+        )
+        axs[1].scatter(
+            x,
+            y,
+            c=c,
+            marker=m,
+            s=50,
+        )
+
     axs[0].tick_params(axis="both", which="major", labelsize=16)
     axs[0].set_xlabel("theta1", fontsize=16)
     axs[0].set_ylabel("theta2", fontsize=16)
@@ -885,6 +914,7 @@ def phase_space_2(
     cage_set_data,
     figure_output,
     bead_library,
+    ligand_data,
 ):
     fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -996,6 +1026,17 @@ def phase_space_2(
         label="flat",
     )
 
+    lcolour = {0: "gold", 1: "r"}
+    for i in ligand_data:
+        ldata = ligand_data[i]
+        x = ldata["extension"]
+        c = lcolour[ldata["result"][1]]
+        ax.axvline(
+            x,
+            c=c,
+            lw=2,
+        )
+
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("geom. mismatch", fontsize=16)
     ax.set_ylabel("cis preference", fontsize=16)
@@ -1011,7 +1052,12 @@ def phase_space_2(
     plt.close()
 
 
-def phase_space_3(cage_set_data, figure_output, bead_library):
+def phase_space_3(
+    cage_set_data,
+    figure_output,
+    bead_library,
+    ligand_data,
+):
     fig, axs = plt.subplots(
         ncols=2,
         sharey=True,
@@ -1123,6 +1169,7 @@ def phase_space_3(cage_set_data, figure_output, bead_library):
         marker="s",
         label=f"mixed ({isomer_energy}eV)",
     )
+
     axs[0].tick_params(axis="both", which="major", labelsize=16)
     axs[0].set_xlabel("distance ratio", fontsize=16)
     axs[0].set_ylabel("theta", fontsize=16)
@@ -1142,7 +1189,7 @@ def phase_space_3(cage_set_data, figure_output, bead_library):
     plt.close()
 
 
-def unsymm_1():
+def unsymm_1(ligand_data):
     struct_output = unsymm() / "structures"
     check_directory(struct_output)
     figure_output = unsymm() / "figures"
@@ -1253,10 +1300,15 @@ def unsymm_1():
 
             cage_set_data[c2blk][vastr] = symm_data
 
-    phase_space_1(cage_set_data, figure_output, m2l4_2_beads)
+    phase_space_1(
+        cage_set_data,
+        figure_output,
+        full_bead_library,
+        ligand_data,
+    )
 
 
-def unsymm_2():
+def unsymm_2(ligand_data):
     struct_output = unsymm() / "structures"
     check_directory(struct_output)
     figure_output = unsymm() / "figures"
@@ -1370,10 +1422,11 @@ def unsymm_2():
         cage_set_data,
         figure_output,
         full_bead_library,
+        ligand_data,
     )
 
 
-def unsymm_3():
+def unsymm_3(ligand_data):
     struct_output = unsymm() / "structures"
     check_directory(struct_output)
     figure_output = unsymm() / "figures"
@@ -1570,7 +1623,142 @@ def unsymm_3():
         cage_set_data,
         figure_output,
         full_bead_library,
+        ligand_data,
     )
+
+
+def get_a_ligand(cage, metal_atom_nos):
+
+    # Produce a graph from the cage that does not include metals.
+    cage_g = nx.Graph()
+    atom_ids_in_G = set()
+    for atom in cage.get_atoms():
+        if atom.get_atomic_number() in metal_atom_nos:
+            continue
+        cage_g.add_node(atom)
+        atom_ids_in_G.add(atom.get_id())
+
+    # Add edges.
+    for bond in cage.get_bonds():
+        a1id = bond.get_atom1().get_id()
+        a2id = bond.get_atom2().get_id()
+        if a1id in atom_ids_in_G and a2id in atom_ids_in_G:
+            cage_g.add_edge(bond.get_atom1(), bond.get_atom2())
+
+    # Get disconnected subgraphs as molecules.
+    # Sort and sort atom ids to ensure molecules are read by RDKIT
+    # correctly.
+    connected_graphs = [
+        sorted(subgraph, key=lambda a: a.get_id())
+        for subgraph in sorted(nx.connected_components(cage_g))
+    ]
+    for i, cg in enumerate(connected_graphs):
+        # Get atoms from nodes.
+        atoms = list(cg)
+        atom_ids = [i.get_id() for i in atoms]
+        cage.write("temporary_linker.mol", atom_ids=atom_ids)
+        temporary_linker = stk.BuildingBlock.init_from_file(
+            "temporary_linker.mol"
+        )
+        os.system("rm temporary_linker.mol")
+
+        return temporary_linker
+
+
+def extract_experimental_values():
+    struct_input = unsymm() / "experimentals" / "ligands"
+    fgs = (
+        stk.SmartsFunctionalGroupFactory(
+            smarts="[#6]~[#7X2]~[#6]",
+            bonders=(1,),
+            deleters=(),
+        ),
+    )
+    results_dict = {
+        # study (1,2), self-sort (0=yes)
+        "3D1_C": (1, 1),
+        "4B1_C": (2, 0),
+        "4B3_C": (2, 1),
+        "4D2_C": (1, 0),
+        "5A1_C": (2, 0),
+        "5A3_C": (2, 0),
+        "5B4_C": (2, 0),
+        "5D1_C": (1, 0),
+        "5D3_C": (1, 0),
+    }
+
+    all_cages = struct_input.glob("*_optc.mol")
+    ligand_data = {}
+    for cage in all_cages:
+        ligand_name = str(cage.name).replace("_optc.mol", "")
+        print(ligand_name)
+        ligand_file = str(struct_input / f"{ligand_name}_l.mol")
+        anchor_file = str(struct_input / f"{ligand_name}_a.xyz")
+
+        struct = stk.BuildingBlock.init_from_file(str(cage))
+        ligand = get_a_ligand(cage=struct, metal_atom_nos=(46,))
+        ligand.write(ligand_file)
+
+        ligand = stk.BuildingBlock.init_from_molecule(
+            molecule=ligand,
+            functional_groups=fgs,
+        )
+        lposmat = ligand.get_position_matrix()
+        print(ligand.get_num_functional_groups())
+        position_set = {}
+        for i, fg in enumerate(ligand.get_functional_groups()):
+            (nitrogen,) = fg.get_bonders()
+            carbon1, carbon2 = (
+                i
+                for i in fg.get_atoms()
+                if i.get_id() != nitrogen.get_id()
+            )
+            print(fg)
+            print(nitrogen, carbon1, carbon2)
+            n_pos = lposmat[nitrogen.get_id()]
+            cc_centroid = ligand.get_centroid(
+                atom_ids=(carbon1.get_id(), carbon2.get_id())
+            )
+            print(n_pos, cc_centroid)
+            position_set[f"n{i}"] = n_pos
+            position_set[f"c{i}"] = cc_centroid
+
+        print(position_set)
+        with open(anchor_file, "w") as f:
+            f.write("4\n\n")
+            for i in position_set:
+                name = i[0].upper()
+                x, y, z = position_set[i]
+                f.write(f"{name} {x} {y} {z}\n")
+
+        angle1 = np.degrees(
+            angle_between(
+                v1=position_set["n0"] - position_set["c0"],
+                v2=position_set["c1"] - position_set["c0"],
+            )
+        )
+        angle2 = np.degrees(
+            angle_between(
+                v1=position_set["n1"] - position_set["c1"],
+                v2=position_set["c0"] - position_set["c1"],
+            )
+        )
+
+        print(angle1, angle2)
+        smaller_angle = min((angle1, angle2))
+
+        hyp = np.linalg.norm(position_set["n1"] - position_set["n0"])
+        extension = np.cos(np.radians(smaller_angle)) * hyp
+        print(extension)
+
+        ligand_data[ligand_name] = {
+            "angle1": angle1,
+            "angle2": angle2,
+            "extension": extension,
+            "result": results_dict[ligand_name],
+        }
+
+    return ligand_data
 
 
 def main():
@@ -1581,9 +1769,10 @@ def main():
     else:
         pass
 
-    unsymm_2()
-    unsymm_3()
-    unsymm_1()
+    ligand_data = extract_experimental_values()
+    unsymm_1(ligand_data)
+    unsymm_2(ligand_data)
+    unsymm_3(ligand_data)
 
     raise SystemExit()
 
