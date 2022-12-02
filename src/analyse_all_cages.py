@@ -11,6 +11,8 @@ Author: Andrew Tarzia
 
 import sys
 import os
+import stk
+import stko
 import json
 import logging
 import matplotlib as mpl
@@ -40,10 +42,10 @@ def topology_labels(short=False):
             "4+6(2)",
             "6+9",
             "8+12",
-            "M2L4",
-            "M3L6",
-            "M4L8",
-            "M6L12",
+            "2+4",
+            "3+6",
+            "4+8",
+            "6+12",
         )
     else:
         return (
@@ -52,10 +54,10 @@ def topology_labels(short=False):
             "FourPlusSix2",
             "SixPlusNine",
             "EightPlusTwelve",
-            "M2L4",
-            "M3L6",
-            "M4L8",
-            "M6L12",
+            "TwoPlusFour",
+            "ThreePlusSix",
+            "FourPlusEight",
+            "SixPlusTwelve",
         )
 
 
@@ -66,10 +68,10 @@ def convert_topo_to_label(topo_str):
         "FourPlusSix2": "4+6(2)",
         "SixPlusNine": "6+9",
         "EightPlusTwelve": "8+12",
-        "M2L4": "M2L4",
-        "M3L6": "M3L6",
-        "M4L8": "M4L8",
-        "M6L12": "M6L12",
+        "TwoPlusFour": "2+4",
+        "ThreePlusSix": "3+6",
+        "FourPlusEight": "4+8",
+        "SixPlusTwelve": "6+9",
         "mixed": "mixed",
     }[topo_str]
 
@@ -81,10 +83,10 @@ def topo_to_colormap():
         "FourPlusSix2": "#DD1C1A",
         "SixPlusNine": "#320E3B",
         "EightPlusTwelve": "#CE7B91",
-        "M2L4": "#6969B3",
-        "M3L6": "#B279A7",
-        "M4L8": "#C3423F",
-        "M6L12": "#9BC53D",
+        "TwoPlusFour": "#6969B3",
+        "ThreePlusSix": "#B279A7",
+        "FourPlusEight": "#C3423F",
+        "SixPlusTwelve": "#9BC53D",
     }
 
 
@@ -105,10 +107,10 @@ def cltypetopo_to_colormap():
             "EightPlusTwelve": "#17becf",
         },
         "4C1": {
-            "M2L4": "#aec7e8",
-            "M3L6": "#ffbb78",
-            "M4L8": "#98df8a",
-            "M6L12": "#ff9896",
+            "TwoPlusFour": "#aec7e8",
+            "ThreePlusSix": "#ffbb78",
+            "FourPlusEight": "#98df8a",
+            "SixPlusTwelve": "#ff9896",
         },
         "mixed": {
             "2": "#7b4173",
@@ -182,10 +184,10 @@ def map_cltype_to_shapetopology():
             "8": "EightPlusTwelve",
         },
         "4C1": {
-            "b": "M2L4",
-            "4": "M4L8",
-            "3": "M3L6",
-            "6": "M6L12",
+            "b": "TwoPlusFour",
+            "4": "ThreePlusSix",
+            "3": "FourPlusEight",
+            "6": "SixPlusTwelve",
         },
     }
 
@@ -198,10 +200,10 @@ def mapshape_to_topology(reverse=False):
             "FourPlusSix2": "T-4b",
             "SixPlusNine": "TPR-6",
             "EightPlusTwelve": "CU-8",
-            "M2L4": "OC-6b",
-            "M3L6": "TP-3",
-            "M4L8": "SP-4",
-            "M6L12": "OC-6",
+            "TwoPlusFour": "OC-6b",
+            "ThreePlusSix": "TP-3",
+            "FourPlusEight": "SP-4",
+            "SixPlusTwelve": "OC-6",
         }
     else:
         return {
@@ -210,10 +212,10 @@ def mapshape_to_topology(reverse=False):
             "T-4b": "FourPlusSix2",
             "TPR-6": "SixPlusNine",
             "CU-8": "EightPlusTwelve",
-            "OC-6b": "M2L4",
-            "TP-3": "M3L6",
-            "SP-4": "M4L8",
-            "OC-6": "M6L12",
+            "OC-6b": "TwoPlusFour",
+            "TP-3": "ThreePlusSix",
+            "SP-4": "FourPlusEight",
+            "OC-6": "SixPlusTwelve",
         }
 
 
@@ -298,6 +300,80 @@ def identity_distributions(all_data, figure_output):
     fig.tight_layout()
     fig.savefig(
         os.path.join(figure_output, "all_bb_dists.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def rmsd_distributions(all_data, calculation_dir, figure_output):
+
+    rmsd_file = calculation_dir / "all_rmsds.json"
+
+    if os.path.exists(rmsd_file):
+        with open(rmsd_file, "r") as f:
+            data = json.load(f)
+    else:
+        data = {}
+        for o1 in calculation_dir.glob("*_opted1.mol"):
+            if o1.name[0] in ("2", "3", "4"):
+                continue
+
+            o1 = str(o1)
+            o2 = o1.replace("opted1", "opted2")
+            o3 = o1.replace("opted1", "opted3")
+            try:
+                mol1 = stk.BuildingBlock.init_from_file(o1)
+                mol2 = stk.BuildingBlock.init_from_file(o2)
+                mol3 = stk.BuildingBlock.init_from_file(o3)
+            except OSError:
+                pass
+            rmsd_calc = stko.RmsdCalculator(mol1)
+            rmsd_calc2 = stko.RmsdCalculator(mol2)
+            try:
+                rmsd2 = rmsd_calc.get_results(mol2).get_rmsd()
+                rmsd3 = rmsd_calc.get_results(mol3).get_rmsd()
+                rmsd4 = rmsd_calc2.get_results(mol3).get_rmsd()
+
+            except stko.DifferentMoleculeException:
+                logging.info(f"fail for {o1}, {o2}, {o3}")
+            data[o1] = (rmsd2, rmsd3, rmsd4)
+
+        with open(rmsd_file, "w") as f:
+            json.dump(data, f)
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    ax.hist(
+        [i[0] for i in data.values() if i[0] < 10],
+        bins=50,
+        alpha=0.5,
+        edgecolor="k",
+        label="opt1->MD",
+    )
+    ax.hist(
+        [i[1] for i in data.values() if i[1] < 10],
+        bins=50,
+        alpha=0.5,
+        edgecolor="k",
+        label="opt1->opt2",
+    )
+    ax.hist(
+        [i[2] for i in data.values() if i[2] < 10],
+        bins=50,
+        alpha=0.5,
+        edgecolor="k",
+        label="MD->opt2",
+    )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("RMSD [A]", fontsize=16)
+    ax.set_ylabel("count", fontsize=16)
+    ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "all_rmsds.pdf"),
         dpi=720,
         bbox_inches="tight",
     )
@@ -1476,6 +1552,151 @@ def phase_space_9(bb_data, figure_output):
         plt.close()
 
 
+def phase_space_10(bb_data, figure_output):
+
+    bead_library = (
+        arm_2c_beads() + core_2c_beads() + beads_3c() + beads_4c()
+    )
+
+    input_dict = {}
+    data_dict = {}
+    for bb_pair in bb_data:
+        b_dict = bb_data[bb_pair]
+        cl_bbname = bb_pair[1]
+        c2_bbname = bb_pair[0]
+        bb_string = f"{cl_bbname}_{c2_bbname}"
+
+        present_c2_beads = get_present_beads(c2_bbname)
+        present_cl_beads = get_present_beads(cl_bbname)
+
+        cltopo = int(cl_bbname[0])
+        if cltopo == 4:
+            clangle = 90
+        else:
+            clangle = get_CGBead_from_string(
+                present_cl_beads[0],
+                bead_library,
+            ).angle_centered
+
+        row = {
+            "cltopo": cltopo,
+            "clsigma": get_CGBead_from_string(
+                present_cl_beads[0],
+                bead_library,
+            ).sigma,
+            "clangle": clangle,
+            "c2sigma": get_CGBead_from_string(
+                present_c2_beads[0],
+                bead_library,
+            ).sigma,
+            "c2angle": (
+                get_CGBead_from_string(
+                    present_c2_beads[1],
+                    bead_library,
+                ).angle_centered
+                - 90
+            )
+            * 2,
+        }
+
+        input_dict[bb_string] = row
+        data_dict[bb_string] = b_dict
+
+    data_array = pd.DataFrame.from_dict(
+        data_dict,
+        orient="index",
+    ).reset_index()
+    print(data_array.head())
+
+    input_array = pd.DataFrame.from_dict(
+        input_dict,
+        orient="index",
+    ).reset_index()
+    print(input_array.head())
+    target_row_names = list(row.keys())
+    # Separating out the features
+    x = input_array.loc[:, target_row_names].values
+    # Standardizing the features
+    x = StandardScaler().fit_transform(x)
+    pca = PCA(n_components=2)
+    pcs = pca.fit_transform(x)
+    pc_df = pd.DataFrame(
+        data=pcs,
+        columns=["pc1", "pc2"],
+    )
+
+    properties = (
+        "clangle",
+        "c2sigma",
+        "c2angle",
+    )
+
+    for prop in properties:
+        fig, ax = plt.subplots(figsize=(8, 5))
+
+        categories = {}
+        for i, prop_set in enumerate(set(input_array[prop])):
+            categories[prop_set] = len(
+                input_array[input_array[prop] == prop_set]
+            )
+
+        ax.bar(
+            categories.keys(),
+            categories.values(),
+            # color="#06AED5",
+            color="#086788",
+            # color="#DD1C1A",
+            # color="#320E3B",
+            edgecolor="k",
+        )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel(prop, fontsize=16)
+        ax.set_ylabel("count", fontsize=16)
+
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"dist_10_{prop}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+        fig, ax = plt.subplots(figsize=(8, 5))
+        ax.scatter(
+            pc_df["pc1"],
+            pc_df["pc2"],
+            c="k",
+            edgecolor="none",
+            s=60,
+            alpha=1.0,
+        )
+
+        for i, prop_set in enumerate(set(input_array[prop])):
+            ax.scatter(
+                pc_df["pc1"][input_array[prop] == prop_set],
+                pc_df["pc2"][input_array[prop] == prop_set],
+                # c=color_map[str(t_final)],
+                edgecolor="none",
+                s=20,
+                alpha=1.0,
+                label=f"{prop}: {prop_set}",
+            )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("pc1", fontsize=16)
+        ax.set_ylabel("pc2", fontsize=16)
+        ax.legend(fontsize=16)
+
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"ps_10_{prop}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
 def parity_1(bb_data, figure_output):
 
     x_target = ("T-4", "4", "FourPlusSix")
@@ -1578,6 +1799,11 @@ def main():
 
     logging.info(f"there are {len(all_data)} collected data")
     identity_distributions(all_data, figure_output)
+    rmsd_distributions(all_data, calculation_output, figure_output)
+    phase_space_10(bb_data, figure_output)
+
+    raise SystemExit()
+
     single_value_distributions(all_data, figure_output)
     shape_vector_distributions(all_data, figure_output)
     parity_1(bb_data, figure_output)
