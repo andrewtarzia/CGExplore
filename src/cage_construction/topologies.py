@@ -23,10 +23,10 @@ def cage_topology_options(fg_set):
         }
     if fg_set == "2p4":
         topologies = {
-            "TwoPlusFour": stk.cage.TwoPlusFour,
-            "ThreePlusSix": stk.cage.ThreePlusSix,
-            "FourPlusEight": stk.cage.FourPlusEight,
-            "SixPlusTwelve": stk.cage.SixPlusTwelve,
+            "TwoPlusFour": stk.cage.M2L4Lantern,
+            "ThreePlusSix": stk.cage.M3L6,
+            "FourPlusEight": stk.cage.M4L8,
+            "SixPlusTwelve": stk.cage.M6L12Cube,
         }
     if fg_set == "3p3":
         topologies = {
