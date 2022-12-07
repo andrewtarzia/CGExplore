@@ -33,6 +33,7 @@ class CGOptimizer:
     ):
         self._fileprefix = fileprefix
         self._output_dir = output_dir
+        raise SystemExit('param pool should depend on bead type or Bead')
         self._param_pool = {i.element_string: i for i in param_pool}
         self._bonds = bonds
         self._angles = angles
@@ -47,12 +48,8 @@ class CGOptimizer:
     def _yield_bonds(self, mol):
         if self._bonds is False:
             return ""
-        logging.info(
-            "OPT: you are not yet assigning different k values"
-        )
-        bond_k = 10
-        bonds = list(mol.get_bonds())
 
+        bonds = list(mol.get_bonds())
         for bond in bonds:
             atom1 = bond.get_atom1()
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
@@ -68,6 +65,10 @@ class CGOptimizer:
                     sigma1=cgbead1.sigma,
                     sigma2=cgbead2.sigma,
                 )
+                bond_k = lorentz_berthelot_sigma_mixing(
+                    sigma1=cgbead1.bond_k,
+                    sigma2=cgbead2.bond_k,
+                )
                 yield (name1, name2, bond_k, bond_r)
             except KeyError:
                 logging.info(
@@ -78,10 +79,6 @@ class CGOptimizer:
     def _yield_angles(self, mol):
         if self._angles is False:
             return ""
-        logging.info(
-            "OPT: you are not yet assigning different k values"
-        )
-        angle_k = 20
 
         angles = get_all_angles(mol)
         pos_mat = mol.get_position_matrix()
@@ -132,6 +129,7 @@ class CGOptimizer:
                     elif curr_angle >= cut_angle:
                         angle_theta = max_angle
 
+                angle_k = centre_cgbead.angle_k
                 yield (
                     centre_name,
                     outer_name1,

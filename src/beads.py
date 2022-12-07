@@ -129,6 +129,16 @@ class CgBead:
 
 
 @dataclass
+class NewCgBead:
+    element_string: str
+    bead_type: str
+    sigma: float
+    bond_k: float
+    angle_centered: Union[float, Tuple[float]]
+    angle_k: float
+
+
+@dataclass
 class GuestBead:
     element_string: str
     sigma: float
@@ -167,20 +177,16 @@ def sets_in_library(library, sigma=None, angle=None):
 
 def bead_library_check(bead_libraries):
     logging.info(f"there are {len(bead_libraries)} beads")
-    used_strings = tuple(i.element_string for i in bead_libraries)
-    counts = Counter(used_strings)
+    used_names = tuple(i.bead_type for i in bead_libraries)
+    counts = Counter(used_names)
     if any((i > 1 for i in counts.values())):
         raise ValueError(
             f"you used a bead twice in your library: {counts}"
         )
 
+    used_strings = tuple(i.element_string for i in bead_libraries)
     for string in used_strings:
         if string not in periodic_table():
             raise ValueError(
                 f"you used a bead not available in PoreMapper: {string}"
             )
-
-    unused_beads = tuple(
-        i for i in periodic_table() if i not in used_strings
-    )
-    logging.info(f"unused beads: {unused_beads}")

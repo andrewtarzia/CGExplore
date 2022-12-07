@@ -231,6 +231,7 @@ class Precursor:
 class FourC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
+        raise SystemExit("naming should be from type")
         self._name = f"4C0{bead.element_string}"
         four_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])([Br])[Br]",
@@ -259,6 +260,7 @@ class FourC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
+        raise SystemExit("naming should be from type")
         self._name = f"4C1{bead.element_string}{abead1.element_string}"
         factories = (stk.BromoFactory(placers=(0, 1)),)
         four_c_bb = stk.BuildingBlock(
@@ -300,6 +302,7 @@ class FourC1Arm(Precursor):
 class ThreeC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
+        raise SystemExit("naming should be from type")
         self._name = f"3C0{bead.element_string}"
         three_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])[Br]",
@@ -327,6 +330,7 @@ class ThreeC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
+        raise SystemExit("naming should be from type")
         self._name = f"3C1{bead.element_string}{abead1.element_string}"
         factories = (stk.BromoFactory(placers=(0, 1)),)
         three_c_bb = stk.BuildingBlock(
@@ -369,6 +373,7 @@ class ThreeC2Arm(Precursor):
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
+        raise SystemExit("naming should be from type")
         self._name = (
             f"3C2{bead.element_string}{abead1.element_string}"
             f"{abead2.element_string}"
@@ -417,6 +422,7 @@ class ThreeC2Arm(Precursor):
 class TwoC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
+        raise SystemExit("naming should be from type")
         self._name = f"2C0{bead.element_string}"
         core_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}][Br]",
@@ -438,6 +444,7 @@ class TwoC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
+        raise SystemExit("naming should be from type")
         self._name = f"2C1{bead.element_string}{abead1.element_string}"
         factories = (stk.BromoFactory(placers=(0, 1)),)
         core_c_bb = stk.BuildingBlock(
@@ -479,6 +486,7 @@ class TwoC2Arm(Precursor):
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
+        raise SystemExit("naming should be from type")
         self._name = (
             f"2C2{bead.element_string}{abead1.element_string}"
             f"{abead2.element_string}"
@@ -530,6 +538,7 @@ class TwoC3Arm(Precursor):
         self._abead1 = abead1
         self._abead2 = abead2
         self._abead3 = abead3
+        raise SystemExit("naming should be from type")
         self._name = (
             f"2C3{bead.element_string}{abead1.element_string}"
             f"{abead2.element_string}{abead3.element_string}"
@@ -586,6 +595,7 @@ class UnsymmLigand(Precursor):
         self._lhs_bead = lhs_bead
         self._rhs_bead = rhs_bead
         self._binder_bead = binder_bead
+        raise SystemExit("naming should be from type")
         self._name = (
             f"UL{centre_bead.element_string}{lhs_bead.element_string}"
             f"{rhs_bead.element_string}{binder_bead.element_string}"
@@ -636,6 +646,7 @@ class UnsymmBiteLigand(Precursor):
         self._lhs_bead = lhs_bead
         self._rhs_bead = rhs_bead
         self._binder_bead = binder_bead
+        raise SystemExit("naming should be from type")
         self._name = (
             f"BL{centre_bead.element_string}{lhs_bead.element_string}"
             f"{rhs_bead.element_string}{binder_bead.element_string}"
