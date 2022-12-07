@@ -71,8 +71,9 @@ def convert_topo_to_label(topo_str):
         "TwoPlusFour": "2+4",
         "ThreePlusSix": "3+6",
         "FourPlusEight": "4+8",
-        "SixPlusTwelve": "6+9",
+        "SixPlusTwelve": "6+12",
         "mixed": "mixed",
+        "unstable": "unstable",
     }[topo_str]
 
 
@@ -185,8 +186,8 @@ def map_cltype_to_shapetopology():
         },
         "4C1": {
             "b": "TwoPlusFour",
-            "4": "ThreePlusSix",
-            "3": "FourPlusEight",
+            "3": "ThreePlusSix",
+            "4": "FourPlusEight",
             "6": "SixPlusTwelve",
         },
     }
@@ -337,6 +338,7 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
 
             except stko.DifferentMoleculeException:
                 logging.info(f"fail for {o1}, {o2}, {o3}")
+
             data[o1] = (rmsd2, rmsd3, rmsd4)
 
         with open(rmsd_file, "w") as f:
@@ -823,13 +825,16 @@ def phase_space_3(bb_data, figure_output):
     flat_axs = axs.flatten()
 
     isomer_energy = 0.05
+    max_energy = 10
 
     topologies = map_cltype_to_shapetopology()
 
     sc_3c0 = {topologies["3C1"][i]: 0 for i in topologies["3C1"]}
     sc_3c0["mixed"] = 0
+    sc_3c0["unstable"] = 0
     sc_4c0 = {topologies["4C1"][i]: 0 for i in topologies["4C1"]}
     sc_4c0["mixed"] = 0
+    sc_4c0["unstable"] = 0
     for bb_pair in bb_data:
         bb_dict = bb_data[bb_pair]
         cl_bbname = bb_pair[1]
@@ -844,10 +849,12 @@ def phase_space_3(bb_data, figure_output):
         num_mixed = len(
             tuple(i for i in all_energies if i < isomer_energy)
         )
-        if num_mixed > 1:
+        min_energy = min(tuple(i[1] for i in bb_dict.values()))
+        if min_energy > max_energy:
+            topo_str = "unstable"
+        elif num_mixed > 1:
             topo_str = "mixed"
         else:
-            min_energy = min(tuple(i[1] for i in bb_dict.values()))
             min_e_dict = {
                 i: bb_dict[i]
                 for i in bb_dict
@@ -1554,147 +1561,276 @@ def phase_space_9(bb_data, figure_output):
 
 def phase_space_10(bb_data, figure_output):
 
+    t_map = map_cltype_to_shapetopology()
     bead_library = (
         arm_2c_beads() + core_2c_beads() + beads_3c() + beads_4c()
     )
 
-    input_dict = {}
-    data_dict = {}
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        cl_bbname = bb_pair[1]
-        c2_bbname = bb_pair[0]
-        bb_string = f"{cl_bbname}_{c2_bbname}"
+    isomer_energy = 0.05
+    max_energy = 10
+    for t_cltopo in (3, 4):
+        input_dict = {}
+        data_dict = {}
+        for bb_pair in bb_data:
+            b_dict = bb_data[bb_pair]
+            cl_bbname = bb_pair[1]
+            c2_bbname = bb_pair[0]
+            bb_string = f"{cl_bbname}_{c2_bbname}"
 
-        present_c2_beads = get_present_beads(c2_bbname)
-        present_cl_beads = get_present_beads(cl_bbname)
+            present_c2_beads = get_present_beads(c2_bbname)
+            present_cl_beads = get_present_beads(cl_bbname)
 
-        cltopo = int(cl_bbname[0])
-        if cltopo == 4:
-            clangle = 90
-        else:
-            clangle = get_CGBead_from_string(
-                present_cl_beads[0],
-                bead_library,
-            ).angle_centered
-
-        row = {
-            "cltopo": cltopo,
-            "clsigma": get_CGBead_from_string(
-                present_cl_beads[0],
-                bead_library,
-            ).sigma,
-            "clangle": clangle,
-            "c2sigma": get_CGBead_from_string(
-                present_c2_beads[0],
-                bead_library,
-            ).sigma,
-            "c2angle": (
-                get_CGBead_from_string(
-                    present_c2_beads[1],
+            cltopo = int(cl_bbname[0])
+            if cltopo != t_cltopo:
+                continue
+            if cltopo == 4:
+                clangle = 90
+                cltitle = "4C1"
+            elif cltopo == 3:
+                clangle = get_CGBead_from_string(
+                    present_cl_beads[0],
                     bead_library,
                 ).angle_centered
-                - 90
+                cltitle = "3C1"
+
+            all_energies = set(
+                b_dict[i][1] / int(i.rstrip("b")[-1]) for i in b_dict
             )
-            * 2,
+            num_mixed = len(
+                tuple(i for i in all_energies if i < isomer_energy)
+            )
+            if num_mixed > 1:
+                if num_mixed == 2:
+                    topology = "mixed (2)"
+                elif num_mixed > 2:
+                    topology = "mixed (>2)"
+                min_e_pore_rad = None
+
+            else:
+                min_energy = min(tuple(i[1] for i in b_dict.values()))
+                min_e_dict = {
+                    i: b_dict[i]
+                    for i in b_dict
+                    if b_dict[i][1] == min_energy
+                }
+                keys = list(min_e_dict.keys())
+                min_energy_topo = keys[0][-1]
+                min_e_pore_rad = min_e_dict[keys[0]][2]
+                topology = t_map[cltitle][min_energy_topo]
+
+                if min_energy > max_energy:
+                    topology = "unstable"
+
+            row = {
+                "cltopo": cltopo,
+                "clsigma": get_CGBead_from_string(
+                    present_cl_beads[0],
+                    bead_library,
+                ).sigma,
+                "clangle": clangle,
+                "c2sigma": get_CGBead_from_string(
+                    present_c2_beads[0],
+                    bead_library,
+                ).sigma,
+                "c2angle": (
+                    get_CGBead_from_string(
+                        present_c2_beads[1],
+                        bead_library,
+                    ).angle_centered
+                    - 90
+                )
+                * 2,
+                "pref_topology": topology,
+                "pref_topology_pore": min_e_pore_rad,
+            }
+
+            input_dict[bb_string] = row
+            data_dict[bb_string] = b_dict
+
+        data_array = pd.DataFrame.from_dict(
+            data_dict,
+            orient="index",
+        ).reset_index()
+        print(data_array.head())
+
+        input_array = pd.DataFrame.from_dict(
+            input_dict,
+            orient="index",
+        ).reset_index()
+        print(input_array.head())
+        target_row_names = (
+            "cltopo",
+            "clsigma",
+            "clangle",
+            "c2sigma",
+            "c2angle",
+        )
+        # Separating out the features
+        x = input_array.loc[:, target_row_names].values
+        # Standardizing the features
+        x = StandardScaler().fit_transform(x)
+        pca = PCA(n_components=2)
+        pcs = pca.fit_transform(x)
+        pc_df = pd.DataFrame(
+            data=pcs,
+            columns=["pc1", "pc2"],
+        )
+
+        properties = {
+            "clangle": "cat",
+            "c2sigma": "cat",
+            "c2angle": "cat",
+            "pref_topology": "cat",
+            "pref_topology_pore": "cts",
         }
 
-        input_dict[bb_string] = row
-        data_dict[bb_string] = b_dict
+        for prop in properties:
+            prop_type = properties[prop]
+            if prop_type == "cat":
+                fig, ax = plt.subplots(figsize=(8, 5))
 
-    data_array = pd.DataFrame.from_dict(
-        data_dict,
-        orient="index",
-    ).reset_index()
-    print(data_array.head())
+                categories = {}
+                for i, prop_set in enumerate(
+                    sorted(set(input_array[prop]))
+                ):
+                    categories[prop_set] = len(
+                        input_array[input_array[prop] == prop_set]
+                    )
 
-    input_array = pd.DataFrame.from_dict(
-        input_dict,
-        orient="index",
-    ).reset_index()
-    print(input_array.head())
-    target_row_names = list(row.keys())
-    # Separating out the features
-    x = input_array.loc[:, target_row_names].values
-    # Standardizing the features
-    x = StandardScaler().fit_transform(x)
-    pca = PCA(n_components=2)
-    pcs = pca.fit_transform(x)
-    pc_df = pd.DataFrame(
-        data=pcs,
-        columns=["pc1", "pc2"],
-    )
+                ax.bar(
+                    categories.keys(),
+                    categories.values(),
+                    # color="#06AED5",
+                    color="#086788",
+                    # color="#DD1C1A",
+                    # color="#320E3B",
+                    edgecolor="k",
+                )
 
-    properties = (
-        "clangle",
-        "c2sigma",
-        "c2angle",
-    )
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_xlabel(prop, fontsize=16)
+                ax.set_ylabel("count", fontsize=16)
 
-    for prop in properties:
-        fig, ax = plt.subplots(figsize=(8, 5))
+                fig.tight_layout()
+                fig.savefig(
+                    os.path.join(
+                        figure_output, f"dist_10_{t_cltopo}_{prop}.pdf"
+                    ),
+                    dpi=720,
+                    bbox_inches="tight",
+                )
+                plt.close()
 
-        categories = {}
-        for i, prop_set in enumerate(set(input_array[prop])):
-            categories[prop_set] = len(
-                input_array[input_array[prop] == prop_set]
-            )
+                fig, ax = plt.subplots(figsize=(8, 5))
+                ax.scatter(
+                    pc_df["pc1"],
+                    pc_df["pc2"],
+                    c="k",
+                    edgecolor="none",
+                    s=60,
+                    alpha=1.0,
+                )
 
-        ax.bar(
-            categories.keys(),
-            categories.values(),
-            # color="#06AED5",
-            color="#086788",
-            # color="#DD1C1A",
-            # color="#320E3B",
-            edgecolor="k",
-        )
+                for i, prop_set in enumerate(
+                    sorted(set(input_array[prop]))
+                ):
+                    ax.scatter(
+                        pc_df["pc1"][input_array[prop] == prop_set],
+                        pc_df["pc2"][input_array[prop] == prop_set],
+                        # c=color_map[str(t_final)],
+                        edgecolor="none",
+                        s=20,
+                        alpha=1.0,
+                        label=f"{prop}: {prop_set}",
+                    )
 
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(prop, fontsize=16)
-        ax.set_ylabel("count", fontsize=16)
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_xlabel("pc1", fontsize=16)
+                ax.set_ylabel("pc2", fontsize=16)
+                ax.legend(fontsize=16)
 
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"dist_10_{prop}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
+                fig.tight_layout()
+                fig.savefig(
+                    os.path.join(
+                        figure_output, f"ps_10_{t_cltopo}_{prop}.pdf"
+                    ),
+                    dpi=720,
+                    bbox_inches="tight",
+                )
+                plt.close()
+            elif prop_type == "cts":
+                fig, ax = plt.subplots(figsize=(8, 5))
 
-        fig, ax = plt.subplots(figsize=(8, 5))
-        ax.scatter(
-            pc_df["pc1"],
-            pc_df["pc2"],
-            c="k",
-            edgecolor="none",
-            s=60,
-            alpha=1.0,
-        )
+                ax.hist(
+                    x=list(input_array[prop]),
+                    bins=50,
+                    density=False,
+                    histtype="step",
+                    lw=3,
+                )
 
-        for i, prop_set in enumerate(set(input_array[prop])):
-            ax.scatter(
-                pc_df["pc1"][input_array[prop] == prop_set],
-                pc_df["pc2"][input_array[prop] == prop_set],
-                # c=color_map[str(t_final)],
-                edgecolor="none",
-                s=20,
-                alpha=1.0,
-                label=f"{prop}: {prop_set}",
-            )
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_xlabel(prop, fontsize=16)
+                ax.set_ylabel("count", fontsize=16)
 
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("pc1", fontsize=16)
-        ax.set_ylabel("pc2", fontsize=16)
-        ax.legend(fontsize=16)
+                fig.tight_layout()
+                fig.savefig(
+                    os.path.join(
+                        figure_output, f"dist_10_{t_cltopo}_{prop}.pdf"
+                    ),
+                    dpi=720,
+                    bbox_inches="tight",
+                )
+                plt.close()
 
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"ps_10_{prop}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
+                fig, ax = plt.subplots(figsize=(8, 5))
+                ax.scatter(
+                    pc_df["pc1"][pd.notna(input_array[prop])],
+                    pc_df["pc2"][pd.notna(input_array[prop])],
+                    c="k",
+                    edgecolor="none",
+                    s=60,
+                    alpha=1.0,
+                )
+
+                ax.scatter(
+                    pc_df["pc1"][pd.notna(input_array[prop])],
+                    pc_df["pc2"][pd.notna(input_array[prop])],
+                    c=list(
+                        input_array[pd.notna(input_array[prop])][prop]
+                    ),
+                    edgecolor="none",
+                    s=20,
+                    alpha=1.0,
+                    vmin=0,
+                    vmax=20,
+                    cmap="viridis",
+                )
+
+                cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+                cmap = mpl.cm.viridis
+                norm = mpl.colors.Normalize(vmin=0, vmax=20)
+                cbar = fig.colorbar(
+                    mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+                    cax=cbar_ax,
+                    orientation="vertical",
+                )
+                cbar.ax.tick_params(labelsize=16)
+                cbar.set_label(prop, fontsize=16)
+
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_xlabel("pc1", fontsize=16)
+                ax.set_ylabel("pc2", fontsize=16)
+
+                fig.tight_layout()
+                fig.savefig(
+                    os.path.join(
+                        figure_output, f"ps_10_{t_cltopo}_{prop}.pdf"
+                    ),
+                    dpi=720,
+                    bbox_inches="tight",
+                )
+                plt.close()
 
 
 def parity_1(bb_data, figure_output):
@@ -1789,6 +1925,8 @@ def main():
                 svb = sv + "b"
             elif "M2L4" in name:
                 svb = sv + "b"
+            elif "TwoPlusFour" in name:
+                svb = sv + "b"
             else:
                 svb = sv
             bb_data[bb_pair][svb] = (
@@ -1801,13 +1939,13 @@ def main():
     identity_distributions(all_data, figure_output)
     rmsd_distributions(all_data, calculation_output, figure_output)
     phase_space_10(bb_data, figure_output)
+    single_value_distributions(all_data, figure_output)
+    phase_space_3(bb_data, figure_output)
 
     raise SystemExit()
 
-    single_value_distributions(all_data, figure_output)
     shape_vector_distributions(all_data, figure_output)
     parity_1(bb_data, figure_output)
-    phase_space_3(bb_data, figure_output)
     phase_space_9(bb_data, figure_output)
     phase_space_1(bb_data, figure_output)
     phase_space_5(bb_data, figure_output)
