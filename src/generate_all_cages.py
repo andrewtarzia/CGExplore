@@ -515,6 +515,11 @@ def main():
         },
     }
 
+    custom_torsion_options = {
+        "ton": (0, 5),
+        "toff": None,
+    }
+
     for popn in populations:
         logging.info(f"building {popn} population...")
         popn_iterator = itertools.product(
@@ -524,39 +529,59 @@ def main():
         )
         count = 0
         for iteration in popn_iterator:
-            cage_topo_str, bb2_str, bbl_str = iteration
-            name = f"{cage_topo_str}_{bbl_str}_{bb2_str}"
-            cage = stk.ConstructedMolecule(
-                topology_graph=populations[popn]["t"][cage_topo_str](
-                    building_blocks=(
-                        populations[popn]["c2"][bb2_str],
-                        populations[popn]["cl"][bbl_str],
+            for custom_torsion in custom_torsion_options:
+                tname = custom_torsion
+                cage_topo_str, bb2_str, bbl_str = iteration
+                name = f"{cage_topo_str}_{bbl_str}_{bb2_str}_{tname}"
+                bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
+                bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
+
+                bead_set = bb2_bead_set.copy()
+                bead_set.update(bbl_bead_set)
+                if custom_torsion_options[custom_torsion] is None:
+                    custom_torsion_set = None
+                else:
+                    (c_key,) = (i for i in bead_set if i[0] == "c")
+                    (t_key_1,) = (i for i in bead_set if i[0] == "a")
+                    (t_key_2,) = (i for i in bead_set if i[0] == "b")
+                    custom_torsion_set = {
+                        (
+                            t_key_2,
+                            t_key_1,
+                            c_key,
+                            t_key_1,
+                            t_key_2,
+                        ): custom_torsion_options[custom_torsion],
+                    }
+                cage = stk.ConstructedMolecule(
+                    topology_graph=populations[popn]["t"][
+                        cage_topo_str
+                    ](
+                        building_blocks=(bb2, bbl),
                     ),
-                ),
-            )
-            try:
-                cage = optimise_cage(
+                )
+                try:
+                    cage = optimise_cage(
+                        molecule=cage,
+                        name=name,
+                        output_dir=calculation_output,
+                        bead_set=bead_set,
+                        custom_torsion_set=custom_torsion_set,
+                    )
+                except MDEmptyTrajcetoryError:
+                    continue
+                cage.write(str(struct_output / f"{name}_optc.mol"))
+                continue
+                analyse_cage(
                     molecule=cage,
                     name=name,
                     output_dir=calculation_output,
                     full_bead_library=full_bead_library,
                 )
-            except MDEmptyTrajcetoryError:
-                continue
-            cage.write(str(struct_output / f"{name}_optc.mol"))
-            raise SystemExit(
-                "go through everything, changing the bead librari and bbs"
-            )
-            analyse_cage(
-                molecule=cage,
-                name=name,
-                output_dir=calculation_output,
-                full_bead_library=full_bead_library,
-            )
-            count += 1
-            raise SystemExit(
-                "go through everything, changing the bead librari and bbs"
-            )
+                count += 1
+                raise SystemExit(
+                    "go through everything, changing the bead librari and bbs"
+                )
 
         logging.info(f"{count} {popn} cages built.")
 
