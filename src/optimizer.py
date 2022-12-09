@@ -148,8 +148,7 @@ class CGOptimizer:
     def _yield_torsions(self, mol):
         if self._torsions is False:
             return ""
-        logging.info("OPT: not setting torsion ks, ns yet.")
-        torsion_k = 1
+        logging.info("OPT: not setting torsion ns yet.")
         torsion_n = 1
 
         torsions = get_all_torsions(mol)
@@ -164,14 +163,20 @@ class CGOptimizer:
             atom3_estring = atom3.__class__.__name__
 
             try:
-                cgbead2 = self._param_pool[atom2_estring]
-                cgbead3 = self._param_pool[atom3_estring]
-
+                cgbead2 = self._get_cgbead_from_element(atom2_estring)
+                cgbead3 = self._get_cgbead_from_element(atom3_estring)
+                if cgbead2.dihedral_angle is None:
+                    continue
+                if cgbead3.dihedral_angle is None:
+                    continue
                 phi0 = lorentz_berthelot_sigma_mixing(
-                    sigma1=cgbead2.angle_centered,
-                    sigma2=cgbead3.angle_centered,
+                    sigma1=cgbead2.dihedral_angle,
+                    sigma2=cgbead3.dihedral_angle,
                 )
-
+                torsion_k = lorentz_berthelot_sigma_mixing(
+                    sigma1=cgbead2.dihedral_k,
+                    sigma2=cgbead3.dihedral_k,
+                )
                 yield (
                     name1,
                     name2,
@@ -183,10 +188,6 @@ class CGOptimizer:
                 )
 
             except KeyError:
-                logging.info(
-                    f"OPT: {(name1, name2, name3, name4)} "
-                    f"angle not assigned."
-                )
                 continue
 
     def _yield_nonbondeds(self, mol):
