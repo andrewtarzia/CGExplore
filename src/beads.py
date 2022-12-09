@@ -124,13 +124,6 @@ def string_to_atom_number(string):
 @dataclass
 class CgBead:
     element_string: str
-    sigma: float
-    angle_centered: Union[float, Tuple[float]]
-
-
-@dataclass
-class NewCgBead:
-    element_string: str
     bead_type: str
     sigma: float
     bond_k: float
