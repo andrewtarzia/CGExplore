@@ -221,6 +221,9 @@ class Precursor:
     def __init__(self):
         raise NotImplementedError()
 
+    def get_bead_set(self):
+        return self._bead_set
+
     def get_building_block(self):
         return self._building_block
 
@@ -231,16 +234,16 @@ class Precursor:
 class FourC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
-        raise SystemExit("naming should be from type")
-        self._name = f"4C0{bead.element_string}"
+        self._name = f"4C0{bead.bead_type}"
+        self._bead_set = {bead.bead_type: bead}
         four_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])([Br])[Br]",
             position_matrix=[
-                [-2, 0, 0],
-                [0, 0, 0],
-                [0, -2, 0],
-                [2, 0, 0],
-                [0, 2, 0],
+                [-2, 0, -1],
+                [0, 0, 1],
+                [0, -2, -1],
+                [2, 0, 1],
+                [0, 2, 1],
             ],
         )
 
@@ -260,18 +263,21 @@ class FourC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
-        raise SystemExit("naming should be from type")
-        self._name = f"4C1{bead.element_string}{abead1.element_string}"
+        self._name = f"4C1{bead.bead_type}{abead1.bead_type}"
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+        }
         factories = (stk.BromoFactory(placers=(0, 1)),)
         four_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])([Br])[Br]",
             functional_groups=factories,
             position_matrix=[
-                [-2, 0, 0],
-                [0, 0, 0],
-                [0, -2, 0],
-                [2, 0, 0],
-                [0, 2, 0],
+                [-2, 0, -1],
+                [0, 0, 1],
+                [0, -2, -1],
+                [2, 0, -1],
+                [0, 2, -1],
             ],
         )
         bb_tuple = (
@@ -302,8 +308,10 @@ class FourC1Arm(Precursor):
 class ThreeC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
-        raise SystemExit("naming should be from type")
-        self._name = f"3C0{bead.element_string}"
+        self._name = f"3C0{bead.bead_type}"
+        self._bead_set = {
+            bead.bead_type: bead,
+        }
         three_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])[Br]",
             position_matrix=[
@@ -330,8 +338,11 @@ class ThreeC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
-        raise SystemExit("naming should be from type")
-        self._name = f"3C1{bead.element_string}{abead1.element_string}"
+        self._name = f"3C1{bead.bead_type}{abead1.bead_type}"
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+        }
         factories = (stk.BromoFactory(placers=(0, 1)),)
         three_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])[Br]",
@@ -357,7 +368,7 @@ class ThreeC1Arm(Precursor):
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
             smarts=(
-                f"[{bead.element_string}]" f"[{abead1.element_string}]"
+                f"[{bead.element_string}][{abead1.element_string}]"
             ),
             bonders=(1,),
             deleters=(),
@@ -373,11 +384,14 @@ class ThreeC2Arm(Precursor):
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
-        raise SystemExit("naming should be from type")
         self._name = (
-            f"3C2{bead.element_string}{abead1.element_string}"
-            f"{abead2.element_string}"
+            f"3C2{bead.bead_type}{abead1.bead_type}{abead2.bead_type}"
         )
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+            abead2.bead_type: abead2,
+        }
         factories = (stk.BromoFactory(placers=(0, 1)),)
         three_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])[Br]",
@@ -422,8 +436,8 @@ class ThreeC2Arm(Precursor):
 class TwoC0Arm(Precursor):
     def __init__(self, bead):
         self._bead = bead
-        raise SystemExit("naming should be from type")
-        self._name = f"2C0{bead.element_string}"
+        self._name = f"2C0{bead.bead_type}"
+        self._bead_set = {bead.bead_type: bead}
         core_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}][Br]",
             position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
@@ -444,8 +458,11 @@ class TwoC1Arm(Precursor):
     def __init__(self, bead, abead1):
         self._bead = bead
         self._abead1 = abead1
-        raise SystemExit("naming should be from type")
-        self._name = f"2C1{bead.element_string}{abead1.element_string}"
+        self._name = f"2C1{bead.bead_type}{abead1.bead_type}"
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+        }
         factories = (stk.BromoFactory(placers=(0, 1)),)
         core_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}][Br]",
@@ -486,11 +503,14 @@ class TwoC2Arm(Precursor):
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
-        raise SystemExit("naming should be from type")
         self._name = (
-            f"2C2{bead.element_string}{abead1.element_string}"
-            f"{abead2.element_string}"
+            f"2C2{bead.bead_type}{abead1.bead_type}{abead2.bead_type}"
         )
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+            abead2.bead_type: abead2,
+        }
         factories = (stk.BromoFactory(placers=(0, 1)),)
         core_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}][Br]",
@@ -538,11 +558,16 @@ class TwoC3Arm(Precursor):
         self._abead1 = abead1
         self._abead2 = abead2
         self._abead3 = abead3
-        raise SystemExit("naming should be from type")
         self._name = (
-            f"2C3{bead.element_string}{abead1.element_string}"
-            f"{abead2.element_string}{abead3.element_string}"
+            f"2C3{bead.bead_type}{abead1.bead_type}"
+            f"{abead2.bead_type}{abead3.bead_type}"
         )
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+            abead2.bead_type: abead2,
+            abead3.bead_type: abead3,
+        }
         factories = (stk.BromoFactory(placers=(0, 1)),)
         core_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}][Br]",
@@ -595,11 +620,16 @@ class UnsymmLigand(Precursor):
         self._lhs_bead = lhs_bead
         self._rhs_bead = rhs_bead
         self._binder_bead = binder_bead
-        raise SystemExit("naming should be from type")
         self._name = (
-            f"UL{centre_bead.element_string}{lhs_bead.element_string}"
-            f"{rhs_bead.element_string}{binder_bead.element_string}"
+            f"UL{centre_bead.bead_type}{lhs_bead.bead_type}"
+            f"{rhs_bead.bead_type}{binder_bead.bead_type}"
         )
+        self._bead_set = {
+            centre_bead.bead_type: centre_bead,
+            lhs_bead.bead_type: lhs_bead,
+            rhs_bead.bead_type: rhs_bead,
+            binder_bead.bead_type: binder_bead,
+        }
 
         new_fgs = (
             stk.SmartsFunctionalGroupFactory(
@@ -646,11 +676,16 @@ class UnsymmBiteLigand(Precursor):
         self._lhs_bead = lhs_bead
         self._rhs_bead = rhs_bead
         self._binder_bead = binder_bead
-        raise SystemExit("naming should be from type")
         self._name = (
-            f"BL{centre_bead.element_string}{lhs_bead.element_string}"
-            f"{rhs_bead.element_string}{binder_bead.element_string}"
+            f"BL{centre_bead.bead_type}{lhs_bead.bead_type}"
+            f"{rhs_bead.bead_type}{binder_bead.bead_type}"
         )
+        self._bead_set = {
+            centre_bead.bead_type: centre_bead,
+            lhs_bead.bead_type: lhs_bead,
+            rhs_bead.bead_type: rhs_bead,
+            binder_bead.bead_type: binder_bead,
+        }
 
         new_fgs = (
             stk.SmartsFunctionalGroupFactory(
