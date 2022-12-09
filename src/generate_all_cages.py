@@ -31,196 +31,91 @@ from cage_construction.topologies import cage_topology_options
 
 from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
 
-from beads import CgBead, NewCgBead, bead_library_check
+from beads import CgBead, bead_library_check
+
+
+def produce_bead_library(
+    type_prefix,
+    element_string,
+    sigmas,
+    angles,
+    bond_ks,
+    angle_ks,
+):
+    return {
+        f"{type_prefix}{i}{j}{k}{l}": CgBead(
+            element_string=element_string,
+            bead_type=f"{type_prefix}{i}{j}{k}{l}",
+            sigma=sigma,
+            angle_centered=angle,
+            bond_k=bond_k,
+            angle_k=angle_k,
+        )
+        for (i, sigma), (j, angle), (k, bond_k), (
+            l,
+            angle_k,
+        ) in itertools.product(
+            enumerate(sigmas),
+            enumerate(angles),
+            enumerate(bond_ks),
+            enumerate(angle_ks),
+        )
+    }
 
 
 def core_2c_beads():
-    return (
-        CgBead("Ag", sigma=1.0, angle_centered=180),
-        CgBead("Bi", sigma=2.0, angle_centered=180),
-        CgBead("Ce", sigma=3.0, angle_centered=180),
-        CgBead("Eu", sigma=4.0, angle_centered=180),
-        CgBead("He", sigma=5.0, angle_centered=180),
-        CgBead("Lu", sigma=6.0, angle_centered=180),
-        CgBead("Zn", sigma=7.0, angle_centered=180),
+    return produce_bead_library(
+        type_prefix="c",
+        element_string="Ag",
+        sigmas=range(1, 10, 1),
+        angles=(180,),
+        bond_ks=(10,),
+        angle_ks=(20,),
     )
 
 
 def arm_2c_beads():
-    return (
-        CgBead("Al", sigma=1.0, angle_centered=90),
-        CgBead("As", sigma=1.0, angle_centered=100),
-        CgBead("Au", sigma=1.0, angle_centered=110),
-        CgBead("Ba", sigma=1.0, angle_centered=120),
-        CgBead("B", sigma=1.0, angle_centered=130),
-        CgBead("Ga", sigma=1.0, angle_centered=140),
-        CgBead("Gd", sigma=1.0, angle_centered=150),
-        CgBead("Ge", sigma=1.0, angle_centered=160),
-        CgBead("La", sigma=1.0, angle_centered=170),
-        CgBead("Mn", sigma=1.0, angle_centered=180),
+    return produce_bead_library(
+        type_prefix="a",
+        element_string="Ba",
+        sigmas=(1,),
+        angles=range(90, 181, 10),
+        bond_ks=(10,),
+        angle_ks=(20,),
     )
 
 
 def binder_beads():
-    return (CgBead("Pb", sigma=1.0, angle_centered=180),)
+    return produce_bead_library(
+        type_prefix="b",
+        element_string="Pb",
+        sigmas=(1,),
+        angles=(180,),
+        bond_ks=(10,),
+        angle_ks=(20,),
+    )
 
 
 def beads_3c():
-    return (
-        CgBead("Ac", sigma=1.0, angle_centered=120),
-        CgBead("Am", sigma=2.0, angle_centered=120),
-        CgBead("Cd", sigma=3.0, angle_centered=120),
-        CgBead("Cf", sigma=4.0, angle_centered=120),
-        CgBead("Cm", sigma=5.0, angle_centered=120),
-        CgBead("Co", sigma=6.0, angle_centered=120),
-        CgBead("Cu", sigma=7.0, angle_centered=120),
-        CgBead("Cr", sigma=8.0, angle_centered=120),
-        CgBead("C", sigma=9.0, angle_centered=120),
-        CgBead("Er", sigma=10.0, angle_centered=120),
-        CgBead("Fe", sigma=11.0, angle_centered=120),
-        CgBead("Hf", sigma=12.0, angle_centered=120),
-        CgBead("Ho", sigma=1.0, angle_centered=90),
-        CgBead("In", sigma=2.0, angle_centered=90),
-        CgBead("I", sigma=3.0, angle_centered=90),
-        CgBead("Ir", sigma=4.0, angle_centered=90),
-        CgBead("Lr", sigma=5.0, angle_centered=90),
-        CgBead("Md", sigma=6.0, angle_centered=90),
-        CgBead("Ni", sigma=7.0, angle_centered=90),
-        CgBead("No", sigma=8.0, angle_centered=90),
-        CgBead("Np", sigma=9.0, angle_centered=90),
-        CgBead("Pa", sigma=10.0, angle_centered=90),
-        CgBead("Po", sigma=11.0, angle_centered=90),
-        CgBead("Pr", sigma=12.0, angle_centered=90),
-        CgBead("Pu", sigma=1.0, angle_centered=60),
-        CgBead("P", sigma=2.0, angle_centered=60),
-        CgBead("Re", sigma=3.0, angle_centered=60),
-        CgBead("Rh", sigma=4.0, angle_centered=60),
-        CgBead("Se", sigma=5.0, angle_centered=60),
-        CgBead("Sm", sigma=6.0, angle_centered=60),
-        CgBead("S", sigma=7.0, angle_centered=60),
-        CgBead("Ti", sigma=8.0, angle_centered=60),
-        CgBead("Tm", sigma=9.0, angle_centered=60),
-        CgBead("V", sigma=10.0, angle_centered=60),
-        CgBead("Y", sigma=11.0, angle_centered=60),
-        CgBead("Zr", sigma=12.0, angle_centered=60),
+    return produce_bead_library(
+        type_prefix="n",
+        element_string="C",
+        sigmas=range(1, 16, 1),
+        angles=(60, 90, 109.5, 120),
+        bond_ks=(10,),
+        angle_ks=(20,),
     )
 
 
 def beads_4c():
-    return (
-        CgBead("Hg", sigma=1.0, angle_centered=(90, 180, 130)),
-        CgBead("Mo", sigma=2.0, angle_centered=(90, 180, 130)),
-        CgBead("Nd", sigma=3.0, angle_centered=(90, 180, 130)),
-        CgBead("Ne", sigma=4.0, angle_centered=(90, 180, 130)),
-        CgBead("Nb", sigma=5.0, angle_centered=(90, 180, 130)),
-        CgBead("Os", sigma=6.0, angle_centered=(90, 180, 130)),
-        CgBead("Pd", sigma=7.0, angle_centered=(90, 180, 130)),
-        CgBead("Pt", sigma=8.0, angle_centered=(90, 180, 130)),
-        CgBead("Ru", sigma=9.0, angle_centered=(90, 180, 130)),
-        CgBead("Si", sigma=10.0, angle_centered=(90, 180, 130)),
-        CgBead("Sn", sigma=11.0, angle_centered=(90, 180, 130)),
-        CgBead("Yb", sigma=12.0, angle_centered=(90, 180, 130)),
+    return produce_bead_library(
+        type_prefix="m",
+        element_string="Pd",
+        sigmas=range(1, 16, 1),
+        angles=((50, 130), (70, 130), (90, 130)),
+        bond_ks=(10,),
+        angle_ks=(20,),
     )
-
-
-def new_core_2c_beads():
-    sigmas = range(1, 10, 1)
-    angles = (180,)
-    bond_ks = (10,)
-    angle_ks = (20,)
-    return {
-        f"c{i}": NewCgBead(
-            element_string="Ag",
-            bead_type=f"c{i}",
-            sigma=sigma,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-        )
-        for i, (sigma, angle, bond_k, angle_k) in enumerate(
-            itertools.product(sigmas, angles, bond_ks, angle_ks)
-        )
-    }
-
-
-def new_arm_2c_beads():
-    sigmas = (1,)
-    angles = range(90, 181, 10)
-    bond_ks = (10,)
-    angle_ks = (20,)
-    return {
-        f"a{i}": NewCgBead(
-            element_string="Ba",
-            bead_type=f"a{i}",
-            sigma=sigma,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-        )
-        for i, (sigma, angle, bond_k, angle_k) in enumerate(
-            itertools.product(sigmas, angles, bond_ks, angle_ks)
-        )
-    }
-
-
-def new_binder_beads():
-    sigmas = (1,)
-    angles = (180,)
-    bond_ks = (10,)
-    angle_ks = (20,)
-    return {
-        f"b{i}": NewCgBead(
-            element_string="Pb",
-            bead_type=f"b{i}",
-            sigma=sigma,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-        )
-        for i, (sigma, angle, bond_k, angle_k) in enumerate(
-            itertools.product(sigmas, angles, bond_ks, angle_ks)
-        )
-    }
-
-
-def new_beads_3c():
-    sigmas = range(1, 16, 1)
-    angles = (60, 90, 109.5, 120)
-    bond_ks = (10,)
-    angle_ks = (20,)
-    return {
-        f"n{i}": NewCgBead(
-            element_string="C",
-            bead_type=f"n{i}",
-            sigma=sigma,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-        )
-        for i, (sigma, angle, bond_k, angle_k) in enumerate(
-            itertools.product(sigmas, angles, bond_ks, angle_ks)
-        )
-    }
-
-
-def new_beads_4c():
-    sigmas = range(1, 16, 1)
-    angles = ((50, 180, 130), (70, 180, 130), (90, 180, 130))
-    bond_ks = (10,)
-    angle_ks = (20,)
-    return {
-        f"m{i}": NewCgBead(
-            element_string="Pd",
-            bead_type=f"m{i}",
-            sigma=sigma,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-        )
-        for i, (sigma, angle, bond_k, angle_k) in enumerate(
-            itertools.product(sigmas, angles, bond_ks, angle_ks)
-        )
-    }
 
 
 def get_shape_calculation_molecule(const_mol, name):
