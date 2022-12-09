@@ -224,7 +224,7 @@ def get_shape_calculation_molecule(const_mol, name):
     return subset_molecule
 
 
-def optimise_ligand(molecule, name, output_dir, full_bead_library):
+def optimise_ligand(molecule, name, output_dir, bead_set):
 
     opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
@@ -237,9 +237,10 @@ def optimise_ligand(molecule, name, output_dir, full_bead_library):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=full_bead_library,
+            param_pool=bead_set,
             max_cycles=2000,
             conjugate_gradient=False,
+            custom_torsion_set=None,
             bonds=True,
             angles=True,
             torsions=False,
@@ -271,7 +272,13 @@ def check_long_distances(molecule, name, max_distance):
         )
 
 
-def optimise_cage(molecule, name, output_dir, full_bead_library):
+def optimise_cage(
+    molecule,
+    name,
+    output_dir,
+    bead_set,
+    custom_torsion_set,
+):
 
     opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
     mdr_xyz_file = os.path.join(output_dir, f"{name}_final.xyz")
@@ -287,7 +294,8 @@ def optimise_cage(molecule, name, output_dir, full_bead_library):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=full_bead_library,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
             max_cycles=2000,
             conjugate_gradient=False,
             bonds=True,
@@ -310,7 +318,8 @@ def optimise_cage(molecule, name, output_dir, full_bead_library):
         opt = CGGulpMD(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=full_bead_library,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
             bonds=True,
             angles=True,
             torsions=False,
@@ -328,7 +337,8 @@ def optimise_cage(molecule, name, output_dir, full_bead_library):
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=full_bead_library,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
             max_cycles=2000,
             conjugate_gradient=False,
             bonds=True,
@@ -373,7 +383,7 @@ def analyse_cage(molecule, name, output_dir, full_bead_library):
                 f"of {name}"
             )
 
-        raise SystemExit('fix shape calcualtion')
+        raise SystemExit("fix shape calcualtion")
         shape_mol = get_shape_calculation_molecule(molecule, name)
         shape_measures = ShapeMeasure(
             output_dir=(output_dir / f"{name}_shape"),
@@ -381,7 +391,7 @@ def analyse_cage(molecule, name, output_dir, full_bead_library):
             shape_string=None,
         ).calculate(shape_mol)
 
-        raise SystemExit('check pore calc will be matched to bead type')
+        raise SystemExit("check pore calc will be matched to bead type")
         opt_pore_data = PoreMeasure().calculate_pore(
             molecule=molecule,
             output_file=pm_output_file,
@@ -407,21 +417,18 @@ def build_building_block(
 ):
     blocks = {}
     for options in itertools.product(option1_lib, option2_lib):
-        print(options)
         option1 = option1_lib[options[0]]
         option2 = option2_lib[options[1]]
-        print(option1, option2)
         temp = topology(bead=option1, abead1=option2)
-        print(temp.get_name())
-        raise SystemExit()
+
         opt_bb = optimise_ligand(
             molecule=temp.get_building_block(),
             name=temp.get_name(),
             output_dir=calculation_output,
-            full_bead_library=full_bead_library,
+            bead_set=temp.get_bead_set(),
         )
         opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
-        blocks[temp.get_name()] = opt_bb
+        blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
     return blocks
 
 
@@ -447,11 +454,11 @@ def main():
     cage_4p2_topologies = cage_topology_options("2p4")
 
     # Define bead libraries.
-    beads_core_2c_lib = new_core_2c_beads()
-    beads_4c_lib = new_beads_4c()
-    beads_3c_lib = new_beads_3c()
-    beads_arm_2c_lib = new_arm_2c_beads()
-    beads_binder_lib = new_binder_beads()
+    beads_core_2c_lib = core_2c_beads()
+    beads_4c_lib = beads_4c()
+    beads_3c_lib = beads_3c()
+    beads_arm_2c_lib = arm_2c_beads()
+    beads_binder_lib = binder_beads()
     full_bead_library = (
         list(beads_3c_lib.values())
         + list(beads_4c_lib.values())
@@ -488,10 +495,6 @@ def main():
         calculation_output=calculation_output,
         ligand_output=ligand_output,
     )
-
-
-
-    raise SystemExit("fix angles for 4c BBs")
 
     logging.info(
         f"there are {len(c2_blocks)} 2-C and "
