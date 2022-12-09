@@ -12,20 +12,24 @@ Author: Andrew Tarzia
 import os
 import json
 import pore_mapper as pm
+import pywindow as pw
 
 
 class PoreMeasure:
     """
-    Uses PoreMapper [1]_ to calculare pore properties.
+    Uses PoreMapper [1]_ and pyWindow [2]_ to calculare pore properties.
 
     References
     ----------
     .. [1] https://andrewtarzia.github.io/posts/2021/11/poremapper-post/
 
+    .. [2] https://pubs.acs.org/doi/10.1021/acs.jcim.8b00490
+
     """
 
     def calculate_pore(self, molecule, output_file):
-        xyz_file = output_file.replace(".json", ".xyz")
+        xyz_file = output_file.replace(".json", "_h.xyz")
+        por_file = output_file.replace(".json", "_p.xyz")
         molecule.write(xyz_file)
 
         if os.path.exists(output_file):
@@ -56,4 +60,44 @@ class PoreMeasure:
         }
         with open(output_file, "w") as f:
             json.dump(pore_data, f)
+
+        pore.write_xyz_file(por_file)
         return pore_data
+
+    def calculate_pw(self, molecule, output_file):
+        xyz_file = output_file.replace(".json", ".xyz")
+
+        # Check if output file exists.
+        if not os.path.exists(output_file):
+            # Load cage into pywindow.
+            molecule.write(xyz_file)
+            pw_cage = pw.MolecularSystem.load_file(xyz_file)
+            pw_cage_mol = pw_cage.system_to_molecule()
+            os.system(f"rm {xyz_file}")
+
+            # Calculate pore size.
+            try:
+                pw_cage_mol.calculate_pore_diameter_opt()
+                pw_cage_mol.calculate_pore_volume_opt()
+                pw_cage_mol.calculate_windows()
+            except ValueError:
+                # Handle failure.
+                pw_cage_mol.properties["pore_volume_opt"] = 0
+                pw_cage_mol.properties["pore_diameter_opt"] = {
+                    "diameter": 0,
+                    "atom_1": 0,
+                    "centre_of_mass": [0, 0, 0],
+                }
+                pw_cage_mol.properties["windows"] = {
+                    "diameters": [],
+                    "centre_of_mass": [],
+                }
+
+            # Save files.
+            pw_cage_mol.dump_properties_json(output_file)
+
+        # Get data.
+        with open(output_file, "r") as f:
+            pw_data = json.load(f)
+
+        return pw_data
