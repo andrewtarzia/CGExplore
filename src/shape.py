@@ -10,10 +10,113 @@ Author: Andrew Tarzia
 """
 
 import subprocess as sp
+import stk
+import numpy as np
 import os
 import shutil
 
 from env_set import shape_path
+
+
+def get_shape_calculation_molecule(constructed_molecule, name):
+    splits = name.split("_")
+    topo_str = splits[0]
+    bbs = list(constructed_molecule.get_building_blocks())
+    old_position_matrix = constructed_molecule.get_position_matrix()
+
+    large_c_bb = bbs[0]
+    atoms = []
+    position_matrix = []
+
+    cl_name = splits[1]
+    cl_topo_str = cl_name[:3]
+    if cl_topo_str in ("3C1", "4C1"):
+        target_id = 1
+    else:
+        target_id = 0
+    for ai in constructed_molecule.get_atom_infos():
+        if ai.get_building_block() == large_c_bb:
+            # The atom to use is always the first in the building
+            # block.
+            if ai.get_building_block_atom().get_id() == target_id:
+                a = ai.get_atom()
+                new_atom = stk.Atom(
+                    id=len(atoms),
+                    atomic_number=a.get_atomic_number(),
+                    charge=a.get_charge(),
+                )
+                atoms.append(new_atom)
+                position_matrix.append(old_position_matrix[a.get_id()])
+
+    if topo_str in ("TwoPlusThree", "M2L4", "TwoPlusFour"):
+        c2_name = splits[2]
+        c2_topo_str = c2_name[:3]
+        if c2_topo_str == "2C0":
+            target_id = 1
+        else:
+            target_id = 0
+        two_c_bb = bbs[1]
+        for ai in constructed_molecule.get_atom_infos():
+            if ai.get_building_block() == two_c_bb:
+                # The atom to use is always the first in the building
+                # block.
+                if ai.get_building_block_atom().get_id() == target_id:
+                    a = ai.get_atom()
+                    new_atom = stk.Atom(
+                        id=len(atoms),
+                        atomic_number=a.get_atomic_number(),
+                        charge=a.get_charge(),
+                    )
+                    atoms.append(new_atom)
+                    position_matrix.append(
+                        old_position_matrix[a.get_id()]
+                    )
+
+    num_atoms = len(atoms)
+    if topo_str == "TwoPlusThree" and num_atoms != 5:
+        raise ValueError(
+            f"{topo_str} needs 5 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "FourPlusSix" and num_atoms != 4:
+        raise ValueError(
+            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "FourPlusSix2" and num_atoms != 4:
+        raise ValueError(
+            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "SixPlusNine" and num_atoms != 6:
+        raise ValueError(
+            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "EightPlusTwelve" and num_atoms != 8:
+        raise ValueError(
+            f"{topo_str} needs 8 atoms, not {num_atoms}; name={name}"
+        )
+
+    if topo_str == "M2L4" and num_atoms != 6:
+        raise ValueError(
+            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "M3L6" and num_atoms != 3:
+        raise ValueError(
+            f"{topo_str} needs 3 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "M4L8" and num_atoms != 4:
+        raise ValueError(
+            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
+        )
+    if topo_str == "M6L12" and num_atoms != 6:
+        raise ValueError(
+            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
+        )
+
+    subset_molecule = stk.BuildingBlock.init(
+        atoms=atoms,
+        bonds=(),
+        position_matrix=np.array(position_matrix),
+    )
+    return subset_molecule
 
 
 class ShapeMeasure:

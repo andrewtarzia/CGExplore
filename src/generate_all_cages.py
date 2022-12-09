@@ -14,10 +14,10 @@ import stk
 import os
 import json
 import logging
-import numpy as np
 import itertools
+from rdkit import RDLogger
 
-from shape import ShapeMeasure
+from shape import ShapeMeasure, get_shape_calculation_molecule
 from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory, get_atom_distance
@@ -116,112 +116,6 @@ def beads_4c():
         bond_ks=(10,),
         angle_ks=(20,),
     )
-
-
-def get_shape_calculation_molecule(const_mol, name):
-    splits = name.split("_")
-    topo_str = splits[0]
-    bbs = list(const_mol.get_building_blocks())
-    old_position_matrix = const_mol.get_position_matrix()
-
-    large_c_bb = bbs[0]
-    atoms = []
-    position_matrix = []
-    # print(name)
-
-    cl_name = splits[1]
-    cl_topo_str = cl_name[:3]
-    if cl_topo_str in ("3C1", "4C1"):
-        target_id = 1
-    else:
-        target_id = 0
-    for ai in const_mol.get_atom_infos():
-        if ai.get_building_block() == large_c_bb:
-            # The atom to use is always the first in the building
-            # block.
-            if ai.get_building_block_atom().get_id() == target_id:
-                a = ai.get_atom()
-                new_atom = stk.Atom(
-                    id=len(atoms),
-                    atomic_number=a.get_atomic_number(),
-                    charge=a.get_charge(),
-                )
-                atoms.append(new_atom)
-                position_matrix.append(old_position_matrix[a.get_id()])
-
-    if topo_str in ("TwoPlusThree", "M2L4", "TwoPlusFour"):
-        c2_name = splits[2]
-        c2_topo_str = c2_name[:3]
-        if c2_topo_str == "2C0":
-            target_id = 1
-        else:
-            target_id = 0
-        two_c_bb = bbs[1]
-        for ai in const_mol.get_atom_infos():
-            # print(two_c_bb == ai.get_building_block())
-            if ai.get_building_block() == two_c_bb:
-                # The atom to use is always the first in the building
-                # block.
-                # print(0, ai.get_building_block_atom().get_id())
-                if ai.get_building_block_atom().get_id() == target_id:
-                    a = ai.get_atom()
-                    new_atom = stk.Atom(
-                        id=len(atoms),
-                        atomic_number=a.get_atomic_number(),
-                        charge=a.get_charge(),
-                    )
-                    atoms.append(new_atom)
-                    position_matrix.append(
-                        old_position_matrix[a.get_id()]
-                    )
-
-    num_atoms = len(atoms)
-    # print(num_atoms)
-    # print(topo_str)
-    if topo_str == "TwoPlusThree" and num_atoms != 5:
-        raise ValueError(
-            f"{topo_str} needs 5 atoms, not {num_atoms}; name={name}"
-        )
-    if topo_str == "FourPlusSix" and num_atoms != 4:
-        raise ValueError(
-            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
-        )
-    if topo_str == "FourPlusSix2" and num_atoms != 4:
-        raise ValueError(
-            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
-        )
-    if topo_str == "SixPlusNine" and num_atoms != 6:
-        raise ValueError(
-            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
-        )
-    if topo_str == "EightPlusTwelve" and num_atoms != 8:
-        raise ValueError(
-            f"{topo_str} needs 8 atoms, not {num_atoms}; name={name}"
-        )
-
-    if topo_str == "M2L4" and num_atoms != 6:
-        raise ValueError(
-            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
-        )
-    if topo_str == "M3L6" and num_atoms != 3:
-        raise ValueError(
-            f"{topo_str} needs 3 atoms, not {num_atoms}; name={name}"
-        )
-    if topo_str == "M4L8" and num_atoms != 4:
-        raise ValueError(
-            f"{topo_str} needs 4 atoms, not {num_atoms}; name={name}"
-        )
-    if topo_str == "M6L12" and num_atoms != 6:
-        raise ValueError(
-            f"{topo_str} needs 6 atoms, not {num_atoms}; name={name}"
-        )
-
-    subset_molecule = stk.BuildingBlock.init(
-        atoms=atoms,
-        bonds=(),
-        position_matrix=np.array(position_matrix),
-    )
-    return subset_molecule
 
 
 def optimise_ligand(molecule, name, output_dir, bead_set):
@@ -354,20 +248,28 @@ def optimise_cage(
     return molecule
 
 
-def analyse_cage(molecule, name, output_dir, full_bead_library):
+def analyse_cage(
+    molecule,
+    name,
+    output_dir,
+    custom_torsion_set,
+    bead_set,
+):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
     # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
-    pm_output_file = os.path.join(output_dir, f"{name}_opted.json")
+    pm_output_file = os.path.join(output_dir, f"{name}_pm.json")
 
     if os.path.exists(output_file):
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
+        logging.info(f"analysing {name} into {output_file}")
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=full_bead_library,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
             bonds=True,
             angles=True,
             torsions=False,
@@ -383,15 +285,12 @@ def analyse_cage(molecule, name, output_dir, full_bead_library):
                 f"of {name}"
             )
 
-        raise SystemExit("fix shape calcualtion")
-        shape_mol = get_shape_calculation_molecule(molecule, name)
         shape_measures = ShapeMeasure(
             output_dir=(output_dir / f"{name}_shape"),
             target_atmnums=None,
             shape_string=None,
-        ).calculate(shape_mol)
+        ).calculate(get_shape_calculation_molecule(molecule, name))
 
-        raise SystemExit("check pore calc will be matched to bead type")
         opt_pore_data = PoreMeasure().calculate_pore(
             molecule=molecule,
             output_file=pm_output_file,
@@ -553,6 +452,7 @@ def main():
                             t_key_2,
                         ): custom_torsion_options[custom_torsion],
                     }
+
                 cage = stk.ConstructedMolecule(
                     topology_graph=populations[popn]["t"][
                         cage_topo_str
@@ -571,22 +471,20 @@ def main():
                 except MDEmptyTrajcetoryError:
                     continue
                 cage.write(str(struct_output / f"{name}_optc.mol"))
-                continue
                 analyse_cage(
                     molecule=cage,
                     name=name,
                     output_dir=calculation_output,
-                    full_bead_library=full_bead_library,
+                    custom_torsion_set=custom_torsion_set,
+                    bead_set=bead_set,
                 )
                 count += 1
-                raise SystemExit(
-                    "go through everything, changing the bead librari and bbs"
-                )
 
         logging.info(f"{count} {popn} cages built.")
 
 
 if __name__ == "__main__":
+    RDLogger.DisableLog("rdApp.*")
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s | %(levelname)s | %(message)s",
