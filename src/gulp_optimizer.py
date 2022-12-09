@@ -12,6 +12,7 @@ Author: Andrew Tarzia
 import os
 import re
 import logging
+from rdkit.Chem import AllChem as rdkit
 
 from env_set import gulp_path
 
@@ -33,6 +34,7 @@ class CGGulpOptimizer(CGOptimizer):
         fileprefix,
         output_dir,
         param_pool,
+        custom_torsion_set,
         bonds,
         angles,
         torsions,
@@ -40,13 +42,15 @@ class CGGulpOptimizer(CGOptimizer):
         max_cycles=500,
         conjugate_gradient=False,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = {i.element_string: i for i in param_pool}
-        self._bonds = bonds
-        self._angles = angles
-        self._torsions = torsions
-        self._vdw = vdw
+        super().__init__(
+            fileprefix,
+            output_dir,
+            param_pool,
+            bonds,
+            angles,
+            torsions,
+            vdw,
+        )
         self._gulp_in = os.path.join(
             self._output_dir, f"{self._fileprefix}.gin"
         )
@@ -56,16 +60,12 @@ class CGGulpOptimizer(CGOptimizer):
         self._output_xyz = os.path.join(
             self._output_dir, f"{self._fileprefix}_opted.xyz"
         )
-        self._mass = 1
-        self._bond_cutoff = 30
-        self._angle_cutoff = 30
-        self._torsion_cutoff = 30
-        self._lj_cutoff = 10
         self._maxcycles = max_cycles
         self._conjugate_gradient = conjugate_gradient
         self._vdw_on_types = tuple(
             i.element_string for i in guest_beads()
         )
+        self._custom_torsion_set = custom_torsion_set
 
     def _run_gulp(self):
         os.system(f"{gulp_path()} < {self._gulp_in} > {self._gulp_out}")
@@ -143,9 +143,79 @@ class CGGulpOptimizer(CGOptimizer):
 
         return angle_string
 
+    def _yield_custom_torsions(self, mol, chain_length=5):
+        if self._custom_torsion_set is None:
+            return ""
+
+        def get_new_torsions(molecule, chain_length):
+            paths = rdkit.FindAllPathsOfLengthN(
+                mol=molecule.to_rdkit_mol(),
+                length=chain_length,
+                useBonds=False,
+                useHs=True,
+            )
+            torsions = []
+            for atom_ids in paths:
+                atoms = list(
+                    molecule.get_atoms(atom_ids=[i for i in atom_ids])
+                )
+                atom1 = atoms[0]
+                atom2 = atoms[1]
+                atom3 = atoms[2]
+                atom4 = atoms[3]
+                atom5 = atoms[4]
+                torsions.append((atom1, atom2, atom3, atom4, atom5))
+
+            return torsions
+
+        torsions = get_new_torsions(mol, chain_length)
+        for torsion in torsions:
+            atom1, atom2, atom3, atom4, atom5 = torsion
+            names = list(
+                f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
+            )
+
+            atom_estrings = list(i.__class__.__name__ for i in torsion)
+            cgbeads = list(
+                self._get_cgbead_from_element(i) for i in atom_estrings
+            )
+            cgbead_types = tuple(i.bead_type for i in cgbeads)
+            if cgbead_types in self._custom_torsion_set:
+                phi0 = self._custom_torsion_set[cgbead_types][0]
+                torsion_k = self._custom_torsion_set[cgbead_types][1]
+                torsion_n = -1
+                yield (
+                    names[0],
+                    names[1],
+                    names[3],
+                    names[4],
+                    torsion_k,
+                    torsion_n,
+                    phi0,
+                )
+            continue
+
     def _get_torsion_string(self, mol):
         torsion_string = "torsion\n"
         for torsion_info in self._yield_torsions(mol):
+            (
+                name1,
+                name2,
+                name3,
+                name4,
+                torsion_k,
+                torsion_n,
+                phi0,
+            ) = torsion_info
+            torsion_string += (
+                f"{name1} {name2} {name3} "
+                f"{name4} {torsion_k} {torsion_n} {phi0} "
+                f"{self._torsion_cutoff} "
+                f"{self._torsion_cutoff} "
+                f"{self._torsion_cutoff} "
+                f"{self._torsion_cutoff} \n"
+            )
+        for torsion_info in self._yield_custom_torsions(mol):
             (
                 name1,
                 name2,
@@ -238,14 +308,21 @@ class CGGulpMD(CGGulpOptimizer):
         fileprefix,
         output_dir,
         param_pool,
+        custom_torsion_set,
         bonds,
         angles,
         torsions,
         vdw,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = {i.element_string: i for i in param_pool}
+        super(CGGulpOptimizer, self).__init__(
+            fileprefix,
+            output_dir,
+            param_pool,
+            bonds,
+            angles,
+            torsions,
+            vdw,
+        )
 
         self._gulp_in = os.path.join(
             self._output_dir, f"{self._fileprefix}_md.gin"
@@ -265,18 +342,9 @@ class CGGulpMD(CGGulpOptimizer):
         self._input_xyz_template = os.path.join(
             self._output_dir, f"{self._fileprefix}_temp.xyz"
         )
-        self._mass = 1
-        self._bond_cutoff = 30
-        self._angle_cutoff = 30
-        self._torsion_cutoff = 30
-        self._lj_cutoff = 10
         self._vdw_on_types = tuple(
             i.element_string for i in guest_beads()
         )
-        self._bonds = bonds
-        self._angles = angles
-        self._torsions = torsions
-        self._vdw = vdw
 
         self._integrator = "stochastic"
         self._ensemble = "nvt"
@@ -288,6 +356,7 @@ class CGGulpMD(CGGulpOptimizer):
         samples = float(self._production) / float(self._N_conformers)
         self._sample = samples
         self._write = samples
+        self._custom_torsion_set = custom_torsion_set
 
     def get_xyz_atom_types(self, xyz_file):
         # Get atom types from an existing xyz file.
