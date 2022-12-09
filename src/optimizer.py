@@ -31,10 +31,10 @@ class CGOptimizer:
         torsions,
         vdw,
     ):
+
         self._fileprefix = fileprefix
         self._output_dir = output_dir
-        raise SystemExit('param pool should depend on bead type or Bead')
-        self._param_pool = {i.element_string: i for i in param_pool}
+        self._param_pool = param_pool
         self._bonds = bonds
         self._angles = angles
         self._torsions = torsions
@@ -44,6 +44,12 @@ class CGOptimizer:
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
+
+    def _get_cgbead_from_element(self, estring):
+        for i in self._param_pool:
+            bead = self._param_pool[i]
+            if bead.element_string == estring:
+                return bead
 
     def _yield_bonds(self, mol):
         if self._bonds is False:
@@ -59,8 +65,8 @@ class CGOptimizer:
             estring2 = atom2.__class__.__name__
 
             try:
-                cgbead1 = self._param_pool[estring1]
-                cgbead2 = self._param_pool[estring2]
+                cgbead1 = self._get_cgbead_from_element(estring1)
+                cgbead2 = self._get_cgbead_from_element(estring2)
                 bond_r = lorentz_berthelot_sigma_mixing(
                     sigma1=cgbead1.sigma,
                     sigma2=cgbead2.sigma,
@@ -97,13 +103,12 @@ class CGOptimizer:
                 f"{outer_atom2.__class__.__name__}"
                 f"{outer_atom2.get_id()+1}"
             )
-            # outer_estring1 = outer_atom1.__class__.__name__
             centre_estring = centre_atom.__class__.__name__
-            # outer_estring2 = outer_atom2.__class__.__name__
+
             try:
-                # outer_cgbead1 = self._param_pool[outer_estring1]
-                centre_cgbead = self._param_pool[centre_estring]
-                # outer_cgbead2 = self._param_pool[outer_estring2]
+                centre_cgbead = self._get_cgbead_from_element(
+                    estring=centre_estring,
+                )
 
                 acentered = centre_cgbead.angle_centered
                 if isinstance(acentered, int) or isinstance(
@@ -112,7 +117,7 @@ class CGOptimizer:
                     angle_theta = acentered
 
                 elif isinstance(acentered, tuple):
-                    min_angle, max_angle, cut_angle = acentered
+                    min_angle, cut_angle = acentered
                     vector1 = (
                         pos_mat[centre_atom.get_id()]
                         - pos_mat[outer_atom1.get_id()]
@@ -127,7 +132,7 @@ class CGOptimizer:
                     if curr_angle < cut_angle:
                         angle_theta = min_angle
                     elif curr_angle >= cut_angle:
-                        angle_theta = max_angle
+                        continue
 
                 angle_k = centre_cgbead.angle_k
                 yield (
@@ -213,8 +218,8 @@ class CGOptimizer:
                 continue
 
             try:
-                cgbead1 = self._param_pool[estring1]
-                cgbead2 = self._param_pool[estring2]
+                cgbead1 = self._get_cgbead_from_element(estring1)
+                cgbead2 = self._get_cgbead_from_element(estring2)
                 sigma = lorentz_berthelot_sigma_mixing(
                     sigma1=cgbead1.sigma,
                     sigma2=cgbead2.sigma,
