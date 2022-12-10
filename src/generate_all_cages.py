@@ -258,7 +258,7 @@ def analyse_cage(
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
     # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
-    pm_output_file = os.path.join(output_dir, f"{name}_pm.json")
+    # pm_output_file = os.path.join(output_dir, f"{name}_pm.json")
 
     if os.path.exists(output_file):
         with open(output_file, "r") as f:
@@ -291,10 +291,7 @@ def analyse_cage(
             shape_string=None,
         ).calculate(get_shape_calculation_molecule(molecule, name))
 
-        opt_pore_data = PoreMeasure().calculate_pore(
-            molecule=molecule,
-            output_file=pm_output_file,
-        )
+        opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
         res_dict = {
             "fin_energy": fin_energy,
             "opt_pore_data": opt_pore_data,

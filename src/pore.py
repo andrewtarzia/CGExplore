@@ -11,6 +11,8 @@ Author: Andrew Tarzia
 
 import os
 import json
+import numpy as np
+from scipy.spatial.distance import cdist
 import pore_mapper as pm
 import pywindow as pw
 
@@ -26,6 +28,16 @@ class PoreMeasure:
     .. [2] https://pubs.acs.org/doi/10.1021/acs.jcim.8b00490
 
     """
+
+    def calculate_min_distance(self, molecule):
+        pair_dists = cdist(
+            molecule.get_position_matrix(),
+            molecule.get_centroid().reshape(1, 3),
+        )
+        min_distance = np.min(pair_dists.flatten())
+        return {
+            "min_distance": min_distance,
+        }
 
     def calculate_pore(self, molecule, output_file):
         xyz_file = output_file.replace(".json", "_h.xyz")
