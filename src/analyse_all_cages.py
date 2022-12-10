@@ -15,15 +15,13 @@ import stk
 import stko
 import json
 import logging
+import itertools
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-
-# from sklearn.cluster import KMeans
 import pandas as pd
 
-# from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 from generate_all_cages import (
     core_2c_beads,
@@ -32,6 +30,18 @@ from generate_all_cages import (
     beads_4c,
 )
 from env_set import cages
+
+
+def isomer_energy():
+    return 0.05
+
+
+def max_energy():
+    return 1.0
+
+
+def min_radius():
+    return 0.1
 
 
 def topology_labels(short=False):
@@ -235,9 +245,7 @@ def collate_cage_vector_from_bb(data, test_bb):
 
 
 def get_CGBead_from_string(string, bead_library):
-    return tuple(i for i in bead_library if i.element_string == string)[
-        0
-    ]
+    return bead_library[string]
 
 
 def get_shape_vector(shape_dictionary):
@@ -254,21 +262,15 @@ def get_shape_vector(shape_dictionary):
 def get_present_beads(c2_bbname):
     wtopo = c2_bbname[3:]
     present_beads_names = []
-    while len(wtopo) > 0:
-        if len(wtopo) == 1:
-            bead_name = wtopo[0]
-            wtopo = ""
-        elif wtopo[1].islower():
-            bead_name = wtopo[:2]
-            wtopo = wtopo[2:]
-        else:
-            bead_name = wtopo[0]
-            wtopo = wtopo[1:]
+    break_strs = [i for i in wtopo if not i.isnumeric()]
+    if len(break_strs) != 2:
+        raise ValueError(f"Too many beads found in {c2_bbname}")
 
-        present_beads_names.append(bead_name)
-
-    if len(present_beads_names) != int(c2_bbname[2]) + 1:
-        raise ValueError(f"{present_beads_names} length != {c2_bbname}")
+    broken_string = wtopo.split(break_strs[0])[1]
+    bead1name, bead2name = broken_string.split(break_strs[1])
+    bead1name = break_strs[0] + bead1name
+    bead2name = break_strs[1] + bead2name
+    present_beads_names = (bead1name, bead2name)
     return present_beads_names
 
 
@@ -385,11 +387,9 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
 def single_value_distributions(all_data, figure_output):
     to_plot = {
         "energy": {"xtitle": "energy"},
-        "pore_diameter": {"xtitle": "pore diameter"},
-        "pore_volume": {"xtitle": "pore volume"},
+        "min_distance": {"xtitle": "min. distance [A]"},
         "energy_barm": {"xtitle": "energy"},
-        "pore_diameter_barm": {"xtitle": "pore diameter"},
-        "pore_volume_barm": {"xtitle": "pore volume"},
+        "min_distance_barm": {"xtitle": "min. distance [A]"},
     }
 
     color_map = topo_to_colormap()
@@ -403,6 +403,7 @@ def single_value_distributions(all_data, figure_output):
             fig, axs = plt.subplots(
                 ncols=2,
                 nrows=1,
+                sharex=True,
                 figsize=(16, 5),
             )
             flat_axs = axs.flatten()
@@ -411,6 +412,7 @@ def single_value_distributions(all_data, figure_output):
             fig, axs = plt.subplots(
                 ncols=3,
                 nrows=3,
+                sharex=True,
                 figsize=(16, 10),
             )
             flat_axs = axs.flatten()
@@ -670,10 +672,10 @@ def phase_space_1(bb_data, figure_output):
     flat_axs = axs.flatten()
 
     data_dict = {}
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        cl_bbname = bb_pair[1]
-        c2_bbname = bb_pair[0]
+    for bb_triplet in bb_data:
+        b_dict = bb_data[bb_triplet]
+        cl_bbname = bb_triplet[1]
+        c2_bbname = bb_triplet[0]
         present_beads_names = get_present_beads(c2_bbname)
 
         x = get_CGBead_from_string(
@@ -746,10 +748,10 @@ def phase_space_2(bb_data, figure_output):
 
         sc_3c0_2c1 = []
         sc_4c0_2c1 = []
-        for bb_pair in bb_data:
-            bb_dict = bb_data[bb_pair]
-            # c2_bbname = bb_pair[0]
-            cl_bbname = bb_pair[1]
+        for bb_triplet in bb_data:
+            bb_dict = bb_data[bb_triplet]
+            # c2_bbname = bb_triplet[0]
+            cl_bbname = bb_triplet[1]
 
             min_energy = min(tuple(i[1] for i in bb_dict.values()))
             min_e_dict = {
@@ -799,10 +801,10 @@ def phase_space_2(bb_data, figure_output):
             ax.tick_params(axis="both", which="major", labelsize=16)
             if i == "energy":
                 ax.set_xlabel("min. energy", fontsize=16)
-                ax.set_ylabel("pore radius", fontsize=16)
+                ax.set_ylabel("min distance", fontsize=16)
             elif i == "shape":
                 ax.set_xlabel("min. shape", fontsize=16)
-                ax.set_ylabel("pore radius", fontsize=16)
+                ax.set_ylabel("min distance", fontsize=16)
             elif i == "se":
                 ax.set_xlabel("min. shape", fontsize=16)
                 ax.set_ylabel("min. energy", fontsize=16)
@@ -818,39 +820,36 @@ def phase_space_2(bb_data, figure_output):
 
 def phase_space_3(bb_data, figure_output):
     fig, axs = plt.subplots(
-        nrows=1,
+        nrows=2,
         ncols=2,
-        figsize=(16, 5),
+        sharey=True,
+        figsize=(16, 10),
     )
     flat_axs = axs.flatten()
 
-    isomer_energy = 0.05
-    max_energy = 10
-
     topologies = map_cltype_to_shapetopology()
 
-    sc_3c0 = {topologies["3C1"][i]: 0 for i in topologies["3C1"]}
-    sc_3c0["mixed"] = 0
-    sc_3c0["unstable"] = 0
-    sc_4c0 = {topologies["4C1"][i]: 0 for i in topologies["4C1"]}
-    sc_4c0["mixed"] = 0
-    sc_4c0["unstable"] = 0
-    for bb_pair in bb_data:
-        bb_dict = bb_data[bb_pair]
-        cl_bbname = bb_pair[1]
+    data = {}
+    for bb_triplet in bb_data:
+        bb_dict = bb_data[bb_triplet]
+        torsion = bb_triplet[2]
+        cl_bbname = bb_triplet[1]
         if "3C1" in cl_bbname:
             bbtitle = "3C1"
         elif "4C1" in cl_bbname:
             bbtitle = "4C1"
 
+        if (bbtitle, torsion) not in data:
+            data[(bbtitle, torsion)] = {}
+
         all_energies = set(
             bb_dict[i][1] / int(i.rstrip("b")[-1]) for i in bb_dict
         )
         num_mixed = len(
-            tuple(i for i in all_energies if i < isomer_energy)
+            tuple(i for i in all_energies if i < isomer_energy())
         )
         min_energy = min(tuple(i[1] for i in bb_dict.values()))
-        if min_energy > max_energy:
+        if min_energy > max_energy():
             topo_str = "unstable"
         elif num_mixed > 1:
             topo_str = "mixed"
@@ -863,18 +862,13 @@ def phase_space_3(bb_data, figure_output):
             keys = list(min_e_dict.keys())
             topo_str = topologies[bbtitle][keys[0][-1]]
 
-        if bbtitle == "3C1":
-            sc_3c0[topo_str] += 1
-        elif bbtitle == "4C1":
-            sc_4c0[topo_str] += 1
-
-    shape_coords = (
-        ("3C1", sc_3c0),
-        ("4C1", sc_4c0),
-    )
+        if topo_str not in data[(bbtitle, torsion)]:
+            data[(bbtitle, torsion)][topo_str] = 0
+        data[(bbtitle, torsion)][topo_str] += 1
 
     tot_pairs = 0
-    for ax, (title, coords) in zip(flat_axs, shape_coords):
+    for ax, (title, torsion) in zip(flat_axs, data):
+        coords = data[(title, torsion)]
         for i in coords:
             dd = coords[i]
             tot_pairs += dd
@@ -899,7 +893,10 @@ def phase_space_3(bb_data, figure_output):
                 ha="center",
             )
 
-        ax.set_title(f"{title}: {isomer_energy}eV", fontsize=16)
+        ax.set_title(
+            f"{title}, {torsion}: {isomer_energy()}eV: {max_energy()}eV",
+            fontsize=16,
+        )
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel("count", fontsize=16)
 
@@ -932,9 +929,9 @@ def phase_space_4(bb_data, figure_output):
     s_vectors_4c0 = {}
     row_3c0 = set()
     row_4c0 = set()
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        cl_bbname = bb_pair[1]
+    for bb_triplet in bb_data:
+        b_dict = bb_data[bb_triplet]
+        cl_bbname = bb_triplet[1]
 
         min_energy = min(tuple(i[1] for i in b_dict.values()))
         min_e_dict = {
@@ -946,13 +943,13 @@ def phase_space_4(bb_data, figure_output):
         shape_vector = get_shape_vector(b_dict)
         if "3C1" in cl_bbname:
             s_vectors_3c0[
-                (bb_pair[0], bb_pair[1], min_energy_topo)
+                (bb_triplet[0], bb_triplet[1], min_energy_topo)
             ] = shape_vector
             for i in shape_vector:
                 row_3c0.add(i)
         elif "4C1" in cl_bbname:
             s_vectors_4c0[
-                (bb_pair[0], bb_pair[1], min_energy_topo)
+                (bb_triplet[0], bb_triplet[1], min_energy_topo)
             ] = shape_vector
             for i in shape_vector:
                 row_4c0.add(i)
@@ -1019,14 +1016,14 @@ def phase_space_5(bb_data, figure_output):
     shape_coordinates = {
         target_individuals[i]: [] for i in target_individuals
     }
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        if "4C1" in bb_pair[1]:
+    for bb_triplet in bb_data:
+        b_dict = bb_data[bb_triplet]
+        if "4C1" in bb_triplet[1]:
             shapes = target_shapes_by_cltype("4C1")
-        elif "3C1" in bb_pair[1]:
+        elif "3C1" in bb_triplet[1]:
             shapes = target_shapes_by_cltype("3C1")
 
-        present_beads_names = get_present_beads(c2_bbname=bb_pair[0])
+        present_beads_names = get_present_beads(c2_bbname=bb_triplet[0])
         for shape in shapes:
             topo_str = target_individuals[shape]
             try:
@@ -1098,11 +1095,11 @@ def phase_space_6(bb_data, figure_output):
     shape_coordinates = {
         target_individuals[i]: [] for i in target_individuals
     }
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        if "4C1" in bb_pair[1]:
+    for bb_triplet in bb_data:
+        b_dict = bb_data[bb_triplet]
+        if "4C1" in bb_triplet[1]:
             shapes = target_shapes_by_cltype("4C1")
-        elif "3C1" in bb_pair[1]:
+        elif "3C1" in bb_triplet[1]:
             shapes = target_shapes_by_cltype("3C1")
 
         for shape in shapes:
@@ -1112,9 +1109,9 @@ def phase_space_6(bb_data, figure_output):
             except KeyError:
                 continue
             energy = b_dict[shape][1]
-            pore_radius = b_dict[shape][2]
+            min_distance = b_dict[shape][2]
             x = shape_value
-            y = pore_radius
+            y = min_distance
             z = energy
             shape_coordinates[topo_str].append((x, y, z))
 
@@ -1126,7 +1123,7 @@ def phase_space_6(bb_data, figure_output):
         ax.set_title(topo_str, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(shape_str, fontsize=16)
-        ax.set_ylabel("pore radius [A]", fontsize=16)
+        ax.set_ylabel("min. distance [A]", fontsize=16)
 
         ax.scatter(
             [i[0] for i in coords],
@@ -1175,10 +1172,10 @@ def phase_space_7(bb_data, figure_output):
     flat_axs = axs.flatten()
 
     data_dict = {}
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        cl_bbname = bb_pair[1]
-        c2_bbname = bb_pair[0]
+    for bb_triplet in bb_data:
+        b_dict = bb_data[bb_triplet]
+        cl_bbname = bb_triplet[1]
+        c2_bbname = bb_triplet[0]
         present_beads_names = get_present_beads(c2_bbname)
 
         x = get_CGBead_from_string(
@@ -1256,14 +1253,12 @@ def phase_space_8(bb_data, figure_output):
     t_map = map_cltype_to_shapetopology()
 
     color_map = cltypetopo_to_colormap()
-    max_energy = 10
-    isomer_energy = 0.05
 
     data_dict = {}
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        cl_bbname = bb_pair[1]
-        c2_bbname = bb_pair[0]
+    for bb_triplet in bb_data:
+        b_dict = bb_data[bb_triplet]
+        cl_bbname = bb_triplet[1]
+        c2_bbname = bb_triplet[0]
 
         if "3C1" in cl_bbname:
             title = "3C1"
@@ -1290,7 +1285,7 @@ def phase_space_8(bb_data, figure_output):
             b_dict[i][1] / int(i.rstrip("b")[-1]) for i in b_dict
         )
         num_mixed = len(
-            tuple(i for i in all_energies if i < isomer_energy)
+            tuple(i for i in all_energies if i < isomer_energy())
         )
         if num_mixed > 1:
             if num_mixed == 2:
@@ -1309,7 +1304,7 @@ def phase_space_8(bb_data, figure_output):
             min_energy_topo = keys[0][-1]
             topology = t_map[title][min_energy_topo]
 
-            if min_energy > max_energy:
+            if min_energy > max_energy():
                 s = "white"
             else:
                 s = color_map[title][topology]
@@ -1346,7 +1341,7 @@ def phase_space_8(bb_data, figure_output):
         )
         title = (
             f"{cltype} : {cl_bead_sigma} : {cl_bead_angle} : "
-            f"{max_energy}eV : {isomer_energy}eV"
+            f"{max_energy()}eV : {isomer_energy()}eV"
         )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
@@ -1403,15 +1398,12 @@ def phase_space_9(bb_data, figure_output):
 
     t_map = map_cltype_to_shapetopology()
     color_map = cltypetopo_to_colormap()
-    max_energy = 10
-    isomer_energy = 0.05
-    min_radius = 0.5
 
     data_dict = {}
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-        cl_bbname = bb_pair[1]
-        c2_bbname = bb_pair[0]
+    for bb_triplet in bb_data:
+        b_dict = bb_data[bb_triplet]
+        cl_bbname = bb_triplet[1]
+        c2_bbname = bb_triplet[0]
 
         if "3C1" in cl_bbname:
             title = "3C1"
@@ -1438,7 +1430,7 @@ def phase_space_9(bb_data, figure_output):
             b_dict[i][1] / int(i.rstrip("b")[-1]) for i in b_dict
         )
         num_mixed = len(
-            tuple(i for i in all_energies if i < isomer_energy)
+            tuple(i for i in all_energies if i < isomer_energy())
         )
         if num_mixed > 1:
             if num_mixed == 2:
@@ -1455,11 +1447,11 @@ def phase_space_9(bb_data, figure_output):
             }
             keys = list(min_e_dict.keys())
             min_energy_topo = keys[0][-1]
-            min_e_pore_rad = min_e_dict[keys[0]][2]
+            min_e_distance = min_e_dict[keys[0]][2]
             topology = t_map[title][min_energy_topo]
-            if min_e_pore_rad < min_radius:
+            if min_e_distance < min_radius:
                 s = "k"
-            elif min_energy > max_energy:
+            elif min_energy > max_energy():
                 s = "white"
             else:
                 s = color_map[title][topology]
@@ -1496,7 +1488,7 @@ def phase_space_9(bb_data, figure_output):
         )
         title = (
             f"{cltype} : {cl_bead_sigma} : {cl_bead_angle} : "
-            f"{max_energy}eV : {isomer_energy}eV : {min_radius}A"
+            f"{max_energy()}eV : {isomer_energy()}eV : {min_radius()}A"
         )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
@@ -1540,7 +1532,7 @@ def phase_space_9(bb_data, figure_output):
             s=300,
             marker="s",
             alpha=1.0,
-            label=f"pore rad < {min_radius}A",
+            label=f"min distance < {min_radius}A",
         )
 
         fig.legend(
@@ -1562,19 +1554,18 @@ def phase_space_9(bb_data, figure_output):
 def phase_space_10(bb_data, figure_output):
 
     t_map = map_cltype_to_shapetopology()
-    bead_library = (
-        arm_2c_beads() + core_2c_beads() + beads_3c() + beads_4c()
-    )
-
-    isomer_energy = 0.05
-    max_energy = 10
-    for t_cltopo in (3, 4):
+    for t_cltopo, torsions in itertools.product(
+        (3, 4), ("ton", "toff")
+    ):
         input_dict = {}
         data_dict = {}
-        for bb_pair in bb_data:
-            b_dict = bb_data[bb_pair]
-            cl_bbname = bb_pair[1]
-            c2_bbname = bb_pair[0]
+        for bb_triplet in bb_data:
+            b_dict = bb_data[bb_triplet]
+            cl_bbname = bb_triplet[1]
+            c2_bbname = bb_triplet[0]
+            torsion = bb_triplet[2]
+            if torsion != torsions:
+                continue
             bb_string = f"{cl_bbname}_{c2_bbname}"
 
             present_c2_beads = get_present_beads(c2_bbname)
@@ -1584,12 +1575,15 @@ def phase_space_10(bb_data, figure_output):
             if cltopo != t_cltopo:
                 continue
             if cltopo == 4:
-                clangle = 90
+                clangle = get_CGBead_from_string(
+                    present_cl_beads[0],
+                    beads_4c(),
+                ).angle_centered[0]
                 cltitle = "4C1"
             elif cltopo == 3:
                 clangle = get_CGBead_from_string(
                     present_cl_beads[0],
-                    bead_library,
+                    beads_3c(),
                 ).angle_centered
                 cltitle = "3C1"
 
@@ -1597,14 +1591,14 @@ def phase_space_10(bb_data, figure_output):
                 b_dict[i][1] / int(i.rstrip("b")[-1]) for i in b_dict
             )
             num_mixed = len(
-                tuple(i for i in all_energies if i < isomer_energy)
+                tuple(i for i in all_energies if i < isomer_energy())
             )
             if num_mixed > 1:
                 if num_mixed == 2:
                     topology = "mixed (2)"
                 elif num_mixed > 2:
                     topology = "mixed (>2)"
-                min_e_pore_rad = None
+                min_e_distance = None
 
             else:
                 min_energy = min(tuple(i[1] for i in b_dict.values()))
@@ -1615,33 +1609,35 @@ def phase_space_10(bb_data, figure_output):
                 }
                 keys = list(min_e_dict.keys())
                 min_energy_topo = keys[0][-1]
-                min_e_pore_rad = min_e_dict[keys[0]][2]
+                min_e_distance = min_e_dict[keys[0]][2]
                 topology = t_map[cltitle][min_energy_topo]
 
-                if min_energy > max_energy:
+                if min_energy > max_energy():
                     topology = "unstable"
 
+            cl_bead_libs = beads_3c().copy()
+            cl_bead_libs.update(beads_4c())
             row = {
                 "cltopo": cltopo,
                 "clsigma": get_CGBead_from_string(
                     present_cl_beads[0],
-                    bead_library,
+                    cl_bead_libs,
                 ).sigma,
                 "clangle": clangle,
                 "c2sigma": get_CGBead_from_string(
                     present_c2_beads[0],
-                    bead_library,
+                    core_2c_beads(),
                 ).sigma,
                 "c2angle": (
                     get_CGBead_from_string(
                         present_c2_beads[1],
-                        bead_library,
+                        arm_2c_beads(),
                     ).angle_centered
                     - 90
                 )
                 * 2,
                 "pref_topology": topology,
-                "pref_topology_pore": min_e_pore_rad,
+                "pref_topology_pore": min_e_distance,
             }
 
             input_dict[bb_string] = row
@@ -1714,7 +1710,8 @@ def phase_space_10(bb_data, figure_output):
                 fig.tight_layout()
                 fig.savefig(
                     os.path.join(
-                        figure_output, f"dist_10_{t_cltopo}_{prop}.pdf"
+                        figure_output,
+                        f"dist_10_{t_cltopo}_{torsions}_{prop}.pdf",
                     ),
                     dpi=720,
                     bbox_inches="tight",
@@ -1752,7 +1749,8 @@ def phase_space_10(bb_data, figure_output):
                 fig.tight_layout()
                 fig.savefig(
                     os.path.join(
-                        figure_output, f"ps_10_{t_cltopo}_{prop}.pdf"
+                        figure_output,
+                        f"ps_10_{t_cltopo}_{torsions}_{prop}.pdf",
                     ),
                     dpi=720,
                     bbox_inches="tight",
@@ -1776,7 +1774,8 @@ def phase_space_10(bb_data, figure_output):
                 fig.tight_layout()
                 fig.savefig(
                     os.path.join(
-                        figure_output, f"dist_10_{t_cltopo}_{prop}.pdf"
+                        figure_output,
+                        f"dist_10_{t_cltopo}_{torsions}_{prop}.pdf",
                     ),
                     dpi=720,
                     bbox_inches="tight",
@@ -1825,7 +1824,8 @@ def phase_space_10(bb_data, figure_output):
                 fig.tight_layout()
                 fig.savefig(
                     os.path.join(
-                        figure_output, f"ps_10_{t_cltopo}_{prop}.pdf"
+                        figure_output,
+                        f"ps_10_{t_cltopo}_{torsions}_{prop}.pdf",
                     ),
                     dpi=720,
                     bbox_inches="tight",
@@ -1833,50 +1833,37 @@ def phase_space_10(bb_data, figure_output):
                 plt.close()
 
 
-def parity_1(bb_data, figure_output):
+def parity_1(tpair_data, figure_output):
+    tcmap = topo_to_colormap()
+    fig, ax = plt.subplots(figsize=(8, 5))
 
-    x_target = ("T-4", "4", "FourPlusSix")
-    y_targets = (
-        ("TBPY-5", "5", "TwoPlusThree"),
-        ("T-4b", "b", "FourPlusSix2"),
-        ("OC-6", "6", "SixPlusNine"),
-        ("CU-8", "8", "EightPlusTwelve"),
-    )
+    for tstr in tcmap:
+        xdata = []
+        ydata = []
+        for cage in tpair_data:
+            tdata = tpair_data[cage]
+            pair1 = (tstr, "toff")
+            pair2 = (tstr, "ton")
+            if pair1 in tdata and pair2 in tdata:
+                xdata.append(tdata[pair1])
+                ydata.append(tdata[pair2])
+        if len(xdata) > 0:
+            ax.scatter(
+                [i for i in xdata],
+                [i for i in ydata],
+                c=tcmap[tstr],
+                edgecolor="none",
+                s=30,
+                alpha=1.0,
+                label=tstr,
+            )
 
-    fig, axs = plt.subplots(
-        ncols=len(y_targets),
-        figsize=(16, 5),
-    )
-    flat_axs = axs.flatten()
-
-    ax_datas = {i: [] for i in range(len(y_targets))}
-    for bb_pair in bb_data:
-        b_dict = bb_data[bb_pair]
-
-        for i, yt in enumerate(y_targets):
-            if x_target[0] in b_dict and yt[0] in b_dict:
-                x1 = b_dict[x_target[0]][1]
-                y1 = b_dict[yt[0]][1]
-                ax_datas[i].append((x1, y1))
-
-    title = "energy [eV]"
-    lim = (-0.1, 10)
-    for ax, (yid, yinfo) in zip(flat_axs, enumerate(y_targets)):
-        ax.scatter(
-            [i[0] for i in ax_datas[yid]],
-            [i[1] for i in ax_datas[yid]],
-            c="gray",
-            edgecolor="none",
-            s=30,
-            alpha=1.0,
-        )
-
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(x_target[2], fontsize=16)
-        ax.set_ylabel(yinfo[2], fontsize=16)
-        ax.set_title(title, fontsize=16)
-        ax.set_xlim(lim)
-        ax.set_ylim(lim)
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("toff [eV]", fontsize=16)
+    ax.set_ylabel("ton [eV]", fontsize=16)
+    # ax.set_xlim(lim)
+    # ax.set_ylim(lim)
+    ax.legend(fontsize=16, ncol=3)
 
     fig.tight_layout()
     fig.savefig(
@@ -1900,26 +1887,24 @@ def main():
 
     all_data = {}
     bb_data = {}
+    tpair_data = {}
     for j_file in calculation_output.glob("*_res.json"):
         with open(j_file, "r") as f:
             res_dict = json.load(f)
         name = str(j_file.name).replace("_res.json", "")
-        _, clbb_name, c2bb_name = name.split("_")
+        t_str, clbb_name, c2bb_name, torsions = name.split("_")
         all_data[name] = {}
         all_data[name]["energy"] = res_dict["fin_energy"]
-        all_data[name]["pore_diameter"] = (
-            res_dict["opt_pore_data"]["pore_mean_rad"] * 2
-        )
-        all_data[name]["pore_volume"] = res_dict["opt_pore_data"][
-            "pore_volume"
+        all_data[name]["min_distance"] = res_dict["opt_pore_data"][
+            "min_distance"
         ]
         all_data[name]["shape_vector"] = res_dict["shape_measures"]
         all_data[name]["clbb"] = clbb_name
         all_data[name]["c2bb"] = c2bb_name
 
-        bb_pair = (c2bb_name, clbb_name)
-        if bb_pair not in bb_data:
-            bb_data[bb_pair] = {}
+        bb_triplet = (c2bb_name, clbb_name, torsions)
+        if bb_triplet not in bb_data:
+            bb_data[bb_triplet] = {}
         for sv in res_dict["shape_measures"]:
             if "FourPlusSix2" in name:
                 svb = sv + "b"
@@ -1929,23 +1914,29 @@ def main():
                 svb = sv + "b"
             else:
                 svb = sv
-            bb_data[bb_pair][svb] = (
+            bb_data[bb_triplet][svb] = (
                 res_dict["shape_measures"][sv],
                 res_dict["fin_energy"],
-                res_dict["opt_pore_data"]["pore_mean_rad"],
+                res_dict["opt_pore_data"]["min_distance"],
             )
 
+        bb_pair = (c2bb_name, clbb_name)
+        if bb_pair not in tpair_data:
+            tpair_data[bb_pair] = {}
+
+        tpair_data[bb_pair][(t_str, torsions)] = res_dict["fin_energy"]
+
     logging.info(f"there are {len(all_data)} collected data")
+    parity_1(tpair_data, figure_output)
     identity_distributions(all_data, figure_output)
     rmsd_distributions(all_data, calculation_output, figure_output)
-    phase_space_10(bb_data, figure_output)
-    single_value_distributions(all_data, figure_output)
     phase_space_3(bb_data, figure_output)
+    single_value_distributions(all_data, figure_output)
 
     raise SystemExit()
+    phase_space_10(bb_data, figure_output)
 
     shape_vector_distributions(all_data, figure_output)
-    parity_1(bb_data, figure_output)
     phase_space_9(bb_data, figure_output)
     phase_space_1(bb_data, figure_output)
     phase_space_5(bb_data, figure_output)
