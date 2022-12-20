@@ -148,7 +148,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
     return molecule
 
 
-def check_long_distances(molecule, name, max_distance):
+def check_long_distances(molecule, name, max_distance, step):
 
     max_present = 0
     for bond in molecule.get_bonds():
@@ -162,7 +162,7 @@ def check_long_distances(molecule, name, max_distance):
     if max_present >= max_distance:
         raise ValueError(
             f"a max dist of {max_distance} found for {name}. "
-            "Suggests bad optimisation."
+            f"Suggests bad optimisation at step {step}."
         )
 
 
@@ -202,7 +202,7 @@ def optimise_cage(
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
 
-    check_long_distances(molecule, name=name, max_distance=15)
+    check_long_distances(molecule, name=name, max_distance=15, step=1)
 
     if os.path.exists(opt2_mol_file):
         molecule = molecule.with_structure_from_file(opt2_mol_file)
@@ -245,6 +245,17 @@ def optimise_cage(
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt3_mol_file)
 
+    try:
+        check_long_distances(
+            molecule,
+            name=name,
+            max_distance=15,
+            step=3,
+        )
+    except ValueError:
+        logging.info(f"{name} opt failed in step 3. Should be ignored.")
+        return None
+
     return molecule
 
 
@@ -259,6 +270,11 @@ def analyse_cage(
     output_file = os.path.join(output_dir, f"{name}_res.json")
     # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
     # pm_output_file = os.path.join(output_dir, f"{name}_pm.json")
+
+    if molecule is None:
+        res_dict = {"optimised": False}
+        with open(output_file, "w") as f:
+            json.dump(res_dict, f, indent=4)
 
     if os.path.exists(output_file):
         with open(output_file, "r") as f:
@@ -293,6 +309,7 @@ def analyse_cage(
 
         opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
         res_dict = {
+            "optimised": True,
             "fin_energy": fin_energy,
             "opt_pore_data": opt_pore_data,
             "shape_measures": shape_measures,
@@ -467,7 +484,10 @@ def main():
                     )
                 except MDEmptyTrajcetoryError:
                     continue
-                cage.write(str(struct_output / f"{name}_optc.mol"))
+
+                if cage is not None:
+                    cage.write(str(struct_output / f"{name}_optc.mol"))
+
                 analyse_cage(
                     molecule=cage,
                     name=name,

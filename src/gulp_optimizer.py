@@ -366,13 +366,18 @@ class CGGulpMD(CGGulpOptimizer):
                 atom_types.append(line.rstrip().split(" ")[0])
         return atom_types
 
-    def _convert_traj_to_xyz(self, output_traj):
+    def _convert_traj_to_xyz(self):
 
         atom_types = self.get_xyz_atom_types(self._input_xyz_template)
 
         # Read in lines from trajectory file.
-        with open(output_traj, "r") as f:
-            lines = f.readlines()
+        try:
+            with open(self._output_traj, "r") as f:
+                lines = f.readlines()
+        except FileNotFoundError:
+            new_file = str(self._output_traj).replace(".trg", ".tr.trg")
+            with open(new_file, "r") as f:
+                lines = f.readlines()
 
         # Split file using strings.
         timesteps = "".join(lines).split("#  Time/KE/E/T")[1:]
@@ -483,9 +488,7 @@ class CGGulpMD(CGGulpOptimizer):
     def extract_gulp(self):
 
         # Convert GULP trajectory file to xyz trajectory.
-        atom_types, t_data, xyz_lines = self._convert_traj_to_xyz(
-            output_traj=self._output_traj,
-        )
+        atom_types, t_data, xyz_lines = self._convert_traj_to_xyz()
         # Write XYZ trajectory file.
         with open(self._output_trajxyz, "w") as f:
             for line in xyz_lines:
