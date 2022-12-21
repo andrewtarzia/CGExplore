@@ -101,6 +101,20 @@ def topo_to_colormap():
     }
 
 
+def stoich_map(tstr):
+    return {
+        "TwoPlusThree": 6,
+        "FourPlusSix": 12,
+        "FourPlusSix2": 12,
+        "SixPlusNine": 18,
+        "EightPlusTwelve": 24,
+        "TwoPlusFour": 8,
+        "ThreePlusSix": 12,
+        "FourPlusEight": 16,
+        "SixPlusTwelve": 24,
+    }[tstr]
+
+
 def cltype_to_colormap():
     return {
         "3C1": "#06AED5",
@@ -274,15 +288,106 @@ def get_present_beads(c2_bbname):
     return present_beads_names
 
 
+def data_to_array(json_files, output_csv):
+    if os.path.exists(output_csv):
+        input_array = pd.read_csv(output_csv)
+        input_array = input_array.loc[
+            :, ~input_array.columns.str.contains("^Unnamed")
+        ]
+        return input_array
+
+    input_dict = {}
+    for j_file in json_files:
+        with open(j_file, "r") as f:
+            res_dict = json.load(f)
+        name = str(j_file.name).replace("_res.json", "")
+        t_str, clbb_name, c2bb_name, torsions = name.split("_")
+        cage_name = f"{t_str}_{clbb_name}_{c2bb_name}"
+        optimised = res_dict["optimised"]
+        if optimised:
+            energy = res_dict["fin_energy"]
+            min_distance = res_dict["opt_pore_data"]["min_distance"]
+            shape_vector = res_dict["shape_measures"]
+
+        else:
+            energy = None
+            min_distance = None
+            shape_vector = None
+
+        present_c2_beads = get_present_beads(c2bb_name)
+        present_cl_beads = get_present_beads(clbb_name)
+
+        cl_bead_libs = beads_3c().copy()
+        cl_bead_libs.update(beads_4c())
+        cltopo = int(clbb_name[0])
+        if cltopo == 4:
+            clangle = get_CGBead_from_string(
+                present_cl_beads[0],
+                beads_4c(),
+            ).angle_centered[0]
+            cltitle = "4C1"
+        elif cltopo == 3:
+            clangle = get_CGBead_from_string(
+                present_cl_beads[0],
+                beads_3c(),
+            ).angle_centered
+            cltitle = "3C1"
+
+        row = {
+            "cage_name": cage_name,
+            "clbb_name": clbb_name,
+            "c2bb_name": c2bb_name,
+            "bbpair": clbb_name + c2bb_name,
+            "cltopo": cltopo,
+            "cltitle": cltitle,
+            "clsigma": get_CGBead_from_string(
+                present_cl_beads[0],
+                cl_bead_libs,
+            ).sigma,
+            "clangle": clangle,
+            "c2sigma": get_CGBead_from_string(
+                present_c2_beads[0],
+                core_2c_beads(),
+            ).sigma,
+            "c2angle": (
+                get_CGBead_from_string(
+                    present_c2_beads[1],
+                    arm_2c_beads(),
+                ).angle_centered
+                - 90
+            )
+            * 2,
+            "energy": energy,
+            "pore": min_distance,
+            "topology": t_str,
+            "torsions": torsions,
+            "optimised": optimised,
+        }
+        if shape_vector is not None:
+            for sv in shape_vector:
+                row[sv] = shape_vector[sv]
+        input_dict[name] = row
+
+    input_array = pd.DataFrame.from_dict(
+        input_dict,
+        orient="index",
+    ).reset_index()
+    input_array.to_csv(output_csv, index=False)
+    return input_array
+
+
 def identity_distributions(all_data, figure_output):
 
     fig, ax = plt.subplots(figsize=(16, 5))
 
     categories = {i: 0 for i in topology_labels(short=True)}
+    categories.update({"not opt.": 0})
+    count1 = all_data["topology"].value_counts()
+    count2 = all_data["optimised"].value_counts()
+    for tstr, count in count1.items():
+        categories[convert_topo_to_label(tstr)] = count
+    categories["not opt."] = count2[False]
     num_cages = len(all_data)
-    for cage in all_data:
-        topo_name = cage.split("_")[0]
-        categories[convert_topo_to_label(topo_name)] += 1
 
     ax.bar(
         categories.keys(),
@@ -385,11 +490,13 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
 
 
 def single_value_distributions(all_data, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
     to_plot = {
         "energy": {"xtitle": "energy"},
-        "min_distance": {"xtitle": "min. distance [A]"},
+        "pore": {"xtitle": "min. distance [A]"},
         "energy_barm": {"xtitle": "energy"},
-        "min_distance_barm": {"xtitle": "min. distance [A]"},
+        "pore_barm": {"xtitle": "min. distance [A]"},
     }
 
     color_map = topo_to_colormap()
@@ -417,28 +524,23 @@ def single_value_distributions(all_data, figure_output):
             )
             flat_axs = axs.flatten()
 
-        for i, topo in enumerate(cmapp):
+        for i, t_option in enumerate(cmapp):
+            target_column = tp.replace("_barm", "")
             if "barm" in tp:
-                values = [
-                    all_data[i][tp.replace("_barm", "")]
-                    for i in all_data
-                    if topo in i.split("_")[1]
-                ]
+                topo_frame = all_data[all_data["cltitle"] == t_option]
+                values = topo_frame[target_column]
             else:
-                values = [
-                    all_data[i][tp]
-                    for i in all_data
-                    if i.split("_")[0] == topo
-                ]
+                topo_frame = all_data[all_data["topology"] == t_option]
+                values = topo_frame[target_column]
 
             flat_axs[i].hist(
                 x=values,
                 bins=50,
                 density=False,
                 histtype="step",
-                color=cmapp[topo],
+                color=cmapp[t_option],
                 lw=3,
-                label=topo,
+                label=t_option,
             )
 
             flat_axs[i].tick_params(
@@ -449,7 +551,7 @@ def single_value_distributions(all_data, figure_output):
             flat_axs[i].set_xlabel(xtitle, fontsize=16)
             # flat_axs[i].set_ylabel("count", fontsize=16)
             flat_axs[i].set_ylabel("log(count)", fontsize=16)
-            flat_axs[i].set_title(topo, fontsize=16)
+            flat_axs[i].set_title(t_option, fontsize=16)
             flat_axs[i].set_yscale("log")
             # ax.legend(ncol=2, fontsize=16)
 
@@ -463,6 +565,10 @@ def single_value_distributions(all_data, figure_output):
 
 
 def shape_vector_distributions(all_data, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     present_shape_values = sorted(
         set([j for i in all_data.values() for j in i["shape_vector"]]),
         key=lambda i: int(i[-1]),
@@ -514,6 +620,10 @@ def shape_vector_distributions(all_data, figure_output):
 
 
 def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     fig, ax = plt.subplots(figsize=(8, 5))
 
     if c3bb is None and c2bb is None:
@@ -661,6 +771,10 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
 
 
 def phase_space_1(bb_data, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     t_map = map_cltype_to_shapetopology()
     fig, axs = plt.subplots(
         nrows=3,
@@ -730,6 +844,10 @@ def phase_space_1(bb_data, figure_output):
 
 
 def phase_space_2(bb_data, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     for i in ("shape", "energy", "se"):
         ncols = 2
 
@@ -818,7 +936,7 @@ def phase_space_2(bb_data, figure_output):
         plt.close()
 
 
-def phase_space_3(bb_data, figure_output):
+def phase_space_3(all_data, figure_output):
     fig, axs = plt.subplots(
         nrows=2,
         ncols=2,
@@ -829,50 +947,46 @@ def phase_space_3(bb_data, figure_output):
 
     topologies = map_cltype_to_shapetopology()
 
-    data = {}
-    for bb_triplet in bb_data:
-        bb_dict = bb_data[bb_triplet]
-        torsion = bb_triplet[2]
-        cl_bbname = bb_triplet[1]
-        if "3C1" in cl_bbname:
-            bbtitle = "3C1"
-        elif "4C1" in cl_bbname:
-            bbtitle = "4C1"
-
-        if (bbtitle, torsion) not in data:
-            data[(bbtitle, torsion)] = {}
-
-        all_energies = set(
-            bb_dict[i][1] / int(i.rstrip("b")[-1]) for i in bb_dict
-        )
-        num_mixed = len(
-            tuple(i for i in all_energies if i < isomer_energy())
-        )
-        min_energy = min(tuple(i[1] for i in bb_dict.values()))
-        if min_energy > max_energy():
-            topo_str = "unstable"
-        elif num_mixed > 1:
-            topo_str = "mixed"
-        else:
-            min_e_dict = {
-                i: bb_dict[i]
-                for i in bb_dict
-                if bb_dict[i][1] == min_energy
+    opt_data = all_data[all_data["optimised"]]
+    groups = opt_data.groupby(["bbpair"])
+    data = {
+        ("3C1", "toff"): {i: 0 for i in topologies["3C1"].values()},
+        ("3C1", "ton"): {i: 0 for i in topologies["3C1"].values()},
+        ("4C1", "toff"): {i: 0 for i in topologies["4C1"].values()},
+        ("4C1", "ton"): {i: 0 for i in topologies["4C1"].values()},
+    }
+    for gid, dfi in groups:
+        bbtitle = gid[:3]
+        for tors in ("ton", "toff"):
+            fin_data = dfi[dfi["torsions"] == tors]
+            energies = {
+                str(row["topology"]): float(row["energy"])
+                / stoich_map(str(row["topology"]))
+                for i, row in fin_data.iterrows()
             }
-            keys = list(min_e_dict.keys())
-            topo_str = topologies[bbtitle][keys[0][-1]]
+            num_mixed = len(
+                tuple(
+                    i
+                    for i in list(energies.values())
+                    if i < isomer_energy()
+                )
+            )
+            min_energy = min(energies.values())
+            if min_energy > max_energy():
+                topo_str = "unstable"
+            elif num_mixed > 1:
+                topo_str = "mixed"
+            else:
+                topo_str = list(energies.keys())[
+                    list(energies.values()).index(min_energy)
+                ]
+            if topo_str not in data[(bbtitle, tors)]:
+                data[(bbtitle, tors)][topo_str] = 0
+            data[(bbtitle, tors)][topo_str] += 1
 
-        if topo_str not in data[(bbtitle, torsion)]:
-            data[(bbtitle, torsion)][topo_str] = 0
-        data[(bbtitle, torsion)][topo_str] += 1
-
-    tot_pairs = 0
-    for ax, (title, torsion) in zip(flat_axs, data):
-        coords = data[(title, torsion)]
-        for i in coords:
-            dd = coords[i]
-            tot_pairs += dd
-
+    for ax, (bbtitle, torsion) in zip(flat_axs, data):
+        coords = data[(bbtitle, torsion)]
+        print(coords)
         ax.bar(
             [convert_topo_to_label(i) for i in coords.keys()],
             coords.values(),
@@ -893,18 +1007,13 @@ def phase_space_3(bb_data, figure_output):
                 ha="center",
             )
 
-        ax.set_title(
-            f"{title}, {torsion}: {isomer_energy()}eV: {max_energy()}eV",
-            fontsize=16,
+        title = (
+            f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
+            f"{max_energy()}eV"
         )
+        ax.set_title(title, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel("count", fontsize=16)
-
-    if tot_pairs != len(bb_data):
-        raise ValueError(
-            f"extracted {tot_pairs} pairs, but there should be "
-            f"{len(bb_data)}!"
-        )
 
     fig.tight_layout()
     fig.savefig(
@@ -916,6 +1025,10 @@ def phase_space_3(bb_data, figure_output):
 
 
 def phase_space_4(bb_data, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     color_map = shapelabels_to_colormap()
 
     fig, axs = plt.subplots(
@@ -1004,6 +1117,10 @@ def phase_space_4(bb_data, figure_output):
 
 
 def phase_space_5(bb_data, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     fig, axs = plt.subplots(
         nrows=3,
         ncols=3,
@@ -1083,6 +1200,10 @@ def phase_space_5(bb_data, figure_output):
 
 
 def phase_space_6(bb_data, figure_output):
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     fig, axs = plt.subplots(
         nrows=3,
         ncols=3,
@@ -1157,7 +1278,10 @@ def phase_space_6(bb_data, figure_output):
 
 
 def phase_space_7(bb_data, figure_output):
-
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     topologies = mapshape_to_topology(reverse=True)
 
     t_map = map_cltype_to_shapetopology()
@@ -1249,7 +1373,10 @@ def phase_space_7(bb_data, figure_output):
 
 
 def phase_space_8(bb_data, figure_output):
-
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     t_map = map_cltype_to_shapetopology()
 
     color_map = cltypetopo_to_colormap()
@@ -1395,7 +1522,10 @@ def phase_space_8(bb_data, figure_output):
 
 
 def phase_space_9(bb_data, figure_output):
-
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     t_map = map_cltype_to_shapetopology()
     color_map = cltypetopo_to_colormap()
 
@@ -1552,7 +1682,10 @@ def phase_space_9(bb_data, figure_output):
 
 
 def phase_space_10(bb_data, figure_output):
-
+    print(all_data.head())
+    print(all_data.columns)
+    print(all_data.iloc[1])
+    raise SystemExit()
     t_map = map_cltype_to_shapetopology()
     for t_cltopo, torsions in itertools.product(
         (3, 4), ("ton", "toff")
@@ -1833,20 +1966,26 @@ def phase_space_10(bb_data, figure_output):
                 plt.close()
 
 
-def parity_1(tpair_data, figure_output):
+def parity_1(all_data, figure_output):
     tcmap = topo_to_colormap()
-    fig, ax = plt.subplots(figsize=(8, 5))
 
+    fig, ax = plt.subplots(figsize=(8, 5))
+    opt_data = all_data[all_data["optimised"]]
+    ton_data = opt_data[opt_data["torsions"] == "ton"]
+    toff_data = opt_data[opt_data["torsions"] == "toff"]
+
+    out_data = ton_data.merge(
+        toff_data,
+        on="cage_name",
+    )
+
+    max_xlim = 0
+    max_ylim = 0
     for tstr in tcmap:
-        xdata = []
-        ydata = []
-        for cage in tpair_data:
-            tdata = tpair_data[cage]
-            pair1 = (tstr, "toff")
-            pair2 = (tstr, "ton")
-            if pair1 in tdata and pair2 in tdata:
-                xdata.append(tdata[pair1])
-                ydata.append(tdata[pair2])
+        t_data = out_data[out_data["topology_x"] == tstr]
+        ydata = list(t_data["energy_x"])
+        xdata = list(t_data["energy_y"])
+
         if len(xdata) > 0:
             ax.scatter(
                 [i for i in xdata],
@@ -1855,14 +1994,17 @@ def parity_1(tpair_data, figure_output):
                 edgecolor="none",
                 s=30,
                 alpha=1.0,
-                label=tstr,
+                label=convert_topo_to_label(tstr),
             )
+            max_xlim = max((max_xlim, max(xdata)))
+            max_ylim = max((max_ylim, max(ydata)))
 
+    ax.plot((0, max_ylim), (0, max_ylim), c="k")
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("toff [eV]", fontsize=16)
     ax.set_ylabel("ton [eV]", fontsize=16)
-    # ax.set_xlim(lim)
-    # ax.set_ylim(lim)
+    ax.set_xlim(0, max_xlim)
+    ax.set_ylim(0, max_ylim)
     ax.legend(fontsize=16, ncol=3)
 
     fig.tight_layout()
@@ -1872,6 +2014,143 @@ def parity_1(tpair_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
+
+
+def not_opt_phase_space(all_data, figure_output):
+    color_map = topo_to_colormap()
+    tt_map = {j: i for i, j in enumerate(color_map)}
+    fig, axs = plt.subplots(
+        ncols=3,
+        nrows=3,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    unopt_data = all_data[~all_data["optimised"]]
+    for tstr in tt_map:
+        ax = flat_axs[tt_map[tstr]]
+        topo_data = unopt_data[unopt_data["topology"] == tstr]
+
+        toff_data = topo_data[topo_data["torsions"] == "toff"]
+        c = "r"
+        s = 100
+        m = "s"
+        x = toff_data["clangle"]
+        y = toff_data["c2angle"]
+        ax.scatter(
+            x,
+            y,
+            c=c,
+            marker=m,
+            edgecolor="none",
+            s=s,
+            alpha=0.2,
+        )
+
+        ton_data = topo_data[topo_data["torsions"] == "ton"]
+        c = "k"
+        s = 50
+        m = "o"
+        x = ton_data["clangle"]
+        y = ton_data["c2angle"]
+        ax.scatter(
+            x,
+            y,
+            c=c,
+            marker=m,
+            edgecolor="none",
+            s=s,
+            alpha=0.2,
+        )
+
+        count_str = f"{len(toff_data)}/{len(ton_data)}"
+        ax.set_title(f"{tstr}: {count_str}", fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        # ax.set_xlabel("target 2c core size", fontsize=16)
+        ax.set_xlabel("target Lc angle", fontsize=16)
+        ax.set_ylabel("target 2c bite angle", fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_notopt.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def bite_angle_relationship(all_data, figure_output):
+    color_map = topo_to_colormap()
+    tt_map = {j: i for i, j in enumerate(color_map)}
+
+    opt_data = all_data[all_data["optimised"]]
+    clangle_data = opt_data[opt_data["clangle"] == 120]
+    for torsion in ("ton", "toff"):
+        if torsion == "ton":
+            c = "gray"
+            m = "s"
+        elif torsion == "toff":
+            c = "r"
+            m = "o"
+
+        tor_data = clangle_data[clangle_data["torsions"] == torsion]
+
+        fig, axs = plt.subplots(
+            ncols=3,
+            nrows=3,
+            sharex=True,
+            sharey=True,
+            figsize=(16, 10),
+        )
+        flat_axs = axs.flatten()
+        for tstr in tt_map:
+            filt_data = tor_data[tor_data["topology"] == tstr]
+            ax = flat_axs[tt_map[tstr]]
+            for c1_option in sorted(set(filt_data["c2sigma"])):
+                test_data = filt_data[filt_data["c2sigma"] == c1_option]
+                for c2_option in sorted(set(test_data["clsigma"])):
+                    plot_data = test_data[
+                        test_data["clsigma"] == c2_option
+                    ]
+                    xs = list(plot_data["c2angle"])
+                    ys = list(plot_data["energy"])
+                    xs, ys = zip(*sorted(zip(xs, ys)))
+                    ax.plot(
+                        xs,
+                        ys,
+                        c=c,
+                        lw=2,
+                        marker=m,
+                        alpha=1.0,
+                    )
+
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_xlabel("target 2c bite angle", fontsize=16)
+                ax.set_ylabel("energy", fontsize=16)
+
+                title = f"{tstr} : 120"
+                ax.set_title(title, fontsize=16)
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"anglerelation_{torsion}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
+def visualise_high_energy(all_data, figure_output):
+    opt_data = all_data[all_data["optimised"]]
+    high_energy = opt_data[opt_data["energy"] > 500]
+    high_e_names = list(high_energy["index"])
+    logging.info(
+        f"there are {len(high_e_names)} high energy structures"
+    )
+    with open(figure_output / "high_energy_names.txt", "w") as f:
+        f.write("_opted3.mol ".join(high_e_names))
+        f.write("_opted3.mol")
 
 
 def main():
@@ -1885,67 +2164,34 @@ def main():
     figure_output = cages() / "figures"
     calculation_output = cages() / "calculations"
 
-    all_data = {}
-    bb_data = {}
-    tpair_data = {}
-    for j_file in calculation_output.glob("*_res.json"):
-        with open(j_file, "r") as f:
-            res_dict = json.load(f)
-        name = str(j_file.name).replace("_res.json", "")
-        t_str, clbb_name, c2bb_name, torsions = name.split("_")
-        all_data[name] = {}
-        all_data[name]["energy"] = res_dict["fin_energy"]
-        all_data[name]["min_distance"] = res_dict["opt_pore_data"][
-            "min_distance"
-        ]
-        all_data[name]["shape_vector"] = res_dict["shape_measures"]
-        all_data[name]["clbb"] = clbb_name
-        all_data[name]["c2bb"] = c2bb_name
-
-        bb_triplet = (c2bb_name, clbb_name, torsions)
-        if bb_triplet not in bb_data:
-            bb_data[bb_triplet] = {}
-        for sv in res_dict["shape_measures"]:
-            if "FourPlusSix2" in name:
-                svb = sv + "b"
-            elif "M2L4" in name:
-                svb = sv + "b"
-            elif "TwoPlusFour" in name:
-                svb = sv + "b"
-            else:
-                svb = sv
-            bb_data[bb_triplet][svb] = (
-                res_dict["shape_measures"][sv],
-                res_dict["fin_energy"],
-                res_dict["opt_pore_data"]["min_distance"],
-            )
-
-        bb_pair = (c2bb_name, clbb_name)
-        if bb_pair not in tpair_data:
-            tpair_data[bb_pair] = {}
-
-        tpair_data[bb_pair][(t_str, torsions)] = res_dict["fin_energy"]
-
+    all_data = data_to_array(
+        json_files=calculation_output.glob("*_res.json"),
+        output_csv=calculation_output / "all_array.csv",
+    )
     logging.info(f"there are {len(all_data)} collected data")
-    parity_1(tpair_data, figure_output)
+
+    phase_space_3(all_data, figure_output)
     identity_distributions(all_data, figure_output)
-    rmsd_distributions(all_data, calculation_output, figure_output)
-    phase_space_3(bb_data, figure_output)
     single_value_distributions(all_data, figure_output)
+    not_opt_phase_space(all_data, figure_output)
+    bite_angle_relationship(all_data, figure_output)
+    visualise_high_energy(all_data, figure_output)
+    rmsd_distributions(all_data, calculation_output, figure_output)
+    parity_1(all_data, figure_output)
 
     raise SystemExit()
-    phase_space_10(bb_data, figure_output)
+    phase_space_10(all_data, figure_output)
 
     shape_vector_distributions(all_data, figure_output)
-    phase_space_9(bb_data, figure_output)
-    phase_space_1(bb_data, figure_output)
-    phase_space_5(bb_data, figure_output)
-    phase_space_6(bb_data, figure_output)
-    phase_space_7(bb_data, figure_output)
-    phase_space_8(bb_data, figure_output)
-    phase_space_4(bb_data, figure_output)
+    phase_space_9(all_data, figure_output)
+    phase_space_1(all_data, figure_output)
+    phase_space_5(all_data, figure_output)
+    phase_space_6(all_data, figure_output)
+    phase_space_7(all_data, figure_output)
+    phase_space_8(all_data, figure_output)
+    phase_space_4(all_data, figure_output)
     raise SystemExit()
-    phase_space_2(bb_data, figure_output)
+    phase_space_2(all_data, figure_output)
     raise SystemExit(
         "next I want map of target bite angle to actual bite angle "
     )
