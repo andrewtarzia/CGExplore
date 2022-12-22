@@ -261,7 +261,8 @@ class CGGulpOptimizer(CGOptimizer):
                 string += f"fix_atom {atom_no}\n"
                 count += 1
 
-        logging.info(f"OPT: fixing {count} guest beads.")
+        if count > 0:
+            logging.info(f"OPT: fixing {count} guest beads.")
         return string
 
     def _write_gulp_input(self, mol):
