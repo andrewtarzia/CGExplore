@@ -21,11 +21,7 @@ from shape import ShapeMeasure, get_shape_calculation_molecule
 from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory, get_atom_distance
-from gulp_optimizer import (
-    CGGulpOptimizer,
-    CGGulpMD,
-    MDEmptyTrajcetoryError,
-)
+from gulp_optimizer import CGGulpOptimizer
 
 from cage_construction.topologies import cage_topology_options
 
@@ -67,7 +63,7 @@ def core_2c_beads():
     return produce_bead_library(
         type_prefix="c",
         element_string="Ag",
-        sigmas=range(1, 10, 1),
+        sigmas=(1, 5, 10),
         angles=(180,),
         bond_ks=(10,),
         angle_ks=(20,),
@@ -100,7 +96,7 @@ def beads_3c():
     return produce_bead_library(
         type_prefix="n",
         element_string="C",
-        sigmas=range(1, 16, 1),
+        sigmas=(1, 5, 10),
         angles=(60, 90, 109.5, 120),
         bond_ks=(10,),
         angle_ks=(20,),
@@ -111,7 +107,7 @@ def beads_4c():
     return produce_bead_library(
         type_prefix="m",
         element_string="Pd",
-        sigmas=range(1, 16, 1),
+        sigmas=(1, 5, 10),
         angles=((50, 130), (70, 130), (90, 130)),
         bond_ks=(10,),
         angle_ks=(20,),
@@ -174,24 +170,22 @@ def optimise_cage(
     custom_torsion_set,
 ):
 
-    opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
-    mdr_xyz_file = os.path.join(output_dir, f"{name}_final.xyz")
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
     opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
-    opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
 
     # Does optimisation.
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}...")
+        opt_xyz_file = os.path.join(output_dir, f"{name}_o1_opted.xyz")
         opt = CGGulpOptimizer(
-            fileprefix=name,
+            fileprefix=f"{name}_o1",
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=custom_torsion_set,
             max_cycles=2000,
-            conjugate_gradient=False,
+            conjugate_gradient=True,
             bonds=True,
             angles=True,
             torsions=False,
@@ -202,34 +196,23 @@ def optimise_cage(
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
 
-    check_long_distances(molecule, name=name, max_distance=15, step=1)
+    try:
+        check_long_distances(
+            molecule,
+            name=name,
+            max_distance=15,
+            step=1,
+        )
+    except ValueError:
+        logging.info(f"{name} opt failed in step 1. Should be ignored.")
+        return None
 
     if os.path.exists(opt2_mol_file):
         molecule = molecule.with_structure_from_file(opt2_mol_file)
     else:
-        logging.info(f"optimising {name}...")
-
-        opt = CGGulpMD(
-            fileprefix=name,
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=False,
-        )
-        _ = opt.optimize(molecule)
-        molecule = molecule.with_structure_from_file(mdr_xyz_file)
-        molecule = molecule.with_centroid((0, 0, 0))
-        molecule.write(opt2_mol_file)
-
-    if os.path.exists(opt3_mol_file):
-        molecule = molecule.with_structure_from_file(opt3_mol_file)
-    else:
-        logging.info(f"optimising {name}...")
+        opt_xyz_file = os.path.join(output_dir, f"{name}_o2_opted.xyz")
         opt = CGGulpOptimizer(
-            fileprefix=name,
+            fileprefix=f"{name}_o2",
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=custom_torsion_set,
@@ -243,17 +226,17 @@ def optimise_cage(
         _ = opt.optimize(molecule)
         molecule = molecule.with_structure_from_file(opt_xyz_file)
         molecule = molecule.with_centroid((0, 0, 0))
-        molecule.write(opt3_mol_file)
+        molecule.write(opt2_mol_file)
 
     try:
         check_long_distances(
             molecule,
             name=name,
             max_distance=15,
-            step=3,
+            step=2,
         )
     except ValueError:
-        logging.info(f"{name} opt failed in step 3. Should be ignored.")
+        logging.info(f"{name} opt failed in step 2. Should be ignored.")
         return None
 
     return molecule
@@ -282,7 +265,7 @@ def analyse_cage(
     else:
         logging.info(f"analysing {name} into {output_file}")
         opt = CGGulpOptimizer(
-            fileprefix=name,
+            fileprefix=f"{name}_o2",
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=custom_torsion_set,
@@ -474,16 +457,13 @@ def main():
                         building_blocks=(bb2, bbl),
                     ),
                 )
-                try:
-                    cage = optimise_cage(
-                        molecule=cage,
-                        name=name,
-                        output_dir=calculation_output,
-                        bead_set=bead_set,
-                        custom_torsion_set=custom_torsion_set,
-                    )
-                except MDEmptyTrajcetoryError:
-                    continue
+                cage = optimise_cage(
+                    molecule=cage,
+                    name=name,
+                    output_dir=calculation_output,
+                    bead_set=bead_set,
+                    custom_torsion_set=custom_torsion_set,
+                )
 
                 if cage is not None:
                     cage.write(str(struct_output / f"{name}_optc.mol"))
