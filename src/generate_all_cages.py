@@ -263,7 +263,7 @@ def analyse_cage(
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
-        logging.info(f"analysing {name} into {output_file}")
+        logging.info(f"analysing {name}")
         opt = CGGulpOptimizer(
             fileprefix=f"{name}_o2",
             output_dir=output_dir,
