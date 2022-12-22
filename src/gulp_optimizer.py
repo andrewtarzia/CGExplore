@@ -24,10 +24,6 @@ class MDEmptyTrajcetoryError(Exception):
     ...
 
 
-def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
-    return (sigma1 + sigma2) / 2
-
-
 class CGGulpOptimizer(CGOptimizer):
     def __init__(
         self,
@@ -346,16 +342,6 @@ class CGGulpMD(CGGulpOptimizer):
             i.element_string for i in guest_beads()
         )
 
-        self._integrator = "stochastic"
-        self._ensemble = "nvt"
-        self._temperature = 10
-        self._equilbration = 1.0
-        self._production = 20.0
-        self._timestep = 0.5
-        self._N_conformers = 20
-        samples = float(self._production) / float(self._N_conformers)
-        self._sample = samples
-        self._write = samples
         self._custom_torsion_set = custom_torsion_set
 
     def get_xyz_atom_types(self, xyz_file):
@@ -515,16 +501,29 @@ class CGGulpMD(CGGulpOptimizer):
         angle_string = self._get_angle_string(mol)
         torsion_string = self._get_torsion_string(mol)
         vdw_string = self._get_vdw_string(mol)
+
+        integrator = "stochastic"
+        ensemble = "nvt"
+        temperature = 10
+        tau_thermostat = 1.0
+        equilbration = 1.0
+        production = 20.0
+        timestep = 0.5
+        N_conformers = 20
+        samples = float(production) / float(N_conformers)
+        write = samples
+
         settings_string = (
             "mdmaxtemp 100000000\n"
-            f"integrator {self._integrator}\n"
-            f"ensemble {self._ensemble}\n"
-            f"temperature {self._temperature}\n"
-            f"equilbration {self._equilbration} ps\n"
-            f"production {self._production} ps\n"
-            f"timestep {self._timestep} fs\n"
-            f"sample {self._sample} ps\n"
-            f"write {self._write} ps\n"
+            f"integrator {integrator}\n"
+            f"ensemble {ensemble}\n"
+            f"temperature {temperature}\n"
+            f"tau_thermostat {tau_thermostat}\n"
+            f"equilbration {equilbration} ps\n"
+            f"production {production} ps\n"
+            f"timestep {timestep} fs\n"
+            f"sample {samples/ 10} ps\n"
+            f"write {write} ps\n"
             f"output trajectory ascii {self._output_traj}\n"
         )
 
