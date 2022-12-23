@@ -56,10 +56,10 @@ def get_shape_molecule_nodes(constructed_molecule, name):
         "FourPlusSix2": 4,
         "SixPlusNine": 6,
         "EightPlusTwelve": 8,
-        "M2L4": 6,
-        "M3L6": 3,
-        "M4L8": 4,
-        "M6L12": 6,
+        "TwoPlusFour": 6,
+        "ThreePlusSix": 3,
+        "FourPlusEight": 4,
+        "SixPlusTwelve": 6,
     }
 
     splits = name.split("_")
@@ -80,7 +80,7 @@ def get_shape_molecule_nodes(constructed_molecule, name):
         atoms=atoms,
     )
 
-    if topo_str in ("TwoPlusThree", "M2L4", "TwoPlusFour"):
+    if topo_str in ("TwoPlusThree", "TwoPlusFour"):
         target_id = 2
         two_c_bb = bbs[1]
         position_matrix, atoms = fill_position_matrix(
@@ -106,7 +106,7 @@ def get_shape_molecule_ligands(constructed_molecule, name):
         "TwoPlusThree": 3,
         "FourPlusSix": 6,
         "FourPlusSix2": 6,
-        "M2L4": 4,
+        "TwoPlusFour": 4,
     }
 
     splits = name.split("_")
