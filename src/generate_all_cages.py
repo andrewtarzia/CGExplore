@@ -162,6 +162,22 @@ def check_long_distances(molecule, name, max_distance, step):
         )
 
 
+def deform_molecule(molecule):
+    old_pos_mat = molecule.get_position_matrix()
+    centroid = molecule.get_centroid()
+
+    generator = np.random.RandomState(1000)
+
+    new_pos_mat = []
+    for pos in old_pos_mat:
+        c_v = centroid - pos
+        c_v = 0.2 * (c_v / np.linalg.norm(c_v))
+        move = generator.choice([-1, 1]) * c_v
+        new_pos = pos - move
+        new_pos_mat.append(new_pos)
+    return molecule.with_position_matrix(np.array((new_pos_mat)))
+
+
 def optimise_cage(
     molecule,
     name,
@@ -178,6 +194,9 @@ def optimise_cage(
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}...")
+        # Perform a slight deformation on ideal topologies to avoid
+        # fake local minima.
+        molecule = deform_molecule(molecule)
         opt_xyz_file = os.path.join(output_dir, f"{name}_o1_opted.xyz")
         opt = CGGulpOptimizer(
             fileprefix=f"{name}_o1",
