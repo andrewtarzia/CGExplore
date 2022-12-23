@@ -13,11 +13,17 @@ import sys
 import stk
 import os
 import json
+import numpy as np
 import logging
 import itertools
 from rdkit import RDLogger
 
-from shape import ShapeMeasure, get_shape_calculation_molecule
+from shape import (
+    ShapeMeasure,
+    get_shape_molecule_ligands,
+    get_shape_molecule_nodes,
+)
+from geom import GeomMeasure
 from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory, get_atom_distance
@@ -270,6 +276,8 @@ def analyse_cage(
 ):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
+    shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
+    shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
     # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
     # pm_output_file = os.path.join(output_dir, f"{name}_pm.json")
 
@@ -293,7 +301,6 @@ def analyse_cage(
             torsions=False,
             vdw=False,
         )
-        # molecule.write(xyz_template)
         run_data = opt.extract_gulp()
         try:
             fin_energy = run_data["final_energy"]
@@ -303,18 +310,51 @@ def analyse_cage(
                 f"of {name}"
             )
 
-        shape_measures = ShapeMeasure(
-            output_dir=(output_dir / f"{name}_shape"),
+        shape_mol = get_shape_molecule_nodes(molecule, name)
+        shape_mol.write(shape_molfile1)
+        node_shape_measures = ShapeMeasure(
+            output_dir=(output_dir / f"{name}_nshape"),
             target_atmnums=None,
             shape_string=None,
-        ).calculate(get_shape_calculation_molecule(molecule, name))
+        ).calculate(shape_mol)
+
+        shape_mol = get_shape_molecule_ligands(molecule, name)
+        if shape_mol is None:
+            lig_shape_measures = None
+        else:
+            lig_shape_measures = ShapeMeasure(
+                output_dir=(output_dir / f"{name}_lshape"),
+                target_atmnums=None,
+                shape_string=None,
+            ).calculate(shape_mol)
+            shape_mol.write(shape_molfile2)
 
         opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
+
+        # Always want to extract target torions.
+        temp_custom_torsion_set = target_torsions(
+            bead_set=bead_set,
+            custom_torsion_option=None,
+        )
+
+        custom_torsion_atoms = [
+            bead_set[j].element_string
+            for i in temp_custom_torsion_set
+            for j in i
+        ]
+        g_measure = GeomMeasure(custom_torsion_atoms)
+        bond_data = g_measure.calculate_bonds(molecule)
+        angle_data = g_measure.calculate_angles(molecule)
+        dihedral_data = g_measure.calculate_dihedrals(molecule)
         res_dict = {
             "optimised": True,
             "fin_energy": fin_energy,
             "opt_pore_data": opt_pore_data,
-            "shape_measures": shape_measures,
+            "lig_shape_measures": lig_shape_measures,
+            "node_shape_measures": node_shape_measures,
+            "bond_data": bond_data,
+            "angle_data": angle_data,
+            "dihedral_data": dihedral_data,
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
@@ -345,6 +385,22 @@ def build_building_block(
         opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
         blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
     return blocks
+
+
+def target_torsions(bead_set, custom_torsion_option):
+    (c_key,) = (i for i in bead_set if i[0] == "c")
+    (t_key_1,) = (i for i in bead_set if i[0] == "a")
+    (t_key_2,) = (i for i in bead_set if i[0] == "b")
+    custom_torsion_set = {
+        (
+            t_key_2,
+            t_key_1,
+            c_key,
+            t_key_1,
+            t_key_2,
+        ): custom_torsion_option,
+    }
+    return custom_torsion_set
 
 
 def main():
@@ -383,9 +439,7 @@ def main():
     )
     bead_library_check(full_bead_library)
 
-    # For now, just build N options and calculate properties.
     logging.info("building building blocks...")
-
     c2_blocks = build_building_block(
         topology=TwoC1Arm,
         option1_lib=beads_core_2c_lib,
@@ -456,18 +510,11 @@ def main():
                 if custom_torsion_options[custom_torsion] is None:
                     custom_torsion_set = None
                 else:
-                    (c_key,) = (i for i in bead_set if i[0] == "c")
-                    (t_key_1,) = (i for i in bead_set if i[0] == "a")
-                    (t_key_2,) = (i for i in bead_set if i[0] == "b")
-                    custom_torsion_set = {
-                        (
-                            t_key_2,
-                            t_key_1,
-                            c_key,
-                            t_key_1,
-                            t_key_2,
-                        ): custom_torsion_options[custom_torsion],
-                    }
+                    tors_option = custom_torsion_options[custom_torsion]
+                    custom_torsion_set = target_torsions(
+                        bead_set=bead_set,
+                        custom_torsion_option=tors_option,
+                    )
 
                 cage = stk.ConstructedMolecule(
                     topology_graph=populations[popn]["t"][
