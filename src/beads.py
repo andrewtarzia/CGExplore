@@ -10,7 +10,6 @@ Author: Andrew Tarzia
 """
 
 from dataclasses import dataclass
-from typing import Union, Tuple
 import logging
 from collections import Counter
 
@@ -127,8 +126,9 @@ class CgBead:
     bead_type: str
     sigma: float
     bond_k: float
-    angle_centered: Union[float, Tuple[float]]
+    angle_centered: float
     angle_k: float
+    coordination: int
 
 
 @dataclass
