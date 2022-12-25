@@ -43,6 +43,7 @@ def produce_bead_library(
     angles,
     bond_ks,
     angle_ks,
+    coordination,
 ):
     return {
         f"{type_prefix}{i}{j}{k}{l}": CgBead(
@@ -52,6 +53,7 @@ def produce_bead_library(
             angle_centered=angle,
             bond_k=bond_k,
             angle_k=angle_k,
+            coordination=coordination,
         )
         for (i, sigma), (j, angle), (k, bond_k), (
             l,
@@ -73,6 +75,7 @@ def core_2c_beads():
         angles=(180,),
         bond_ks=(10,),
         angle_ks=(20,),
+        coordination=2,
     )
 
 
@@ -84,6 +87,7 @@ def arm_2c_beads():
         angles=range(90, 181, 10),
         bond_ks=(10,),
         angle_ks=(20,),
+        coordination=2,
     )
 
 
@@ -95,6 +99,7 @@ def binder_beads():
         angles=(180,),
         bond_ks=(10,),
         angle_ks=(20,),
+        coordination=2,
     )
 
 
@@ -106,6 +111,7 @@ def beads_3c():
         angles=(60, 90, 109.5, 120),
         bond_ks=(10,),
         angle_ks=(20,),
+        coordination=3,
     )
 
 
@@ -114,9 +120,10 @@ def beads_4c():
         type_prefix="m",
         element_string="Pd",
         sigmas=(1, 5, 10),
-        angles=((50, 130), (70, 130), (90, 130)),
+        angles=(50, 70, 90),
         bond_ks=(10,),
         angle_ks=(20,),
+        coordination=4,
     )
 
 
