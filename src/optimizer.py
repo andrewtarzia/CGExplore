@@ -12,6 +12,7 @@ Author: Andrew Tarzia
 import numpy as np
 from itertools import combinations
 import logging
+from heapq import nsmallest
 
 from utilities import get_all_angles, angle_between, get_all_torsions
 
@@ -89,6 +90,7 @@ class CGOptimizer:
         angles = get_all_angles(mol)
         pos_mat = mol.get_position_matrix()
 
+        saved_angles = {}
         for angle in angles:
             outer_atom1, centre_atom, outer_atom2 = angle
             outer_name1 = (
@@ -110,30 +112,21 @@ class CGOptimizer:
                     estring=centre_estring,
                 )
 
-                acentered = centre_cgbead.angle_centered
-                if isinstance(acentered, int) or isinstance(
-                    acentered, float
-                ):
-                    angle_theta = acentered
+                if centre_cgbead.coordination == 4:
+                    if centre_name not in saved_angles:
+                        saved_angles[centre_name] = []
+                    saved_angles[centre_name].append(
+                        (
+                            centre_cgbead.angle_centered,
+                            centre_cgbead.angle_k,
+                            outer_atom1,
+                            outer_atom2,
+                            centre_atom,
+                        )
+                    )
+                    continue
 
-                elif isinstance(acentered, tuple):
-                    min_angle, cut_angle = acentered
-                    vector1 = (
-                        pos_mat[centre_atom.get_id()]
-                        - pos_mat[outer_atom1.get_id()]
-                    )
-                    vector2 = (
-                        pos_mat[centre_atom.get_id()]
-                        - pos_mat[outer_atom2.get_id()]
-                    )
-                    curr_angle = np.degrees(
-                        angle_between(vector1, vector2)
-                    )
-                    if curr_angle < cut_angle:
-                        angle_theta = min_angle
-                    elif curr_angle >= cut_angle:
-                        continue
-
+                angle_theta = centre_cgbead.angle_centered
                 angle_k = centre_cgbead.angle_k
                 yield (
                     centre_name,
@@ -149,6 +142,78 @@ class CGOptimizer:
                     f"angle not assigned (centered on {centre_name})."
                 )
                 continue
+
+        # For four coordinate systems, only apply angles between
+        # neighbouring atoms.
+        for centre_name in saved_angles:
+            sa_d = saved_angles[centre_name]
+            all_angles = {
+                i: np.degrees(
+                    angle_between(
+                        v1=pos_mat[X[4].get_id()]
+                        - pos_mat[X[2].get_id()],
+                        v2=pos_mat[X[4].get_id()]
+                        - pos_mat[X[3].get_id()],
+                    )
+                )
+                for i, X in enumerate(sa_d)
+            }
+            four_smallest = nsmallest(4, all_angles, key=all_angles.get)
+            for used_ang_id in four_smallest:
+                used_ang = sa_d[used_ang_id]
+                angle_theta = used_ang[0]
+                angle_k = used_ang[1]
+                outer_name1 = (
+                    f"{used_ang[2].__class__.__name__}"
+                    f"{used_ang[2].get_id()+1}"
+                )
+                outer_name2 = (
+                    f"{used_ang[3].__class__.__name__}"
+                    f"{used_ang[3].get_id()+1}"
+                )
+                yield (
+                    centre_name,
+                    outer_name1,
+                    outer_name2,
+                    angle_k,
+                    angle_theta,
+                )
+
+            def convert_pyramid_angle(outer_angle):
+                """
+                Some basic trig on square-pyramids
+
+                """
+                outer_angle = np.radians(outer_angle)
+                # Side length, oa, does not matter.
+                oa = 1
+                ab = 2 * (oa * np.sin(outer_angle / 2))
+                ac = ab / np.sqrt(2) * 2
+                opposite_angle = 2 * np.arcsin(ac / 2 / oa)
+                return round(np.degrees(opposite_angle), 2)
+
+            for used_ang_id in all_angles:
+                if used_ang_id in four_smallest:
+                    continue
+                used_ang = sa_d[used_ang_id]
+                used_ang[0]
+                angle_theta = convert_pyramid_angle(used_ang[0])
+                angle_k = used_ang[1]
+                outer_name1 = (
+                    f"{used_ang[2].__class__.__name__}"
+                    f"{used_ang[2].get_id()+1}"
+                )
+                outer_name2 = (
+                    f"{used_ang[3].__class__.__name__}"
+                    f"{used_ang[3].get_id()+1}"
+                )
+                yield (
+                    centre_name,
+                    outer_name1,
+                    outer_name2,
+                    angle_k,
+                    angle_theta,
+                )
 
     def _yield_torsions(self, mol):
         if self._torsions is False:
