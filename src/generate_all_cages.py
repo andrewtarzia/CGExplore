@@ -514,7 +514,14 @@ def main():
 
                 bead_set = bb2_bead_set.copy()
                 bead_set.update(bbl_bead_set)
+                (ba_bead,) = (
+                    bb2_bead_set[i] for i in bb2_bead_set if "a" in i
+                )
+                bite_angle = (ba_bead.angle_centered - 90) * 2
                 if custom_torsion_options[custom_torsion] is None:
+                    custom_torsion_set = None
+                elif bite_angle == 180:
+                    logging.info("no torsions for bite angle == 180")
                     custom_torsion_set = None
                 else:
                     tors_option = custom_torsion_options[custom_torsion]
