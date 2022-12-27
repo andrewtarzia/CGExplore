@@ -317,24 +317,28 @@ def analyse_cage(
                 f"of {name}"
             )
 
-        shape_mol = get_shape_molecule_nodes(molecule, name)
-        shape_mol.write(shape_molfile1)
-        node_shape_measures = ShapeMeasure(
-            output_dir=(output_dir / f"{name}_nshape"),
-            target_atmnums=None,
-            shape_string=None,
-        ).calculate(shape_mol)
-
-        shape_mol = get_shape_molecule_ligands(molecule, name)
-        if shape_mol is None:
+        if "M12L24" in name:
+            node_shape_measures = None
             lig_shape_measures = None
         else:
-            lig_shape_measures = ShapeMeasure(
-                output_dir=(output_dir / f"{name}_lshape"),
+            shape_mol = get_shape_molecule_nodes(molecule, name)
+            shape_mol.write(shape_molfile1)
+            node_shape_measures = ShapeMeasure(
+                output_dir=(output_dir / f"{name}_nshape"),
                 target_atmnums=None,
                 shape_string=None,
             ).calculate(shape_mol)
-            shape_mol.write(shape_molfile2)
+
+            shape_mol = get_shape_molecule_ligands(molecule, name)
+            if shape_mol is None:
+                lig_shape_measures = None
+            else:
+                lig_shape_measures = ShapeMeasure(
+                    output_dir=(output_dir / f"{name}_lshape"),
+                    target_atmnums=None,
+                    shape_string=None,
+                ).calculate(shape_mol)
+                shape_mol.write(shape_molfile2)
 
         opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
 
@@ -521,7 +525,7 @@ def main():
                 if custom_torsion_options[custom_torsion] is None:
                     custom_torsion_set = None
                 elif bite_angle == 180:
-                    logging.info("no torsions for bite angle == 180")
+                    # There are no torsions for bite angle == 180.
                     custom_torsion_set = None
                 else:
                     tors_option = custom_torsion_options[custom_torsion]
