@@ -84,7 +84,7 @@ def arm_2c_beads():
         type_prefix="a",
         element_string="Ba",
         sigmas=(1,),
-        angles=range(90, 181, 10),
+        angles=range(90, 181, 5),
         bond_ks=(10,),
         angle_ks=(20,),
         coordination=2,
