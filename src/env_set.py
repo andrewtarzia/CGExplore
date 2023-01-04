@@ -55,6 +55,12 @@ def gulp_path():
     return pathlib.Path("/home/atarzia/software/gulp-6.1/Src/gulp")
 
 
+def pymol_path():
+    return pathlib.Path(
+        "/home/atarzia/pymol-open-source-build/bin/pymol"
+    )
+
+
 def shape_path():
     return pathlib.Path(
         "/home/atarzia/software/shape_2.1_linux_64/"
