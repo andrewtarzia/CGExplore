@@ -422,8 +422,8 @@ def main():
     test_cage.write("updated_optimised3_2.mol")
 
     print(
-        # "you have AA as ConstructedMolecule..."
-        # "you have CG as ConstructedMolecule...\n\n"
+        # "you have AA as ConstructedMolecule"
+        # "you have CG as ConstructedMolecule\n\n"
         # "This gives you all BB ids, plus AtomInfos- \n\n"
         # "you could technically do MolRecord as ConstructedMolecule\n\n"
         # "What needs doing is - match BB_id=0 in AA with BB_id=0 in CG\n\n"

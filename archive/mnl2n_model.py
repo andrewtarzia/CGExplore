@@ -160,7 +160,7 @@ def calculate_pore(xyz_file):
     )
     calculator = pm.Inflater(bead_sigma=0.5)
     # Run calculator on host object, analysing output.
-    logging.info(f"calculating pore of {xyz_file}...")
+    logging.info(f"calculating pore of {xyz_file}")
     final_result = calculator.get_inflated_blob(host=host)
     pore = final_result.pore
     blob = final_result.pore.get_blob()
@@ -226,7 +226,7 @@ def run_optimisation(
     md_mol_file = os.path.join(output_dir, f"{run_prefix}_final.mol")
 
     if os.path.exists(output_file):
-        logging.info(f"loading {output_file}...")
+        logging.info(f"loading {output_file}")
         with open(output_file, "r") as f:
             res_dict = json.load(f)
     else:
@@ -237,7 +237,7 @@ def run_optimisation(
             param_pool=ff_modifications["param_pool"],
         )
         if not os.path.exists(opt_xyz_file):
-            logging.info(f"running optimisation of {run_prefix}...")
+            logging.info(f"running optimisation of {run_prefix}")
             run_data = opt.optimize(cage)
         else:
             run_data = opt.extract_gulp()
@@ -265,7 +265,7 @@ def run_optimisation(
                 param_pool=ff_modifications["param_pool"],
             )
             if not os.path.exists(md_xyz_file):
-                logging.info("running MD...")
+                logging.info("running MD")
                 md_data = opt.optimize(opted)
             else:
                 md_data = opt.extract_gulp(opt_xyz_file)

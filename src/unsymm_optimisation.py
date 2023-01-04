@@ -248,7 +248,7 @@ def get_results_dictionary(molecule_record):
         if os.path.exists(opt1_mol_file):
             molecule = molecule.with_structure_from_file(opt1_mol_file)
         else:
-            logging.info(f"optimising {run_prefix}...")
+            logging.info(f"optimising {run_prefix}")
             opt = CGGulpOptimizer(
                 fileprefix=run_prefix,
                 output_dir=output_dir,
@@ -546,7 +546,7 @@ def optimise_ligand(molecule, name, output_dir, full_bead_library):
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
-        logging.info(f"optimising {name}...")
+        logging.info(f"optimising {name}")
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
@@ -576,7 +576,7 @@ def optimise_cage(molecule, name, output_dir, full_bead_library):
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
-        logging.info(f"optimising {name}...")
+        logging.info(f"optimising {name}")
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
@@ -1784,7 +1784,7 @@ def main():
     bead_library_check(full_bead_library)
 
     # For now, just build N options and calculate properties.
-    logging.info("building building blocks...")
+    logging.info("building building blocks")
 
     c2_blocks = {}
     for c2_options in itertools.product(beads_2c_lib, repeat=3):
@@ -1851,14 +1851,14 @@ def main():
         # Set seeds for reproducible results.
         for seed in seeds:
             logging.info(
-                f"setting up the EA for seed {seed} and {ga_run}..."
+                f"setting up the EA for seed {seed} and {ga_run}"
             )
             run_name = f"s{seed}_i{ga_run}"
             generator = np.random.RandomState(seed)
 
             # For now, just build N options and calculate properties.
             logging.info(
-                f"building population of {population_size_per_step}..."
+                f"building population of {population_size_per_step}"
             )
 
             raise SystemExit(
@@ -1915,7 +1915,7 @@ def main():
 
             generations = []
             logging.info(
-                f"running EA for {num_generations} generations..."
+                f"running EA for {num_generations} generations"
             )
             for i, generation in enumerate(
                 ea.get_generations(num_generations)

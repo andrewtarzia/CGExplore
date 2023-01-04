@@ -200,7 +200,7 @@ def get_results_dictionary(molecule_record):
         if os.path.exists(opt1_mol_file):
             molecule = molecule.with_structure_from_file(opt1_mol_file)
         else:
-            logging.info(f"optimising {run_prefix}...")
+            logging.info(f"optimising {run_prefix}")
             opt = CGGulpOptimizer(
                 fileprefix=run_prefix,
                 output_dir=output_dir,
@@ -357,13 +357,13 @@ def main():
     seeds = [32, 2, 1223, 442, 5, 895]
 
     for seed in seeds:
-        logging.info(f"setting up the EA for seed {seed}...")
+        logging.info(f"setting up the EA for seed {seed}")
         run_name = f"sphere_s{seed}"
         generator = np.random.RandomState(seed)
 
         # For now, just build N options and calculate properties.
         logging.info(
-            f"building population of {population_size_per_step}..."
+            f"building population of {population_size_per_step}"
         )
         initial_population = tuple(
             get_initial_population(
@@ -405,7 +405,7 @@ def main():
         )
 
         generations = []
-        logging.info(f"running EA for {num_generations} generations...")
+        logging.info(f"running EA for {num_generations} generations")
         for i, generation in enumerate(
             ea.get_generations(num_generations)
         ):
