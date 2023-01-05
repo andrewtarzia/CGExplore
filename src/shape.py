@@ -12,6 +12,7 @@ Author: Andrew Tarzia
 import subprocess as sp
 import stk
 import numpy as np
+import logging
 import os
 import shutil
 
@@ -748,6 +749,7 @@ class ShapeMeasure:
             lines = f.readlines()
 
         label_idx_map = {}
+        values = None
         for line in reversed(lines):
             if "Structure" in line:
                 line = [
@@ -761,10 +763,14 @@ class ShapeMeasure:
             line = [i.strip() for i in line.rstrip().split(",")]
             values = line
 
-        shapes = {
-            i: float(values[1 + label_idx_map[i]])
-            for i in label_idx_map
-        }
+        if values is None:
+            logging.info("no shapes found due to overlapping atoms")
+            shapes = {}
+        else:
+            shapes = {
+                i: float(values[1 + label_idx_map[i]])
+                for i in label_idx_map
+            }
 
         return shapes
 
@@ -825,8 +831,7 @@ class ShapeMeasure:
                 shell=True,
             )
 
-        shapes = self._collect_all_shape_values(output_file)
-        return shapes
+        return self._collect_all_shape_values(output_file)
 
     def _get_centroids(self, molecule):
         bb_ids = {}
