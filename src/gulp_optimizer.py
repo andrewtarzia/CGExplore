@@ -20,6 +20,33 @@ from beads import guest_beads
 from optimizer import CGOptimizer
 
 
+def extract_gulp_optimisation(gulp_out):
+    with open(gulp_out, "r") as f:
+        lines = f.readlines()
+
+    nums = re.compile(r"[+-]?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?")
+    run_data = {"traj": {}}
+    for line in lines:
+        if "Cycle" in line:
+            splits = line.rstrip().split()
+            run_data["traj"][int(splits[1])] = {
+                "energy": float(splits[3]),
+                "gnorm": float(splits[5]),
+            }
+
+        if "Final energy" in line:
+            string = nums.search(line.rstrip()).group(0)
+            energy = float(string)
+            run_data["final_energy"] = energy
+
+        if "Final Gnorm" in line:
+            string = nums.search(line.rstrip()).group(0)
+            gnorm = float(string)
+            run_data["final_gnorm"] = gnorm
+
+    return run_data
+
+
 class MDEmptyTrajcetoryError(Exception):
     ...
 
