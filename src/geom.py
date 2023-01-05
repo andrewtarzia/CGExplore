@@ -12,6 +12,7 @@ Author: Andrew Tarzia
 import numpy as np
 from rdkit.Chem import AllChem as rdkit
 from collections import defaultdict
+from scipy.spatial.distance import pdist
 
 
 from utilities import get_atom_distance, angle_between, get_dihedral
@@ -28,6 +29,10 @@ class GeomMeasure:
             useBonds=False,
             useHs=True,
         )
+
+    def calculate_minb2b(self, molecule):
+        pair_dists = pdist(molecule.get_position_matrix())
+        return np.min(pair_dists.flatten())
 
     def calculate_bonds(self, molecule):
         lengths = defaultdict(list)
