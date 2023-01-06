@@ -2590,8 +2590,38 @@ def bite_angle_relationship(all_data, figure_output):
                 plt.close()
 
 
-                title = f"{tstr} : 120"
-                ax.set_title(title, fontsize=16)
+def write_out_mapping(all_data):
+    bite_angle_map = {}
+    clangle_map = {}
+    clsigma_map = {}
+    c2sigma_map = {}
+
+    for t_angle in set(list(all_data["clangle"])):
+        clan_data = all_data[all_data["clangle"] == t_angle]
+
+        for clbb in set(sorted(clan_data["clbb_b1"])):
+            clangle_map[clbb] = t_angle
+
+        for c1_opt in sorted(set(clan_data["c2sigma"])):
+            test_data = clan_data[clan_data["c2sigma"] == c1_opt]
+            for c2_opt in sorted(set(test_data["clsigma"])):
+                plot_data = test_data[test_data["clsigma"] == c2_opt]
+
+                for clbb in set(sorted(plot_data["clbb_b1"])):
+                    clsigma_map[clbb] = c2_opt
+
+                c2sigma_map[plot_data.iloc[0]["c2bb_b1"]] = c1_opt
+                for bid, ba in zip(
+                    list(plot_data["c2bb_b2"]),
+                    list(plot_data["c2angle"]),
+                ):
+                    bite_angle_map[bid] = ba
+
+    logging.info(f"\nclangles: {clangle_map}\n")
+    logging.info(f"\nclsigmas: {clsigma_map}\n")
+    logging.info(f"\nbite_angles: {bite_angle_map}\n")
+    logging.info(f"\nc2sigmas: {c2sigma_map}\n")
+
         fig.tight_layout()
         fig.savefig(
             os.path.join(figure_output, f"anglerelation_{torsion}.pdf"),
