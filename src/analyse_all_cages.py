@@ -14,13 +14,19 @@ import os
 import stk
 import stko
 import json
+import numpy as np
 import logging
+
+# from coloraide import Color
 import itertools
+import pandas as pd
+from pandas.plotting import parallel_coordinates
 import matplotlib as mpl
+import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import matplotlib.gridspec as grid_spec
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-import pandas as pd
 
 
 from generate_all_cages import (
@@ -30,6 +36,8 @@ from generate_all_cages import (
     beads_4c,
 )
 from env_set import cages
+from shape import known_shape_vectors
+from visualisation import Pymol
 
 
 def colour_by_energy(energy):
@@ -2622,25 +2630,240 @@ def write_out_mapping(all_data):
     logging.info(f"\nbite_angles: {bite_angle_map}\n")
     logging.info(f"\nc2sigmas: {c2sigma_map}\n")
 
+
+def visualise_bite_angle(all_data, figure_output):
+    struct_output = cages() / "structures"
+    topologies = (
+        "TwoPlusThree",
+        "FourPlusSix",
+        "FourPlusSix2",
+        "SixPlusNine",
+        "EightPlusTwelve",
+        "TwoPlusFour",
+        "ThreePlusSix",
+        "FourPlusEight",
+        "SixPlusTwelve",
+        "M12L24",
+    )
+
+    settings = {
+        "grid_mode": 0,
+        "rayx": 1000,
+        "rayy": 1000,
+        "stick_rad": 0.8,
+        "vdw": 0,
+        "zoom_string": "custom",
+    }
+
+    trim = all_data[all_data["clsigma"] == 2]
+    trim = trim[trim["c2sigma"] == 5]
+
+    for tstr in topologies:
+        tdata = trim[trim["topology"] == tstr]
+        clangles = set(tdata["clangle"])
+
+        for clangle in clangles:
+            fig, axs = plt.subplots(
+                ncols=19,
+                nrows=2,
+                figsize=(16, 5),
+            )
+            cdata = tdata[tdata["clangle"] == clangle]
+
+            for i, tors in enumerate(("ton", "toff")):
+                flat_axs = axs[i].flatten()
+
+                show = cdata[cdata["torsions"] == tors]
+                names_energies = [
+                    (
+                        str(row["index"]),
+                        float(row["energy"]),
+                        float(row["c2angle"]),
+                    )
+                    for idx, row in show.iterrows()
+                ]
+                names_energies = sorted(
+                    names_energies, key=lambda tup: tup[2]
+                )
+
+                for cage_data, ax in zip(names_energies, flat_axs):
+                    name, energy, ba = cage_data
+                    structure_file = struct_output / f"{name}_optc.mol"
+                    structure_colour = colour_by_energy(energy)
+                    png_file = figure_output / f"{name}_f.png"
+                    if not os.path.exists(png_file):
+                        viz = Pymol(
+                            output_dir=figure_output,
+                            file_prefix=f"{name}_f",
+                            settings=settings,
+                        )
+                        viz.visualise(
+                            [structure_file], [structure_colour]
+                        )
+
+                    img = mpimg.imread(png_file)
+                    ax.imshow(img)
+                    ax.axis("off")
+                    if i == 0:
+                        ax.set_title(f"{ba}", fontsize=16)
+
+            ax.plot(
+                [None, None],
+                [None, None],
+                c=colour_by_energy(max_energy() + 1),
+                lw=3,
+                label=f"energy > {max_energy()}eV",
+            )
+            ax.plot(
+                [None, None],
+                [None, None],
+                c=colour_by_energy(isomer_energy() + 0.1),
+                lw=3,
+                label=f"energy <= {max_energy()}eV",
+            )
+            ax.plot(
+                [None, None],
+                [None, None],
+                c=colour_by_energy(0),
+                lw=3,
+                label=f"energy <= {isomer_energy()}eV",
+            )
+
+            fig.legend(
+                bbox_to_anchor=(0, 1.02, 2, 0.2),
+                loc="lower left",
+                ncol=3,
+                fontsize=16,
+            )
+            fig.tight_layout()
+            filename = f"vba_{tstr}_{clangle}.pdf"
+            fig.savefig(
+                os.path.join(figure_output, filename),
+                dpi=720,
+                bbox_inches="tight",
+            )
+            plt.close()
+
+
+def visualise_self_sort(all_data, figure_output):
+    struct_output = cages() / "structures"
+    topology_dict = cltypetopo_to_colormap()
+
+    settings = {
+        "grid_mode": 0,
+        "rayx": 1000,
+        "rayy": 1000,
+        "stick_rad": 0.8,
+        "vdw": 0,
+        "zoom_string": "custom",
+    }
+
+    trim = all_data[all_data["clsigma"] == 2]
+    trim = trim[trim["c2sigma"] == 5]
+
+    bbpairs = set(trim["bbpair"])
+
+    for bbpair in bbpairs:
+        fig, axs = plt.subplots(
+            ncols=5,
+            nrows=2,
+            figsize=(16, 5),
+        )
+        bdata = trim[trim["bbpair"] == bbpair]
+
+        for i, tors in enumerate(("ton", "toff")):
+            flat_axs = axs[i].flatten()
+
+            show = bdata[bdata["torsions"] == tors]
+            ctitle = "4C1" if "4C1" in bbpair else "3C1"
+            c2angle = float(list(show["c2angle"])[0])
+            names_energies = []
+            for tstr in topology_dict[ctitle]:
+                row = show[show["topology"] == tstr].iloc[0]
+                names_energies.append(
+                    (str(row["index"]), float(row["energy"])),
+                )
+
+            for j, cage_data in enumerate(names_energies):
+                ax = flat_axs[j]
+                name, energy = cage_data
+                structure_file = struct_output / f"{name}_optc.mol"
+                structure_colour = colour_by_energy(energy)
+                png_file = figure_output / f"{name}_f.png"
+                if not os.path.exists(png_file):
+                    viz = Pymol(
+                        output_dir=figure_output,
+                        file_prefix=f"{name}_f",
+                        settings=settings,
+                    )
+                    viz.visualise([structure_file], [structure_colour])
+
+                img = mpimg.imread(png_file)
+                ax.imshow(img)
+                ax.axis("off")
+                if i == 0 and j == 0:
+                    ax.set_title(f"ba: {c2angle}", fontsize=16)
+
+        ax.plot(
+            [None, None],
+            [None, None],
+            c=colour_by_energy(max_energy() + 1),
+            lw=3,
+            label=f"energy > {max_energy()}eV",
+        )
+        ax.plot(
+            [None, None],
+            [None, None],
+            c=colour_by_energy(isomer_energy() + 0.1),
+            lw=3,
+            label=f"energy <= {max_energy()}eV",
+        )
+        ax.plot(
+            [None, None],
+            [None, None],
+            c=colour_by_energy(0),
+            lw=3,
+            label=f"energy <= {isomer_energy()}eV",
+        )
+
+        fig.legend(
+            bbox_to_anchor=(0, 1.02, 2, 0.2),
+            loc="lower left",
+            ncol=3,
+            fontsize=16,
+        )
         fig.tight_layout()
+        filename = f"vss_{bbpair}.pdf"
         fig.savefig(
-            os.path.join(figure_output, f"anglerelation_{torsion}.pdf"),
+            os.path.join(figure_output, filename),
             dpi=720,
             bbox_inches="tight",
         )
         plt.close()
 
+    raise SystemExit()
+
 
 def visualise_high_energy(all_data, figure_output):
-    opt_data = all_data[all_data["optimised"]]
-    high_energy = opt_data[opt_data["energy"] > 500]
+    struct_output = cages() / "structures"
+    high_energy = all_data[all_data["energy"] > 500]
     high_e_names = list(high_energy["index"])
+    high_e_energies = list(high_energy["energy"])
     logging.info(
         f"there are {len(high_e_names)} high energy structures"
     )
     with open(figure_output / "high_energy_names.txt", "w") as f:
         f.write("_opted3.mol ".join(high_e_names))
         f.write("_opted3.mol")
+
+    cage_name = high_e_names[0]
+    structure_files = []
+    structure_colours = []
+    for i, cage_name in enumerate(high_e_names):
+        structure_files.append(struct_output / f"{cage_name}_optc.mol")
+        structure_colours.append(colour_by_energy(high_e_energies[i]))
+    viz = Pymol(output_dir=figure_output, file_prefix="highe")
+    viz.visualise(structure_files, structure_colours)
 
 
 def main():
