@@ -1303,6 +1303,214 @@ def phase_space_3(all_data, figure_output):
     plt.close()
 
 
+def phase_space_11(all_data, figure_output):
+    fig, axs = plt.subplots(
+        nrows=2,
+        ncols=2,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    topologies = map_cltype_to_shapetopology()
+
+    opt_data = all_data[all_data["optimised"]]
+    groups = opt_data.groupby(["bbpair"])
+    data = {
+        ("3C1", "toff"): {i: 0 for i in topologies["3C1"].values()},
+        ("3C1", "ton"): {i: 0 for i in topologies["3C1"].values()},
+        ("4C1", "toff"): {i: 0 for i in topologies["4C1"].values()},
+        ("4C1", "ton"): {i: 0 for i in topologies["4C1"].values()},
+    }
+    for gid, dfi in groups:
+        bbtitle = gid[:3]
+        for tors in ("ton", "toff"):
+            fin_data = dfi[dfi["torsions"] == tors]
+            for tstr in topologies[bbtitle].values():
+                t_data = fin_data[fin_data["topology"] == tstr]
+                if len(t_data) != 1:
+                    continue
+                if t_data.iloc[0]["persistent"]:
+                    topo_str = tstr
+                else:
+                    topo_str = "not"
+
+                if topo_str not in data[(bbtitle, tors)]:
+                    data[(bbtitle, tors)][topo_str] = 0
+                data[(bbtitle, tors)][topo_str] += 1
+
+    for ax, (bbtitle, torsion) in zip(flat_axs, data):
+        coords = data[(bbtitle, torsion)]
+        ax.bar(
+            [convert_topo_to_label(i) for i in coords.keys()],
+            coords.values(),
+            # color="#06AED5",
+            # color="#086788",
+            # color="#DD1C1A",
+            color="#de9ed6",
+            edgecolor="k",
+        )
+
+        for i, key in enumerate(coords):
+            val = coords[key]
+            if val < 20:
+                move = 20
+            else:
+                move = -20
+            ax.text(
+                i,
+                val + move,
+                val,
+                fontsize=16,
+                ha="center",
+            )
+
+        title = (
+            f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
+            f"{max_energy()}eV"
+        )
+        ax.set_title(title, fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_ylabel("count", fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_11.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_12(all_data, figure_output):
+    fig, axs = plt.subplots(
+        nrows=2,
+        ncols=2,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    topologies = map_cltype_to_shapetopology()
+
+    opt_data = all_data[all_data["optimised"]]
+    groups = opt_data.groupby(["bbpair"])
+    data = {
+        ("3C1", "toff"): {i: 0 for i in topologies["3C1"].values()},
+        ("3C1", "ton"): {i: 0 for i in topologies["3C1"].values()},
+        ("4C1", "toff"): {i: 0 for i in topologies["4C1"].values()},
+        ("4C1", "ton"): {i: 0 for i in topologies["4C1"].values()},
+    }
+    for gid, dfi in groups:
+        bbtitle = gid[:3]
+        for tors in ("ton", "toff"):
+            fin_data = dfi[dfi["torsions"] == tors]
+            per_data = fin_data[fin_data["persistent"]]
+            present_topologies = list(per_data["topology"])
+            if len(present_topologies) == 1:
+                topo_str = present_topologies[0]
+            else:
+                topo_str = "mixed"
+
+            if topo_str not in data[(bbtitle, tors)]:
+                data[(bbtitle, tors)][topo_str] = 0
+            data[(bbtitle, tors)][topo_str] += 1
+
+    for ax, (bbtitle, torsion) in zip(flat_axs, data):
+        coords = data[(bbtitle, torsion)]
+        ax.bar(
+            [convert_topo_to_label(i) for i in coords.keys()],
+            coords.values(),
+            # color="#06AED5",
+            # color="#086788",
+            # color="#DD1C1A",
+            color="#de9ed6",
+            edgecolor="k",
+        )
+
+        for i, key in enumerate(coords):
+            val = coords[key]
+            if val < 30:
+                move = 20
+            else:
+                move = -20
+            ax.text(
+                i,
+                val + move,
+                val,
+                fontsize=16,
+                ha="center",
+            )
+
+        title = (
+            f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
+            f"{max_energy()}eV"
+        )
+        ax.set_title(title, fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_ylabel("count", fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_12.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def phase_space_13(all_data, figure_output):
+
+    fig, axs = plt.subplots(
+        nrows=3,
+        ncols=3,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    color_map = topo_to_colormap()
+    for ax, tstr in zip(flat_axs, color_map):
+        t_data = all_data[all_data["topology"] == tstr]
+        n_values = list(t_data["sv_n_dist"])
+        ax.hist(
+            x=n_values,
+            bins=50,
+            density=False,
+            histtype="step",
+            color="#DD1C1A",
+            lw=3,
+        )
+
+        filt_data = t_data[t_data["sv_l_dist"].notna()]
+        if len(filt_data) > 0:
+            l_values = list(t_data["sv_l_dist"])
+            ax.hist(
+                x=l_values,
+                bins=50,
+                density=False,
+                histtype="step",
+                color="k",
+                lw=2,
+                linestyle="--",
+            )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("cosine similarity", fontsize=16)
+        ax.set_ylabel("log(count)", fontsize=16)
+        ax.set_title(tstr, fontsize=16)
+        ax.set_yscale("log")
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_13.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def phase_space_4(bb_data, figure_output):
     print(all_data.head())
     print(all_data.columns)
