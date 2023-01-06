@@ -256,35 +256,52 @@ def map_cltype_to_shapetopology():
             "3": "ThreePlusSix",
             "4": "FourPlusEight",
             "6": "SixPlusTwelve",
+            "12": "M12L24",
         },
     }
 
 
-def mapshape_to_topology(reverse=False):
-    if reverse:
-        return {
-            "TwoPlusThree": "TBPY-5",
-            "FourPlusSix": "T-4",
-            "FourPlusSix2": "T-4b",
-            "SixPlusNine": "TPR-6",
-            "EightPlusTwelve": "CU-8",
-            "TwoPlusFour": "OC-6b",
-            "ThreePlusSix": "TP-3",
-            "FourPlusEight": "SP-4",
-            "SixPlusTwelve": "OC-6",
-        }
-    else:
-        return {
-            "TBPY-5": "TwoPlusThree",
-            "T-4": "FourPlusSix",
-            "T-4b": "FourPlusSix2",
-            "TPR-6": "SixPlusNine",
-            "CU-8": "EightPlusTwelve",
-            "OC-6b": "TwoPlusFour",
-            "TP-3": "ThreePlusSix",
-            "SP-4": "FourPlusEight",
-            "OC-6": "SixPlusTwelve",
-        }
+def mapshape_to_topology(mode, reverse=False):
+    if mode == "n":
+        if reverse:
+            return {
+                "TwoPlusThree": "TBPY-5",
+                "FourPlusSix": "T-4",
+                "FourPlusSix2": "T-4b",
+                "SixPlusNine": "TPR-6",
+                "EightPlusTwelve": "CU-8",
+                "TwoPlusFour": "OC-6b",
+                "ThreePlusSix": "TP-3",
+                "FourPlusEight": "SP-4",
+                "SixPlusTwelve": "OC-6",
+            }
+        else:
+            return {
+                "TBPY-5": "TwoPlusThree",
+                "T-4": "FourPlusSix",
+                "T-4b": "FourPlusSix2",
+                "TPR-6": "SixPlusNine",
+                "CU-8": "EightPlusTwelve",
+                "OC-6b": "TwoPlusFour",
+                "TP-3": "ThreePlusSix",
+                "SP-4": "FourPlusEight",
+                "OC-6": "SixPlusTwelve",
+            }
+    elif mode == "l":
+        if reverse:
+            return {
+                "TwoPlusThree": "TP-3",
+                "FourPlusSix": "OC-6",
+                "FourPlusSix2": "OC-6b",
+                "TwoPlusFour": "SP-4",
+            }
+        else:
+            return {
+                "TP-3": "TwoPlusThree",
+                "OC-6": "FourPlusSix",
+                "OC-6b": "FourPlusSix2",
+                "SP-4": "TwoPlusFour",
+            }
 
 
 def collate_cage_vector_from_bb(data, test_bb):
