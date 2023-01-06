@@ -514,12 +514,16 @@ def identity_distributions(all_data, figure_output):
     fig, ax = plt.subplots(figsize=(16, 5))
 
     categories = {i: 0 for i in topology_labels(short=True)}
-    categories.update({"not opt.": 0})
+    # categories.update({"X opt. [3]": 0, "X opt. [4]": 0})
     count1 = all_data["topology"].value_counts()
-    count2 = all_data["optimised"].value_counts()
+    # data_3c1 = all_data[all_data["cltitle"] == "3C1"]
+    # count3c1 = data_3c1["optimised"].value_counts()
+    # data_4c1 = all_data[all_data["cltitle"] == "4C1"]
+    # count4c1 = data_4c1["optimised"].value_counts()
     for tstr, count in count1.items():
         categories[convert_topo_to_label(tstr)] = count
-    categories["not opt."] = count2[False]
+    # categories["X opt. [3]"] = count3c1[False]
+    # categories["X opt. [4]"] = count4c1[False]
     num_cages = len(all_data)
 
     ax.bar(
@@ -547,71 +551,170 @@ def identity_distributions(all_data, figure_output):
     plt.close()
 
 
+def geom_distributions(all_data, geom_data, figure_output):
+    comparisons = {
+        "clangle": {
+            "measure": "angles",
+            "xlabel": "angle [deg]",
+            "label_options": (
+                "Pb_Pd_Pb",
+                "Pb_C_Pb",
+                # "C_Pb_Ba",
+                # "Pd_Pb_Ba",
+            ),
+        },
+        "clsigma": {
+            "measure": "bonds",
+            "xlabel": "length [A]",
+            "label_options": ("Pd_Pb", "C_Pb"),
+        },
+        "c2angle": {
+            "measure": "angles",
+            "xlabel": "angle [deg]",
+            "label_options": ("Ba_Ag_Ba", "Pb_Ba_Ag"),
+        },
+        "c2sigma": {
+            "measure": "bonds",
+            "xlabel": "length [A]",
+            "label_options": ("Pb_Ba", "Ba_Ag"),
+        },
+        "torsions": {
+            "measure": "dihedrals",
+            "xlabel": "torsion [deg]",
+            "label_options": ("Pb_Ba_Ba_Pb",),
+        },
+    }
+
+    for comp in comparisons:
+        cdict = comparisons[comp]
+        color_map = topo_to_colormap()
+
+        for tors in ("ton", "toff"):
+            for i, tstr in enumerate(color_map):
+                fig, ax = plt.subplots(figsize=(8, 5))
+                topo_frame = all_data[all_data["topology"] == tstr]
+                # c_lines = list(set(topo_frame[comp]))
+                tor_frame = topo_frame[topo_frame["torsions"] == tors]
+                tor_names = list(tor_frame["index"])
+                tor_energies = list(tor_frame["energy"])
+
+                values = []
+                highe_values = []
+                for i, j in zip(tor_names, tor_energies):
+                    gdata = geom_data[i][cdict["measure"]]
+                    for lbl in cdict["label_options"]:
+                        if lbl in gdata:
+                            lbldata = gdata[lbl]
+                            if j < max_energy():
+                                values.extend(lbldata)
+                            else:
+                                highe_values.extend(lbldata)
+
+                ax.hist(
+                    x=values,
+                    bins=50,
+                    density=False,
+                    histtype="step",
+                    color="r",
+                    lw=2,
+                    label=f"E < {max_energy()}",
+                )
+                ax.hist(
+                    x=highe_values,
+                    bins=50,
+                    density=False,
+                    histtype="step",
+                    color="gray",
+                    lw=2,
+                    alpha=1.0,
+                    label=f"E > {max_energy()}",
+                    linestyle="-",
+                )
+
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_xlabel(cdict["xlabel"], fontsize=16)
+                ax.set_ylabel("count", fontsize=16)
+                ax.set_title(tstr, fontsize=16)
+                ax.legend(fontsize=16)
+
+                fig.tight_layout()
+                fig.savefig(
+                    os.path.join(
+                        figure_output, f"gd_{tors}_{comp}_{tstr}.pdf"
+                    ),
+                    dpi=720,
+                    bbox_inches="tight",
+                )
+                plt.close()
+
+
 def rmsd_distributions(all_data, calculation_dir, figure_output):
 
     rmsd_file = calculation_dir / "all_rmsds.json"
+    cmap = topo_to_colormap()
 
     if os.path.exists(rmsd_file):
         with open(rmsd_file, "r") as f:
             data = json.load(f)
     else:
         data = {}
-        for o1 in calculation_dir.glob("*_opted1.mol"):
-            if o1.name[0] in ("2", "3", "4"):
-                continue
+        for tstr in cmap:
+            tdata = {}
+            for o1 in calculation_dir.glob(f"*{tstr}_*ton*_opted2.mol"):
+                if o1.name[0] in ("2", "3", "4"):
+                    continue
 
-            o1 = str(o1)
-            o2 = o1.replace("opted1", "opted2")
-            o3 = o1.replace("opted1", "opted3")
-            try:
+                o1 = str(o1)
+                o2 = o1.replace("opted2", "opted1")
+                ooff = o1.replace("ton", "toff")
                 mol1 = stk.BuildingBlock.init_from_file(o1)
                 mol2 = stk.BuildingBlock.init_from_file(o2)
-                mol3 = stk.BuildingBlock.init_from_file(o3)
-            except OSError:
-                pass
-            rmsd_calc = stko.RmsdCalculator(mol1)
-            rmsd_calc2 = stko.RmsdCalculator(mol2)
-            try:
-                rmsd2 = rmsd_calc.get_results(mol2).get_rmsd()
-                rmsd3 = rmsd_calc.get_results(mol3).get_rmsd()
-                rmsd4 = rmsd_calc2.get_results(mol3).get_rmsd()
+                moloff = stk.BuildingBlock.init_from_file(ooff)
 
-            except stko.DifferentMoleculeException:
-                logging.info(f"fail for {o1}, {o2}, {o3}")
+                rmsd_calc = stko.RmsdCalculator(mol1)
+                # try:
+                rmsd1 = rmsd_calc.get_results(mol2).get_rmsd()
+                rmsdooff = rmsd_calc.get_results(moloff).get_rmsd()
 
-            data[o1] = (rmsd2, rmsd3, rmsd4)
+                # except stko.DifferentMoleculeException:
+                #     logging.info(f"fail for {o1}, {o2}")
+
+                tdata[o1] = (rmsd1, rmsdooff)
+            data[tstr] = tdata
 
         with open(rmsd_file, "w") as f:
             json.dump(data, f)
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, axs = plt.subplots(
+        ncols=3,
+        nrows=3,
+        sharex=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
 
-    ax.hist(
-        [i[0] for i in data.values() if i[0] < 10],
-        bins=50,
-        alpha=0.5,
-        edgecolor="k",
-        label="opt1->MD",
-    )
-    ax.hist(
-        [i[1] for i in data.values() if i[1] < 10],
-        bins=50,
-        alpha=0.5,
-        edgecolor="k",
-        label="opt1->opt2",
-    )
-    ax.hist(
-        [i[2] for i in data.values() if i[2] < 10],
-        bins=50,
-        alpha=0.5,
-        edgecolor="k",
-        label="MD->opt2",
-    )
+    for ax, tstr in zip(flat_axs, cmap):
+        ax.hist(
+            [i[0] for i in data[tstr].values()],
+            bins=50,
+            alpha=0.5,
+            density=True,
+            edgecolor="k",
+            label="opt1->opt2",
+        )
+        ax.hist(
+            [i[1] for i in data[tstr].values()],
+            bins=50,
+            alpha=0.5,
+            density=True,
+            edgecolor="k",
+            label="ton->toff",
+        )
 
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("RMSD [A]", fontsize=16)
-    ax.set_ylabel("count", fontsize=16)
-    ax.legend(fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("RMSD [A]", fontsize=16)
+        ax.set_ylabel("count", fontsize=16)
+        ax.legend(fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -623,13 +726,13 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
 
 
 def single_value_distributions(all_data, figure_output):
-    print(all_data.head())
-    print(all_data.columns)
     to_plot = {
-        "energy": {"xtitle": "energy"},
-        "pore": {"xtitle": "min. distance [A]"},
-        "energy_barm": {"xtitle": "energy"},
-        "pore_barm": {"xtitle": "min. distance [A]"},
+        "energy": {"xtitle": "energy", "xlim": (0, 100)},
+        "gnorm": {"xtitle": "gnorm", "xlim": (0, 0.0005)},
+        "pore": {"xtitle": "min. distance [A]", "xlim": (0, 20)},
+        "min_b2b": {"xtitle": "min. b2b distance [A]", "xlim": (0, 1)},
+        "energy_barm": {"xtitle": "energy", "xlim": (0, 100)},
+        "pore_barm": {"xtitle": "min. distance [A]", "xlim": (0, 20)},
     }
 
     color_map = topo_to_colormap()
@@ -638,22 +741,25 @@ def single_value_distributions(all_data, figure_output):
     for tp in to_plot:
 
         xtitle = to_plot[tp]["xtitle"]
+        xlim = to_plot[tp]["xlim"]
         if "barm" in tp:
             cmapp = color_map_barm
             fig, axs = plt.subplots(
                 ncols=2,
                 nrows=1,
                 sharex=True,
+                sharey=True,
                 figsize=(16, 5),
             )
             flat_axs = axs.flatten()
         else:
             cmapp = color_map
             fig, axs = plt.subplots(
-                ncols=3,
-                nrows=3,
+                ncols=2,
+                nrows=5,
                 sharex=True,
-                figsize=(16, 10),
+                sharey=True,
+                figsize=(16, 12),
             )
             flat_axs = axs.flatten()
 
@@ -661,19 +767,40 @@ def single_value_distributions(all_data, figure_output):
             target_column = tp.replace("_barm", "")
             if "barm" in tp:
                 topo_frame = all_data[all_data["cltitle"] == t_option]
-                values = topo_frame[target_column]
+                toff_frame = topo_frame[
+                    topo_frame["torsions"] == "toff"
+                ]
+                ton_frame = topo_frame[topo_frame["torsions"] == "ton"]
+                ton_values = ton_frame[target_column]
+                toff_values = toff_frame[target_column]
             else:
                 topo_frame = all_data[all_data["topology"] == t_option]
-                values = topo_frame[target_column]
+                toff_frame = topo_frame[
+                    topo_frame["torsions"] == "toff"
+                ]
+                ton_frame = topo_frame[topo_frame["torsions"] == "ton"]
+                ton_values = ton_frame[target_column]
+                toff_values = toff_frame[target_column]
 
+            xbins = np.linspace(xlim[0], xlim[1], 100)
             flat_axs[i].hist(
-                x=values,
-                bins=50,
+                x=ton_values,
+                bins=xbins,
                 density=False,
                 histtype="step",
-                color=cmapp[t_option],
-                lw=3,
-                label=t_option,
+                color="k",
+                lw=2,
+                label=convert_torsion_to_label("ton"),
+            )
+            flat_axs[i].hist(
+                x=toff_values,
+                bins=xbins,
+                density=False,
+                histtype="step",
+                color="r",
+                lw=2,
+                linestyle="--",
+                label=convert_torsion_to_label("toff"),
             )
 
             flat_axs[i].tick_params(
@@ -682,11 +809,16 @@ def single_value_distributions(all_data, figure_output):
                 labelsize=16,
             )
             flat_axs[i].set_xlabel(xtitle, fontsize=16)
-            # flat_axs[i].set_ylabel("count", fontsize=16)
-            flat_axs[i].set_ylabel("log(count)", fontsize=16)
-            flat_axs[i].set_title(t_option, fontsize=16)
-            flat_axs[i].set_yscale("log")
-            # ax.legend(ncol=2, fontsize=16)
+            flat_axs[i].set_ylabel("count", fontsize=16)
+            # flat_axs[i].set_ylabel("log(count)", fontsize=16)
+            flat_axs[i].set_title(
+                convert_topo_to_label(t_option),
+                fontsize=16,
+            )
+            flat_axs[i].set_xlim(xlim)
+            # flat_axs[i].set_yscale("log")
+            if i == 0:
+                flat_axs[i].legend(fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
@@ -698,19 +830,11 @@ def single_value_distributions(all_data, figure_output):
 
 
 def shape_vector_distributions(all_data, figure_output):
-    print(all_data.head())
-    print(all_data.columns)
-    print(all_data.iloc[1])
-    raise SystemExit()
-    present_shape_values = sorted(
-        set([j for i in all_data.values() for j in i["shape_vector"]]),
-        key=lambda i: int(i[-1]),
-    )
+    present_shape_values = target_shapes()
     num_cols = 4
-    num_rows = 8
+    num_rows = 3
 
-    color_map = shapevertices_to_colormap()
-    xmax = 50
+    # color_map = shapevertices_to_colormap()
 
     fig, axs = plt.subplots(
         nrows=num_rows,
@@ -720,27 +844,42 @@ def shape_vector_distributions(all_data, figure_output):
     flat_axs = axs.flatten()
 
     for i, shape in enumerate(present_shape_values):
-        nv = int(shape.split("-")[1])
-        c = color_map[nv]
+        # nv = int(shape.split("-")[1])
+        # c = color_map[nv]
         ax = flat_axs[i]
 
-        values = []
-        for i in all_data:
-            if shape in all_data[i]["shape_vector"]:
-                values.append(all_data[i]["shape_vector"][shape])
+        keys = tuple(all_data.columns)
+        nshape = f"n_{shape}"
+        lshape = f"l_{shape}"
+        if nshape in keys:
+            filt_data = all_data[all_data[nshape].notna()]
+            n_values = list(filt_data[nshape])
+            ax.hist(
+                x=n_values,
+                bins=50,
+                density=False,
+                histtype="step",
+                color="#DD1C1A",
+                lw=3,
+            )
 
-        ax.hist(
-            x=values,
-            bins=50,
-            density=False,
-            histtype="step",
-            color=c,
-            lw=3,
-        )
+        if lshape in keys:
+            filt_data = all_data[all_data[lshape].notna()]
+            l_values = list(filt_data[lshape])
+            ax.hist(
+                x=l_values,
+                bins=50,
+                density=False,
+                histtype="step",
+                color="k",
+                lw=2,
+                linestyle="--",
+            )
+
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(shape, fontsize=16)
         ax.set_ylabel("count", fontsize=16)
-        ax.set_xlim(0, xmax)
+        # ax.set_xlim(0, xmax)
         ax.set_yscale("log")
 
     fig.tight_layout()
