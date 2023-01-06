@@ -1603,62 +1603,34 @@ def phase_space_4(bb_data, figure_output):
     plt.close()
 
 
-def phase_space_5(bb_data, figure_output):
-    print(all_data.head())
-    print(all_data.columns)
-    print(all_data.iloc[1])
-    raise SystemExit()
+def phase_space_5(all_data, figure_output):
     fig, axs = plt.subplots(
-        nrows=3,
-        ncols=3,
-        figsize=(16, 10),
+        nrows=5,
+        ncols=2,
+        figsize=(16, 8),
     )
     flat_axs = axs.flatten()
+    cmap = topo_to_colormap()
+    for ax, tstr in zip(flat_axs, cmap):
+        tdata = all_data[all_data["topology"] == tstr]
+        tondata = tdata[tdata["torsions"] == "ton"]
+        toffdata = tdata[tdata["torsions"] == "toff"]
+        x1 = tondata["c2angle"]
+        x2 = toffdata["c2angle"]
+        y1 = tondata["sv_n_dist"]
+        y2 = toffdata["sv_n_dist"]
+        z1 = tondata["energy"]
+        z2 = toffdata["energy"]
 
-    target_individuals = mapshape_to_topology()
-
-    shape_coordinates = {
-        target_individuals[i]: [] for i in target_individuals
-    }
-    for bb_triplet in bb_data:
-        b_dict = bb_data[bb_triplet]
-        if "4C1" in bb_triplet[1]:
-            shapes = target_shapes_by_cltype("4C1")
-        elif "3C1" in bb_triplet[1]:
-            shapes = target_shapes_by_cltype("3C1")
-
-        present_beads_names = get_present_beads(c2_bbname=bb_triplet[0])
-        for shape in shapes:
-            topo_str = target_individuals[shape]
-            try:
-                shape_value = b_dict[shape][0]
-            except KeyError:
-                continue
-            energy = b_dict[shape][1]
-            x = shape_value
-            y = (
-                get_CGBead_from_string(
-                    present_beads_names[-1], arm_2c_beads()
-                ).angle_centered
-                - 90
-            ) * 2
-            z = energy
-            shape_coordinates[topo_str].append((x, y, z))
-
-    for ax, topo_str in zip(flat_axs, shape_coordinates):
-        coords = shape_coordinates[topo_str]
-        shape_str = list(target_individuals.keys())[
-            list(target_individuals.values()).index(topo_str)
-        ]
-        ax.set_title(topo_str, fontsize=16)
+        ax.set_title(tstr, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(shape_str, fontsize=16)
-        ax.set_ylabel("target bite angle", fontsize=16)
+        ax.set_xlabel("c2angle", fontsize=16)
+        ax.set_ylabel("sv_n_dist", fontsize=16)
 
         ax.scatter(
-            [i[0] for i in coords],
-            [i[1] for i in coords],
-            c=[i[2] for i in coords],
+            x1,
+            y1,
+            c=z1,
             vmin=0,
             vmax=30,
             alpha=0.4,
@@ -1677,6 +1649,7 @@ def phase_space_5(bb_data, figure_output):
     )
     cbar.ax.tick_params(labelsize=16)
     cbar.set_label("energy (eV)", fontsize=16)
+
     fig.tight_layout()
     fig.savefig(
         os.path.join(figure_output, "ps_5.pdf"),
@@ -1684,6 +1657,7 @@ def phase_space_5(bb_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
+    raise SystemExit()
 
 
 def phase_space_6(bb_data, figure_output):
