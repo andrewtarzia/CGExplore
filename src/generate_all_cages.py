@@ -191,6 +191,15 @@ def deform_molecule(molecule):
     return molecule.with_position_matrix(np.array((new_pos_mat)))
 
 
+def check_for_failed_min(path):
+    test_string = "Conditions for a minimum have not been satisfied"
+    with open(path, "r") as f:
+        for line in f.readlines():
+            if test_string in line:
+                return True
+    return False
+
+
 def optimise_cage(
     molecule,
     name,
@@ -201,15 +210,15 @@ def optimise_cage(
 
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
     opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
+    opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
 
-    # Does optimisation.
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
-        logging.info(f"optimising {name}...")
+        logging.info(f"optimising {name}")
         # Perform a slight deformation on ideal topologies to avoid
         # fake local minima.
-        molecule = deform_molecule(molecule)
+        molecule = deform_molecule(molecule, percent=0.2)
         opt_xyz_file = os.path.join(output_dir, f"{name}_o1_opted.xyz")
         opt = CGGulpOptimizer(
             fileprefix=f"{name}_o1",
@@ -270,6 +279,58 @@ def optimise_cage(
     except ValueError:
         logging.info(f"{name} opt failed in step 2. Should be ignored.")
         return None
+
+    check2 = check_for_failed_min(
+        path=os.path.join(output_dir, f"{name}_o2.ginout"),
+    )
+    if check2:
+        # Does optimisation.
+        if os.path.exists(opt3_mol_file):
+            molecule = molecule.with_structure_from_file(opt3_mol_file)
+        else:
+            logging.info(f"optimising {name} again")
+            # Perform a slight deformation on ideal topologies to avoid
+            # fake local minima.
+            molecule = deform_molecule(molecule, percent=0.4)
+            opt_xyz_file = os.path.join(
+                output_dir, f"{name}_o3a_opted.xyz"
+            )
+            opt = CGGulpOptimizer(
+                fileprefix=f"{name}_o3a",
+                output_dir=output_dir,
+                param_pool=bead_set,
+                # custom_torsion_set=custom_torsion_set,
+                custom_torsion_set=None,
+                max_cycles=2000,
+                conjugate_gradient=False,
+                bonds=True,
+                angles=True,
+                torsions=False,
+                vdw=False,
+            )
+            _ = opt.optimize(molecule)
+            molecule = molecule.with_structure_from_file(opt_xyz_file)
+            molecule = molecule.with_centroid((0, 0, 0))
+
+            opt_xyz_file = os.path.join(
+                output_dir, f"{name}_o3_opted.xyz"
+            )
+            opt = CGGulpOptimizer(
+                fileprefix=f"{name}_o3",
+                output_dir=output_dir,
+                param_pool=bead_set,
+                custom_torsion_set=custom_torsion_set,
+                max_cycles=2000,
+                conjugate_gradient=False,
+                bonds=True,
+                angles=True,
+                torsions=False,
+                vdw=False,
+            )
+            _ = opt.optimize(molecule)
+            molecule = molecule.with_structure_from_file(opt_xyz_file)
+            molecule = molecule.with_centroid((0, 0, 0))
+            molecule.write(opt3_mol_file)
 
     return molecule
 
