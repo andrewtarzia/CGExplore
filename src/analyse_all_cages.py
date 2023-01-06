@@ -32,6 +32,25 @@ from generate_all_cages import (
 from env_set import cages
 
 
+def colour_by_energy(energy):
+    # cmap = Color.interpolate(
+    #     ["rebeccapurple", "lch(85% 100 85)"],
+    #     space="lch",
+    # )
+    # energy_bins = np.linspace(0, energy_max, 100)
+    if energy <= isomer_energy():
+        colorcode = "#345995"
+    elif energy <= max_energy():
+        # colorcode = cmap(101).to_string(hex=True)
+        colorcode = "#F9A03F"
+    else:
+        # idx = np.argmin(np.abs(energy_bins - energy))
+        # colorcode = cmap(idx).to_string(hex=True)
+        colorcode = "#CA1551"
+
+    return colorcode
+
+
 def isomer_energy():
     return 0.05
 
@@ -56,6 +75,7 @@ def topology_labels(short=False):
             "3+6",
             "4+8",
             "6+12",
+            "12+24",
         )
     else:
         return (
@@ -68,6 +88,7 @@ def topology_labels(short=False):
             "ThreePlusSix",
             "FourPlusEight",
             "SixPlusTwelve",
+            "M12L24",
         )
 
 
@@ -82,8 +103,19 @@ def convert_topo_to_label(topo_str):
         "ThreePlusSix": "3+6",
         "FourPlusEight": "4+8",
         "SixPlusTwelve": "6+12",
+        "M12L24": "12+24",
         "mixed": "mixed",
         "unstable": "unstable",
+        "not": "not",
+        "3C1": "3-coordinate",
+        "4C1": "4-coordinate",
+    }[topo_str]
+
+
+def convert_torsion_to_label(topo_str):
+    return {
+        "ton": "5 eV",
+        "toff": "none",
     }[topo_str]
 
 
@@ -98,6 +130,14 @@ def topo_to_colormap():
         "ThreePlusSix": "#B279A7",
         "FourPlusEight": "#C3423F",
         "SixPlusTwelve": "#9BC53D",
+        "M12L24": "k",
+    }
+
+
+def torsion_to_colormap():
+    return {
+        "ton": "k",
+        "toff": "r",
     }
 
 
@@ -112,6 +152,7 @@ def stoich_map(tstr):
         "ThreePlusSix": 12,
         "FourPlusEight": 16,
         "SixPlusTwelve": 24,
+        "M12L24": 48,
     }[tstr]
 
 
@@ -132,14 +173,16 @@ def cltypetopo_to_colormap():
             "EightPlusTwelve": "#17becf",
         },
         "4C1": {
-            "TwoPlusFour": "#aec7e8",
-            "ThreePlusSix": "#ffbb78",
-            "FourPlusEight": "#98df8a",
-            "SixPlusTwelve": "#ff9896",
+            "TwoPlusFour": "#1f77b4",
+            "ThreePlusSix": "#ff7f0e",
+            "FourPlusEight": "#2ca02c",
+            "SixPlusTwelve": "#d62728",
+            "M12L24": "#17becf",
         },
         "mixed": {
-            "2": "#7b4173",
-            ">2": "#de9ed6",
+            # "2": "#7b4173",
+            # ">2": "#de9ed6",
+            "mixed": "white",
         },
     }
 
