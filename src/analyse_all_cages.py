@@ -2866,6 +2866,42 @@ def visualise_high_energy(all_data, figure_output):
     viz.visualise(structure_files, structure_colours)
 
 
+
+def parallel_plot(all_data, figure_output):
+    return None
+    print(all_data.columns)
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    ax = parallel_coordinates(
+        frame=all_data,
+        class_column="topology",
+        cols=["clangle", "clsigma", "c2sigma", "c2angle"],
+        ax=ax,
+        color=None,
+        use_columns=False,
+        xticks=None,
+        colormap=None,
+        axvlines=True,
+        axvlines_kwds=None,
+        sort_labels=False,
+    )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    # ax.set_xlabel("target 2c bite angle", fontsize=16)
+    # ax.set_ylabel("energy", fontsize=16)
+    # ax.legend()
+    # ax.set_ylim(0, 2 * max_energy())
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "pp.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+    raise SystemExit()
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
