@@ -27,7 +27,7 @@ from geom import GeomMeasure
 from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory, get_atom_distance
-from gulp_optimizer import CGGulpOptimizer
+from gulp_optimizer import CGGulpOptimizer, extract_gulp_optimisation
 
 from cage_construction.topologies import cage_topology_options
 
@@ -71,7 +71,7 @@ def core_2c_beads():
     return produce_bead_library(
         type_prefix="c",
         element_string="Ag",
-        sigmas=(1, 5, 10),
+        sigmas=(2, 5, 10),
         angles=(180,),
         bond_ks=(10,),
         angle_ks=(20,),
@@ -107,7 +107,7 @@ def beads_3c():
     return produce_bead_library(
         type_prefix="n",
         element_string="C",
-        sigmas=(1, 5, 10),
+        sigmas=(2, 5, 10),
         angles=(60, 90, 109.5, 120),
         bond_ks=(10,),
         angle_ks=(20,),
@@ -119,7 +119,7 @@ def beads_4c():
     return produce_bead_library(
         type_prefix="m",
         element_string="Pd",
-        sigmas=(1, 5, 10),
+        sigmas=(2, 5, 10),
         angles=(50, 70, 90),
         bond_ks=(10,),
         angle_ks=(20,),
@@ -136,7 +136,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
-        logging.info(f"optimising {name}...")
+        logging.info(f"optimising {name}")
         opt = CGGulpOptimizer(
             fileprefix=name,
             output_dir=output_dir,
@@ -175,7 +175,7 @@ def check_long_distances(molecule, name, max_distance, step):
         )
 
 
-def deform_molecule(molecule):
+def deform_molecule(molecule, percent):
     old_pos_mat = molecule.get_position_matrix()
     centroid = molecule.get_centroid()
 
@@ -184,7 +184,7 @@ def deform_molecule(molecule):
     new_pos_mat = []
     for pos in old_pos_mat:
         c_v = centroid - pos
-        c_v = 0.2 * (c_v / np.linalg.norm(c_v))
+        c_v = percent * (c_v / np.linalg.norm(c_v))
         move = generator.choice([-1, 1]) * c_v
         new_pos = pos - move
         new_pos_mat.append(new_pos)
@@ -339,11 +339,12 @@ def analyse_cage(
     molecule,
     name,
     output_dir,
-    custom_torsion_set,
     bead_set,
 ):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
+    gulp_output_file2 = os.path.join(output_dir, f"{name}_o2.ginout")
+    gulp_output_file3 = os.path.join(output_dir, f"{name}_o3.ginout")
     shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
     shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
     # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
@@ -359,19 +360,14 @@ def analyse_cage(
             res_dict = json.load(f)
     else:
         logging.info(f"analysing {name}")
-        opt = CGGulpOptimizer(
-            fileprefix=f"{name}_o2",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=False,
-        )
-        run_data = opt.extract_gulp()
+        if os.path.exists(gulp_output_file3):
+            run_data = extract_gulp_optimisation(gulp_output_file3)
+        else:
+            run_data = extract_gulp_optimisation(gulp_output_file2)
+
         try:
             fin_energy = run_data["final_energy"]
+            fin_gnorm = run_data["final_gnorm"]
         except KeyError:
             raise KeyError(
                 "final energy not found in run_data, suggests failure "
@@ -418,15 +414,19 @@ def analyse_cage(
         bond_data = g_measure.calculate_bonds(molecule)
         angle_data = g_measure.calculate_angles(molecule)
         dihedral_data = g_measure.calculate_dihedrals(molecule)
+        min_b2b_distance = g_measure.calculate_minb2b(molecule)
+
         res_dict = {
             "optimised": True,
             "fin_energy": fin_energy,
+            "fin_gnorm": fin_gnorm,
             "opt_pore_data": opt_pore_data,
             "lig_shape_measures": lig_shape_measures,
             "node_shape_measures": node_shape_measures,
             "bond_data": bond_data,
             "angle_data": angle_data,
             "dihedral_data": dihedral_data,
+            "min_b2b_distance": min_b2b_distance,
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
@@ -511,7 +511,7 @@ def main():
     )
     bead_library_check(full_bead_library)
 
-    logging.info("building building blocks...")
+    logging.info("building building blocks")
     c2_blocks = build_building_block(
         topology=TwoC1Arm,
         option1_lib=beads_core_2c_lib,
@@ -562,7 +562,7 @@ def main():
     }
 
     for popn in populations:
-        logging.info(f"building {popn} population...")
+        logging.info(f"building {popn} population")
         popn_iterator = itertools.product(
             populations[popn]["t"],
             populations[popn]["c2"],
@@ -602,6 +602,7 @@ def main():
                         building_blocks=(bb2, bbl),
                     ),
                 )
+
                 cage = optimise_cage(
                     molecule=cage,
                     name=name,
@@ -617,7 +618,6 @@ def main():
                     molecule=cage,
                     name=name,
                     output_dir=calculation_output,
-                    custom_torsion_set=custom_torsion_set,
                     bead_set=bead_set,
                 )
                 count += 1
