@@ -1115,97 +1115,91 @@ def phase_space_1(bb_data, figure_output):
     plt.close()
 
 
-def phase_space_2(bb_data, figure_output):
-    print(all_data.head())
-    print(all_data.columns)
-    print(all_data.iloc[1])
-    raise SystemExit()
-    for i in ("shape", "energy", "se"):
-        ncols = 2
+def phase_space_2(all_data, figure_output):
+    fig, axs = plt.subplots(
+        nrows=2,
+        ncols=4,
+        figsize=(16, 5),
+    )
+    flat_axs = axs.flatten()
 
-        if ncols == 1:
-            fig, ax = plt.subplots(
-                figsize=(8, 5),
-            )
-            flat_axs = [ax]
-        else:
-            fig, axs = plt.subplots(
-                nrows=1,
-                ncols=ncols,
-                figsize=(16, 5),
-            )
-            flat_axs = axs.flatten()
-
-        sc_3c0_2c1 = []
-        sc_4c0_2c1 = []
-        for bb_triplet in bb_data:
-            bb_dict = bb_data[bb_triplet]
-            # c2_bbname = bb_triplet[0]
-            cl_bbname = bb_triplet[1]
-
-            min_energy = min(tuple(i[1] for i in bb_dict.values()))
-            min_e_dict = {
-                i: bb_dict[i]
-                for i in bb_dict
-                if bb_dict[i][1] == min_energy
-            }
-            min_shape_value = min(
-                (i[0] for i in list(min_e_dict.values()))
-            )
-            if i == "energy":
-                x = min_energy
-                y = list(min_e_dict.values())[0][2]
-            elif i == "shape":
-                x = min_shape_value
-                y = list(min_e_dict.values())[0][2]
-            elif i == "se":
-                x = min_shape_value
-                y = min_energy
-
-            if "3C1" in cl_bbname:
-                sc_3c0_2c1.append((x, y))
-            elif "4C1" in cl_bbname:
-                sc_4c0_2c1.append((x, y))
-
-        shape_coords = (
-            # (f"3C1-2C1 ({len(sc_3c0_2c0)})", sc_3c0_2c0),
-            (f"3C1-2C1 ({len(sc_3c0_2c1)})", sc_3c0_2c1),
-            (f"4C1-2C1 ({len(sc_4c0_2c1)})", sc_4c0_2c1),
-            # (f"3C1-2C3 ({len(sc_3c0_2c3)})", sc_3c0_2c3),
+    axmap = (
+        {
+            "ax": flat_axs[0],
+            "tor": "toff",
+            "x": "pore",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[2],
+            "tor": "ton",
+            "x": "pore",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[1],
+            "tor": "toff",
+            "x": "sv_n_dist",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[3],
+            "tor": "ton",
+            "x": "sv_n_dist",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[4],
+            "tor": "toff",
+            "x": "min_b2b",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[6],
+            "tor": "ton",
+            "x": "min_b2b",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[5],
+            "tor": "toff",
+            "x": "sv_l_dist",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[7],
+            "tor": "ton",
+            "x": "sv_l_dist",
+            "y": "energy",
+        },
+    )
+    for axd in axmap:
+        ax = axd["ax"]
+        tdata = all_data[all_data["torsions"] == axd["tor"]]
+        edata = tdata[tdata["energy"] < max_energy() * 50]
+        xvalues = edata[axd["x"]]
+        yvalues = edata[axd["y"]]
+        hb = ax.hexbin(
+            xvalues,
+            yvalues,
+            gridsize=20,
+            cmap="inferno",
+            bins="log",
+            vmax=len(all_data),
         )
+        cbar = fig.colorbar(hb, ax=ax, label="log10(N)")
+        cbar.ax.tick_params(labelsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel(f"{axd['x']}", fontsize=16)
+        ax.set_ylabel(f"{axd['y']}", fontsize=16)
 
-        for ax, (title, coords) in zip(flat_axs, shape_coords):
-
-            if len(coords) != 0:
-                hb = ax.hexbin(
-                    [i[0] for i in coords],
-                    [i[1] for i in coords],
-                    gridsize=20,
-                    cmap="inferno",
-                    bins="log",
-                )
-                cbar = fig.colorbar(hb, ax=ax, label="log10(N)")
-
-            cbar.ax.tick_params(labelsize=16)
-            ax.set_title(title, fontsize=16)
-            ax.tick_params(axis="both", which="major", labelsize=16)
-            if i == "energy":
-                ax.set_xlabel("min. energy", fontsize=16)
-                ax.set_ylabel("min distance", fontsize=16)
-            elif i == "shape":
-                ax.set_xlabel("min. shape", fontsize=16)
-                ax.set_ylabel("min distance", fontsize=16)
-            elif i == "se":
-                ax.set_xlabel("min. shape", fontsize=16)
-                ax.set_ylabel("min. energy", fontsize=16)
-
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"ps_2_{i}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_2.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 def phase_space_3(all_data, figure_output):
@@ -1230,6 +1224,7 @@ def phase_space_3(all_data, figure_output):
     for gid, dfi in groups:
         bbtitle = gid[:3]
         for tors in ("ton", "toff"):
+
             fin_data = dfi[dfi["torsions"] == tors]
             energies = {
                 str(row["topology"]): float(row["energy"])
@@ -1256,9 +1251,17 @@ def phase_space_3(all_data, figure_output):
                 data[(bbtitle, tors)][topo_str] = 0
             data[(bbtitle, tors)][topo_str] += 1
 
+        if "mixed" not in data[(bbtitle, "toff")]:
+            data[(bbtitle, "toff")]["mixed"] = 0
+        if "mixed" not in data[(bbtitle, "ton")]:
+            data[(bbtitle, "ton")]["mixed"] = 0
+        if "unstable" not in data[(bbtitle, "toff")]:
+            data[(bbtitle, "toff")]["unstable"] = 0
+        if "unstable" not in data[(bbtitle, "ton")]:
+            data[(bbtitle, "ton")]["unstable"] = 0
+
     for ax, (bbtitle, torsion) in zip(flat_axs, data):
         coords = data[(bbtitle, torsion)]
-        print(coords)
         ax.bar(
             [convert_topo_to_label(i) for i in coords.keys()],
             coords.values(),
@@ -1271,9 +1274,13 @@ def phase_space_3(all_data, figure_output):
 
         for i, key in enumerate(coords):
             val = coords[key]
+            if val < 20:
+                move = 20
+            else:
+                move = -20
             ax.text(
                 i,
-                val + 20,
+                val + move,
                 val,
                 fontsize=16,
                 ha="center",
