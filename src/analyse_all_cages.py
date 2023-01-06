@@ -68,7 +68,11 @@ def max_energy():
 
 
 def min_radius():
-    return 0.1
+    return 1.0
+
+
+def min_b2b_distance():
+    return 0.5
 
 
 def topology_labels(short=False):
@@ -2866,6 +2870,478 @@ def visualise_high_energy(all_data, figure_output):
     viz.visualise(structure_files, structure_colours)
 
 
+def energy_map(all_data, figure_output):
+
+    cols_to_map = [
+        "clsigma",
+        "c2sigma",
+        "torsions",
+    ]
+    cols_to_iter = [
+        "clangle",
+        "topology",
+        # "c2angle",
+    ]
+
+    io1 = sorted(set(all_data[cols_to_iter[0]]))
+    io2 = sorted(set(all_data[cols_to_iter[1]]))
+    for cla in io1:
+        for to in io2:
+            filt_data = all_data[all_data[cols_to_iter[0]] == cla]
+            filt_data = filt_data[filt_data[cols_to_iter[1]] == to]
+            if len(filt_data) == 0:
+                continue
+            uo1 = sorted(set(filt_data[cols_to_map[0]]))
+            uo2 = sorted(set(filt_data[cols_to_map[1]]))
+            uo3 = sorted(set(filt_data[cols_to_map[2]]))
+
+            gs = grid_spec.GridSpec(len(uo1), len(uo2))
+            fig = plt.figure(figsize=(16, 10))
+            ax_objs = []
+            max_y = 0
+            for i, o1 in enumerate(uo1):
+                for j, o2 in enumerate(uo2):
+                    ax_objs.append(
+                        fig.add_subplot(gs[i : i + 1, j : j + 1])
+                    )
+                    for k, o3 in enumerate(uo3):
+                        plot_data = filt_data[
+                            filt_data[cols_to_map[0]] == o1
+                        ]
+                        plot_data = plot_data[
+                            plot_data[cols_to_map[1]] == o2
+                        ]
+                        plot_data = plot_data[
+                            plot_data[cols_to_map[2]] == o3
+                        ]
+                        if len(plot_data) == 0:
+                            continue
+                        ax = ax_objs[-1]
+                        rect = ax.patch
+                        rect.set_alpha(0)
+
+                        xs = list(plot_data["c2angle"])
+                        ys = list(plot_data["energy"])
+                        xs, ys = zip(*sorted(zip(xs, ys)))
+                        ax.plot(
+                            xs,
+                            ys,
+                            c=torsion_to_colormap()[o3],
+                            lw=3,
+                            alpha=1.0,
+                            label=f"{convert_torsion_to_label(o3)}",
+                            marker="o",
+                        )
+                        # ax.set_title(" min e value")
+                        ax.set_title(f"{o1}.{o2}", fontsize=16)
+                        if i == 0 and j == 0:
+                            ax.legend(fontsize=16)
+                        if i == 1 and j == 0:
+                            ax.set_ylabel("energy [eV]", fontsize=16)
+                        if i == 2 and j == 1:
+                            ax.set_xlabel(
+                                "bite angle [deg]",
+                                fontsize=16,
+                            )
+                        ax.tick_params(
+                            axis="both",
+                            which="both",
+                            bottom=False,
+                            top=False,
+                            left=False,
+                            right=False,
+                            labelsize=16,
+                        )
+                        if i == 2:
+                            ax.tick_params(
+                                axis="y",
+                                which="major",
+                                labelsize=16,
+                            )
+                        else:
+                            ax.set_xticklabels([])
+                        if j == 0:
+                            ax.tick_params(
+                                axis="x",
+                                which="major",
+                                labelsize=16,
+                            )
+                        else:
+                            ax.set_yticklabels([])
+
+                        ax.axhline(y=max_energy())
+                        max_y = max([max_y, max(ys)])
+
+            for i, ax in enumerate(ax_objs):
+                ax.set_ylim(0, max_y)
+                spines = ["top", "right", "left", "bottom"]
+                for s in spines:
+                    ax.spines[s].set_visible(False)
+
+            fig.tight_layout()
+            filename = f"em_{cla}_{to}.pdf"
+            fig.savefig(
+                os.path.join(figure_output, filename),
+                dpi=720,
+                bbox_inches="tight",
+            )
+            plt.close()
+    raise SystemExit()
+
+
+def size_parities(all_data, figure_output):
+
+    properties = {
+        "energy": (0, 1),
+        "gnorm": (0, 0.001),
+        "pore": (0, 20),
+        "min_b2b": (0, 1),
+        "sv_n_dist": (0, 1),
+        "sv_l_dist": (0, 1),
+    }
+    comps = {
+        "1->5": (1, 5, "k"),
+        "1->10": (1, 10, "skyblue"),
+        "5->10": (5, 10, "gold"),
+    }
+    comp_cols = ("clsigma", "c2sigma")
+
+    for tstr in sorted(set(all_data["topology"])):
+        tdata = all_data[all_data["topology"] == tstr]
+        for tors in ("ton", "toff"):
+            tor_data = tdata[tdata["torsions"] == tors]
+
+            fig, axs = plt.subplots(
+                ncols=3,
+                nrows=4,
+                figsize=(16, 12),
+            )
+            flat_axs = axs.flatten()
+
+            for prop, ax1, ax2 in zip(
+                properties, flat_axs[:6], flat_axs[6:]
+            ):
+                ptup = properties[prop]
+                for comp in comps:
+                    ctup = comps[comp]
+                    xdata = tor_data[tor_data[comp_cols[0]] == ctup[0]]
+                    ydata = tor_data[tor_data[comp_cols[0]] == ctup[1]]
+                    ax1.scatter(
+                        xdata[prop],
+                        ydata[prop],
+                        c=ctup[2],
+                        edgecolor="none",
+                        s=30,
+                        alpha=1.0,
+                        # label=comp,
+                    )
+
+                    xdata = tor_data[tor_data[comp_cols[1]] == ctup[0]]
+                    ydata = tor_data[tor_data[comp_cols[1]] == ctup[1]]
+                    ax2.scatter(
+                        xdata[prop],
+                        ydata[prop],
+                        c=ctup[2],
+                        edgecolor="none",
+                        s=30,
+                        alpha=1.0,
+                        # label=comp,
+                    )
+
+                    ax1.tick_params(
+                        axis="both",
+                        which="major",
+                        labelsize=16,
+                    )
+                    ax1.set_xlabel(f"{prop}: smaller", fontsize=16)
+                    ax1.set_ylabel(f"{prop}: larger", fontsize=16)
+                    ax1.set_title(f"{comp_cols[0]}", fontsize=16)
+                    ax1.set_xlim(ptup[0], ptup[1])
+                    ax1.set_ylim(ptup[0], ptup[1])
+                    # ax1.legend(fontsize=16, ncol=3)
+
+                    ax2.tick_params(
+                        axis="both",
+                        which="major",
+                        labelsize=16,
+                    )
+                    ax2.set_xlabel(f"{prop}: smaller", fontsize=16)
+                    ax2.set_ylabel(f"{prop}: larger", fontsize=16)
+                    ax2.set_title(f"{comp_cols[1]}", fontsize=16)
+                    ax2.set_xlim(ptup[0], ptup[1])
+                    ax2.set_ylim(ptup[0], ptup[1])
+                    # ax2.legend(fontsize=16, ncol=3)
+
+                    ax1.plot(
+                        (ptup[0], ptup[1]),
+                        (ptup[0], ptup[1]),
+                        c="k",
+                    )
+                    ax2.plot(
+                        (ptup[0], ptup[1]),
+                        (ptup[0], ptup[1]),
+                        c="k",
+                    )
+
+            for comp in comps:
+                ctup = comps[comp]
+                ax1.scatter(
+                    None,
+                    None,
+                    c=ctup[2],
+                    edgecolor="none",
+                    s=30,
+                    alpha=1.0,
+                    label=comp,
+                )
+            fig.legend(
+                bbox_to_anchor=(0, 1.02, 2, 0.2),
+                loc="lower left",
+                ncol=3,
+                fontsize=16,
+            )
+            fig.tight_layout()
+            filename = f"sp_{tstr}_{tors}.pdf"
+            fig.savefig(
+                os.path.join(figure_output, filename),
+                dpi=720,
+                bbox_inches="tight",
+            )
+            plt.close()
+
+
+def selfsort_map(all_data, figure_output):
+    cols_to_map = ["clsigma", "clangle"]
+    cols_to_iter = ["torsions", "cltitle", "c2sigma", "c2angle"]
+
+    io1 = sorted(set(all_data[cols_to_iter[0]]))
+    io2 = sorted(set(all_data[cols_to_iter[1]]))
+    for tor in io1:
+        for cltitle in io2:
+            tors_data = all_data[all_data[cols_to_iter[0]] == tor]
+            tors_data = tors_data[tors_data[cols_to_iter[1]] == cltitle]
+            fig = plt.figure(figsize=(16, 8))
+            uo1 = sorted(set(tors_data[cols_to_map[0]]))
+            uo2 = sorted(set(tors_data[cols_to_map[1]]))
+            print(tor, cltitle, uo1, uo2)
+
+            gs = grid_spec.GridSpec(len(uo1), len(uo2))
+            ax_objs = []
+            for (i, o1), (j, o2) in itertools.product(
+                enumerate(uo1), enumerate(uo2)
+            ):
+                ax_objs.append(
+                    fig.add_subplot(gs[i : i + 1, j : j + 1])
+                )
+                ax = ax_objs[-1]
+                plot_data = tors_data[tors_data[cols_to_map[0]] == o1]
+                plot_data = plot_data[plot_data[cols_to_map[1]] == o2]
+                io3 = sorted(set(plot_data[cols_to_iter[2]]))
+                io4 = sorted(set(plot_data[cols_to_iter[3]]))
+                ylabel_map = {}
+                for cla, ba in itertools.product(io3, io4):
+                    xvalue = ba
+                    yvalue = io3.index(cla)
+                    yname = cla
+                    ylabel_map[yname] = yvalue
+
+                    filt_data = plot_data[
+                        plot_data[cols_to_iter[2]] == cla
+                    ]
+                    filt_data = filt_data[
+                        filt_data[cols_to_iter[3]] == ba
+                    ]
+                    if len(filt_data) == 0:
+                        continue
+
+                    energies = {
+                        str(row["topology"]): float(row["energy"])
+                        / stoich_map(str(row["topology"]))
+                        for i, row in filt_data.iterrows()
+                    }
+                    dists = {
+                        str(row["topology"]): float(row["pore"])
+                        for i, row in filt_data.iterrows()
+                    }
+                    b2bs = {
+                        str(row["topology"]): float(row["min_b2b"])
+                        for i, row in filt_data.iterrows()
+                    }
+                    svs = {
+                        str(row["topology"]): (
+                            float(row["sv_n_dist"]),
+                            float(row["sv_l_dist"]),
+                        )
+                        for i, row in filt_data.iterrows()
+                    }
+                    num_mixed = len(
+                        tuple(
+                            i
+                            for i in list(energies.values())
+                            if i < isomer_energy()
+                        )
+                    )
+                    min_energy = min(energies.values())
+                    min_dist = None
+                    min_svs = None
+                    min_b2b = None
+                    if min_energy > max_energy():
+                        topo_str = "unstable"
+                        colour = "gray"
+                    elif num_mixed > 1:
+                        topo_str = "mixed"
+                        colour = "white"
+                    else:
+                        topo_str = list(energies.keys())[
+                            list(energies.values()).index(min_energy)
+                        ]
+                        min_dist = dists[topo_str]
+                        min_svs = svs[topo_str]
+                        min_b2b = b2bs[topo_str]
+                        colour = cltypetopo_to_colormap()[cltitle][
+                            topo_str
+                        ]
+                        # print(energies, topo_str, min_dist, min_svs)
+                        # print(min_b2b)
+
+                    rect = ax.patch
+                    rect.set_alpha(0)
+                    ax.scatter(
+                        xvalue,
+                        yvalue,
+                        c=colour,
+                        alpha=1.0,
+                        marker="s",
+                        edgecolor="k",
+                        s=200,
+                    )
+
+                    if min_dist is not None and min_dist < min_radius():
+                        ax.scatter(
+                            xvalue,
+                            yvalue,
+                            c="k",
+                            alpha=1.0,
+                            marker="X",
+                            edgecolor="none",
+                            s=80,
+                        )
+
+                    if (
+                        min_b2b is not None
+                        and min_b2b < min_b2b_distance()
+                    ):
+                        ax.scatter(
+                            xvalue,
+                            yvalue,
+                            c="k",
+                            alpha=1.0,
+                            marker="D",
+                            edgecolor="none",
+                            s=80,
+                        )
+
+                    ax.set_title(
+                        f"{cols_to_map[0]}:{o1}; {cols_to_map[1]}:{o2}",
+                        fontsize=16,
+                    )
+                    if i == 1 and j == 0:
+                        # ax.set_ylabel("CL angle [deg]", fontsize=16)
+                        ax.set_ylabel("C2 sigma [A]", fontsize=16)
+                    if i == 2 and j == 1:
+                        ax.set_xlabel(
+                            "bite angle [deg]",
+                            fontsize=16,
+                        )
+                    ax.tick_params(
+                        axis="both",
+                        which="both",
+                        bottom=False,
+                        top=False,
+                        left=False,
+                        right=False,
+                        labelsize=16,
+                    )
+                    if i == 2:
+                        ax.tick_params(
+                            axis="y",
+                            which="major",
+                            labelsize=16,
+                        )
+                    else:
+                        ax.set_xticklabels([])
+                    if j == 0:
+                        ax.tick_params(
+                            axis="x",
+                            which="major",
+                            labelsize=16,
+                        )
+                        ax.set_yticks(list(ylabel_map.values()))
+                        ax.set_yticklabels(list(ylabel_map.keys()))
+                    else:
+                        ax.set_yticklabels([])
+
+                for i, ax in enumerate(ax_objs):
+                    spines = ["top", "right", "left", "bottom"]
+                    for s in spines:
+                        ax.spines[s].set_visible(False)
+                    ax.set_ylim(-0.5, 2.5)
+
+            for i in cltypetopo_to_colormap():
+                if i not in (cltitle, "mixed"):
+                    continue
+                for j in cltypetopo_to_colormap()[i]:
+                    # if i == "mixed":
+                    #     string = f"mixed: {j}"
+                    # else:
+                    string = j
+                    ax.scatter(
+                        None,
+                        None,
+                        c=cltypetopo_to_colormap()[i][j],
+                        edgecolor="k",
+                        s=300,
+                        marker="s",
+                        alpha=1.0,
+                        label=convert_topo_to_label(string),
+                    )
+            ax.scatter(
+                None,
+                None,
+                c="gray",
+                edgecolor="k",
+                s=300,
+                marker="s",
+                alpha=1.0,
+                label="unstable",
+            )
+            ax.scatter(
+                None,
+                None,
+                c="k",
+                edgecolor="k",
+                s=300,
+                marker="s",
+                alpha=1.0,
+                label=f"min distance < {min_radius()}A",
+            )
+
+            fig.legend(
+                bbox_to_anchor=(0, 1.02, 2, 0.2),
+                loc="lower left",
+                ncol=4,
+                fontsize=16,
+            )
+
+            fig.tight_layout()
+            filename = f"ss_{cltitle}_{tor}.pdf"
+            fig.savefig(
+                os.path.join(figure_output, filename),
+                dpi=720,
+                bbox_inches="tight",
+            )
+            plt.close()
+
 
 def parallel_plot(all_data, figure_output):
     return None
@@ -2915,32 +3391,49 @@ def main():
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
-        output_csv=calculation_output / "all_array.csv",
+        output_dir=calculation_output,
     )
+    with open(calculation_output / "all_geom.json", "r") as f:
+        geom_data = json.load(f)
     logging.info(f"there are {len(all_data)} collected data")
-
-    phase_space_3(all_data, figure_output)
     identity_distributions(all_data, figure_output)
-    single_value_distributions(all_data, figure_output)
-    not_opt_phase_space(all_data, figure_output)
-    bite_angle_relationship(all_data, figure_output)
+    write_out_mapping(all_data)
+    visualise_bite_angle(all_data, figure_output)
+    visualise_self_sort(all_data, figure_output)
     visualise_high_energy(all_data, figure_output)
+    phase_space_5(all_data, figure_output)
+    phase_space_2(all_data, figure_output)
+    single_value_distributions(all_data, figure_output)
+    size_parities(all_data, figure_output)
+    selfsort_map(all_data, figure_output)
+    energy_map(all_data, figure_output)
+    shape_vector_distributions(all_data, figure_output)
+    phase_space_3(all_data, figure_output)
+    phase_space_13(all_data, figure_output)
     rmsd_distributions(all_data, calculation_output, figure_output)
+    geom_distributions(all_data, geom_data, figure_output)
+    bite_angle_relationship(all_data, figure_output)
+
+    raise SystemExit()
+
+    phase_space_11(all_data, figure_output)
+    phase_space_12(all_data, figure_output)
+    not_opt_phase_space(all_data, figure_output)
+
     parity_1(all_data, figure_output)
 
     raise SystemExit()
     phase_space_10(all_data, figure_output)
 
-    shape_vector_distributions(all_data, figure_output)
     phase_space_9(all_data, figure_output)
     phase_space_1(all_data, figure_output)
-    phase_space_5(all_data, figure_output)
+
     phase_space_6(all_data, figure_output)
     phase_space_7(all_data, figure_output)
     phase_space_8(all_data, figure_output)
     phase_space_4(all_data, figure_output)
     raise SystemExit()
-    phase_space_2(all_data, figure_output)
+
     raise SystemExit(
         "next I want map of target bite angle to actual bite angle "
     )
@@ -2980,6 +3473,7 @@ def main():
         c3bb="3C1HoMn",
         figure_output=figure_output,
     )
+    parallel_plot(all_data, figure_output)
 
 
 if __name__ == "__main__":
