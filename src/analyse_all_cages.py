@@ -2543,53 +2543,52 @@ def not_opt_phase_space(all_data, figure_output):
 
 
 def bite_angle_relationship(all_data, figure_output):
+
     color_map = topo_to_colormap()
-    tt_map = {j: i for i, j in enumerate(color_map)}
-
-    opt_data = all_data[all_data["optimised"]]
-    clangle_data = opt_data[opt_data["clangle"] == 120]
     for torsion in ("ton", "toff"):
-        if torsion == "ton":
-            c = "gray"
-            m = "s"
-        elif torsion == "toff":
-            c = "r"
-            m = "o"
-
-        tor_data = clangle_data[clangle_data["torsions"] == torsion]
-
-        fig, axs = plt.subplots(
-            ncols=3,
-            nrows=3,
-            sharex=True,
-            sharey=True,
-            figsize=(16, 10),
-        )
-        flat_axs = axs.flatten()
-        for tstr in tt_map:
+        tor_data = all_data[all_data["torsions"] == torsion]
+        for tstr in color_map:
             filt_data = tor_data[tor_data["topology"] == tstr]
-            ax = flat_axs[tt_map[tstr]]
-            for c1_option in sorted(set(filt_data["c2sigma"])):
-                test_data = filt_data[filt_data["c2sigma"] == c1_option]
-                for c2_option in sorted(set(test_data["clsigma"])):
-                    plot_data = test_data[
-                        test_data["clsigma"] == c2_option
+            for t_angle in set(list(filt_data["clangle"])):
+                clan_data = filt_data[filt_data["clangle"] == t_angle]
+                fig, ax = plt.subplots(figsize=(8, 5))
+                for c1_opt in sorted(set(clan_data["c2sigma"])):
+                    test_data = clan_data[
+                        clan_data["c2sigma"] == c1_opt
                     ]
-                    xs = list(plot_data["c2angle"])
-                    ys = list(plot_data["energy"])
-                    xs, ys = zip(*sorted(zip(xs, ys)))
-                    ax.plot(
-                        xs,
-                        ys,
-                        c=c,
-                        lw=2,
-                        marker=m,
-                        alpha=1.0,
-                    )
+                    for c2_opt in sorted(set(test_data["clsigma"])):
+                        plot_data = test_data[
+                            test_data["clsigma"] == c2_opt
+                        ]
+                        xs = list(plot_data["c2angle"])
+                        ys = list(plot_data["energy"])
+                        xs, ys = zip(*sorted(zip(xs, ys)))
+                        ax.plot(
+                            xs,
+                            ys,
+                            lw=3,
+                            alpha=1.0,
+                            label=f"{c1_opt}.{c2_opt}",
+                            marker="o",
+                        )
 
-                ax.tick_params(axis="both", which="major", labelsize=16)
-                ax.set_xlabel("target 2c bite angle", fontsize=16)
-                ax.set_ylabel("energy", fontsize=16)
+                    ax.tick_params(
+                        axis="both", which="major", labelsize=16
+                    )
+                    ax.set_xlabel("target 2c bite angle", fontsize=16)
+                    ax.set_ylabel("energy", fontsize=16)
+                    ax.legend()
+                    ax.set_ylim(0, 2 * max_energy())
+
+                fig.tight_layout()
+                filename = f"ar_{torsion}_{t_angle}_{tstr}.pdf"
+                fig.savefig(
+                    os.path.join(figure_output, filename),
+                    dpi=720,
+                    bbox_inches="tight",
+                )
+                plt.close()
+
 
                 title = f"{tstr} : 120"
                 ax.set_title(title, fontsize=16)
