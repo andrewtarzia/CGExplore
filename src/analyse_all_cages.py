@@ -348,7 +348,47 @@ def get_present_beads(c2_bbname):
     return present_beads_names
 
 
-def data_to_array(json_files, output_csv):
+def get_sv_dist(row, mode):
+    maps = mapshape_to_topology(mode=mode, reverse=True)
+    try:
+        tshape = maps[str(row["topology"])]
+    except KeyError:
+        return None
+
+    if tshape[-1] == "b":
+        tshape = tshape[:-1]
+    known_sv = known_shape_vectors()[tshape]
+    current_sv = {i: float(row[f"{mode}_{i}"]) for i in known_sv}
+    a = np.array([known_sv[i] for i in known_sv])
+    b = np.array([current_sv[i] for i in known_sv])
+    cosine_similarity = np.dot(a, b) / (
+        np.linalg.norm(a) * np.linalg.norm(b)
+    )
+    return cosine_similarity
+
+
+def is_persistent(row):
+
+    n_vector_distance = get_sv_dist(row, mode="n")
+    l_vector_distance = get_sv_dist(row, mode="l")
+
+    pore = float(row["pore"])
+    if pore > 1:
+        if n_vector_distance is None:
+            return True
+        elif n_vector_distance < 1:
+            if l_vector_distance is None:
+                return True
+            elif l_vector_distance < 1:
+                return True
+
+    return False
+
+
+def data_to_array(json_files, output_dir):
+    output_csv = output_dir / "all_array.csv"
+    geom_json = output_dir / "all_geom.json"
+
     if os.path.exists(output_csv):
         input_array = pd.read_csv(output_csv)
         input_array = input_array.loc[
@@ -357,7 +397,8 @@ def data_to_array(json_files, output_csv):
         return input_array
 
     input_dict = {}
-    for j_file in json_files:
+    geom_data = {}
+    for j_file in sorted(json_files):
         with open(j_file, "r") as f:
             res_dict = json.load(f)
         name = str(j_file.name).replace("_res.json", "")
@@ -366,13 +407,25 @@ def data_to_array(json_files, output_csv):
         optimised = res_dict["optimised"]
         if optimised:
             energy = res_dict["fin_energy"]
+            gnorm = res_dict["fin_gnorm"]
             min_distance = res_dict["opt_pore_data"]["min_distance"]
-            shape_vector = res_dict["shape_measures"]
+            min_b2b = res_dict["min_b2b_distance"]
+            node_shape_vector = res_dict["node_shape_measures"]
+            lig_shape_vector = res_dict["lig_shape_measures"]
+            bond_data = res_dict["bond_data"]
+            angle_data = res_dict["angle_data"]
+            dihedral_data = res_dict["dihedral_data"]
+            geom_data[name] = {
+                "bonds": bond_data,
+                "angles": angle_data,
+                "dihedrals": dihedral_data,
+            }
 
         else:
             energy = None
             min_distance = None
-            shape_vector = None
+            node_shape_vector = None
+            lig_shape_vector = None
 
         present_c2_beads = get_present_beads(c2bb_name)
         present_cl_beads = get_present_beads(clbb_name)
@@ -380,23 +433,20 @@ def data_to_array(json_files, output_csv):
         cl_bead_libs = beads_3c().copy()
         cl_bead_libs.update(beads_4c())
         cltopo = int(clbb_name[0])
-        if cltopo == 4:
-            clangle = get_CGBead_from_string(
-                present_cl_beads[0],
-                beads_4c(),
-            ).angle_centered[0]
-            cltitle = "4C1"
-        elif cltopo == 3:
-            clangle = get_CGBead_from_string(
-                present_cl_beads[0],
-                beads_3c(),
-            ).angle_centered
-            cltitle = "3C1"
+        clangle = get_CGBead_from_string(
+            present_cl_beads[0],
+            cl_bead_libs,
+        ).angle_centered
+        cltitle = "4C1" if cltopo == 4 else "3C1"
 
         row = {
             "cage_name": cage_name,
             "clbb_name": clbb_name,
             "c2bb_name": c2bb_name,
+            "clbb_b1": present_cl_beads[0],
+            "clbb_b2": present_cl_beads[1],
+            "c2bb_b1": present_c2_beads[0],
+            "c2bb_b2": present_c2_beads[1],
             "bbpair": clbb_name + c2bb_name,
             "cltopo": cltopo,
             "cltitle": cltitle,
@@ -418,21 +468,44 @@ def data_to_array(json_files, output_csv):
             )
             * 2,
             "energy": energy,
+            "gnorm": gnorm,
             "pore": min_distance,
+            "min_b2b": min_b2b,
             "topology": t_str,
             "torsions": torsions,
             "optimised": optimised,
         }
-        if shape_vector is not None:
-            for sv in shape_vector:
-                row[sv] = shape_vector[sv]
+        if node_shape_vector is not None:
+            for sv in node_shape_vector:
+                row[f"n_{sv}"] = node_shape_vector[sv]
+        if lig_shape_vector is not None:
+            for sv in lig_shape_vector:
+                row[f"l_{sv}"] = lig_shape_vector[sv]
         input_dict[name] = row
 
     input_array = pd.DataFrame.from_dict(
         input_dict,
         orient="index",
     ).reset_index()
+
+    input_array["sv_n_dist"] = input_array.apply(
+        lambda row: get_sv_dist(row, mode="n"),
+        axis=1,
+    )
+    input_array["sv_l_dist"] = input_array.apply(
+        lambda row: get_sv_dist(row, mode="l"),
+        axis=1,
+    )
+    input_array["persistent"] = input_array.apply(
+        lambda row: is_persistent(row),
+        axis=1,
+    )
+
     input_array.to_csv(output_csv, index=False)
+
+    with open(geom_json, "w") as f:
+        json.dump(geom_data, f, indent=4)
+
     return input_array
 
 
