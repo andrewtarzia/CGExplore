@@ -2536,44 +2536,93 @@ def phase_space_10(bb_data, figure_output):
 
 def parity_1(all_data, figure_output):
     tcmap = topo_to_colormap()
+    tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
+    tcmap.update({"all": "k"})
+    tcpos.update({"all": 10})
 
-    fig, ax = plt.subplots(figsize=(8, 5))
-    opt_data = all_data[all_data["optimised"]]
-    ton_data = opt_data[opt_data["torsions"] == "ton"]
-    toff_data = opt_data[opt_data["torsions"] == "toff"]
-
-    out_data = ton_data.merge(
-        toff_data,
-        on="cage_name",
+    fig, axs = plt.subplots(
+        nrows=2,
+        ncols=1,
+        sharex=True,
+        figsize=(8, 8),
     )
+    # flat_axs = axs.flatten()
 
-    max_xlim = 0
-    max_ylim = 0
+    ax = axs[0]
+    ax2 = axs[1]
     for tstr in tcmap:
-        t_data = out_data[out_data["topology_x"] == tstr]
-        ydata = list(t_data["energy_x"])
-        xdata = list(t_data["energy_y"])
+        if tstr == "all":
+            ton_data = all_data[all_data["torsions"] == "ton"]
+            toff_data = all_data[all_data["torsions"] == "toff"]
+        else:
+            tdata = all_data[all_data["topology"] == tstr]
+            ton_data = tdata[tdata["torsions"] == "ton"]
+            toff_data = tdata[tdata["torsions"] == "toff"]
 
-        if len(xdata) > 0:
-            ax.scatter(
-                [i for i in xdata],
-                [i for i in ydata],
-                c=tcmap[tstr],
-                edgecolor="none",
-                s=30,
-                alpha=1.0,
-                label=convert_topo_to_label(tstr),
-            )
-            max_xlim = max((max_xlim, max(xdata)))
-            max_ylim = max((max_ylim, max(ydata)))
+        out_data = ton_data.merge(
+            toff_data,
+            on="cage_name",
+        )
 
-    ax.plot((0, max_ylim), (0, max_ylim), c="k")
+        ydata = list(out_data["energy_x"])
+        xdata = list(out_data["energy_y"])
+        diffdata = [y - x for x, y, in zip(xdata, ydata)]
+        xpos = tcpos[tstr]
+
+        ax.scatter(
+            [xpos for i in diffdata],
+            [i for i in diffdata],
+            c="gray",
+            edgecolor="none",
+            s=30,
+            alpha=1.0,
+            rasterized=True,
+        )
+
+        ax2.scatter(
+            [xpos for i in diffdata if abs(i) < 20],
+            [i for i in diffdata if abs(i) < 20],
+            c="gray",
+            edgecolor="none",
+            s=30,
+            alpha=0.2,
+            rasterized=True,
+        )
+
+        parts = ax2.violinplot(
+            [i for i in diffdata if abs(i) < 20],
+            [xpos],
+            # points=200,
+            vert=True,
+            widths=0.8,
+            showmeans=False,
+            showextrema=False,
+            showmedians=False,
+            bw_method=0.5,
+        )
+
+        for pc in parts["bodies"]:
+            pc.set_facecolor("gray")
+            pc.set_edgecolor("none")
+            pc.set_alpha(0.3)
+
+    ax.plot((-1, 11), (0, 0), c="k")
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("toff [eV]", fontsize=16)
-    ax.set_ylabel("ton [eV]", fontsize=16)
-    ax.set_xlim(0, max_xlim)
-    ax.set_ylim(0, max_ylim)
-    ax.legend(fontsize=16, ncol=3)
+    ax.set_ylabel("ton - toff [eV]", fontsize=16)
+    ax.set_xlim(-0.5, 10.5)
+    # ax.set_xticks([tcpos[i] for i in tcpos])
+    # ax.set_xticklabels([convert_topo_to_label(i) for i in tcpos])
+
+    ax2.plot((-1, 11), (0, 0), c="k")
+    ax2.tick_params(axis="both", which="major", labelsize=16)
+    ax2.set_ylabel("ton - toff [eV]", fontsize=16)
+    ax2.set_xlim(-0.5, 10.5)
+    ax2.set_ylim(-22, 22)
+    ax2.set_xticks([tcpos[i] for i in tcpos])
+    ax2.set_xticklabels(
+        [convert_topo_to_label(i) for i in tcpos],
+        rotation=45,
+    )
 
     fig.tight_layout()
     fig.savefig(
