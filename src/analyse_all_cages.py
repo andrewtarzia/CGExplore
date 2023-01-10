@@ -84,6 +84,7 @@ def topology_labels(short=False):
             "3+6",
             "4+8",
             "6+12",
+            "8+16",
             "12+24",
         )
     else:
@@ -97,6 +98,7 @@ def topology_labels(short=False):
             "ThreePlusSix",
             "FourPlusEight",
             "SixPlusTwelve",
+            "EightPlusSixteen",
             "M12L24",
         )
 
@@ -112,21 +114,28 @@ def convert_topo_to_label(topo_str):
         "ThreePlusSix": "3+6",
         "FourPlusEight": "4+8",
         "SixPlusTwelve": "6+12",
+        "EightPlusSixteen": "8+16",
         "M12L24": "12+24",
         "mixed": "mixed",
         "all": "all",
         "unstable": "unstable",
         "not": "not",
-        "3C1": "3-coordinate",
-        "4C1": "4-coordinate",
+        "3C1": "3-c",
+        "4C1": "4-c",
     }[topo_str]
 
 
-def convert_torsion_to_label(topo_str):
-    return {
-        "ton": "5 eV",
-        "toff": "none",
-    }[topo_str]
+def convert_torsion_to_label(topo_str, num=True):
+    if num:
+        return {
+            "ton": "5 eV",
+            "toff": "none",
+        }[topo_str]
+    else:
+        return {
+            "ton": "restricted",
+            "toff": "not restricted",
+        }[topo_str]
 
 
 def topo_to_colormap():
@@ -140,6 +149,7 @@ def topo_to_colormap():
         "ThreePlusSix": "#B279A7",
         "FourPlusEight": "#C3423F",
         "SixPlusTwelve": "#9BC53D",
+        "EightPlusSixteen": "k",
         "M12L24": "k",
     }
 
@@ -162,6 +172,7 @@ def stoich_map(tstr):
         "ThreePlusSix": 12,
         "FourPlusEight": 16,
         "SixPlusTwelve": 24,
+        "EightPlusSixteen": 32,
         "M12L24": 48,
     }[tstr]
 
@@ -187,6 +198,7 @@ def cltypetopo_to_colormap():
             "ThreePlusSix": "#ff7f0e",
             "FourPlusEight": "#2ca02c",
             "SixPlusTwelve": "#d62728",
+            "EightPlusSixteen": "k",
             "M12L24": "#17becf",
         },
         "mixed": {
