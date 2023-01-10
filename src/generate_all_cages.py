@@ -475,6 +475,12 @@ def target_torsions(bead_set, custom_torsion_option):
     return custom_torsion_set
 
 
+def save_idealised_topology(cage, cage_topo_str, struct_output):
+    output_name = struct_output / f"{cage_topo_str}_unopt.mol"
+    if not os.path.exists(output_name):
+        cage.write(str(output_name))
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -601,6 +607,11 @@ def main():
                     ](
                         building_blocks=(bb2, bbl),
                     ),
+                )
+                save_idealised_topology(
+                    cage=cage,
+                    cage_topo_str=cage_topo_str,
+                    struct_output=struct_output,
                 )
 
                 cage = optimise_cage(
