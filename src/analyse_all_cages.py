@@ -429,6 +429,7 @@ def data_to_array(json_files, output_dir):
         optimised = res_dict["optimised"]
         if optimised:
             energy = res_dict["fin_energy"]
+            energy_per_bond = res_dict["fin_energy"] / stoich_map(t_str)
             gnorm = res_dict["fin_gnorm"]
             min_distance = res_dict["opt_pore_data"]["min_distance"]
             min_b2b = res_dict["min_b2b_distance"]
@@ -490,6 +491,7 @@ def data_to_array(json_files, output_dir):
             )
             * 2,
             "energy": energy,
+            "energy_per_bond": energy_per_bond,
             "gnorm": gnorm,
             "pore": min_distance,
             "min_b2b": min_b2b,
