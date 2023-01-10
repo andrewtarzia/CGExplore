@@ -117,6 +117,7 @@ def convert_topo_to_label(topo_str):
         "SixPlusTwelve": "6+12",
         "M12L24": "12+24",
         "mixed": "mixed",
+        "all": "all",
         "unstable": "unstable",
         "not": "not",
         "3C1": "3-coordinate",
@@ -662,15 +663,15 @@ def geom_distributions(all_data, geom_data, figure_output):
 
 def rmsd_distributions(all_data, calculation_dir, figure_output):
 
-    rmsd_file = calculation_dir / "all_rmsds.json"
-    cmap = topo_to_colormap()
+    tcmap = topo_to_colormap()
 
+    rmsd_file = calculation_dir / "all_rmsds.json"
     if os.path.exists(rmsd_file):
         with open(rmsd_file, "r") as f:
             data = json.load(f)
     else:
         data = {}
-        for tstr in cmap:
+        for tstr in tcmap:
             tdata = {}
             for o1 in calculation_dir.glob(f"*{tstr}_*ton*_opted2.mol"):
                 if o1.name[0] in ("2", "3", "4"):
@@ -678,55 +679,149 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
 
                 o1 = str(o1)
                 o2 = o1.replace("opted2", "opted1")
+                o3 = o1.replace("opted2", "opted3")
                 ooff = o1.replace("ton", "toff")
                 mol1 = stk.BuildingBlock.init_from_file(o1)
                 mol2 = stk.BuildingBlock.init_from_file(o2)
+
                 moloff = stk.BuildingBlock.init_from_file(ooff)
 
                 rmsd_calc = stko.RmsdCalculator(mol1)
                 # try:
                 rmsd1 = rmsd_calc.get_results(mol2).get_rmsd()
                 rmsdooff = rmsd_calc.get_results(moloff).get_rmsd()
-
+                if os.path.exists(o3):
+                    mol3 = stk.BuildingBlock.init_from_file(o3)
+                    rmsd3 = rmsd_calc.get_results(mol3).get_rmsd()
+                else:
+                    rmsd3 = None
                 # except stko.DifferentMoleculeException:
                 #     logging.info(f"fail for {o1}, {o2}")
 
-                tdata[o1] = (rmsd1, rmsdooff)
+                tdata[o1] = (rmsd1, rmsdooff, rmsd3)
             data[tstr] = tdata
 
         with open(rmsd_file, "w") as f:
             json.dump(data, f)
 
+    tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
+    tcmap.update({"all": "k"})
+    tcpos.update({"all": 10})
+
     fig, axs = plt.subplots(
-        ncols=3,
-        nrows=3,
+        nrows=1,
+        ncols=2,
         sharex=True,
-        figsize=(16, 10),
+        sharey=True,
+        figsize=(16, 5),
     )
-    flat_axs = axs.flatten()
+    # flat_axs = axs.flatten()
 
-    for ax, tstr in zip(flat_axs, cmap):
-        ax.hist(
-            [i[0] for i in data[tstr].values()],
-            bins=50,
-            alpha=0.5,
-            density=True,
-            edgecolor="k",
-            label="opt1->opt2",
-        )
-        ax.hist(
-            [i[1] for i in data[tstr].values()],
-            bins=50,
-            alpha=0.5,
-            density=True,
-            edgecolor="k",
-            label="ton->toff",
+    ax = axs[0]
+    ax2 = axs[1]
+    allydata1 = []
+    allydata2 = []
+    for tstr in tcmap:
+        if tstr == "all":
+            ydata1 = allydata1
+            ydata2 = allydata2
+        else:
+            ydata1 = [i[0] for i in data[tstr].values()]
+            ydata2 = [i[1] for i in data[tstr].values()]
+            ydata3 = [
+                i[2] for i in data[tstr].values() if i[2] is not None
+            ]
+            allydata1.extend(ydata1)
+            allydata2.extend(ydata2)
+
+        xpos = tcpos[tstr]
+
+        ax.scatter(
+            [xpos for i in ydata1],
+            [i for i in ydata1],
+            c="gray",
+            edgecolor="none",
+            s=30,
+            alpha=0.2,
+            rasterized=True,
         )
 
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("RMSD [A]", fontsize=16)
-        ax.set_ylabel("count", fontsize=16)
-        ax.legend(fontsize=16)
+        parts = ax.violinplot(
+            [i for i in ydata1],
+            [xpos],
+            # points=200,
+            vert=True,
+            widths=0.8,
+            showmeans=False,
+            showextrema=False,
+            showmedians=False,
+            bw_method=0.5,
+        )
+
+        for pc in parts["bodies"]:
+            pc.set_facecolor("gray")
+            pc.set_edgecolor("none")
+            pc.set_alpha(0.3)
+
+        ax2.scatter(
+            [xpos for i in ydata2],
+            [i for i in ydata2],
+            c="gray",
+            edgecolor="none",
+            s=30,
+            alpha=0.2,
+            rasterized=True,
+        )
+
+        parts = ax2.violinplot(
+            [i for i in ydata2],
+            [xpos],
+            # points=200,
+            vert=True,
+            widths=0.8,
+            showmeans=False,
+            showextrema=False,
+            showmedians=False,
+            bw_method=0.5,
+        )
+
+        for pc in parts["bodies"]:
+            pc.set_facecolor("gray")
+            pc.set_edgecolor("none")
+            pc.set_alpha(0.3)
+
+        if tstr != "all":
+            ax.scatter(
+                [xpos for i in ydata3],
+                [i for i in ydata3],
+                c="gold",
+                edgecolor="none",
+                s=20,
+                alpha=1.0,
+                rasterized=True,
+            )
+
+    ax.plot((-1, 11), (0, 0), c="k")
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_ylabel("RMSD [A]", fontsize=16)
+    ax.set_xlim(-0.5, 10.5)
+    ax.set_title("opt1->opt2; opt2->opt3", fontsize=16)
+    ax.set_xticks([tcpos[i] for i in tcpos])
+    ax.set_xticklabels(
+        [convert_topo_to_label(i) for i in tcpos],
+        rotation=45,
+    )
+
+    ax2.plot((-1, 11), (0, 0), c="k")
+    ax2.tick_params(axis="both", which="major", labelsize=16)
+    # ax2.set_ylabel("RMSD [A]", fontsize=16)
+    ax2.set_xlim(-0.5, 10.5)
+    ax2.set_title("ton->toff", fontsize=16)
+    ax2.set_xticks([tcpos[i] for i in tcpos])
+    ax2.set_xticklabels(
+        [convert_topo_to_label(i) for i in tcpos],
+        rotation=45,
+    )
 
     fig.tight_layout()
     fig.savefig(
