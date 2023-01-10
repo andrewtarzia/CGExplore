@@ -16,11 +16,8 @@ import stko
 import json
 import numpy as np
 import logging
-
-# from coloraide import Color
 import itertools
 import pandas as pd
-from pandas.plotting import parallel_coordinates
 import matplotlib as mpl
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -1149,7 +1146,7 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
     plt.close()
 
 
-def phase_space_1(bb_data, figure_output):
+def phase_space_1(all_data, figure_output):
     print(all_data.head())
     print(all_data.columns)
     print(all_data.iloc[1])
@@ -1618,7 +1615,7 @@ def phase_space_13(all_data, figure_output):
     plt.close()
 
 
-def phase_space_4(bb_data, figure_output):
+def phase_space_4(all_data, figure_output):
     print(all_data.head())
     print(all_data.columns)
     print(all_data.iloc[1])
@@ -1723,11 +1720,11 @@ def phase_space_5(all_data, figure_output):
         tondata = tdata[tdata["torsions"] == "ton"]
         toffdata = tdata[tdata["torsions"] == "toff"]
         x1 = tondata["c2angle"]
-        x2 = toffdata["c2angle"]
+        # x2 = toffdata["c2angle"]
         y1 = tondata["sv_n_dist"]
-        y2 = toffdata["sv_n_dist"]
+        # y2 = toffdata["sv_n_dist"]
         z1 = tondata["energy"]
-        z2 = toffdata["energy"]
+        # z2 = toffdata["energy"]
 
         ax.set_title(tstr, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
@@ -2860,21 +2857,21 @@ def visualise_bite_angle(all_data, figure_output):
                 [None, None],
                 c=colour_by_energy(max_energy() + 1),
                 lw=3,
-                label=f"energy > {max_energy()}eV",
+                label=f"energy per bond > {max_energy()}eV",
             )
             ax.plot(
                 [None, None],
                 [None, None],
                 c=colour_by_energy(isomer_energy() + 0.1),
                 lw=3,
-                label=f"energy <= {max_energy()}eV",
+                label=f"energy per bond <= {max_energy()}eV",
             )
             ax.plot(
                 [None, None],
                 [None, None],
                 c=colour_by_energy(0),
                 lw=3,
-                label=f"energy <= {isomer_energy()}eV",
+                label=f"energy per bond <= {isomer_energy()}eV",
             )
 
             fig.legend(
@@ -2887,10 +2884,11 @@ def visualise_bite_angle(all_data, figure_output):
             filename = f"vba_{tstr}_{clangle}.pdf"
             fig.savefig(
                 os.path.join(figure_output, filename),
-                dpi=720,
+                dpi=360,
                 bbox_inches="tight",
             )
             plt.close()
+    raise SystemExit()
 
 
 def visualise_self_sort(all_data, figure_output):
@@ -2906,10 +2904,7 @@ def visualise_self_sort(all_data, figure_output):
         "zoom_string": "custom",
     }
 
-    trim = all_data[all_data["clsigma"] == 2]
-    trim = trim[trim["c2sigma"] == 5]
-
-    bbpairs = set(trim["bbpair"])
+    bbpairs = set(all_data["bbpair"])
 
     for bbpair in bbpairs:
         fig, axs = plt.subplots(
@@ -2917,7 +2912,7 @@ def visualise_self_sort(all_data, figure_output):
             nrows=2,
             figsize=(16, 5),
         )
-        bdata = trim[trim["bbpair"] == bbpair]
+        bdata = all_data[all_data["bbpair"] == bbpair]
 
         for i, tors in enumerate(("ton", "toff")):
             flat_axs = axs[i].flatten()
@@ -2984,12 +2979,10 @@ def visualise_self_sort(all_data, figure_output):
         filename = f"vss_{bbpair}.pdf"
         fig.savefig(
             os.path.join(figure_output, filename),
-            dpi=720,
+            dpi=360,
             bbox_inches="tight",
         )
         plt.close()
-
-    raise SystemExit()
 
 
 def visualise_high_energy(all_data, figure_output):
@@ -3117,7 +3110,8 @@ def energy_map(all_data, figure_output):
                         max_y = max([max_y, max(ys)])
 
             for i, ax in enumerate(ax_objs):
-                ax.set_ylim(0, max_y)
+                # ax.set_ylim(0, max_y)
+                ax.set_ylim(0, max_energy() * 10)
                 spines = ["top", "right", "left", "bottom"]
                 for s in spines:
                     ax.spines[s].set_visible(False)
@@ -3130,7 +3124,6 @@ def energy_map(all_data, figure_output):
                 bbox_inches="tight",
             )
             plt.close()
-    raise SystemExit()
 
 
 def size_parities(all_data, figure_output):
@@ -3586,41 +3579,6 @@ def selfsort_map(all_data, figure_output):
             plt.close()
 
 
-def parallel_plot(all_data, figure_output):
-    return None
-    print(all_data.columns)
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    ax = parallel_coordinates(
-        frame=all_data,
-        class_column="topology",
-        cols=["clangle", "clsigma", "c2sigma", "c2angle"],
-        ax=ax,
-        color=None,
-        use_columns=False,
-        xticks=None,
-        colormap=None,
-        axvlines=True,
-        axvlines_kwds=None,
-        sort_labels=False,
-    )
-
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    # ax.set_xlabel("target 2c bite angle", fontsize=16)
-    # ax.set_ylabel("energy", fontsize=16)
-    # ax.legend()
-    # ax.set_ylim(0, 2 * max_energy())
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "pp.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-    raise SystemExit()
-
-
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -3641,29 +3599,34 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     identity_distributions(all_data, figure_output)
     write_out_mapping(all_data)
-    visualise_bite_angle(all_data, figure_output)
+    rmsd_distributions(all_data, calculation_output, figure_output)
+
+    energy_map(all_data, figure_output)
+
+    raise SystemExit()
     visualise_self_sort(all_data, figure_output)
+    visualise_bite_angle(all_data, figure_output)
+    parity_1(all_data, figure_output)
+    selectivity_map(all_data, figure_output)
+    geom_distributions(all_data, geom_data, figure_output)
+    raise SystemExit()
+
     visualise_high_energy(all_data, figure_output)
     phase_space_5(all_data, figure_output)
     phase_space_2(all_data, figure_output)
     single_value_distributions(all_data, figure_output)
     size_parities(all_data, figure_output)
     selfsort_map(all_data, figure_output)
-    energy_map(all_data, figure_output)
+
     shape_vector_distributions(all_data, figure_output)
     phase_space_3(all_data, figure_output)
     phase_space_13(all_data, figure_output)
-    rmsd_distributions(all_data, calculation_output, figure_output)
-    geom_distributions(all_data, geom_data, figure_output)
-    bite_angle_relationship(all_data, figure_output)
 
-    raise SystemExit()
+    bite_angle_relationship(all_data, figure_output)
 
     phase_space_11(all_data, figure_output)
     phase_space_12(all_data, figure_output)
     not_opt_phase_space(all_data, figure_output)
-
-    parity_1(all_data, figure_output)
 
     raise SystemExit()
     phase_space_10(all_data, figure_output)
