@@ -61,6 +61,7 @@ def get_shape_molecule_nodes(constructed_molecule, name):
         "ThreePlusSix": 3,
         "FourPlusEight": 4,
         "SixPlusTwelve": 6,
+        "EightPlusSixteen": 8,
     }
 
     splits = name.split("_")

@@ -27,6 +27,7 @@ def cage_topology_options(fg_set):
             "ThreePlusSix": stk.cage.M3L6,
             "FourPlusEight": stk.cage.M4L8,
             "SixPlusTwelve": stk.cage.M6L12Cube,
+            "EightPlusSixteen": stk.cage.EightPlusSixteen,
             "M12L24": CGM12L24,
         }
     if fg_set == "3p3":
