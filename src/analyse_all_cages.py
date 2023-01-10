@@ -855,89 +855,86 @@ def single_value_distributions(all_data, figure_output):
     }
 
     color_map = topo_to_colormap()
-    color_map_barm = cltype_to_colormap()
+    color_map.update({"3C1": "k", "4C1": "k"})
 
     for tp in to_plot:
-
+        fig, ax = plt.subplots(figsize=(16, 5))
         xtitle = to_plot[tp]["xtitle"]
         xlim = to_plot[tp]["xlim"]
-        if "barm" in tp:
-            cmapp = color_map_barm
-            fig, axs = plt.subplots(
-                ncols=2,
-                nrows=1,
-                sharex=True,
-                sharey=True,
-                figsize=(16, 5),
-            )
-            flat_axs = axs.flatten()
-        else:
-            cmapp = color_map
-            fig, axs = plt.subplots(
-                ncols=2,
-                nrows=5,
-                sharex=True,
-                sharey=True,
-                figsize=(16, 12),
-            )
-            flat_axs = axs.flatten()
+        count = 0
+        toptions = {}
+        for tstr in color_map:
+            for tor in ("ton", "toff"):
+                color = {"ton": "gray", "toff": "r"}[tor]
+                toptions[(tstr, tor)] = (count, color)
+                count += 1
 
-        for i, t_option in enumerate(cmapp):
-            target_column = tp.replace("_barm", "")
-            if "barm" in tp:
-                topo_frame = all_data[all_data["cltitle"] == t_option]
-                toff_frame = topo_frame[
-                    topo_frame["torsions"] == "toff"
-                ]
-                ton_frame = topo_frame[topo_frame["torsions"] == "ton"]
-                ton_values = ton_frame[target_column]
-                toff_values = toff_frame[target_column]
+        for i, topt in enumerate(toptions):
+            if topt[0] in ("3C1", "4C1"):
+                topo_frame = all_data[all_data["cltitle"] == topt[0]]
             else:
-                topo_frame = all_data[all_data["topology"] == t_option]
-                toff_frame = topo_frame[
-                    topo_frame["torsions"] == "toff"
-                ]
-                ton_frame = topo_frame[topo_frame["torsions"] == "ton"]
-                ton_values = ton_frame[target_column]
-                toff_values = toff_frame[target_column]
+                topo_frame = all_data[all_data["topology"] == topt[0]]
+            fin_frame = topo_frame[topo_frame["torsions"] == topt[1]]
+            values = fin_frame[tp]
 
-            xbins = np.linspace(xlim[0], xlim[1], 100)
-            flat_axs[i].hist(
-                x=ton_values,
-                bins=xbins,
-                density=False,
-                histtype="step",
-                color="k",
-                lw=2,
-                label=convert_torsion_to_label("ton"),
-            )
-            flat_axs[i].hist(
-                x=toff_values,
-                bins=xbins,
-                density=False,
-                histtype="step",
-                color="r",
-                lw=2,
-                linestyle="--",
-                label=convert_torsion_to_label("toff"),
+            xpos = toptions[topt][0]
+            col = toptions[topt][1]
+
+            ax.scatter(
+                [xpos for i in values],
+                [i for i in values],
+                c=col,
+                edgecolor="none",
+                s=30,
+                alpha=0.2,
+                rasterized=True,
             )
 
-            flat_axs[i].tick_params(
-                axis="both",
-                which="major",
-                labelsize=16,
+            parts = ax.violinplot(
+                [i for i in values],
+                [xpos],
+                # points=200,
+                vert=True,
+                widths=0.8,
+                showmeans=False,
+                showextrema=False,
+                showmedians=False,
+                bw_method=0.5,
             )
-            flat_axs[i].set_xlabel(xtitle, fontsize=16)
-            flat_axs[i].set_ylabel("count", fontsize=16)
-            # flat_axs[i].set_ylabel("log(count)", fontsize=16)
-            flat_axs[i].set_title(
-                convert_topo_to_label(t_option),
-                fontsize=16,
+
+            for pc in parts["bodies"]:
+                pc.set_facecolor(col)
+                pc.set_edgecolor("none")
+                pc.set_alpha(0.3)
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_ylabel(xtitle, fontsize=16)
+        ax.set_ylim(xlim)
+        xticks = {}
+        for i in toptions:
+            tstr = i[0]
+            if tstr in xticks:
+                xticks[tstr] = (toptions[i][0] + xticks[tstr]) / 2
+            else:
+                xticks[tstr] = toptions[i][0]
+
+        ax.set_xticks([xticks[i] for i in xticks])
+        ax.set_xticklabels(
+            [convert_topo_to_label(i) for i in xticks],
+            rotation=45,
+        )
+
+        for tor, col in (("ton", "gray"), ("toff", "r")):
+            ax.scatter(
+                None,
+                None,
+                c=col,
+                edgecolor="none",
+                s=30,
+                alpha=0.2,
+                label=convert_torsion_to_label(tor),
             )
-            flat_axs[i].set_xlim(xlim)
-            # flat_axs[i].set_yscale("log")
-            if i == 0:
-                flat_axs[i].legend(fontsize=16)
+        ax.legend(fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
