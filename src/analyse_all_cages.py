@@ -716,8 +716,9 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
             json.dump(data, f)
 
     tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
+    lentcpos = len(tcpos)
     tcmap.update({"all": "k"})
-    tcpos.update({"all": 10})
+    tcpos.update({"all": lentcpos})
 
     fig, axs = plt.subplots(
         nrows=1,
@@ -2548,8 +2549,9 @@ def phase_space_10(bb_data, figure_output):
 def parity_1(all_data, figure_output):
     tcmap = topo_to_colormap()
     tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
+    lentcpos = len(tcpos)
     tcmap.update({"all": "k"})
-    tcpos.update({"all": 10})
+    tcpos.update({"all": lentcpos})
 
     fig, axs = plt.subplots(
         nrows=2,
