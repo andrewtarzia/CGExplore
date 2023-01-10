@@ -1250,7 +1250,7 @@ def phase_space_2(all_data, figure_output):
             "y": "energy",
         },
         {
-            "ax": flat_axs[2],
+            "ax": flat_axs[4],
             "tor": "ton",
             "x": "pore",
             "y": "energy",
@@ -1258,37 +1258,37 @@ def phase_space_2(all_data, figure_output):
         {
             "ax": flat_axs[1],
             "tor": "toff",
-            "x": "sv_n_dist",
-            "y": "energy",
-        },
-        {
-            "ax": flat_axs[3],
-            "tor": "ton",
-            "x": "sv_n_dist",
-            "y": "energy",
-        },
-        {
-            "ax": flat_axs[4],
-            "tor": "toff",
-            "x": "min_b2b",
-            "y": "energy",
-        },
-        {
-            "ax": flat_axs[6],
-            "tor": "ton",
             "x": "min_b2b",
             "y": "energy",
         },
         {
             "ax": flat_axs[5],
+            "tor": "ton",
+            "x": "min_b2b",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[2],
             "tor": "toff",
             "x": "sv_l_dist",
             "y": "energy",
         },
         {
-            "ax": flat_axs[7],
+            "ax": flat_axs[6],
             "tor": "ton",
             "x": "sv_l_dist",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[3],
+            "tor": "toff",
+            "x": "sv_n_dist",
+            "y": "energy",
+        },
+        {
+            "ax": flat_axs[7],
+            "tor": "ton",
+            "x": "sv_n_dist",
             "y": "energy",
         },
     )
