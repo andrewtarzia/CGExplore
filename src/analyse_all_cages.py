@@ -3254,6 +3254,105 @@ def size_parities(all_data, figure_output):
             plt.close()
 
 
+def selectivity_map(all_data, figure_output):
+    bite_angles = sorted([float(i) for i in set(all_data["c2angle"])])
+    topology_order = {
+        i: j for j, i in enumerate(topology_labels(short=False))
+    }
+    vcount = 10
+    properties = {
+        "energy": {"col": "energy", "cut": isomer_energy(), "dir": "<"},
+        "energy_max": {
+            "col": "energy",
+            "cut": max_energy(),
+            "dir": "<",
+        },
+        "pore": {"col": "pore", "cut": min_radius(), "dir": "<"},
+        "min_b2b": {
+            "col": "min_b2b",
+            "cut": min_b2b_distance(),
+            "dir": "<",
+        },
+        "sv_n_dist": {"col": "sv_n_dist", "cut": 0.9, "dir": ">"},
+        "sv_l_dist": {"col": "sv_l_dist", "cut": 0.9, "dir": ">"},
+    }
+    for prop in properties:
+        pdict = properties[prop]
+        fig, axs = plt.subplots(
+            nrows=2,
+            ncols=1,
+            figsize=(8, 10),
+        )
+        flat_axs = axs.flatten()
+
+        for tors, ax in zip(("ton", "toff"), flat_axs):
+            tordata = all_data[all_data["torsions"] == tors]
+            for tstr in topology_order:
+                yvalue = topology_order[tstr]
+                tdata = tordata[tordata["topology"] == tstr]
+                for ba in bite_angles:
+                    plotdata = tdata[tdata["c2angle"] == ba]
+                    # total_count = len(plotdata)
+                    property_list = list(plotdata[pdict["col"]])
+                    if pdict["dir"] == "<":
+                        under_cut = [
+                            i for i in property_list if i < pdict["cut"]
+                        ]
+                        order_string = "<"
+                    elif pdict["dir"] == ">":
+                        under_cut = [
+                            i for i in property_list if i > pdict["cut"]
+                        ]
+                        order_string = ">"
+                    # print(under_cut)
+                    under_count = len(under_cut)
+                    xvalue = ba
+                    ax.scatter(
+                        xvalue,
+                        yvalue,
+                        # c=under_count / total_count,
+                        c=under_count,
+                        vmin=0,
+                        vmax=vcount,
+                        alpha=1.0,
+                        edgecolor="k",
+                        s=100,
+                        marker="s",
+                        cmap="Blues",
+                    )
+
+            ax.set_title(tors, fontsize=16)
+            ax.tick_params(axis="both", which="major", labelsize=16)
+            ax.set_xlabel("bite angle [deg]", fontsize=16)
+            # ax.set_ylabel("sv_n_dist", fontsize=16)
+            ax.set_yticks([topology_order[i] for i in topology_order])
+            ax.set_yticklabels(
+                [convert_topo_to_label(i) for i in topology_order]
+            )
+
+        cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+        cmap = mpl.cm.Blues
+        norm = mpl.colors.Normalize(vmin=0, vmax=vcount)
+        cbar = fig.colorbar(
+            mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=cbar_ax,
+            orientation="vertical",
+        )
+        cbar.ax.tick_params(labelsize=16)
+        cbar.set_label(
+            f"count {pdict['col']} {order_string} {pdict['cut']}",
+            fontsize=16,
+        )
+
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"sel_{prop}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
 def selfsort_map(all_data, figure_output):
     cols_to_map = ["clsigma", "clangle"]
     cols_to_iter = ["torsions", "cltitle", "c2sigma", "c2angle"]
