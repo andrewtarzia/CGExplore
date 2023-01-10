@@ -3675,6 +3675,58 @@ def selfsort_map(all_data, figure_output):
             plt.close()
 
 
+def angle_map(all_data, figure_output):
+
+    color_map = topo_to_colormap()
+
+    trim = all_data[all_data["clsigma"] == 2]
+    trim = trim[trim["c2sigma"] == 5]
+    vmax = max_energy() * 3
+
+    for tstr in color_map:
+        fig, axs = plt.subplots(ncols=2, sharey=True, figsize=(16, 5))
+        tdata = trim[trim["topology"] == tstr]
+        for ax, tor in zip(axs, ("ton", "toff")):
+            pdata = tdata[tdata["torsions"] == tor]
+            ax.scatter(
+                pdata["c2angle"],
+                pdata["clangle"],
+                c=pdata["energy"],
+                vmin=0,
+                vmax=vmax,
+                alpha=1.0,
+                edgecolor="k",
+                s=200,
+                marker="s",
+                cmap="Blues",
+            )
+
+            ax.set_title(tor, fontsize=16)
+            ax.tick_params(axis="both", which="major", labelsize=16)
+            ax.set_xlabel("bite angle [deg]", fontsize=16)
+            ax.set_ylabel("cl angle [deg]", fontsize=16)
+
+        cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+        cmap = mpl.cm.Blues
+        norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
+        cbar = fig.colorbar(
+            mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=cbar_ax,
+            orientation="vertical",
+        )
+        cbar.ax.tick_params(labelsize=16)
+        cbar.set_label("energy [eV]", fontsize=16)
+
+        fig.tight_layout()
+        filename = f"am_{tstr}.pdf"
+        fig.savefig(
+            os.path.join(figure_output, filename),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
