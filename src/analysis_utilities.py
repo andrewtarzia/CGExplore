@@ -19,7 +19,6 @@ import logging
 import itertools
 import pandas as pd
 import matplotlib as mpl
-import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as grid_spec
 from sklearn.decomposition import PCA
@@ -34,26 +33,6 @@ from generate_all_cages import (
 )
 from env_set import cages
 from shape import known_shape_vectors
-from visualisation import Pymol
-
-
-def colour_by_energy(energy):
-    # cmap = Color.interpolate(
-    #     ["rebeccapurple", "lch(85% 100 85)"],
-    #     space="lch",
-    # )
-    # energy_bins = np.linspace(0, energy_max, 100)
-    if energy <= isomer_energy():
-        colorcode = "#345995"
-    elif energy <= max_energy():
-        # colorcode = cmap(101).to_string(hex=True)
-        colorcode = "#F9A03F"
-    else:
-        # idx = np.argmin(np.abs(energy_bins - energy))
-        # colorcode = cmap(idx).to_string(hex=True)
-        colorcode = "#CA1551"
-
-    return colorcode
 
 
 def isomer_energy():
@@ -538,16 +517,12 @@ def identity_distributions(all_data, figure_output):
     fig, ax = plt.subplots(figsize=(16, 5))
 
     categories = {i: 0 for i in topology_labels(short=True)}
-    # categories.update({"X opt. [3]": 0, "X opt. [4]": 0})
+    categories.update({"X opt.": 0})
     count1 = all_data["topology"].value_counts()
-    # data_3c1 = all_data[all_data["cltitle"] == "3C1"]
-    # count3c1 = data_3c1["optimised"].value_counts()
-    # data_4c1 = all_data[all_data["cltitle"] == "4C1"]
-    # count4c1 = data_4c1["optimised"].value_counts()
+    countxopt = all_data["optimised"].value_counts()
     for tstr, count in count1.items():
         categories[convert_topo_to_label(tstr)] = count
-    # categories["X opt. [3]"] = count3c1[False]
-    # categories["X opt. [4]"] = count4c1[False]
+    categories["X opt."] = countxopt[False]
     num_cages = len(all_data)
 
     ax.bar(
@@ -813,10 +788,10 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
                 rasterized=True,
             )
 
-    ax.plot((-1, 11), (0, 0), c="k")
+    ax.plot((-1, 12), (0, 0), c="k")
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_ylabel("RMSD [A]", fontsize=16)
-    ax.set_xlim(-0.5, 10.5)
+    ax.set_xlim(-0.5, 11.5)
     ax.set_title("opt1->opt2; opt2->opt3", fontsize=16)
     ax.set_xticks([tcpos[i] for i in tcpos])
     ax.set_xticklabels(
@@ -824,10 +799,10 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
         rotation=45,
     )
 
-    ax2.plot((-1, 11), (0, 0), c="k")
+    ax2.plot((-1, 12), (0, 0), c="k")
     ax2.tick_params(axis="both", which="major", labelsize=16)
     # ax2.set_ylabel("RMSD [A]", fontsize=16)
-    ax2.set_xlim(-0.5, 10.5)
+    ax2.set_xlim(-0.5, 11.5)
     ax2.set_title("ton->toff", fontsize=16)
     ax2.set_xticks([tcpos[i] for i in tcpos])
     ax2.set_xticklabels(
@@ -850,8 +825,6 @@ def single_value_distributions(all_data, figure_output):
         "gnorm": {"xtitle": "gnorm", "xlim": (0, 0.0005)},
         "pore": {"xtitle": "min. distance [A]", "xlim": (0, 20)},
         "min_b2b": {"xtitle": "min. b2b distance [A]", "xlim": (0, 1)},
-        "energy_barm": {"xtitle": "energy", "xlim": (0, 100)},
-        "pore_barm": {"xtitle": "min. distance [A]", "xlim": (0, 20)},
     }
 
     color_map = topo_to_colormap()
@@ -2543,251 +2516,6 @@ def phase_space_10(bb_data, figure_output):
                 plt.close()
 
 
-def parity_1(all_data, figure_output):
-    tcmap = topo_to_colormap()
-    tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
-    lentcpos = len(tcpos)
-    tcmap.update({"all": "k"})
-    tcpos.update({"all": lentcpos})
-
-    fig, axs = plt.subplots(
-        nrows=2,
-        ncols=1,
-        sharex=True,
-        figsize=(8, 8),
-    )
-    # flat_axs = axs.flatten()
-
-    ax = axs[0]
-    ax2 = axs[1]
-    for tstr in tcmap:
-        if tstr == "all":
-            ton_data = all_data[all_data["torsions"] == "ton"]
-            toff_data = all_data[all_data["torsions"] == "toff"]
-        else:
-            tdata = all_data[all_data["topology"] == tstr]
-            ton_data = tdata[tdata["torsions"] == "ton"]
-            toff_data = tdata[tdata["torsions"] == "toff"]
-
-        out_data = ton_data.merge(
-            toff_data,
-            on="cage_name",
-        )
-
-        ydata = list(out_data["energy_x"])
-        xdata = list(out_data["energy_y"])
-        diffdata = [y - x for x, y, in zip(xdata, ydata)]
-        xpos = tcpos[tstr]
-
-        ax.scatter(
-            [xpos for i in diffdata],
-            [i for i in diffdata],
-            c="gray",
-            edgecolor="none",
-            s=30,
-            alpha=1.0,
-            rasterized=True,
-        )
-
-        ax2.scatter(
-            [xpos for i in diffdata if abs(i) < 20],
-            [i for i in diffdata if abs(i) < 20],
-            c="gray",
-            edgecolor="none",
-            s=30,
-            alpha=0.2,
-            rasterized=True,
-        )
-
-        parts = ax2.violinplot(
-            [i for i in diffdata if abs(i) < 20],
-            [xpos],
-            # points=200,
-            vert=True,
-            widths=0.8,
-            showmeans=False,
-            showextrema=False,
-            showmedians=False,
-            bw_method=0.5,
-        )
-
-        for pc in parts["bodies"]:
-            pc.set_facecolor("gray")
-            pc.set_edgecolor("none")
-            pc.set_alpha(0.3)
-
-    ax.plot((-1, 11), (0, 0), c="k")
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_ylabel("ton - toff [eV]", fontsize=16)
-    ax.set_xlim(-0.5, 10.5)
-    # ax.set_xticks([tcpos[i] for i in tcpos])
-    # ax.set_xticklabels([convert_topo_to_label(i) for i in tcpos])
-
-    ax2.plot((-1, 11), (0, 0), c="k")
-    ax2.tick_params(axis="both", which="major", labelsize=16)
-    ax2.set_ylabel("ton - toff [eV]", fontsize=16)
-    ax2.set_xlim(-0.5, 10.5)
-    ax2.set_ylim(-22, 22)
-    ax2.set_xticks([tcpos[i] for i in tcpos])
-    ax2.set_xticklabels(
-        [convert_topo_to_label(i) for i in tcpos],
-        rotation=45,
-    )
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "par_1.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def parity_2(all_data, geom_data, figure_output):
-    tcmap = topo_to_colormap()
-
-    c2labels = ("Pb_Ba_Ag",)
-    vmax = max_energy()
-    for tstr in tcmap:
-        fig, axs = plt.subplots(
-            nrows=1,
-            ncols=2,
-            sharex=True,
-            sharey=True,
-            figsize=(12, 5),
-        )
-        flat_axs = axs.flatten()
-        topo_frame = all_data[all_data["topology"] == tstr]
-        for tors, ax in zip(("ton", "toff"), flat_axs):
-            tor_frame = topo_frame[topo_frame["torsions"] == tors]
-
-            target_c2s = []
-            measured_c2 = []
-            energies = []
-            for i, row in tor_frame.iterrows():
-                c2angle = float(row["c2angle"])
-                target_angle = (c2angle / 2) + 90
-                name = str(row["index"])
-                energy = float(row["energy_per_bond"])
-                c2data = geom_data[name]["angles"]
-
-                for lbl in c2labels:
-                    if lbl in c2data:
-                        lbldata = c2data[lbl]
-                        for mc2 in lbldata:
-                            measured_c2.append(mc2)
-                            target_c2s.append(target_angle)
-                            energies.append(energy)
-            ax.scatter(
-                target_c2s,
-                measured_c2,
-                c=energies,
-                vmin=0,
-                vmax=vmax,
-                alpha=1.0,
-                edgecolor="k",
-                s=80,
-                cmap="Blues",
-            )
-
-            ax.plot((90, 180), (90, 180), c="k", lw=2, linestyle="--")
-
-            ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_xlabel("target [deg]", fontsize=16)
-            ax.set_ylabel("observed [deg]", fontsize=16)
-            ax.set_title(
-                (
-                    f"{convert_topo_to_label(tstr)}: "
-                    f"{convert_torsion_to_label(tors, num=False)}"
-                ),
-                fontsize=16,
-            )
-
-        cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-        cmap = mpl.cm.Blues
-        norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
-        cbar = fig.colorbar(
-            mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-            cax=cbar_ax,
-            orientation="vertical",
-        )
-        cbar.ax.tick_params(labelsize=16)
-        cbar.set_label("energy per bond formed [eV]", fontsize=16)
-
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"par_2_{tstr}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-
-def parity_3(all_data, geom_data, figure_output):
-    tcmap = topo_to_colormap()
-
-    c2labels = ("Pb_Ba_Ag",)
-
-    for tstr in tcmap:
-        fig, axs = plt.subplots(
-            nrows=1,
-            ncols=2,
-            sharex=True,
-            sharey=True,
-            figsize=(12, 5),
-        )
-        flat_axs = axs.flatten()
-        topo_frame = all_data[all_data["topology"] == tstr]
-        for tors, ax in zip(("ton", "toff"), flat_axs):
-            tor_frame = topo_frame[topo_frame["torsions"] == tors]
-            target_c2s = []
-            measured_c2 = []
-            energies = []
-            for i, row in tor_frame.iterrows():
-                c2angle = float(row["c2angle"])
-                target_angle = (c2angle / 2) + 90
-                name = str(row["index"])
-                energy = float(row["energy_per_bond"])
-                c2data = geom_data[name]["angles"]
-
-                for lbl in c2labels:
-                    if lbl in c2data:
-                        lbldata = c2data[lbl]
-                        for mc2 in lbldata:
-                            measured_c2.append(mc2)
-                            target_c2s.append(target_angle)
-                            energies.append(energy)
-            ax.scatter(
-                [j - i for i, j in zip(measured_c2, target_c2s)],
-                energies,
-                c="gray",
-                alpha=1.0,
-                edgecolor="k",
-                s=30,
-            )
-
-            ax.axhline(y=0, c="k", lw=2, linestyle="--")
-
-            ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_xlabel("target - observed [deg]", fontsize=16)
-            ax.set_ylabel("energy per bond formed [eV]", fontsize=16)
-            ax.set_title(
-                (
-                    f"{convert_topo_to_label(tstr)}: "
-                    f"{convert_torsion_to_label(tors, num=False)}"
-                ),
-                fontsize=16,
-            )
-
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"par_3_{tstr}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-
 def bite_angle_relationship(all_data, figure_output):
 
     color_map = topo_to_colormap()
@@ -2867,237 +2595,6 @@ def write_out_mapping(all_data):
     logging.info(f"\nclsigmas: {clsigma_map}\n")
     logging.info(f"\nbite_angles: {bite_angle_map}\n")
     logging.info(f"\nc2sigmas: {c2sigma_map}\n")
-
-
-def visualise_bite_angle(all_data, figure_output):
-    struct_output = cages() / "structures"
-    topologies = (
-        "TwoPlusThree",
-        "FourPlusSix",
-        "FourPlusSix2",
-        "SixPlusNine",
-        "EightPlusTwelve",
-        "TwoPlusFour",
-        "ThreePlusSix",
-        "FourPlusEight",
-        "SixPlusTwelve",
-        "M12L24",
-    )
-
-    settings = {
-        "grid_mode": 0,
-        "rayx": 1000,
-        "rayy": 1000,
-        "stick_rad": 0.8,
-        "vdw": 0,
-        "zoom_string": "custom",
-    }
-
-    trim = all_data[all_data["clsigma"] == 2]
-    trim = trim[trim["c2sigma"] == 5]
-
-    for tstr in topologies:
-        tdata = trim[trim["topology"] == tstr]
-        clangles = set(tdata["clangle"])
-
-        for clangle in clangles:
-            fig, axs = plt.subplots(
-                ncols=19,
-                nrows=2,
-                figsize=(16, 5),
-            )
-            cdata = tdata[tdata["clangle"] == clangle]
-
-            for i, tors in enumerate(("ton", "toff")):
-                flat_axs = axs[i].flatten()
-
-                show = cdata[cdata["torsions"] == tors]
-                names_energies = [
-                    (
-                        str(row["index"]),
-                        float(row["energy"]),
-                        float(row["c2angle"]),
-                    )
-                    for idx, row in show.iterrows()
-                ]
-                names_energies = sorted(
-                    names_energies, key=lambda tup: tup[2]
-                )
-
-                for cage_data, ax in zip(names_energies, flat_axs):
-                    name, energy, ba = cage_data
-                    structure_file = struct_output / f"{name}_optc.mol"
-                    structure_colour = colour_by_energy(energy)
-                    png_file = figure_output / f"{name}_f.png"
-                    if not os.path.exists(png_file):
-                        viz = Pymol(
-                            output_dir=figure_output,
-                            file_prefix=f"{name}_f",
-                            settings=settings,
-                        )
-                        viz.visualise(
-                            [structure_file], [structure_colour]
-                        )
-
-                    img = mpimg.imread(png_file)
-                    ax.imshow(img)
-                    ax.axis("off")
-                    if i == 0:
-                        ax.set_title(f"{ba}", fontsize=16)
-
-            ax.plot(
-                [None, None],
-                [None, None],
-                c=colour_by_energy(max_energy() + 1),
-                lw=3,
-                label=f"energy per bond > {max_energy()}eV",
-            )
-            ax.plot(
-                [None, None],
-                [None, None],
-                c=colour_by_energy(isomer_energy() + 0.1),
-                lw=3,
-                label=f"energy per bond <= {max_energy()}eV",
-            )
-            ax.plot(
-                [None, None],
-                [None, None],
-                c=colour_by_energy(0),
-                lw=3,
-                label=f"energy per bond <= {isomer_energy()}eV",
-            )
-
-            fig.legend(
-                bbox_to_anchor=(0, 1.02, 2, 0.2),
-                loc="lower left",
-                ncol=3,
-                fontsize=16,
-            )
-            fig.tight_layout()
-            filename = f"vba_{tstr}_{clangle}.pdf"
-            fig.savefig(
-                os.path.join(figure_output, filename),
-                dpi=360,
-                bbox_inches="tight",
-            )
-            plt.close()
-    raise SystemExit()
-
-
-def visualise_self_sort(all_data, figure_output):
-    struct_output = cages() / "structures"
-    topology_dict = cltypetopo_to_colormap()
-
-    settings = {
-        "grid_mode": 0,
-        "rayx": 1000,
-        "rayy": 1000,
-        "stick_rad": 0.8,
-        "vdw": 0,
-        "zoom_string": "custom",
-    }
-
-    bbpairs = set(all_data["bbpair"])
-
-    for bbpair in bbpairs:
-        fig, axs = plt.subplots(
-            ncols=5,
-            nrows=2,
-            figsize=(16, 5),
-        )
-        bdata = all_data[all_data["bbpair"] == bbpair]
-
-        for i, tors in enumerate(("ton", "toff")):
-            flat_axs = axs[i].flatten()
-
-            show = bdata[bdata["torsions"] == tors]
-            ctitle = "4C1" if "4C1" in bbpair else "3C1"
-            c2angle = float(list(show["c2angle"])[0])
-            names_energies = []
-            for tstr in topology_dict[ctitle]:
-                row = show[show["topology"] == tstr].iloc[0]
-                names_energies.append(
-                    (str(row["index"]), float(row["energy"])),
-                )
-
-            for j, cage_data in enumerate(names_energies):
-                ax = flat_axs[j]
-                name, energy = cage_data
-                structure_file = struct_output / f"{name}_optc.mol"
-                structure_colour = colour_by_energy(energy)
-                png_file = figure_output / f"{name}_f.png"
-                if not os.path.exists(png_file):
-                    viz = Pymol(
-                        output_dir=figure_output,
-                        file_prefix=f"{name}_f",
-                        settings=settings,
-                    )
-                    viz.visualise([structure_file], [structure_colour])
-
-                img = mpimg.imread(png_file)
-                ax.imshow(img)
-                ax.axis("off")
-                if i == 0 and j == 0:
-                    ax.set_title(f"ba: {c2angle}", fontsize=16)
-
-        ax.plot(
-            [None, None],
-            [None, None],
-            c=colour_by_energy(max_energy() + 1),
-            lw=3,
-            label=f"energy > {max_energy()}eV",
-        )
-        ax.plot(
-            [None, None],
-            [None, None],
-            c=colour_by_energy(isomer_energy() + 0.1),
-            lw=3,
-            label=f"energy <= {max_energy()}eV",
-        )
-        ax.plot(
-            [None, None],
-            [None, None],
-            c=colour_by_energy(0),
-            lw=3,
-            label=f"energy <= {isomer_energy()}eV",
-        )
-
-        fig.legend(
-            bbox_to_anchor=(0, 1.02, 2, 0.2),
-            loc="lower left",
-            ncol=3,
-            fontsize=16,
-        )
-        fig.tight_layout()
-        filename = f"vss_{bbpair}.pdf"
-        fig.savefig(
-            os.path.join(figure_output, filename),
-            dpi=360,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-
-def visualise_high_energy(all_data, figure_output):
-    struct_output = cages() / "structures"
-    high_energy = all_data[all_data["energy"] > 500]
-    high_e_names = list(high_energy["index"])
-    high_e_energies = list(high_energy["energy"])
-    logging.info(
-        f"there are {len(high_e_names)} high energy structures"
-    )
-    with open(figure_output / "high_energy_names.txt", "w") as f:
-        f.write("_opted3.mol ".join(high_e_names))
-        f.write("_opted3.mol")
-
-    cage_name = high_e_names[0]
-    structure_files = []
-    structure_colours = []
-    for i, cage_name in enumerate(high_e_names):
-        structure_files.append(struct_output / f"{cage_name}_optc.mol")
-        structure_colours.append(colour_by_energy(high_e_energies[i]))
-    viz = Pymol(output_dir=figure_output, file_prefix="highe")
-    viz.visualise(structure_files, structure_colours)
 
 
 def energy_map(all_data, figure_output):
@@ -3211,127 +2708,6 @@ def energy_map(all_data, figure_output):
 
             fig.tight_layout()
             filename = f"em_{cla}_{to}.pdf"
-            fig.savefig(
-                os.path.join(figure_output, filename),
-                dpi=720,
-                bbox_inches="tight",
-            )
-            plt.close()
-
-
-def size_parities(all_data, figure_output):
-
-    properties = {
-        "energy": (0, 1),
-        "gnorm": (0, 0.001),
-        "pore": (0, 20),
-        "min_b2b": (0, 1),
-        "sv_n_dist": (0, 1),
-        "sv_l_dist": (0, 1),
-    }
-    comps = {
-        "1->5": (1, 5, "k"),
-        "1->10": (1, 10, "skyblue"),
-        "5->10": (5, 10, "gold"),
-    }
-    comp_cols = ("clsigma", "c2sigma")
-
-    for tstr in sorted(set(all_data["topology"])):
-        tdata = all_data[all_data["topology"] == tstr]
-        for tors in ("ton", "toff"):
-            tor_data = tdata[tdata["torsions"] == tors]
-
-            fig, axs = plt.subplots(
-                ncols=3,
-                nrows=4,
-                figsize=(16, 12),
-            )
-            flat_axs = axs.flatten()
-
-            for prop, ax1, ax2 in zip(
-                properties, flat_axs[:6], flat_axs[6:]
-            ):
-                ptup = properties[prop]
-                for comp in comps:
-                    ctup = comps[comp]
-                    xdata = tor_data[tor_data[comp_cols[0]] == ctup[0]]
-                    ydata = tor_data[tor_data[comp_cols[0]] == ctup[1]]
-                    ax1.scatter(
-                        xdata[prop],
-                        ydata[prop],
-                        c=ctup[2],
-                        edgecolor="none",
-                        s=30,
-                        alpha=1.0,
-                        # label=comp,
-                    )
-
-                    xdata = tor_data[tor_data[comp_cols[1]] == ctup[0]]
-                    ydata = tor_data[tor_data[comp_cols[1]] == ctup[1]]
-                    ax2.scatter(
-                        xdata[prop],
-                        ydata[prop],
-                        c=ctup[2],
-                        edgecolor="none",
-                        s=30,
-                        alpha=1.0,
-                        # label=comp,
-                    )
-
-                    ax1.tick_params(
-                        axis="both",
-                        which="major",
-                        labelsize=16,
-                    )
-                    ax1.set_xlabel(f"{prop}: smaller", fontsize=16)
-                    ax1.set_ylabel(f"{prop}: larger", fontsize=16)
-                    ax1.set_title(f"{comp_cols[0]}", fontsize=16)
-                    ax1.set_xlim(ptup[0], ptup[1])
-                    ax1.set_ylim(ptup[0], ptup[1])
-                    # ax1.legend(fontsize=16, ncol=3)
-
-                    ax2.tick_params(
-                        axis="both",
-                        which="major",
-                        labelsize=16,
-                    )
-                    ax2.set_xlabel(f"{prop}: smaller", fontsize=16)
-                    ax2.set_ylabel(f"{prop}: larger", fontsize=16)
-                    ax2.set_title(f"{comp_cols[1]}", fontsize=16)
-                    ax2.set_xlim(ptup[0], ptup[1])
-                    ax2.set_ylim(ptup[0], ptup[1])
-                    # ax2.legend(fontsize=16, ncol=3)
-
-                    ax1.plot(
-                        (ptup[0], ptup[1]),
-                        (ptup[0], ptup[1]),
-                        c="k",
-                    )
-                    ax2.plot(
-                        (ptup[0], ptup[1]),
-                        (ptup[0], ptup[1]),
-                        c="k",
-                    )
-
-            for comp in comps:
-                ctup = comps[comp]
-                ax1.scatter(
-                    None,
-                    None,
-                    c=ctup[2],
-                    edgecolor="none",
-                    s=30,
-                    alpha=1.0,
-                    label=comp,
-                )
-            fig.legend(
-                bbox_to_anchor=(0, 1.02, 2, 0.2),
-                loc="lower left",
-                ncol=3,
-                fontsize=16,
-            )
-            fig.tight_layout()
-            filename = f"sp_{tstr}_{tors}.pdf"
             fig.savefig(
                 os.path.join(figure_output, filename),
                 dpi=720,
@@ -3742,47 +3118,43 @@ def main():
     with open(calculation_output / "all_geom.json", "r") as f:
         geom_data = json.load(f)
     logging.info(f"there are {len(all_data)} collected data")
+    opt_data = all_data[all_data["optimised"]]
+    logging.info(f"there are {len(opt_data)} successfully opted")
+
     identity_distributions(all_data, figure_output)
-    write_out_mapping(all_data)
-    rmsd_distributions(all_data, calculation_output, figure_output)
-
-    energy_map(all_data, figure_output)
-
-    raise SystemExit()
-    visualise_self_sort(all_data, figure_output)
-    visualise_bite_angle(all_data, figure_output)
-    parity_1(all_data, figure_output)
-    selectivity_map(all_data, figure_output)
-    geom_distributions(all_data, geom_data, figure_output)
+    write_out_mapping(opt_data)
+    rmsd_distributions(opt_data, calculation_output, figure_output)
+    geom_distributions(opt_data, geom_data, figure_output)
+    selectivity_map(opt_data, figure_output)
+    angle_map(opt_data, figure_output)
+    single_value_distributions(opt_data, figure_output)
+    energy_map(opt_data, figure_output)
+    phase_space_2(opt_data, figure_output)
     raise SystemExit()
 
-    visualise_high_energy(all_data, figure_output)
-    phase_space_5(all_data, figure_output)
-    phase_space_2(all_data, figure_output)
-    single_value_distributions(all_data, figure_output)
-    size_parities(all_data, figure_output)
-    selfsort_map(all_data, figure_output)
+    phase_space_5(opt_data, figure_output)
 
-    shape_vector_distributions(all_data, figure_output)
-    phase_space_3(all_data, figure_output)
-    phase_space_13(all_data, figure_output)
+    selfsort_map(opt_data, figure_output)
 
-    bite_angle_relationship(all_data, figure_output)
+    shape_vector_distributions(opt_data, figure_output)
+    phase_space_3(opt_data, figure_output)
+    phase_space_13(opt_data, figure_output)
 
-    phase_space_11(all_data, figure_output)
-    phase_space_12(all_data, figure_output)
-    not_opt_phase_space(all_data, figure_output)
+    bite_angle_relationship(opt_data, figure_output)
+
+    phase_space_11(opt_data, figure_output)
+    phase_space_12(opt_data, figure_output)
 
     raise SystemExit()
-    phase_space_10(all_data, figure_output)
+    phase_space_10(opt_data, figure_output)
 
-    phase_space_9(all_data, figure_output)
-    phase_space_1(all_data, figure_output)
+    phase_space_9(opt_data, figure_output)
+    phase_space_1(opt_data, figure_output)
 
-    phase_space_6(all_data, figure_output)
-    phase_space_7(all_data, figure_output)
-    phase_space_8(all_data, figure_output)
-    phase_space_4(all_data, figure_output)
+    phase_space_6(opt_data, figure_output)
+    phase_space_7(opt_data, figure_output)
+    phase_space_8(opt_data, figure_output)
+    phase_space_4(opt_data, figure_output)
     raise SystemExit()
 
     raise SystemExit(
@@ -3795,36 +3167,35 @@ def main():
         "next I want PCA maps of all shapes for each BB property "
     )
     shape_vector_cluster(
-        all_data=all_data,
+        all_data=opt_data,
         c2bb="2C1Mn",
         c3bb=None,
         figure_output=figure_output,
     )
     shape_vector_cluster(
-        all_data=all_data,
+        all_data=opt_data,
         c2bb="2C1MnMn",
         c3bb=None,
         figure_output=figure_output,
     )
     shape_vector_cluster(
-        all_data=all_data,
+        all_data=opt_data,
         c2bb=None,
         c3bb="3C1Ho",
         figure_output=figure_output,
     )
     shape_vector_cluster(
-        all_data=all_data,
+        all_data=opt_data,
         c2bb=None,
         c3bb="3C1C",
         figure_output=figure_output,
     )
     shape_vector_cluster(
-        all_data=all_data,
+        all_data=opt_data,
         c2bb=None,
         c3bb="3C1HoMn",
         figure_output=figure_output,
     )
-    parallel_plot(all_data, figure_output)
 
 
 if __name__ == "__main__":
