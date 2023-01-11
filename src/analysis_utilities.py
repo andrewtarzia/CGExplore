@@ -455,7 +455,11 @@ def data_to_array(json_files, output_dir):
                 present_c2_beads[0],
                 core_2c_beads(),
             ).sigma,
-            "c2angle": (
+            "c2angle": get_CGBead_from_string(
+                present_c2_beads[1],
+                arm_2c_beads(),
+            ).angle_centered,
+            "target_bite_angle": (
                 get_CGBead_from_string(
                     present_c2_beads[1],
                     arm_2c_beads(),
@@ -680,7 +684,7 @@ def write_out_mapping(all_data):
                 c2sigma_map[plot_data.iloc[0]["c2bb_b1"]] = c1_opt
                 for bid, ba in zip(
                     list(plot_data["c2bb_b2"]),
-                    list(plot_data["c2angle"]),
+                    list(plot_data["target_bite_angle"]),
                 ):
                     bite_angle_map[bid] = ba
 
