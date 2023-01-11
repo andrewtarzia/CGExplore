@@ -14,7 +14,12 @@ from itertools import combinations
 import logging
 from heapq import nsmallest
 
-from utilities import get_all_angles, angle_between, get_all_torsions
+from utilities import (
+    get_all_angles,
+    angle_between,
+    get_all_torsions,
+    convert_pyramid_angle,
+)
 
 
 def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
@@ -178,19 +183,6 @@ class CGOptimizer:
                     angle_k,
                     angle_theta,
                 )
-
-            def convert_pyramid_angle(outer_angle):
-                """
-                Some basic trig on square-pyramids
-
-                """
-                outer_angle = np.radians(outer_angle)
-                # Side length, oa, does not matter.
-                oa = 1
-                ab = 2 * (oa * np.sin(outer_angle / 2))
-                ac = ab / np.sqrt(2) * 2
-                opposite_angle = 2 * np.arcsin(ac / 2 / oa)
-                return round(np.degrees(opposite_angle), 2)
 
             for used_ang_id in all_angles:
                 if used_ang_id in four_smallest:

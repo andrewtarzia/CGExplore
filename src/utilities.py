@@ -17,6 +17,20 @@ from scipy.spatial.distance import euclidean
 import os
 
 
+def convert_pyramid_angle(outer_angle):
+    """
+    Some basic trig on square-pyramids
+
+    """
+    outer_angle = np.radians(outer_angle)
+    # Side length, oa, does not matter.
+    oa = 1
+    ab = 2 * (oa * np.sin(outer_angle / 2))
+    ac = ab / np.sqrt(2) * 2
+    opposite_angle = 2 * np.arcsin(ac / 2 / oa)
+    return round(np.degrees(opposite_angle), 2)
+
+
 def check_directory(path):
     if not os.path.exists(path):
         os.mkdir(path)
