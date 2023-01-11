@@ -288,49 +288,44 @@ def optimise_cage(
         if os.path.exists(opt3_mol_file):
             molecule = molecule.with_structure_from_file(opt3_mol_file)
         else:
-            logging.info(f"optimising {name} again")
-            # Perform a slight deformation on ideal topologies to avoid
-            # fake local minima.
-            molecule = deform_molecule(molecule, percent=0.4)
-            opt_xyz_file = os.path.join(
-                output_dir, f"{name}_o3a_opted.xyz"
-            )
-            opt = CGGulpOptimizer(
-                fileprefix=f"{name}_o3a",
-                output_dir=output_dir,
-                param_pool=bead_set,
-                # custom_torsion_set=custom_torsion_set,
-                custom_torsion_set=None,
-                max_cycles=2000,
-                conjugate_gradient=False,
-                bonds=True,
-                angles=True,
-                torsions=False,
-                vdw=False,
-            )
-            _ = opt.optimize(molecule)
-            molecule = molecule.with_structure_from_file(opt_xyz_file)
-            molecule = molecule.with_centroid((0, 0, 0))
-
-            opt_xyz_file = os.path.join(
-                output_dir, f"{name}_o3_opted.xyz"
-            )
-            opt = CGGulpOptimizer(
-                fileprefix=f"{name}_o3",
-                output_dir=output_dir,
-                param_pool=bead_set,
-                custom_torsion_set=custom_torsion_set,
-                max_cycles=2000,
-                conjugate_gradient=False,
-                bonds=True,
-                angles=True,
-                torsions=False,
-                vdw=False,
-            )
-            _ = opt.optimize(molecule)
-            molecule = molecule.with_structure_from_file(opt_xyz_file)
-            molecule = molecule.with_centroid((0, 0, 0))
-            molecule.write(opt3_mol_file)
+            num_attempts = 20
+            for i in range(num_attempts):
+                logging.info(f"optimising {name} again")
+                # Perform a slight deformation on ideal topologies to
+                # avoid fake local minima.
+                molecule = deform_molecule(molecule, percent=0.4)
+                opt_xyz_file = os.path.join(
+                    output_dir, f"{name}_o3{i}_opted.xyz"
+                )
+                opt = CGGulpOptimizer(
+                    fileprefix=f"{name}_o3{i}",
+                    output_dir=output_dir,
+                    param_pool=bead_set,
+                    custom_torsion_set=custom_torsion_set,
+                    max_cycles=2000,
+                    conjugate_gradient=False,
+                    bonds=True,
+                    angles=True,
+                    torsions=False,
+                    vdw=False,
+                )
+                _ = opt.optimize(molecule)
+                molecule = molecule.with_structure_from_file(
+                    opt_xyz_file
+                )
+                molecule = molecule.with_centroid((0, 0, 0))
+                check2 = check_for_failed_min(
+                    path=os.path.join(
+                        output_dir, f"{name}_o3{i}.ginout"
+                    ),
+                )
+                if not check2:
+                    molecule.write(opt3_mol_file)
+                    logging.info(f"check optimisations broken at {i}")
+                    break
+            if i == 19 and check2:
+                logging.info(f"opt failed ({i} hit) for {name}")
+                return None
 
     return molecule
 
