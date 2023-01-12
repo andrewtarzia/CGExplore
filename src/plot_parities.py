@@ -28,6 +28,8 @@ from analysis_utilities import (
 
 
 def parity_1(all_data, figure_output):
+    logging.info("running parity_1")
+
     tcmap = topo_to_colormap()
     tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
     lentcpos = len(tcpos)
@@ -128,6 +130,7 @@ def parity_1(all_data, figure_output):
 
 
 def parity_2(all_data, geom_data, figure_output):
+    logging.info("running parity_2")
     tcmap = topo_to_colormap()
 
     c2labels = ("Pb_Ba_Ag",)
@@ -209,6 +212,7 @@ def parity_2(all_data, geom_data, figure_output):
 
 
 def parity_3(all_data, geom_data, figure_output):
+    logging.info("running parity_3")
     tcmap = topo_to_colormap()
 
     c2labels = ("Pb_Ba_Ag",)
