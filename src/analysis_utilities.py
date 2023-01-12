@@ -688,10 +688,21 @@ def write_out_mapping(all_data):
                 ):
                     bite_angle_map[bid] = ba
 
+    properties = [
+        "energy",
+        "energy_per_bond",
+        "gnorm",
+        "pore",
+        "min_b2b",
+        "sv_n_dist",
+        "sv_l_dist",
+        "persistent",
+    ]
     logging.info(f"\nclangles: {clangle_map}\n")
     logging.info(f"\nclsigmas: {clsigma_map}\n")
     logging.info(f"\nbite_angles: {bite_angle_map}\n")
     logging.info(f"\nc2sigmas: {c2sigma_map}\n")
+    logging.info(f"available properties:\n {properties}")
 
 
 def main():
