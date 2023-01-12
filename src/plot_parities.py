@@ -13,6 +13,8 @@ import sys
 import os
 import json
 import logging
+import itertools
+import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from env_set import cages
@@ -92,7 +94,7 @@ def parity_1(all_data, figure_output):
             showmeans=False,
             showextrema=False,
             showmedians=False,
-            bw_method=0.5,
+            # bw_method=0.5,
         )
 
         for pc in parts["bodies"]:
@@ -149,8 +151,8 @@ def parity_2(all_data, geom_data, figure_output):
             measured_c2 = []
             energies = []
             for i, row in tor_frame.iterrows():
-                c2angle = float(row["c2angle"])
-                target_angle = (c2angle / 2) + 90
+                target_bite_angle = float(row["target_bite_angle"])
+                target_angle = (target_bite_angle / 2) + 90
                 name = str(row["index"])
                 energy = float(row["energy_per_bond"])
                 c2data = geom_data[name]["angles"]
@@ -170,8 +172,9 @@ def parity_2(all_data, geom_data, figure_output):
                 vmax=vmax,
                 alpha=1.0,
                 edgecolor="k",
-                s=80,
+                s=50,
                 cmap="Blues",
+                rasterized=True,
             )
 
             ax.plot((90, 180), (90, 180), c="k", lw=2, linestyle="--")
@@ -228,8 +231,7 @@ def parity_3(all_data, geom_data, figure_output):
             measured_c2 = []
             energies = []
             for i, row in tor_frame.iterrows():
-                c2angle = float(row["c2angle"])
-                target_angle = (c2angle / 2) + 90
+                target_angle = float(row["c2angle"])
                 name = str(row["index"])
                 energy = float(row["energy_per_bond"])
                 c2data = geom_data[name]["angles"]
@@ -246,7 +248,8 @@ def parity_3(all_data, geom_data, figure_output):
                 energies,
                 c="gray",
                 alpha=1.0,
-                edgecolor="k",
+                edgecolor="none",
+                rasterized=True,
                 s=30,
             )
 
@@ -273,7 +276,7 @@ def parity_3(all_data, geom_data, figure_output):
 
 
 def size_parities(all_data, figure_output):
-
+    print(all_data.columns)
     properties = {
         "energy": (0, 1),
         "gnorm": (0, 0.001),
@@ -283,114 +286,112 @@ def size_parities(all_data, figure_output):
         "sv_l_dist": (0, 1),
     }
     comps = {
-        "1->5": (1, 5, "k"),
-        "1->10": (1, 10, "skyblue"),
-        "5->10": (5, 10, "gold"),
+        (2, 5): "k",
+        (2, 10): "skyblue",
+        (5, 10): "gold",
     }
     comp_cols = ("clsigma", "c2sigma")
 
-    for tstr in sorted(set(all_data["topology"])):
+    topologies = sorted(set(all_data["topology"]))
+    clangles = sorted(set(all_data["clangle"]))
+
+    for tstr, clangle, prop in itertools.product(
+        topologies,
+        clangles,
+        properties,
+    ):
+
+        print(tstr, clangle, prop)
         tdata = all_data[all_data["topology"] == tstr]
-        for tors in ("ton", "toff"):
-            tor_data = tdata[tdata["torsions"] == tors]
+        cdata = tdata[tdata["clangle"] == clangle]
+        if len(cdata) == 0:
+            continue
 
-            fig, axs = plt.subplots(
-                ncols=3,
-                nrows=4,
-                figsize=(16, 12),
-            )
-            flat_axs = axs.flatten()
+        c2_values = set(cdata["c2angle"])
 
-            for prop, ax1, ax2 in zip(
-                properties, flat_axs[:6], flat_axs[6:]
-            ):
-                ptup = properties[prop]
-                for comp in comps:
-                    ctup = comps[comp]
-                    xdata = tor_data[tor_data[comp_cols[0]] == ctup[0]]
-                    ydata = tor_data[tor_data[comp_cols[0]] == ctup[1]]
-                    ax1.scatter(
-                        xdata[prop],
-                        ydata[prop],
-                        c=ctup[2],
-                        edgecolor="none",
-                        s=30,
+        fig, axs = plt.subplots(
+            nrows=2,
+            ncols=2,
+            sharey=True,
+            sharex=True,
+            figsize=(16, 8),
+        )
+
+        for axpair, ccol in zip(axs, comp_cols):
+            not_ccol = [i for i in comp_cols if i != ccol][0]
+            for ax, tors in zip(axpair, ("ton", "toff")):
+                x_positions = range(9)
+                xlabels = []
+                for i, (pair, not_val) in enumerate(
+                    itertools.product(
+                        comps,
+                        sorted(set(cdata[not_ccol])),
+                    )
+                ):
+
+                    print(tors, pair, not_val)
+                    # ax = flat_axs[i]
+                    xpos = x_positions[i]
+                    tor_data = cdata[cdata["torsions"] == tors]
+                    notdata = tor_data[tor_data[not_ccol] == not_val]
+                    frame1 = notdata[notdata[ccol] == pair[0]]
+                    frame2 = notdata[notdata[ccol] == pair[1]]
+
+                    # xs = []
+                    ys = []
+                    for c2val in c2_values:
+                        plot1 = frame1[frame1["c2angle"] == c2val]
+                        plot2 = frame2[frame2["c2angle"] == c2val]
+                        prop_value1 = float(plot1[prop])
+                        prop_value2 = float(plot2[prop])
+                        if pd.isna(prop_value1):
+                            continue
+                        if pd.isna(prop_value2):
+                            continue
+                        # xs.append(prop_value1)
+                        ys.append(prop_value2 - prop_value1)
+
+                    ax.scatter(
+                        [xpos for i in ys],
+                        ys,
+                        c=comps[pair],
+                        edgecolor="k",
+                        s=120,
                         alpha=1.0,
-                        # label=comp,
+                        label=f"{pair}",
                     )
+                    # ax.scatter(
+                    #     xs,
+                    #     ys,
+                    #     c=[size_difference for i in xs],
+                    #     vmin=0,
+                    #     vmax=10,
+                    #     edgecolor="k",
+                    #     s=70,
+                    #     alpha=1.0,
+                    # )
+                    ax.axhline(y=0, c="k", linestyle="--", lw=2)
+                    title = f"{tors}: changing {ccol}"
+                    ax.set_title(title, fontsize=16)
+                    ax.tick_params(
+                        axis="both", which="major", labelsize=16
+                    )
+                    ax.set_xlabel(not_ccol, fontsize=16)
+                    ax.set_ylabel(f"{prop}: large - small", fontsize=16)
+                    xlbl = f"{not_val}"
+                    xlabels.append(xlbl)
 
-                    xdata = tor_data[tor_data[comp_cols[1]] == ctup[0]]
-                    ydata = tor_data[tor_data[comp_cols[1]] == ctup[1]]
-                    ax2.scatter(
-                        xdata[prop],
-                        ydata[prop],
-                        c=ctup[2],
-                        edgecolor="none",
-                        s=30,
-                        alpha=1.0,
-                        # label=comp,
-                    )
+            ax.set_xticks([i for i in x_positions])
+            ax.set_xticklabels([i for i in xlabels])
 
-                    ax1.tick_params(
-                        axis="both",
-                        which="major",
-                        labelsize=16,
-                    )
-                    ax1.set_xlabel(f"{prop}: smaller", fontsize=16)
-                    ax1.set_ylabel(f"{prop}: larger", fontsize=16)
-                    ax1.set_title(f"{comp_cols[0]}", fontsize=16)
-                    ax1.set_xlim(ptup[0], ptup[1])
-                    ax1.set_ylim(ptup[0], ptup[1])
-                    # ax1.legend(fontsize=16, ncol=3)
-
-                    ax2.tick_params(
-                        axis="both",
-                        which="major",
-                        labelsize=16,
-                    )
-                    ax2.set_xlabel(f"{prop}: smaller", fontsize=16)
-                    ax2.set_ylabel(f"{prop}: larger", fontsize=16)
-                    ax2.set_title(f"{comp_cols[1]}", fontsize=16)
-                    ax2.set_xlim(ptup[0], ptup[1])
-                    ax2.set_ylim(ptup[0], ptup[1])
-                    # ax2.legend(fontsize=16, ncol=3)
-
-                    ax1.plot(
-                        (ptup[0], ptup[1]),
-                        (ptup[0], ptup[1]),
-                        c="k",
-                    )
-                    ax2.plot(
-                        (ptup[0], ptup[1]),
-                        (ptup[0], ptup[1]),
-                        c="k",
-                    )
-
-            for comp in comps:
-                ctup = comps[comp]
-                ax1.scatter(
-                    None,
-                    None,
-                    c=ctup[2],
-                    edgecolor="none",
-                    s=30,
-                    alpha=1.0,
-                    label=comp,
-                )
-            fig.legend(
-                bbox_to_anchor=(0, 1.02, 2, 0.2),
-                loc="lower left",
-                ncol=3,
-                fontsize=16,
-            )
-            fig.tight_layout()
-            filename = f"sp_{tstr}_{tors}.pdf"
-            fig.savefig(
-                os.path.join(figure_output, filename),
-                dpi=720,
-                bbox_inches="tight",
-            )
-            plt.close()
+        fig.tight_layout()
+        filename = f"sp_{tstr}_{clangle}_{prop}.pdf"
+        fig.savefig(
+            os.path.join(figure_output, filename),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
 
 
 def main():
@@ -415,10 +416,10 @@ def main():
     logging.info(f"there are {len(opt_data)} successfully opted")
     write_out_mapping(opt_data)
 
+    size_parities(all_data, figure_output)
     parity_1(opt_data, figure_output)
     parity_2(opt_data, geom_data, figure_output)
     parity_3(opt_data, geom_data, figure_output)
-    size_parities(opt_data, figure_output)
 
 
 if __name__ == "__main__":
