@@ -13,8 +13,6 @@ import sys
 import os
 import json
 import logging
-import itertools
-import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from env_set import cages
@@ -275,125 +273,6 @@ def parity_3(all_data, geom_data, figure_output):
         plt.close()
 
 
-def size_parities(all_data, figure_output):
-    print(all_data.columns)
-    properties = {
-        "energy": (0, 1),
-        "gnorm": (0, 0.001),
-        "pore": (0, 20),
-        "min_b2b": (0, 1),
-        "sv_n_dist": (0, 1),
-        "sv_l_dist": (0, 1),
-    }
-    comps = {
-        (2, 5): "k",
-        (2, 10): "skyblue",
-        (5, 10): "gold",
-    }
-    comp_cols = ("clsigma", "c2sigma")
-
-    topologies = sorted(set(all_data["topology"]))
-    clangles = sorted(set(all_data["clangle"]))
-
-    for tstr, clangle, prop in itertools.product(
-        topologies,
-        clangles,
-        properties,
-    ):
-
-        print(tstr, clangle, prop)
-        tdata = all_data[all_data["topology"] == tstr]
-        cdata = tdata[tdata["clangle"] == clangle]
-        if len(cdata) == 0:
-            continue
-
-        c2_values = set(cdata["c2angle"])
-
-        fig, axs = plt.subplots(
-            nrows=2,
-            ncols=2,
-            sharey=True,
-            sharex=True,
-            figsize=(16, 8),
-        )
-
-        for axpair, ccol in zip(axs, comp_cols):
-            not_ccol = [i for i in comp_cols if i != ccol][0]
-            for ax, tors in zip(axpair, ("ton", "toff")):
-                x_positions = range(9)
-                xlabels = []
-                for i, (pair, not_val) in enumerate(
-                    itertools.product(
-                        comps,
-                        sorted(set(cdata[not_ccol])),
-                    )
-                ):
-
-                    print(tors, pair, not_val)
-                    # ax = flat_axs[i]
-                    xpos = x_positions[i]
-                    tor_data = cdata[cdata["torsions"] == tors]
-                    notdata = tor_data[tor_data[not_ccol] == not_val]
-                    frame1 = notdata[notdata[ccol] == pair[0]]
-                    frame2 = notdata[notdata[ccol] == pair[1]]
-
-                    # xs = []
-                    ys = []
-                    for c2val in c2_values:
-                        plot1 = frame1[frame1["c2angle"] == c2val]
-                        plot2 = frame2[frame2["c2angle"] == c2val]
-                        prop_value1 = float(plot1[prop])
-                        prop_value2 = float(plot2[prop])
-                        if pd.isna(prop_value1):
-                            continue
-                        if pd.isna(prop_value2):
-                            continue
-                        # xs.append(prop_value1)
-                        ys.append(prop_value2 - prop_value1)
-
-                    ax.scatter(
-                        [xpos for i in ys],
-                        ys,
-                        c=comps[pair],
-                        edgecolor="k",
-                        s=120,
-                        alpha=1.0,
-                        label=f"{pair}",
-                    )
-                    # ax.scatter(
-                    #     xs,
-                    #     ys,
-                    #     c=[size_difference for i in xs],
-                    #     vmin=0,
-                    #     vmax=10,
-                    #     edgecolor="k",
-                    #     s=70,
-                    #     alpha=1.0,
-                    # )
-                    ax.axhline(y=0, c="k", linestyle="--", lw=2)
-                    title = f"{tors}: changing {ccol}"
-                    ax.set_title(title, fontsize=16)
-                    ax.tick_params(
-                        axis="both", which="major", labelsize=16
-                    )
-                    ax.set_xlabel(not_ccol, fontsize=16)
-                    ax.set_ylabel(f"{prop}: large - small", fontsize=16)
-                    xlbl = f"{not_val}"
-                    xlabels.append(xlbl)
-
-            ax.set_xticks([i for i in x_positions])
-            ax.set_xticklabels([i for i in xlabels])
-
-        fig.tight_layout()
-        filename = f"sp_{tstr}_{clangle}_{prop}.pdf"
-        fig.savefig(
-            os.path.join(figure_output, filename),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -416,7 +295,6 @@ def main():
     logging.info(f"there are {len(opt_data)} successfully opted")
     write_out_mapping(opt_data)
 
-    size_parities(all_data, figure_output)
     parity_1(opt_data, figure_output)
     parity_2(opt_data, geom_data, figure_output)
     parity_3(opt_data, geom_data, figure_output)
