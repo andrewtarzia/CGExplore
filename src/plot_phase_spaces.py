@@ -250,7 +250,7 @@ def phase_space_3(all_data, figure_output):
 
     for ax, (bbtitle, torsion) in zip(flat_axs, data):
         coords = data[(bbtitle, torsion)]
-        ax.bar(
+        bars = ax.bar(
             [convert_topo_to_label(i) for i in coords.keys()],
             coords.values(),
             # color="#06AED5",
@@ -260,19 +260,7 @@ def phase_space_3(all_data, figure_output):
             edgecolor="k",
         )
 
-        for i, key in enumerate(coords):
-            val = coords[key]
-            if val < 20:
-                move = 20
-            else:
-                move = -20
-            ax.text(
-                i,
-                val + move,
-                val,
-                fontsize=16,
-                ha="center",
-            )
+        ax.bar_label(bars, padding=3, fontsize=16)
 
         title = (
             f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
@@ -603,8 +591,8 @@ def phase_space_5(all_data, figure_output):
         tdata = all_data[all_data["topology"] == tstr]
         tondata = tdata[tdata["torsions"] == "ton"]
         # toffdata = tdata[tdata["torsions"] == "toff"]
-        x1 = tondata["c2angle"]
-        # x2 = toffdata["c2angle"]
+        x1 = tondata["target_bite_angle"]
+        # x2 = toffdata["target_bite_angle"]
         y1 = tondata["sv_n_dist"]
         # y2 = toffdata["sv_n_dist"]
         z1 = tondata["energy"]
@@ -612,7 +600,7 @@ def phase_space_5(all_data, figure_output):
 
         ax.set_title(tstr, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("c2angle", fontsize=16)
+        ax.set_xlabel("target_bite_angle", fontsize=16)
         ax.set_ylabel("sv_n_dist", fontsize=16)
 
         ax.scatter(
@@ -1209,7 +1197,7 @@ def phase_space_10(all_data, figure_output):
     #                 present_c2_beads[0],
     #                 core_2c_beads(),
     #             ).sigma,
-    #             "c2angle": (
+    #             "target_bite_angle": (
     #                 get_CGBead_from_string(
     #                     present_c2_beads[1],
     #                     arm_2c_beads(),
@@ -1240,7 +1228,7 @@ def phase_space_10(all_data, figure_output):
     #         "clsigma",
     #         "clangle",
     #         "c2sigma",
-    #         "c2angle",
+    #         "target_bite_angle",
     #     )
     #     # Separating out the features
     #     x = input_array.loc[:, target_row_names].values
@@ -1256,7 +1244,7 @@ def phase_space_10(all_data, figure_output):
     #     properties = {
     #         "clangle": "cat",
     #         "c2sigma": "cat",
-    #         "c2angle": "cat",
+    #         "target_bite_angle": "cat",
     #         "pref_topology": "cat",
     #         "pref_topology_pore": "cts",
     #     }
