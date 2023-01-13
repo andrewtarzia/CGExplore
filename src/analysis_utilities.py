@@ -220,8 +220,8 @@ def target_shapes():
         "OC-6",
         "PPY-6",
         "HP-6",
-        "TBPY-5",
-        "PP-5",
+        # "TBPY-5",
+        # "PP-5",
         "T-4",
         "SP-4",
         "TP-3",
@@ -265,51 +265,29 @@ def map_cltype_to_shapetopology():
     }
 
 
-def mapshape_to_topology(mode, reverse=False):
+def mapshape_to_topology(mode):
     if mode == "n":
-        if reverse:
-            return {
-                # "TwoPlusThree": "TBPY-5",
-                "FourPlusSix": "T-4",
-                "FourPlusSix2": "T-4b",
-                "SixPlusNine": "TPR-6",
-                "EightPlusTwelve": "CU-8",
-                # "TwoPlusFour": "OC-6b",
-                "ThreePlusSix": "TP-3",
-                "FourPlusEight": "SP-4",
-                "SixPlusTwelve": "OC-6",
-                # "EightPlusSixteen": "",
-                # "M12L24": "",
-            }
-        else:
-            return {
-                # "TBPY-5": "TwoPlusThree",
-                "T-4": "FourPlusSix",
-                "T-4b": "FourPlusSix2",
-                "TPR-6": "SixPlusNine",
-                "CU-8": "EightPlusTwelve",
-                # "OC-6b": "TwoPlusFour",
-                "TP-3": "ThreePlusSix",
-                "SP-4": "FourPlusEight",
-                "OC-6": "SixPlusTwelve",
-                # "": "EightPlusSixteen",
-                # "": "M12L24",
-            }
+        return {
+            # "TwoPlusThree": "TBPY-5",
+            "FourPlusSix": "T-4",
+            "FourPlusSix2": "T-4",
+            "SixPlusNine": "TPR-6",
+            "EightPlusTwelve": "CU-8",
+            # "TwoPlusFour": "OC-6b",
+            "ThreePlusSix": "TP-3",
+            "FourPlusEight": "SP-4",
+            "SixPlusTwelve": "OC-6",
+            # "EightPlusSixteen": "",
+            # "M12L24": "",
+        }
+
     elif mode == "l":
-        if reverse:
-            return {
-                "TwoPlusThree": "TP-3",
-                "FourPlusSix": "OC-6",
-                "FourPlusSix2": "OC-6b",
-                "TwoPlusFour": "SP-4",
-            }
-        else:
-            return {
-                "TP-3": "TwoPlusThree",
-                "OC-6": "FourPlusSix",
-                "OC-6b": "FourPlusSix2",
-                "SP-4": "TwoPlusFour",
-            }
+        return {
+            "TwoPlusThree": "TP-3",
+            "FourPlusSix": "OC-6",
+            "FourPlusSix2": "OC-6",
+            "TwoPlusFour": "SP-4",
+        }
 
 
 def collate_cage_vector_from_bb(data, test_bb):
@@ -357,14 +335,15 @@ def get_present_beads(c2_bbname):
 
 
 def get_sv_dist(row, mode):
-    maps = mapshape_to_topology(mode=mode, reverse=True)
+    maps = mapshape_to_topology(mode=mode)
     try:
         tshape = maps[str(row["topology"])]
     except KeyError:
         return None
 
     if tshape[-1] == "b":
-        tshape = tshape[:-1]
+        raise ValueError("I removed all uses of `shape`b label, check.")
+
     known_sv = known_shape_vectors()[tshape]
     current_sv = {i: float(row[f"{mode}_{i}"]) for i in known_sv}
     a = np.array([known_sv[i] for i in known_sv])

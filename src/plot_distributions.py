@@ -18,19 +18,18 @@ import logging
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# import matplotlib as mpl
 from env_set import cages
 
 from utilities import convert_pyramid_angle
 from analysis_utilities import (
     write_out_mapping,
     data_to_array,
-    convert_topo_to_label,
-    convert_torsion_to_label,
+    convert_topo,
+    convert_tors,
     topology_labels,
     target_shapes,
     topo_to_colormap,
-    # max_energy,
+    mapshape_to_topology,
 )
 
 
@@ -44,7 +43,7 @@ def identity_distributions(all_data, figure_output):
     count1 = all_data["topology"].value_counts()
     countxopt = all_data["optimised"].value_counts()
     for tstr, count in count1.items():
-        categories[convert_topo_to_label(tstr)] = count
+        categories[convert_topo(tstr)] = count
     categories["X opt."] = countxopt[False]
     num_cages = len(all_data)
 
@@ -232,7 +231,7 @@ def geom_distributions(all_data, geom_data, figure_output):
             ax.set_title(
                 (
                     f'{cdict["xlabel"]}: '
-                    f"{convert_torsion_to_label(tors,num=False)}"
+                    f"{convert_tors(tors,num=False)}"
                 ),
                 fontsize=16,
             )
@@ -242,7 +241,7 @@ def geom_distributions(all_data, geom_data, figure_output):
                 ax.set_ylabel("observed - target", fontsize=16)
             ax.set_xticks([tcpos[i] for i in tcpos])
             ax.set_xticklabels(
-                [convert_topo_to_label(i) for i in tcpos],
+                [convert_topo(i) for i in tcpos],
                 rotation=45,
             )
 
@@ -415,7 +414,7 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
     ax.set_title("opt1->opt2; opt2->opt3", fontsize=16)
     ax.set_xticks([tcpos[i] for i in tcpos])
     ax.set_xticklabels(
-        [convert_topo_to_label(i) for i in tcpos],
+        [convert_topo(i) for i in tcpos],
         rotation=45,
     )
 
@@ -426,7 +425,7 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
     ax2.set_title("ton->toff", fontsize=16)
     ax2.set_xticks([tcpos[i] for i in tcpos])
     ax2.set_xticklabels(
-        [convert_topo_to_label(i) for i in tcpos],
+        [convert_topo(i) for i in tcpos],
         rotation=45,
     )
 
@@ -515,7 +514,7 @@ def single_value_distributions(all_data, figure_output):
 
         ax.set_xticks([xticks[i] for i in xticks])
         ax.set_xticklabels(
-            [convert_topo_to_label(i) for i in xticks],
+            [convert_topo(i) for i in xticks],
             rotation=45,
         )
 
@@ -527,7 +526,7 @@ def single_value_distributions(all_data, figure_output):
                 edgecolor="none",
                 s=30,
                 alpha=0.2,
-                label=convert_torsion_to_label(tor),
+                label=convert_tors(tor),
             )
         ax.legend(fontsize=16)
 
@@ -544,10 +543,13 @@ def shape_vector_distributions(all_data, figure_output):
     logging.info("running shape_vector_distributions")
 
     present_shape_values = target_shapes()
-    num_cols = 4
-    num_rows = 3
+    num_cols = 5
+    num_rows = 2
 
-    # color_map = shapevertices_to_colormap()
+    torsion_dict = {
+        "ton": "-",
+        "toff": "--",
+    }
 
     fig, axs = plt.subplots(
         nrows=num_rows,
@@ -564,30 +566,36 @@ def shape_vector_distributions(all_data, figure_output):
         keys = tuple(all_data.columns)
         nshape = f"n_{shape}"
         lshape = f"l_{shape}"
-        if nshape in keys:
-            filt_data = all_data[all_data[nshape].notna()]
-            n_values = list(filt_data[nshape])
-            ax.hist(
-                x=n_values,
-                bins=50,
-                density=False,
-                histtype="step",
-                color="#DD1C1A",
-                lw=3,
-            )
 
-        if lshape in keys:
-            filt_data = all_data[all_data[lshape].notna()]
-            l_values = list(filt_data[lshape])
-            ax.hist(
-                x=l_values,
-                bins=50,
-                density=False,
-                histtype="step",
-                color="k",
-                lw=2,
-                linestyle="--",
-            )
+        for tors in torsion_dict:
+            tor_data = all_data[all_data["torsions"] == tors]
+            if nshape in keys:
+                filt_data = tor_data[tor_data[nshape].notna()]
+                n_values = list(filt_data[nshape])
+                ax.hist(
+                    x=n_values,
+                    bins=50,
+                    density=False,
+                    histtype="step",
+                    color="#DD1C1A",
+                    lw=3,
+                    linestyle=torsion_dict[tors],
+                    label=f"node: {convert_tors(tors, num=False)}",
+                )
+
+            if lshape in keys:
+                filt_data = tor_data[tor_data[lshape].notna()]
+                l_values = list(filt_data[lshape])
+                ax.hist(
+                    x=l_values,
+                    bins=50,
+                    density=False,
+                    histtype="step",
+                    color="k",
+                    lw=2,
+                    linestyle=torsion_dict[tors],
+                    label=f"ligand: {convert_tors(tors, num=False)}",
+                )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(shape, fontsize=16)
@@ -595,9 +603,166 @@ def shape_vector_distributions(all_data, figure_output):
         # ax.set_xlim(0, xmax)
         ax.set_yscale("log")
 
+    ax.legend(fontsize=16)
+
     fig.tight_layout()
     fig.savefig(
         os.path.join(figure_output, "shape_vectors.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def shape_vectors_2(all_data, figure_output):
+    logging.info("running shape_vectors_2")
+    tstrs = topo_to_colormap()
+    ntstrs = mapshape_to_topology(mode="n")
+    ltstrs = mapshape_to_topology(mode="l")
+
+    torsion_dict = {
+        "ton": "-",
+        "toff": "--",
+    }
+
+    fig, axs = plt.subplots(
+        nrows=3,
+        ncols=3,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    mtstrs = []
+    for i, tstr in enumerate(tstrs):
+        if tstr in ntstrs or tstr in ltstrs:
+            mtstrs.append(tstr)
+
+    for ax, tstr in zip(flat_axs, mtstrs):
+        t_data = all_data[all_data["topology"] == tstr]
+        count = 0
+        for tors in torsion_dict:
+            tor_data = t_data[t_data["torsions"] == tors]
+
+            filt_data = tor_data[tor_data["sv_n_dist"].notna()]
+            if len(filt_data) > 0:
+                n_values = list(filt_data["sv_n_dist"])
+                ax.hist(
+                    x=n_values,
+                    bins=50,
+                    density=False,
+                    histtype="step",
+                    color="#DD1C1A",
+                    linestyle=torsion_dict[tors],
+                    lw=3,
+                    label=f"node: {convert_tors(tors, num=False)}",
+                )
+                count += 1
+
+            filt_data = tor_data[tor_data["sv_l_dist"].notna()]
+            if len(filt_data) > 0:
+                l_values = list(filt_data["sv_l_dist"])
+                ax.hist(
+                    x=l_values,
+                    bins=50,
+                    density=False,
+                    histtype="step",
+                    color="k",
+                    lw=2,
+                    linestyle=torsion_dict[tors],
+                    label=f"ligand: {convert_tors(tors, num=False)}",
+                )
+                count += 1
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("cosine similarity", fontsize=16)
+        ax.set_ylabel("log(count)", fontsize=16)
+        ax.set_title(tstr, fontsize=16)
+        ax.set_yscale("log")
+        if count == 4:
+            ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "shape_vectors_2.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def shape_vectors_3(all_data, figure_output):
+    logging.info("running shape_vectors_3")
+    tstrs = topo_to_colormap()
+    ntstrs = mapshape_to_topology(mode="n")
+    ltstrs = mapshape_to_topology(mode="l")
+
+    torsion_dict = {
+        "ton": "-",
+        "toff": "--",
+    }
+
+    fig, axs = plt.subplots(
+        nrows=3,
+        ncols=3,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    mtstrs = {}
+    for i, tstr in enumerate(tstrs):
+        if tstr in ntstrs:
+            mtstrs[tstr] = [f"n_{ntstrs[tstr]}"]
+        if tstr in ltstrs:
+            if tstr not in mtstrs:
+                mtstrs[tstr] = []
+            mtstrs[tstr].append(f"l_{ltstrs[tstr]}")
+
+    for ax, tstr in zip(flat_axs, mtstrs):
+        t_data = all_data[all_data["topology"] == tstr]
+
+        ax_xlbl = []
+        for tors in torsion_dict:
+            tor_data = t_data[t_data["torsions"] == tors]
+
+            for scol in mtstrs[tstr]:
+                ax_xlbl.append(scol.split("_")[-1])
+                filt_data = tor_data[tor_data[scol].notna()]
+                if len(filt_data) > 0:
+                    values = list(filt_data[scol])
+                    if "n" in scol:
+                        c = "#DD1C1A"
+                        lbl = f"node: {convert_tors(tors, num=False)}"
+                        lw = 3
+                    elif "l" in scol:
+                        c = "k"
+                        lbl = f"ligand: {convert_tors(tors, num=False)}"
+                        lw = 2
+                    ax.hist(
+                        x=values,
+                        bins=50,
+                        density=False,
+                        histtype="step",
+                        color=c,
+                        linestyle=torsion_dict[tors],
+                        lw=lw,
+                        label=lbl,
+                    )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("; ".join(ax_xlbl), fontsize=16)
+        ax.set_ylabel("log(count)", fontsize=16)
+        ax.set_title(tstr, fontsize=16)
+        ax.set_yscale("log")
+        if len(mtstrs[tstr]) == 2:
+            ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "shape_vectors_3.pdf"),
         dpi=720,
         bbox_inches="tight",
     )
@@ -627,10 +792,12 @@ def main():
     write_out_mapping(opt_data)
 
     identity_distributions(all_data, figure_output)
-    rmsd_distributions(opt_data, calculation_output, figure_output)
-    geom_distributions(opt_data, geom_data, figure_output)
     single_value_distributions(opt_data, figure_output)
     shape_vector_distributions(opt_data, figure_output)
+    shape_vectors_2(opt_data, figure_output)
+    shape_vectors_3(opt_data, figure_output)
+    rmsd_distributions(opt_data, calculation_output, figure_output)
+    geom_distributions(opt_data, geom_data, figure_output)
 
 
 if __name__ == "__main__":
