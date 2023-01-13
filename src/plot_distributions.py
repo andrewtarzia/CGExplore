@@ -724,12 +724,12 @@ def shape_vectors_3(all_data, figure_output):
     for ax, tstr in zip(flat_axs, mtstrs):
         t_data = all_data[all_data["topology"] == tstr]
 
-        ax_xlbl = []
+        ax_xlbl = {}
         for tors in torsion_dict:
             tor_data = t_data[t_data["torsions"] == tors]
 
             for scol in mtstrs[tstr]:
-                ax_xlbl.append(scol.split("_")[-1])
+                ax_xlbl.add(scol.split("_")[-1])
                 filt_data = tor_data[tor_data[scol].notna()]
                 if len(filt_data) > 0:
                     values = list(filt_data[scol])
@@ -753,7 +753,7 @@ def shape_vectors_3(all_data, figure_output):
                     )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("; ".join(ax_xlbl), fontsize=16)
+        ax.set_xlabel("; ".join(list(ax_xlbl)), fontsize=16)
         ax.set_ylabel("log(count)", fontsize=16)
         ax.set_title(tstr, fontsize=16)
         ax.set_yscale("log")
