@@ -30,8 +30,8 @@ from analysis_utilities import (
     cltypetopo_to_colormap,
     write_out_mapping,
     torsion_to_colormap,
-    convert_torsion_to_label,
-    convert_topo_to_label,
+    convert_tors,
+    convert_topo,
 )
 
 
@@ -159,7 +159,7 @@ def energy_map(all_data, figure_output):
                             xs = list(plot_data["target_bite_angle"])
                             ys = list(plot_data[prop])
                             xs, ys = zip(*sorted(zip(xs, ys)))
-                            torlbl = convert_torsion_to_label(
+                            torlbl = convert_tors(
                                 o3,
                                 num=False,
                             )
@@ -329,10 +329,7 @@ def selectivity_map(all_data, figure_output):
                         )
 
                 ax.set_title(
-                    (
-                        f"{convert_torsion_to_label(tors, num=False)}; "
-                        f"{clangle}"
-                    ),
+                    (f"{convert_tors(tors, num=False)}; " f"{clangle}"),
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
@@ -340,7 +337,7 @@ def selectivity_map(all_data, figure_output):
                     [topology_order[i] for i in topology_order]
                 )
                 ax.set_yticklabels(
-                    [convert_topo_to_label(i) for i in topology_order]
+                    [convert_topo(i) for i in topology_order]
                 )
                 ax.set_xlabel("bite angle [deg]", fontsize=16)
 
@@ -569,7 +566,7 @@ def selfsort_map(all_data, figure_output):
                         s=300,
                         marker="s",
                         alpha=1.0,
-                        label=convert_topo_to_label(string),
+                        label=convert_topo(string),
                     )
             ax.scatter(
                 None,
@@ -636,7 +633,7 @@ def angle_map(all_data, figure_output):
                 cmap="Blues",
             )
 
-            ax.set_title(tor, fontsize=16)
+            ax.set_title(convert_tors(tor, num=False), fontsize=16)
             ax.tick_params(axis="both", which="major", labelsize=16)
             ax.set_xlabel("bite angle [deg]", fontsize=16)
             ax.set_ylabel("cl angle [deg]", fontsize=16)
