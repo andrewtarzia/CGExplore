@@ -369,28 +369,27 @@ def analyse_cage(
                 f"of {name}"
             )
 
-        if "M12L24" in name:
+        n_shape_mol = get_shape_molecule_nodes(molecule, name)
+        l_shape_mol = get_shape_molecule_ligands(molecule, name)
+        if n_shape_mol is None:
             node_shape_measures = None
-            lig_shape_measures = None
         else:
-            shape_mol = get_shape_molecule_nodes(molecule, name)
-            shape_mol.write(shape_molfile1)
+            n_shape_mol.write(shape_molfile1)
             node_shape_measures = ShapeMeasure(
                 output_dir=(output_dir / f"{name}_nshape"),
                 target_atmnums=None,
                 shape_string=None,
-            ).calculate(shape_mol)
+            ).calculate(n_shape_mol)
 
-            shape_mol = get_shape_molecule_ligands(molecule, name)
-            if shape_mol is None:
-                lig_shape_measures = None
-            else:
-                lig_shape_measures = ShapeMeasure(
-                    output_dir=(output_dir / f"{name}_lshape"),
-                    target_atmnums=None,
-                    shape_string=None,
-                ).calculate(shape_mol)
-                shape_mol.write(shape_molfile2)
+        if l_shape_mol is None:
+            lig_shape_measures = None
+        else:
+            lig_shape_measures = ShapeMeasure(
+                output_dir=(output_dir / f"{name}_lshape"),
+                target_atmnums=None,
+                shape_string=None,
+            ).calculate(l_shape_mol)
+            l_shape_mol.write(shape_molfile2)
 
         opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
 

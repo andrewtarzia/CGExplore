@@ -76,7 +76,16 @@ def topology_labels(short=False):
         )
 
 
-def convert_topo_to_label(topo_str):
+def convert_prop(prop_str):
+    return {
+        "energy_per_bond": "E_bf [eV]",
+        "sv_n_dist": "node shape similarity",
+        "sv_l_dist": "lig. shape similarity",
+        "both_sv_n_dist": "shape similarity",
+    }[prop_str]
+
+
+def convert_topo(topo_str):
     return {
         "TwoPlusThree": "2+3",
         "FourPlusSix": "4+6",
@@ -98,7 +107,7 @@ def convert_topo_to_label(topo_str):
     }[topo_str]
 
 
-def convert_torsion_to_label(topo_str, num=True):
+def convert_tors(topo_str, num=True):
     if num:
         return {
             "ton": "5 eV",
@@ -260,27 +269,31 @@ def mapshape_to_topology(mode, reverse=False):
     if mode == "n":
         if reverse:
             return {
-                "TwoPlusThree": "TBPY-5",
+                # "TwoPlusThree": "TBPY-5",
                 "FourPlusSix": "T-4",
                 "FourPlusSix2": "T-4b",
                 "SixPlusNine": "TPR-6",
                 "EightPlusTwelve": "CU-8",
-                "TwoPlusFour": "OC-6b",
+                # "TwoPlusFour": "OC-6b",
                 "ThreePlusSix": "TP-3",
                 "FourPlusEight": "SP-4",
                 "SixPlusTwelve": "OC-6",
+                # "EightPlusSixteen": "",
+                # "M12L24": "",
             }
         else:
             return {
-                "TBPY-5": "TwoPlusThree",
+                # "TBPY-5": "TwoPlusThree",
                 "T-4": "FourPlusSix",
                 "T-4b": "FourPlusSix2",
                 "TPR-6": "SixPlusNine",
                 "CU-8": "EightPlusTwelve",
-                "OC-6b": "TwoPlusFour",
+                # "OC-6b": "TwoPlusFour",
                 "TP-3": "ThreePlusSix",
                 "SP-4": "FourPlusEight",
                 "OC-6": "SixPlusTwelve",
+                # "": "EightPlusSixteen",
+                # "": "M12L24",
             }
     elif mode == "l":
         if reverse:

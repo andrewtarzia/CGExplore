@@ -52,12 +52,10 @@ def fill_position_matrix(
 
 def get_shape_molecule_nodes(constructed_molecule, name):
     topo_expected = {
-        "TwoPlusThree": 5,
         "FourPlusSix": 4,
         "FourPlusSix2": 4,
         "SixPlusNine": 6,
         "EightPlusTwelve": 8,
-        "TwoPlusFour": 6,
         "ThreePlusSix": 3,
         "FourPlusEight": 4,
         "SixPlusTwelve": 6,
@@ -66,6 +64,8 @@ def get_shape_molecule_nodes(constructed_molecule, name):
 
     splits = name.split("_")
     topo_str = splits[0]
+    if topo_str not in topo_expected:
+        return None
     bbs = list(constructed_molecule.get_building_blocks())
     old_position_matrix = constructed_molecule.get_position_matrix()
 
@@ -81,18 +81,6 @@ def get_shape_molecule_nodes(constructed_molecule, name):
         old_position_matrix=old_position_matrix,
         atoms=atoms,
     )
-
-    if topo_str in ("TwoPlusThree", "TwoPlusFour"):
-        target_id = 2
-        two_c_bb = bbs[1]
-        position_matrix, atoms = fill_position_matrix(
-            position_matrix=position_matrix,
-            constructed_molecule=constructed_molecule,
-            target_bb=two_c_bb,
-            target_id=target_id,
-            old_position_matrix=old_position_matrix,
-            atoms=atoms,
-        )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
     subset_molecule = stk.BuildingBlock.init(
