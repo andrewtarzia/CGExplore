@@ -21,8 +21,8 @@ from analysis_utilities import (
     topo_to_colormap,
     write_out_mapping,
     data_to_array,
-    convert_topo_to_label,
-    convert_torsion_to_label,
+    convert_topo,
+    convert_tors,
     max_energy,
 )
 
@@ -107,7 +107,7 @@ def parity_1(all_data, figure_output):
     ax.set_ylabel("ton - toff [eV]", fontsize=16)
     ax.set_xlim(-0.5, 11.5)
     # ax.set_xticks([tcpos[i] for i in tcpos])
-    # ax.set_xticklabels([convert_topo_to_label(i) for i in tcpos])
+    # ax.set_xticklabels([convert_topo(i) for i in tcpos])
 
     ax2.plot((-1, 12), (0, 0), c="k")
     ax2.tick_params(axis="both", which="major", labelsize=16)
@@ -116,7 +116,7 @@ def parity_1(all_data, figure_output):
     ax2.set_ylim(-22, 22)
     ax2.set_xticks([tcpos[i] for i in tcpos])
     ax2.set_xticklabels(
-        [convert_topo_to_label(i) for i in tcpos],
+        [convert_topo(i) for i in tcpos],
         rotation=45,
     )
 
@@ -185,8 +185,8 @@ def parity_2(all_data, geom_data, figure_output):
             ax.set_ylabel("observed [deg]", fontsize=16)
             ax.set_title(
                 (
-                    f"{convert_topo_to_label(tstr)}: "
-                    f"{convert_torsion_to_label(tors, num=False)}"
+                    f"{convert_topo(tstr)}: "
+                    f"{convert_tors(tors, num=False)}"
                 ),
                 fontsize=16,
             )
@@ -262,8 +262,8 @@ def parity_3(all_data, geom_data, figure_output):
             ax.set_ylabel("energy per bond formed [eV]", fontsize=16)
             ax.set_title(
                 (
-                    f"{convert_topo_to_label(tstr)}: "
-                    f"{convert_torsion_to_label(tors, num=False)}"
+                    f"{convert_topo(tstr)}: "
+                    f"{convert_tors(tors, num=False)}"
                 ),
                 fontsize=16,
             )
