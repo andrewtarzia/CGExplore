@@ -12,95 +12,24 @@ Author: Andrew Tarzia
 import sys
 import os
 import logging
-import matplotlib as mpl
+import itertools
+import pandas as pd
 import matplotlib.pyplot as plt
-
 
 from env_set import cages
 
 from analysis_utilities import (
     write_out_mapping,
     map_cltype_to_shapetopology,
-    convert_topo_to_label,
+    convert_tors,
+    convert_prop,
+    convert_topo,
     topo_to_colormap,
     max_energy,
     stoich_map,
     data_to_array,
     isomer_energy,
 )
-
-
-def phase_space_1(all_data, figure_output):
-    print(all_data.head())
-    print(all_data.columns)
-    print(all_data.iloc[1])
-    raise SystemExit()
-    # t_map = map_cltype_to_shapetopology()
-    # fig, axs = plt.subplots(
-    #     nrows=3,
-    #     ncols=3,
-    #     sharex=True,
-    #     sharey=True,
-    #     figsize=(16, 10),
-    # )
-    # flat_axs = axs.flatten()
-
-    # data_dict = {}
-    # for bb_triplet in all_data:
-    #     b_dict = all_data[bb_triplet]
-    #     cl_bbname = bb_triplet[1]
-    #     c2_bbname = bb_triplet[0]
-    #     present_beads_names = get_present_beads(c2_bbname)
-
-    #     x = get_CGBead_from_string(
-    #         present_beads_names[0], core_2c_beads()
-    #     ).sigma
-    #     # y = get_CGBead_from_string(c3_core_name, beads_3c()).sigma
-    #     y = (
-    #         get_CGBead_from_string(
-    #             present_beads_names[-1], arm_2c_beads()
-    #         ).angle_centered
-    #         - 90
-    #     ) * 2
-
-    #     min_energy = min(tuple(i[1] for i in b_dict.values()))
-    #     min_e_dict = {
-    #         i: b_dict[i] for i in b_dict if b_dict[i][1] == min_energy
-    #     }
-    #     keys = list(min_e_dict.keys())
-    #     min_energy_topo = keys[0][-1]
-
-    #     if "3C1" in cl_bbname:
-    #         if t_map["3C1"][min_energy_topo] not in data_dict:
-    #             data_dict[t_map["3C1"][min_energy_topo]] = []
-    #         data_dict[t_map["3C1"][min_energy_topo]].append((x, y))
-    #     elif "4C1" in cl_bbname:
-    #         if t_map["4C1"][min_energy_topo] not in data_dict:
-    #             data_dict[t_map["4C1"][min_energy_topo]] = []
-    #         data_dict[t_map["4C1"][min_energy_topo]].append((x, y))
-
-    # for ax, t_str in zip(flat_axs, topology_labels()):
-    #     ax.scatter(
-    #         [i[0] for i in data_dict[t_str]],
-    #         [i[1] for i in data_dict[t_str]],
-    #         c="gray",
-    #         edgecolor="none",
-    #         s=30,
-    #         alpha=0.2,
-    #     )
-
-    #     ax.tick_params(axis="both", which="major", labelsize=16)
-    #     ax.set_xlabel("target 2c core size", fontsize=16)
-    #     ax.set_ylabel("target 2c bite angle", fontsize=16)
-    #     ax.set_title(t_str, fontsize=16)
-
-    # fig.tight_layout()
-    # fig.savefig(
-    #     os.path.join(figure_output, "ps_1.pdf"),
-    #     dpi=720,
-    #     bbox_inches="tight",
-    # )
-    # plt.close()
 
 
 def phase_space_2(all_data, figure_output):
@@ -251,7 +180,7 @@ def phase_space_3(all_data, figure_output):
     for ax, (bbtitle, torsion) in zip(flat_axs, data):
         coords = data[(bbtitle, torsion)]
         bars = ax.bar(
-            [convert_topo_to_label(i) for i in coords.keys()],
+            [convert_topo(i) for i in coords.keys()],
             coords.values(),
             # color="#06AED5",
             # color="#086788",
@@ -318,7 +247,7 @@ def phase_space_11(all_data, figure_output):
     for ax, (bbtitle, torsion) in zip(flat_axs, data):
         coords = data[(bbtitle, torsion)]
         ax.bar(
-            [convert_topo_to_label(i) for i in coords.keys()],
+            [convert_topo(i) for i in coords.keys()],
             coords.values(),
             # color="#06AED5",
             # color="#086788",
@@ -395,7 +324,7 @@ def phase_space_12(all_data, figure_output):
     for ax, (bbtitle, torsion) in zip(flat_axs, data):
         coords = data[(bbtitle, torsion)]
         ax.bar(
-            [convert_topo_to_label(i) for i in coords.keys()],
+            [convert_topo(i) for i in coords.keys()],
             coords.values(),
             # color="#06AED5",
             # color="#086788",
@@ -487,152 +416,97 @@ def phase_space_13(all_data, figure_output):
     plt.close()
 
 
-def phase_space_4(all_data, figure_output):
-    print(all_data.head())
-    print(all_data.columns)
-    print(all_data.iloc[1])
-    raise SystemExit()
-    # color_map = shapelabels_to_colormap()
-
-    # fig, axs = plt.subplots(
-    #     nrows=1,
-    #     ncols=2,
-    #     figsize=(16, 5),
-    # )
-    # flat_axs = axs.flatten()
-
-    # s_vectors_3c0 = {}
-    # s_vectors_4c0 = {}
-    # row_3c0 = set()
-    # row_4c0 = set()
-    # for bb_triplet in bb_data:
-    #     b_dict = bb_data[bb_triplet]
-    #     cl_bbname = bb_triplet[1]
-
-    #     min_energy = min(tuple(i[1] for i in b_dict.values()))
-    #     min_e_dict = {
-    #         i: b_dict[i] for i in b_dict if b_dict[i][1] == min_energy
-    #     }
-    #     keys = list(min_e_dict.keys())
-    #     min_energy_topo = keys[0][-1]
-
-    #     shape_vector = get_shape_vector(b_dict)
-    #     if "3C1" in cl_bbname:
-    #         s_vectors_3c0[
-    #             (bb_triplet[0], bb_triplet[1], min_energy_topo)
-    #         ] = shape_vector
-    #         for i in shape_vector:
-    #             row_3c0.add(i)
-    #     elif "4C1" in cl_bbname:
-    #         s_vectors_4c0[
-    #             (bb_triplet[0], bb_triplet[1], min_energy_topo)
-    #         ] = shape_vector
-    #         for i in shape_vector:
-    #             row_4c0.add(i)
-
-    # shape_vector_dicts = (
-    #     ("3C1", s_vectors_3c0, row_3c0),
-    #     ("4C1", s_vectors_4c0, row_4c0),
-    # )
-    # for ax, (title, coords, row_names) in zip(
-    #     flat_axs, shape_vector_dicts
-    # ):
-    #     data_array = pd.DataFrame.from_dict(
-    #         coords,
-    #         orient="index",
-    #     ).reset_index()
-
-    #     # Separating out the features
-    #     x = data_array.loc[:, row_names].values
-    #     # Standardizing the features
-    #     x = StandardScaler().fit_transform(x)
-    #     pca = PCA(n_components=2)
-    #     pcs = pca.fit_transform(x)
-    #     pc_df = pd.DataFrame(
-    #         data=pcs,
-    #         columns=["pc1", "pc2"],
-    #     )
-
-    #     for t_final in color_map:
-    #         ax.scatter(
-    #             pc_df["pc1"][data_array["level_2"] == t_final],
-    #             pc_df["pc2"][data_array["level_2"] == t_final],
-    #             c=color_map[str(t_final)],
-    #             edgecolor="none",
-    #             s=30,
-    #             alpha=1.0,
-    #             label=t_final,
-    #         )
-
-    #     ax.tick_params(axis="both", which="major", labelsize=16)
-    #     ax.set_xlabel("principal component 1", fontsize=16)
-    #     ax.set_ylabel("principal component 2", fontsize=16)
-    #     ax.set_title(f"PCA: {title}", fontsize=16)
-    #     ax.legend(ncol=2, fontsize=16)
-
-    # fig.tight_layout()
-    # fig.savefig(
-    #     os.path.join(figure_output, "ps_4.pdf"),
-    #     dpi=720,
-    #     bbox_inches="tight",
-    # )
-    # plt.close()
-
-
 def phase_space_5(all_data, figure_output):
-    fig, axs = plt.subplots(
-        nrows=5,
-        ncols=2,
-        figsize=(16, 8),
-    )
-    flat_axs = axs.flatten()
+
     cmap = topo_to_colormap()
-    for ax, tstr in zip(flat_axs, cmap):
-        tdata = all_data[all_data["topology"] == tstr]
-        tondata = tdata[tdata["torsions"] == "ton"]
-        # toffdata = tdata[tdata["torsions"] == "toff"]
-        x1 = tondata["target_bite_angle"]
-        # x2 = toffdata["target_bite_angle"]
-        y1 = tondata["sv_n_dist"]
-        # y2 = toffdata["sv_n_dist"]
-        z1 = tondata["energy"]
-        # z2 = toffdata["energy"]
-
-        ax.set_title(tstr, fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("target_bite_angle", fontsize=16)
-        ax.set_ylabel("sv_n_dist", fontsize=16)
-
-        ax.scatter(
-            x1,
-            y1,
-            c=z1,
-            vmin=0,
-            vmax=30,
-            alpha=0.4,
-            edgecolor="none",
-            s=30,
-            cmap="inferno",
+    clangles = sorted(set(all_data["clangle"]))
+    for tstr, clangle in itertools.product(cmap, clangles):
+        fig, axs = plt.subplots(
+            nrows=1,
+            ncols=2,
+            sharex=True,
+            sharey=True,
+            figsize=(16, 5),
         )
 
-    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-    cmap = mpl.cm.inferno
-    norm = mpl.colors.Normalize(vmin=0, vmax=30)
-    cbar = fig.colorbar(
-        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-        cax=cbar_ax,
-        orientation="vertical",
-    )
-    cbar.ax.tick_params(labelsize=16)
-    cbar.set_label("energy (eV)", fontsize=16)
+        tdata = all_data[all_data["topology"] == tstr]
+        cdata = tdata[tdata["clangle"] == clangle]
+        if len(cdata) == 0:
+            continue
 
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "ps_5.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
+        for ax, tor in zip(axs, ("ton", "toff")):
+            findata = cdata[cdata["torsions"] == tor]
+            xvalues = list(findata["energy_per_bond"])
+            yvalues = list(findata["sv_n_dist"])
+            lvalues = list(findata["sv_l_dist"])
+            to_plot_x = []
+            to_plot_y = []
+            to_plot_l = []
+            for x, y, l in zip(xvalues, yvalues, lvalues):
+                if pd.isna(x) or pd.isna(y):
+                    continue
+                to_plot_x.append(x)
+                to_plot_y.append(y)
+                if pd.isna(l):
+                    continue
+                to_plot_l.append(l)
+
+            ax.scatter(
+                to_plot_x,
+                to_plot_y,
+                c="#086788",
+                edgecolor="none",
+                s=50,
+                alpha=1,
+            )
+            if len(to_plot_l) == len(to_plot_x):
+                ax.scatter(
+                    to_plot_x,
+                    to_plot_l,
+                    c="white",
+                    edgecolor="k",
+                    s=60,
+                    alpha=1,
+                    zorder=-1,
+                )
+            elif len(to_plot_l) != 0:
+                raise ValueError(
+                    f"{len(to_plot_l)} l != {len(to_plot_x)}"
+                )
+
+            ax.set_title(convert_tors(tor, num=False), fontsize=16)
+            ax.tick_params(axis="both", which="major", labelsize=16)
+            ax.set_xlabel(convert_prop("energy_per_bond"), fontsize=16)
+            ax.set_ylabel(convert_prop("both_sv_n_dist"), fontsize=16)
+            ax.set_ylim(0.5, 1.0)
+
+        ax.scatter(
+            None,
+            None,
+            c="#086788",
+            edgecolor="none",
+            s=50,
+            alpha=1,
+            label="node",
+        )
+        ax.scatter(
+            None,
+            None,
+            c="white",
+            edgecolor="k",
+            s=60,
+            alpha=1,
+            label="ligand",
+        )
+        ax.legend(fontsize=16)
+
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"ps_5_{tstr}_{clangle}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
 
 
 def phase_space_6(all_data, figure_output):
@@ -1430,11 +1304,9 @@ def main():
     phase_space_12(opt_data, figure_output)
     phase_space_10(opt_data, figure_output)
     phase_space_9(opt_data, figure_output)
-    phase_space_1(opt_data, figure_output)
     phase_space_6(opt_data, figure_output)
     phase_space_7(opt_data, figure_output)
     phase_space_8(opt_data, figure_output)
-    phase_space_4(opt_data, figure_output)
 
 
 if __name__ == "__main__":
