@@ -13,6 +13,9 @@ import sys
 import stk
 import os
 import json
+from openmm import openmm
+import matplotlib.pyplot as plt
+import numpy as np
 import logging
 import itertools
 from rdkit import RDLogger
@@ -27,106 +30,19 @@ from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory
 from openmm_optimizer import CGOMMOptimizer
-from cage_construction.topologies import cage_topology_options
-from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
-from beads import CgBead, bead_library_check
+from beads import produce_bead_library, bead_library_check
 
 
-def produce_bead_library(
-    type_prefix,
-    element_string,
-    sigmas,
-    angles,
-    bond_ks,
-    angle_ks,
-    coordination,
-):
-    return {
-        f"{type_prefix}{i}{j}{k}{l}": CgBead(
-            element_string=element_string,
-            bead_type=f"{type_prefix}{i}{j}{k}{l}",
-            sigma=sigma,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-            coordination=coordination,
-        )
-        for (i, sigma), (j, angle), (k, bond_k), (
-            l,
-            angle_k,
-        ) in itertools.product(
-            enumerate(sigmas),
-            enumerate(angles),
-            enumerate(bond_ks),
-            enumerate(angle_ks),
-        )
-    }
-
-
-def core_2c_beads():
+def c_beads():
     return produce_bead_library(
         type_prefix="c",
         element_string="Ag",
-        sigmas=(2, 5, 10),
+        sigmas=(2,),
         angles=(180,),
         bond_ks=(10,),
         angle_ks=(20,),
         coordination=2,
     )
-
-
-def arm_2c_beads():
-    return produce_bead_library(
-        type_prefix="a",
-        element_string="Ba",
-        sigmas=(1,),
-        angles=range(90, 181, 5),
-        bond_ks=(10,),
-        angle_ks=(20,),
-        coordination=2,
-    )
-
-
-def binder_beads():
-    return produce_bead_library(
-        type_prefix="b",
-        element_string="Pb",
-        sigmas=(1,),
-        angles=(180,),
-        bond_ks=(10,),
-        angle_ks=(20,),
-        coordination=2,
-    )
-
-
-def beads_3c():
-    return produce_bead_library(
-        type_prefix="n",
-        element_string="C",
-        sigmas=(2, 5, 10),
-        angles=(60, 90, 109.5, 120),
-        bond_ks=(10,),
-        angle_ks=(20,),
-        coordination=3,
-    )
-
-
-def beads_4c():
-    return produce_bead_library(
-        type_prefix="m",
-        element_string="Pd",
-        sigmas=(2, 5, 10),
-        angles=(50, 70, 90),
-        bond_ks=(10,),
-        angle_ks=(20,),
-        coordination=4,
-    )
-
-
-def optimise_ligand(molecule, name, output_dir, bead_set):
-
-    opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
-    return molecule.with_structure_from_file(opt1_mol_file)
 
 
 def optimise_cage(
@@ -263,31 +179,6 @@ def analyse_cage(
     return res_dict
 
 
-def build_building_block(
-    topology,
-    option1_lib,
-    option2_lib,
-    full_bead_library,
-    calculation_output,
-    ligand_output,
-):
-    blocks = {}
-    for options in itertools.product(option1_lib, option2_lib):
-        option1 = option1_lib[options[0]]
-        option2 = option2_lib[options[1]]
-        temp = topology(bead=option1, abead1=option2)
-
-        opt_bb = optimise_ligand(
-            molecule=temp.get_building_block(),
-            name=temp.get_name(),
-            output_dir=calculation_output,
-            bead_set=temp.get_bead_set(),
-        )
-        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
-        blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
-    return blocks
-
-
 def target_torsions(bead_set, custom_torsion_option):
     (c_key,) = (i for i in bead_set if i[0] == "c")
     (t_key_1,) = (i for i in bead_set if i[0] == "a")
@@ -304,12 +195,6 @@ def target_torsions(bead_set, custom_torsion_option):
     return custom_torsion_set
 
 
-def save_idealised_topology(cage, cage_topo_str, struct_output):
-    output_name = struct_output / f"{cage_topo_str}_unopt.mol"
-    if not os.path.exists(output_name):
-        cage.write(str(output_name))
-
-
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -320,78 +205,130 @@ def main():
 
     struct_output = cages() / "ommtest"
     check_directory(struct_output)
-    figure_output = cages() / "figures"
+    figure_output = cages() / "ommfigures"
     check_directory(figure_output)
     calculation_output = cages() / "ommtestcalculations"
     check_directory(calculation_output)
-    ligand_output = cages() / "ligands"
-    check_directory(ligand_output)
-    ligand_calc_output = cages() / "calculations"
-    check_directory(ligand_calc_output)
-
-    # Define list of topology functions.
-    cage_3p2_topologies = cage_topology_options("2p3")
-    cage_4p2_topologies = cage_topology_options("2p4")
 
     # Define bead libraries.
-    beads_core_2c_lib = core_2c_beads()
-    beads_4c_lib = beads_4c()
-    beads_3c_lib = beads_3c()
-    beads_arm_2c_lib = arm_2c_beads()
-    beads_binder_lib = binder_beads()
-    full_bead_library = (
-        list(beads_3c_lib.values())
-        + list(beads_4c_lib.values())
-        + list(beads_arm_2c_lib.values())
-        + list(beads_core_2c_lib.values())
-        + list(beads_binder_lib.values())
-    )
+    beads = c_beads()
+    full_bead_library = list(beads.values())
     bead_library_check(full_bead_library)
 
-    logging.info("building building blocks")
-    c2_blocks = build_building_block(
-        topology=TwoC1Arm,
-        option1_lib=beads_core_2c_lib,
-        option2_lib=beads_arm_2c_lib,
-        full_bead_library=full_bead_library,
-        calculation_output=ligand_calc_output,
-        ligand_output=ligand_output,
-    )
-    c3_blocks = build_building_block(
-        topology=ThreeC1Arm,
-        option1_lib=beads_3c_lib,
-        option2_lib=beads_binder_lib,
-        full_bead_library=full_bead_library,
-        calculation_output=ligand_calc_output,
-        ligand_output=ligand_output,
-    )
-    c4_blocks = build_building_block(
-        topology=FourC1Arm,
-        option1_lib=beads_4c_lib,
-        option2_lib=beads_binder_lib,
-        full_bead_library=full_bead_library,
-        calculation_output=ligand_calc_output,
-        ligand_output=ligand_output,
+    raise SystemExit(
+        "you need to think about these tests properly - currently the distances and x axis are wrong"
     )
 
-    logging.info(
-        f"there are {len(c2_blocks)} 2-C and "
-        f"{len(c3_blocks)} 3-C and "
-        f"{len(c4_blocks)} 4-C building blocks."
+    bead = beads["c0000"]
+    linear_bb = stk.BuildingBlock(
+        smiles=f"[{bead.element_string}][{bead.element_string}]",
+        position_matrix=[[0, 0, 0], [1, 0, 0]],
     )
 
-    populations = {
-        "3 + 2": {
-            "t": cage_3p2_topologies,
-            "c2": c2_blocks,
-            "cl": c3_blocks,
-        },
-        "4 + 2": {
-            "t": cage_4p2_topologies,
-            "c2": c2_blocks,
-            "cl": c4_blocks,
-        },
-    }
+    coords = np.linspace(0, 5, 20)
+    print(coords)
+    xys = []
+    for i, coord in enumerate(coords):
+        name = f"l1_{i}"
+        new_posmat = linear_bb.get_position_matrix() * coord
+        new_bb = linear_bb.with_position_matrix(new_posmat)
+        new_bb.write(str(calculation_output / f"{name}.mol"))
+        logging.info(f"evaluating {name}")
+        opt = CGOMMOptimizer(
+            fileprefix=f"{name}_om1",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+        energy = opt.calculate_energy(new_bb)
+        print(name, coord, energy)
+        xys.append(
+            (
+                coord,
+                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
+            )
+        )
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(
+        [i[0] for i in xys],
+        [i[1] for i in xys],
+        c="k",
+        alpha=1.0,
+    )
+    ax.axhline(y=0, c="k", lw=2, linestyle="--")
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("distance [A]", fontsize=16)
+    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "l1.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    linear_bb = stk.BuildingBlock(
+        smiles=(
+            f"[{bead.element_string}][{bead.element_string}]"
+            f"[{bead.element_string}]"
+        ),
+        position_matrix=[[0, 0, 0], [2, 0, 0], [3, 0, 0]],
+    )
+
+    coords = np.linspace(0, 5, 20)
+    print(coords)
+    xys = []
+    for i, coord in enumerate(coords):
+        name = f"l2_{i}"
+        new_posmat = linear_bb.get_position_matrix()
+        new_posmat[2] = new_posmat[2] * coord
+        new_bb = linear_bb.with_position_matrix(new_posmat)
+        new_bb.write(str(calculation_output / f"{name}.mol"))
+        logging.info(f"evaluating {name}")
+        opt = CGOMMOptimizer(
+            fileprefix=f"{name}_om1",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+        )
+        energy = opt.calculate_energy(new_bb)
+        print(name, coord, energy)
+        xys.append(
+            (
+                coord,
+                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
+            )
+        )
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.plot(
+        [i[0] for i in xys],
+        [i[1] for i in xys],
+        c="k",
+        alpha=1.0,
+    )
+    ax.axhline(y=0, c="k", lw=2, linestyle="--")
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("distance [A]", fontsize=16)
+    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "l2.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    raise SystemExit()
 
     custom_torsion_options = {
         "ton": (0, 5),

@@ -13,6 +13,7 @@ import numpy as np
 from itertools import combinations
 import logging
 from heapq import nsmallest
+from rdkit.Chem import AllChem as rdkit
 
 from utilities import (
     get_all_angles,
@@ -56,6 +57,27 @@ class CGOptimizer:
             bead = self._param_pool[i]
             if bead.element_string == estring:
                 return bead
+
+    def _get_new_torsions(self, molecule, chain_length):
+        paths = rdkit.FindAllPathsOfLengthN(
+            mol=molecule.to_rdkit_mol(),
+            length=chain_length,
+            useBonds=False,
+            useHs=True,
+        )
+        torsions = []
+        for atom_ids in paths:
+            atoms = list(
+                molecule.get_atoms(atom_ids=[i for i in atom_ids])
+            )
+            atom1 = atoms[0]
+            atom2 = atoms[1]
+            atom3 = atoms[2]
+            atom4 = atoms[3]
+            atom5 = atoms[4]
+            torsions.append((atom1, atom2, atom3, atom4, atom5))
+
+        return torsions
 
     def _yield_bonds(self, mol):
         if self._bonds is False:
