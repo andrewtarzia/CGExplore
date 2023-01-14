@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 from dataclasses import dataclass
+import itertools
 import logging
 from collections import Counter
 
@@ -183,3 +184,34 @@ def bead_library_check(bead_libraries):
             raise ValueError(
                 f"you used a bead not available in PoreMapper: {string}"
             )
+
+
+def produce_bead_library(
+    type_prefix,
+    element_string,
+    sigmas,
+    angles,
+    bond_ks,
+    angle_ks,
+    coordination,
+):
+    return {
+        f"{type_prefix}{i}{j}{k}{l}": CgBead(
+            element_string=element_string,
+            bead_type=f"{type_prefix}{i}{j}{k}{l}",
+            sigma=sigma,
+            angle_centered=angle,
+            bond_k=bond_k,
+            angle_k=angle_k,
+            coordination=coordination,
+        )
+        for (i, sigma), (j, angle), (k, bond_k), (
+            l,
+            angle_k,
+        ) in itertools.product(
+            enumerate(sigmas),
+            enumerate(angles),
+            enumerate(bond_ks),
+            enumerate(angle_ks),
+        )
+    }

@@ -12,7 +12,6 @@ Author: Andrew Tarzia
 import os
 import re
 import logging
-from rdkit.Chem import AllChem as rdkit
 
 from env_set import gulp_path
 
@@ -170,28 +169,7 @@ class CGGulpOptimizer(CGOptimizer):
         if self._custom_torsion_set is None:
             return ""
 
-        def get_new_torsions(molecule, chain_length):
-            paths = rdkit.FindAllPathsOfLengthN(
-                mol=molecule.to_rdkit_mol(),
-                length=chain_length,
-                useBonds=False,
-                useHs=True,
-            )
-            torsions = []
-            for atom_ids in paths:
-                atoms = list(
-                    molecule.get_atoms(atom_ids=[i for i in atom_ids])
-                )
-                atom1 = atoms[0]
-                atom2 = atoms[1]
-                atom3 = atoms[2]
-                atom4 = atoms[3]
-                atom5 = atoms[4]
-                torsions.append((atom1, atom2, atom3, atom4, atom5))
-
-            return torsions
-
-        torsions = get_new_torsions(mol, chain_length)
+        torsions = self._get_new_torsions(mol, chain_length)
         for torsion in torsions:
             atom1, atom2, atom3, atom4, atom5 = torsion
             names = list(

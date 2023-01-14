@@ -28,43 +28,9 @@ from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory, get_atom_distance
 from gulp_optimizer import CGGulpOptimizer, extract_gulp_optimisation
-
 from cage_construction.topologies import cage_topology_options
-
 from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
-
-from beads import CgBead, bead_library_check
-
-
-def produce_bead_library(
-    type_prefix,
-    element_string,
-    sigmas,
-    angles,
-    bond_ks,
-    angle_ks,
-    coordination,
-):
-    return {
-        f"{type_prefix}{i}{j}{k}{l}": CgBead(
-            element_string=element_string,
-            bead_type=f"{type_prefix}{i}{j}{k}{l}",
-            sigma=sigma,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-            coordination=coordination,
-        )
-        for (i, sigma), (j, angle), (k, bond_k), (
-            l,
-            angle_k,
-        ) in itertools.product(
-            enumerate(sigmas),
-            enumerate(angles),
-            enumerate(bond_ks),
-            enumerate(angle_ks),
-        )
-    }
+from beads import bead_library_check, produce_bead_library
 
 
 def core_2c_beads():
