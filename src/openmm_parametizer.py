@@ -12,23 +12,16 @@ Author: Andrew Tarzia
 import sys
 import stk
 import os
-import json
 from openmm import openmm
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import logging
 import itertools
 from rdkit import RDLogger
 
-from shape import (
-    ShapeMeasure,
-    get_shape_molecule_ligands,
-    get_shape_molecule_nodes,
-)
-from geom import GeomMeasure
-from pore import PoreMeasure
 from env_set import cages
-from utilities import check_directory
+from utilities import check_directory, angle_between, get_dihedral
 from openmm_optimizer import CGOMMOptimizer
 from beads import produce_bead_library, bead_library_check
 
@@ -38,161 +31,472 @@ def c_beads():
         type_prefix="c",
         element_string="Ag",
         sigmas=(2,),
-        angles=(180,),
+        angles=(90,),
         bond_ks=(10,),
         angle_ks=(20,),
         coordination=2,
     )
 
 
-def optimise_cage(
-    molecule,
-    name,
-    output_dir,
-    bead_set,
-    custom_torsion_set,
-):
+def points_in_circum(r, n=100):
+    return [
+        (
+            np.cos(2 * np.pi / n * x) * r,
+            np.sin(2 * np.pi / n * x) * r,
+        )
+        for x in range(0, n + 1)
+    ]
 
-    opt1_mol_file = os.path.join(output_dir, f"{name}_omm1.mol")
 
-    if os.path.exists(opt1_mol_file):
-        molecule = molecule.with_structure_from_file(opt1_mol_file)
-    else:
-        logging.info(f"optimising {name}")
+def test1(beads, calculation_output, figure_output):
 
+    bead = beads["c0000"]
+    linear_bb = stk.BuildingBlock(
+        smiles=f"[{bead.element_string}][{bead.element_string}]",
+        position_matrix=[[0, 0, 0], [1, 0, 0]],
+    )
+
+    coords = np.linspace(0, 5, 20)
+    xys = []
+    for i, coord in enumerate(coords):
+        name = f"l1_{i}"
+        new_posmat = linear_bb.get_position_matrix() * coord
+        new_bb = linear_bb.with_position_matrix(new_posmat)
+        new_bb.write(str(calculation_output / f"{name}.mol"))
+        logging.info(f"evaluating {name}")
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_om1",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=False,
+            torsions=False,
+            vdw=False,
+        )
+        energy = opt.calculate_energy(new_bb)
+        distance = np.linalg.norm(new_posmat[1] - new_posmat[0])
+        xys.append(
+            (
+                distance,
+                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
+            )
+        )
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_title(
+        f"{bead.sigma} A, {bead.bond_k} kJ/mol/nm2",
+        fontsize=16.0,
+    )
+
+    def fun(x, k, sigma):
+        return (1 / 2) * k * (x - sigma / 1) ** 2
+
+    distances = [i[0] for i in xys]
+    x = np.linspace(min(distances), max(distances), 100)
+    ax.plot(
+        x,
+        fun(x / 10, bead.bond_k, bead.sigma / 10),
+        c="r",
+        lw=2,
+        label="analytical",
+    )
+
+    ax.scatter(
+        [i[0] for i in xys],
+        [i[1] for i in xys],
+        c="skyblue",
+        s=120,
+        edgecolor="k",
+        alpha=1.0,
+        label="numerical",
+    )
+    ax.axhline(y=0, c="k", lw=2, linestyle="--")
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("distance [A]", fontsize=16)
+    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
+    ax.legend(fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "l1.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def test2(beads, calculation_output, figure_output):
+
+    bead = beads["c0000"]
+    linear_bb = stk.BuildingBlock(
+        smiles=(
+            f"[{bead.element_string}][{bead.element_string}]"
+            f"[{bead.element_string}]"
+        ),
+        position_matrix=[[0, 0, 0], [2, 0, 0], [3, 0, 0]],
+    )
+
+    coords1 = np.linspace(0, 5, 25)
+    coords2 = np.linspace(0, 5, 25)
+    xys = []
+    for i, (coord1, coord2) in enumerate(
+        itertools.product(coords1, coords2)
+    ):
+        name = f"l2_{i}"
+        new_posmat = linear_bb.get_position_matrix()
+        new_posmat[1] = new_posmat[1] * coord1
+        new_posmat[2] = new_posmat[2] * coord2
+        new_bb = linear_bb.with_position_matrix(new_posmat)
+        new_bb.write(str(calculation_output / f"{name}.mol"))
+        logging.info(f"evaluating {name}")
+        opt = CGOMMOptimizer(
+            fileprefix=f"{name}_om1",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=False,
+            torsions=False,
+            vdw=False,
+        )
+        energy = opt.calculate_energy(new_bb)
+        distance1 = np.linalg.norm(new_posmat[1] - new_posmat[0])
+        distance2 = np.linalg.norm(new_posmat[2] - new_posmat[1])
+        xys.append(
+            (
+                distance1,
+                distance2,
+                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
+            )
+        )
+
+    min_xy = None
+    min_energy = 1e24
+    for i in xys:
+        if i[2] < min_energy:
+            min_xy = i
+            min_energy = i[2]
+
+    vmax = 10
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_title(
+        f"{bead.sigma} A, {bead.bond_k} kJ/mol/nm2",
+        fontsize=16.0,
+    )
+
+    ax.scatter(
+        [i[0] for i in xys],
+        [i[1] for i in xys],
+        c=[i[2] for i in xys],
+        vmin=0,
+        vmax=vmax,
+        alpha=1.0,
+        # edgecolor="k",
+        s=30,
+        cmap="Blues",
+        rasterized=True,
+    )
+    ax.scatter(
+        min_xy[0],
+        min_xy[1],
+        c="r",
+        alpha=1.0,
+        edgecolor="k",
+        s=40,
+    )
+    ax.axhline(y=bead.sigma, c="k", lw=1)
+    ax.axvline(x=bead.sigma, c="k", lw=1)
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("distance 1 [A]", fontsize=16)
+    ax.set_xlabel("distance 2 [A]", fontsize=16)
+
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.Blues
+    norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label("energy [kJmol-1]", fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "l2.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def test3(beads, calculation_output, figure_output):
+
+    bead = beads["c0000"]
+    linear_bb = stk.BuildingBlock(
+        smiles=(
+            f"[{bead.element_string}]([{bead.element_string}])"
+            f"[{bead.element_string}]"
+        ),
+        position_matrix=[[0, 0, 0], [2, 0, 0], [1, 0, 0]],
+    )
+
+    coords = points_in_circum(r=2, n=100)
+    xys = []
+    for i, coord in enumerate(coords):
+        name = f"l3_{i}"
+        new_posmat = linear_bb.get_position_matrix()
+        new_posmat[2] = np.array([coord[0], coord[1], 0])
+        new_bb = linear_bb.with_position_matrix(new_posmat)
+        new_bb.write(str(calculation_output / f"{name}.mol"))
+        logging.info(f"evaluating {name}")
+        opt = CGOMMOptimizer(
+            fileprefix=f"{name}_om1",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
             bonds=True,
             angles=True,
             torsions=False,
             vdw=False,
         )
-        molecule = opt.optimize(molecule)
-        # molecule = molecule.with_structure_from_file(opt_xyz_file)
-        # molecule = molecule.with_centroid((0, 0, 0))
-        # molecule.write(opt1_mol_file)
-
-    return molecule
-
-
-def analyse_cage(
-    molecule,
-    name,
-    output_dir,
-    bead_set,
-):
-    raise NotImplementedError()
-
-    output_file = os.path.join(output_dir, f"{name}_res.json")
-    # gulp_output_file2 = os.path.join(output_dir, f"{name}_o2.ginout")
-    gulp_output_file3 = os.path.join(output_dir, f"{name}_o3.ginout")
-    shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
-    shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
-    # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
-    # pm_output_file = os.path.join(output_dir, f"{name}_pm.json")
-
-    if molecule is None:
-        res_dict = {"optimised": False}
-        with open(output_file, "w") as f:
-            json.dump(res_dict, f, indent=4)
-
-    if os.path.exists(output_file):
-        with open(output_file, "r") as f:
-            res_dict = json.load(f)
-    else:
-        logging.info(f"analysing {name}")
-        if os.path.exists(gulp_output_file3):
-            run_data = None
-            # run_data = extract_gulp_optimisation(gulp_output_file3)
-        else:
-            run_data = None
-            # run_data = extract_gulp_optimisation(gulp_output_file2)
-
-        try:
-            fin_energy = run_data["final_energy"]
-            fin_gnorm = run_data["final_gnorm"]
-        except KeyError:
-            raise KeyError(
-                "final energy not found in run_data, suggests failure "
-                f"of {name}"
+        energy = opt.calculate_energy(new_bb)
+        pos_mat = new_bb.get_position_matrix()
+        vector1 = pos_mat[1] - pos_mat[0]
+        vector2 = pos_mat[2] - pos_mat[0]
+        angle = np.degrees(angle_between(vector1, vector2))
+        xys.append(
+            (
+                angle,
+                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
             )
-
-        n_shape_mol = get_shape_molecule_nodes(molecule, name)
-        l_shape_mol = get_shape_molecule_ligands(molecule, name)
-        if n_shape_mol is None:
-            node_shape_measures = None
-        else:
-            n_shape_mol.write(shape_molfile1)
-            node_shape_measures = ShapeMeasure(
-                output_dir=(output_dir / f"{name}_nshape"),
-                target_atmnums=None,
-                shape_string=None,
-            ).calculate(n_shape_mol)
-
-        if l_shape_mol is None:
-            lig_shape_measures = None
-        else:
-            lig_shape_measures = ShapeMeasure(
-                output_dir=(output_dir / f"{name}_lshape"),
-                target_atmnums=None,
-                shape_string=None,
-            ).calculate(l_shape_mol)
-            l_shape_mol.write(shape_molfile2)
-
-        opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
-
-        # Always want to extract target torions.
-        temp_custom_torsion_set = target_torsions(
-            bead_set=bead_set,
-            custom_torsion_option=None,
         )
 
-        custom_torsion_atoms = [
-            bead_set[j].element_string
-            for i in temp_custom_torsion_set
-            for j in i
-        ]
-        g_measure = GeomMeasure(custom_torsion_atoms)
-        bond_data = g_measure.calculate_bonds(molecule)
-        angle_data = g_measure.calculate_angles(molecule)
-        dihedral_data = g_measure.calculate_dihedrals(molecule)
-        min_b2b_distance = g_measure.calculate_minb2b(molecule)
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_title(
+        f"{bead.sigma} A, {bead.angle_centered} [deg], {bead.angle_k}"
+        " kJ/mol/radian2",
+        fontsize=16.0,
+    )
 
-        res_dict = {
-            "optimised": True,
-            "fin_energy": fin_energy,
-            "fin_gnorm": fin_gnorm,
-            "opt_pore_data": opt_pore_data,
-            "lig_shape_measures": lig_shape_measures,
-            "node_shape_measures": node_shape_measures,
-            "bond_data": bond_data,
-            "angle_data": angle_data,
-            "dihedral_data": dihedral_data,
-            "min_b2b_distance": min_b2b_distance,
-        }
-        with open(output_file, "w") as f:
-            json.dump(res_dict, f, indent=4)
+    def fun(x, k, theta0):
+        return (1 / 2) * k * (x - theta0) ** 2
 
-    return res_dict
+    angles = [i[0] for i in xys]
+    x = np.linspace(min(angles), max(angles), 100)
+    ax.plot(
+        x,
+        fun(
+            np.radians(x), bead.angle_k, np.radians(bead.angle_centered)
+        ),
+        c="r",
+        lw=2,
+        label="analytical",
+    )
+
+    ax.scatter(
+        [i[0] for i in xys],
+        [i[1] for i in xys],
+        c="skyblue",
+        s=120,
+        edgecolor="k",
+        alpha=1.0,
+        label="numerical",
+    )
+    ax.axhline(y=0, c="k", lw=2, linestyle="--")
+    ax.axvline(x=bead.angle_centered, c="k", lw=2)
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("angle [theta]", fontsize=16)
+    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
+    ax.legend(fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "l3.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
-def target_torsions(bead_set, custom_torsion_option):
-    (c_key,) = (i for i in bead_set if i[0] == "c")
-    (t_key_1,) = (i for i in bead_set if i[0] == "a")
-    (t_key_2,) = (i for i in bead_set if i[0] == "b")
-    custom_torsion_set = {
-        (
-            t_key_2,
-            t_key_1,
-            c_key,
-            t_key_1,
-            t_key_2,
-        ): custom_torsion_option,
-    }
-    return custom_torsion_set
+def test4(beads, calculation_output, figure_output):
+
+    bead = beads["c0000"]
+    linear_bb = stk.BuildingBlock(
+        smiles=(
+            f"[{bead.element_string}][{bead.element_string}]"
+            f"[{bead.element_string}][{bead.element_string}]"
+        ),
+        position_matrix=[[0, 2, 0], [0, 0, 0], [2, 0, 0], [2, 0, 0]],
+    )
+
+    coords = points_in_circum(r=2, n=20)
+    xys = []
+    for i, coord in enumerate(coords):
+        name = f"l4_{i}"
+        print(coord)
+        new_posmat = linear_bb.get_position_matrix()
+        new_posmat[3] = np.array([2, coord[0], coord[1]])
+        new_bb = linear_bb.with_position_matrix(new_posmat)
+        new_bb.write(str(calculation_output / f"{name}.mol"))
+        logging.info(f"evaluating {name}")
+        opt = CGOMMOptimizer(
+            fileprefix=f"{name}_om1",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=True,
+            torsions=True,
+            vdw=False,
+        )
+        energy = opt.calculate_energy(new_bb)
+        pos_mat = new_bb.get_position_matrix()
+        torsion = get_dihedral(
+            pt1=pos_mat[0],
+            pt2=pos_mat[1],
+            pt3=pos_mat[2],
+            pt4=pos_mat[3],
+        )
+        xys.append(
+            (
+                torsion,
+                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
+            )
+        )
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_title(
+        "n: 1, k=-5 [kJ/mol], phi0=0 [deg]",
+        fontsize=16.0,
+    )
+
+    def fun(x, k, theta0, n):
+        return k * (1 + np.cos(n * x - theta0))
+
+    torsions = [i[0] for i in xys]
+    x = np.linspace(min(torsions), max(torsions), 100)
+    ax.plot(
+        x,
+        fun(np.radians(x), -5, 0, 1),
+        c="r",
+        lw=2,
+        label="analytical",
+    )
+
+    ax.scatter(
+        [i[0] for i in xys],
+        [i[1] for i in xys],
+        c="skyblue",
+        s=120,
+        edgecolor="k",
+        alpha=1.0,
+        label="numerical",
+    )
+    ax.axhline(y=0.0, c="k", lw=2, linestyle="--")
+    ax.axvline(x=0.0, c="k", lw=2)
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("torsion [theta]", fontsize=16)
+    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
+    ax.legend(fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "l4.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def test5(beads, calculation_output, figure_output):
+
+    bead = beads["c0000"]
+    linear_bb = stk.BuildingBlock(
+        smiles=f"[{bead.element_string}][{bead.element_string}]",
+        position_matrix=[[0, 0, 0], [1, 0, 0]],
+    )
+
+    rmin = bead.sigma * (2 ** (1 / 6))
+    rvdw = rmin / 2
+    print(rmin, rvdw)
+    coords = np.linspace(rvdw + 0.8, 15, 50)
+    xys = []
+    for i, coord in enumerate(coords):
+        name = f"l5_{i}"
+        new_posmat = linear_bb.get_position_matrix() * coord
+        new_bb = linear_bb.with_position_matrix(new_posmat)
+        new_bb.write(str(calculation_output / f"{name}.mol"))
+        logging.info(f"evaluating {name}")
+        opt = CGOMMOptimizer(
+            fileprefix=f"{name}_om1",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=False,
+            angles=False,
+            torsions=False,
+            vdw=True,
+        )
+        energy = opt.calculate_energy(new_bb)
+        distance = np.linalg.norm(new_posmat[1] - new_posmat[0])
+        xys.append(
+            (
+                distance,
+                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
+            )
+        )
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.set_title(
+        f"{bead.sigma} A, epsilon: {bead.bond_k} kJ/mol",
+        fontsize=16.0,
+    )
+
+    def fun(x, epsilon1, sigma1, epsilon2, sigma2):
+        return (
+            np.sqrt(epsilon1 * epsilon2)
+            * ((sigma1 + sigma2) / (2 * x)) ** 12
+        )
+
+    distances = [i[0] for i in xys]
+    x = np.linspace(min(distances), max(distances), 100)
+    ax.plot(
+        x,
+        fun(
+            x / 10,
+            bead.bond_k,
+            bead.sigma / 10,
+            bead.bond_k,
+            bead.sigma / 10,
+        ),
+        c="r",
+        lw=2,
+        label="analytical",
+    )
+
+    ax.scatter(
+        [i[0] for i in xys],
+        [i[1] for i in xys],
+        c="skyblue",
+        s=120,
+        edgecolor="k",
+        alpha=1.0,
+        label="numerical",
+    )
+    ax.axhline(y=0, c="k", lw=2, linestyle="--")
+    ax.axvline(x=rmin, c="k", lw=2, linestyle="--")
+    ax.axvline(x=rvdw, lw=2, linestyle="--", c="r")
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("distance [A]", fontsize=16)
+    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
+    ax.legend(fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "l5.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 def main():
@@ -215,193 +519,15 @@ def main():
     full_bead_library = list(beads.values())
     bead_library_check(full_bead_library)
 
+    test1(beads, calculation_output, figure_output)
+    test2(beads, calculation_output, figure_output)
+    test3(beads, calculation_output, figure_output)
+    test4(beads, calculation_output, figure_output)
+    test5(beads, calculation_output, figure_output)
+
     raise SystemExit(
-        "you need to think about these tests properly - currently the distances and x axis are wrong"
+        "want to use this to define the flexibility widths?"
     )
-
-    bead = beads["c0000"]
-    linear_bb = stk.BuildingBlock(
-        smiles=f"[{bead.element_string}][{bead.element_string}]",
-        position_matrix=[[0, 0, 0], [1, 0, 0]],
-    )
-
-    coords = np.linspace(0, 5, 20)
-    print(coords)
-    xys = []
-    for i, coord in enumerate(coords):
-        name = f"l1_{i}"
-        new_posmat = linear_bb.get_position_matrix() * coord
-        new_bb = linear_bb.with_position_matrix(new_posmat)
-        new_bb.write(str(calculation_output / f"{name}.mol"))
-        logging.info(f"evaluating {name}")
-        opt = CGOMMOptimizer(
-            fileprefix=f"{name}_om1",
-            output_dir=calculation_output,
-            param_pool=beads,
-            custom_torsion_set=None,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=False,
-        )
-        energy = opt.calculate_energy(new_bb)
-        print(name, coord, energy)
-        xys.append(
-            (
-                coord,
-                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
-            )
-        )
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(
-        [i[0] for i in xys],
-        [i[1] for i in xys],
-        c="k",
-        alpha=1.0,
-    )
-    ax.axhline(y=0, c="k", lw=2, linestyle="--")
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("distance [A]", fontsize=16)
-    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "l1.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-    linear_bb = stk.BuildingBlock(
-        smiles=(
-            f"[{bead.element_string}][{bead.element_string}]"
-            f"[{bead.element_string}]"
-        ),
-        position_matrix=[[0, 0, 0], [2, 0, 0], [3, 0, 0]],
-    )
-
-    coords = np.linspace(0, 5, 20)
-    print(coords)
-    xys = []
-    for i, coord in enumerate(coords):
-        name = f"l2_{i}"
-        new_posmat = linear_bb.get_position_matrix()
-        new_posmat[2] = new_posmat[2] * coord
-        new_bb = linear_bb.with_position_matrix(new_posmat)
-        new_bb.write(str(calculation_output / f"{name}.mol"))
-        logging.info(f"evaluating {name}")
-        opt = CGOMMOptimizer(
-            fileprefix=f"{name}_om1",
-            output_dir=calculation_output,
-            param_pool=beads,
-            custom_torsion_set=None,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=False,
-        )
-        energy = opt.calculate_energy(new_bb)
-        print(name, coord, energy)
-        xys.append(
-            (
-                coord,
-                energy.value_in_unit(openmm.unit.kilojoules_per_mole),
-            )
-        )
-
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.plot(
-        [i[0] for i in xys],
-        [i[1] for i in xys],
-        c="k",
-        alpha=1.0,
-    )
-    ax.axhline(y=0, c="k", lw=2, linestyle="--")
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("distance [A]", fontsize=16)
-    ax.set_ylabel("energy [kJmol-1]", fontsize=16)
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "l2.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-    raise SystemExit()
-
-    custom_torsion_options = {
-        "ton": (0, 5),
-        "toff": None,
-    }
-
-    for popn in populations:
-        logging.info(f"building {popn} population")
-        popn_iterator = itertools.product(
-            populations[popn]["t"],
-            populations[popn]["c2"],
-            populations[popn]["cl"],
-        )
-        count = 0
-        for iteration in popn_iterator:
-            for custom_torsion in custom_torsion_options:
-                tname = custom_torsion
-                cage_topo_str, bb2_str, bbl_str = iteration
-                name = f"{cage_topo_str}_{bbl_str}_{bb2_str}_{tname}"
-                bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
-                bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
-
-                bead_set = bb2_bead_set.copy()
-                bead_set.update(bbl_bead_set)
-                (ba_bead,) = (
-                    bb2_bead_set[i] for i in bb2_bead_set if "a" in i
-                )
-                bite_angle = (ba_bead.angle_centered - 90) * 2
-                if custom_torsion_options[custom_torsion] is None:
-                    custom_torsion_set = None
-                elif bite_angle == 180:
-                    # There are no torsions for bite angle == 180.
-                    custom_torsion_set = None
-                else:
-                    tors_option = custom_torsion_options[custom_torsion]
-                    custom_torsion_set = target_torsions(
-                        bead_set=bead_set,
-                        custom_torsion_option=tors_option,
-                    )
-
-                cage = stk.ConstructedMolecule(
-                    topology_graph=populations[popn]["t"][
-                        cage_topo_str
-                    ](
-                        building_blocks=(bb2, bbl),
-                    ),
-                )
-                save_idealised_topology(
-                    cage=cage,
-                    cage_topo_str=cage_topo_str,
-                    struct_output=struct_output,
-                )
-
-                cage = optimise_cage(
-                    molecule=cage,
-                    name=name,
-                    output_dir=calculation_output,
-                    bead_set=bead_set,
-                    custom_torsion_set=custom_torsion_set,
-                )
-
-                if cage is not None:
-                    cage.write(str(struct_output / f"{name}_optc.mol"))
-
-                analyse_cage(
-                    molecule=cage,
-                    name=name,
-                    output_dir=calculation_output,
-                    bead_set=bead_set,
-                )
-                count += 1
-
-        logging.info(f"{count} {popn} cages built.")
 
 
 if __name__ == "__main__":

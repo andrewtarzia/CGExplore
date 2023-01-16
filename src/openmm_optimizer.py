@@ -10,9 +10,11 @@ Author: Andrew Tarzia
 """
 
 import logging
+import numpy as np
 from openmm import openmm, app
 
 from optimizer import CGOptimizer, lorentz_berthelot_sigma_mixing
+from utilities import get_all_angles, get_all_torsions
 
 
 class MDEmptyTrajcetoryError(Exception):
@@ -43,9 +45,8 @@ class CGOMMOptimizer(CGOptimizer):
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
 
-    def _add_forces(self, system):
-        logging.info("no forces add other than what is in FF xml.")
-
+    def _add_forces(self, system, molecule):
+        logging.info("might need this for dihedrals.")
         return system
 
     def _group_forces(self, system):
@@ -117,7 +118,7 @@ class CGOMMOptimizer(CGOptimizer):
                 )
                 yield (
                     cgbead1.bead_type,
-                    cgbead1.bead_type,
+                    cgbead2.bead_type,
                     bond_k,
                     bond_r,
                 )
@@ -125,6 +126,112 @@ class CGOMMOptimizer(CGOptimizer):
                 logging.info(
                     f"OPT: {(name1, name2)} bond not assigned."
                 )
+                continue
+
+    def _yield_angles(self, mol):
+        logging.info("merge")
+        if self._angles is False:
+            return ""
+
+        angles = get_all_angles(mol)
+
+        saved_angles = {}
+        for angle in angles:
+            outer_atom1, centre_atom, outer_atom2 = angle
+            outer_name1 = (
+                f"{outer_atom1.__class__.__name__}"
+                f"{outer_atom1.get_id()+1}"
+            )
+            centre_name = (
+                f"{centre_atom.__class__.__name__}"
+                f"{centre_atom.get_id()+1}"
+            )
+            outer_name2 = (
+                f"{outer_atom2.__class__.__name__}"
+                f"{outer_atom2.get_id()+1}"
+            )
+            outer_estring1 = outer_atom1.__class__.__name__
+            centre_estring = centre_atom.__class__.__name__
+            outer_estring2 = outer_atom2.__class__.__name__
+
+            try:
+                outer_cgbead1 = self._get_cgbead_from_element(
+                    estring=outer_estring1,
+                )
+                centre_cgbead = self._get_cgbead_from_element(
+                    estring=centre_estring,
+                )
+                outer_cgbead2 = self._get_cgbead_from_element(
+                    estring=outer_estring2,
+                )
+
+                if centre_cgbead.coordination == 4:
+                    raise NotImplementedError("fix")
+                    if centre_name not in saved_angles:
+                        saved_angles[centre_name] = []
+                    saved_angles[centre_name].append(
+                        (
+                            centre_cgbead.angle_centered,
+                            centre_cgbead.angle_k,
+                            outer_atom1.bead_type,
+                            outer_atom2.bead_type,
+                            centre_atom.bead_type,
+                        )
+                    )
+                    continue
+
+                angle_theta = centre_cgbead.angle_centered
+                angle_k = centre_cgbead.angle_k
+                yield (
+                    centre_cgbead.bead_type,
+                    outer_cgbead1.bead_type,
+                    outer_cgbead2.bead_type,
+                    angle_k,
+                    angle_theta,
+                )
+
+            except KeyError:
+                logging.info(
+                    f"OPT: {(outer_name1, centre_name, outer_name2)} "
+                    f"angle not assigned (centered on {centre_name})."
+                )
+                continue
+
+    def _yield_torsions(self, mol):
+        logging.info("merge")
+        if self._torsions is False:
+            return ""
+        logging.info("OPT: not setting torsion values yet.")
+        phi0 = 0
+        torsion_k = -5
+        torsion_n = 1
+
+        torsions = get_all_torsions(mol)
+        for torsion in torsions:
+            atom1, atom2, atom3, atom4 = torsion
+
+            atom1_estring = atom1.__class__.__name__
+            atom2_estring = atom2.__class__.__name__
+            atom3_estring = atom3.__class__.__name__
+            atom4_estring = atom4.__class__.__name__
+
+            try:
+                cgbead1 = self._get_cgbead_from_element(atom1_estring)
+                cgbead2 = self._get_cgbead_from_element(atom2_estring)
+                cgbead3 = self._get_cgbead_from_element(atom3_estring)
+                cgbead4 = self._get_cgbead_from_element(atom4_estring)
+
+                yield (
+                    cgbead1.bead_type,
+                    cgbead2.bead_type,
+                    cgbead3.bead_type,
+                    cgbead4.bead_type,
+                    torsion_k,
+                    torsion_n,
+                    phi0,
+                )
+
+            except KeyError:
                 continue
 
     def _write_ff_file(self, molecule):
@@ -136,23 +243,31 @@ class CGOMMOptimizer(CGOptimizer):
         re_str = " <Residues>\n"
         re_str += '  <Residue name="ALL">\n'
 
-        done_strings = set()
+        present_beads = {}
         for atom in molecule.get_atoms():
             aestring = atom.__class__.__name__
             aid = atom.get_id()
             acgbead = self._get_cgbead_from_element(aestring)
-            aclass = acgbead.bead_type
-            if aestring not in done_strings:
-                done_strings.add(aestring)
+            atype = acgbead.bead_type
+            if atype not in present_beads:
+                present_beads[atype] = acgbead
                 at_str += (
-                    f'  <Type name="{aclass}" '
-                    f'class="{aclass}" element="{aestring}" '
+                    f'  <Type name="{atype}" '
+                    f'class="{atype}" element="{aestring}" '
                     f'mass="{self._mass}"/>\n'
                 )
 
-            re_str += f'   <Atom name="{aid}" type="{aclass}"/>\n'
+            logging.info(
+                "if you use BBs as templates, not whole mol, then you "
+                "need to change the ID"
+            )
+            re_str += f'   <Atom name="{aid}" type="{atype}"/>\n'
 
         for bond in molecule.get_bonds():
+            logging.info(
+                "if you use BBs as templates, not whole mol, then you "
+                "need external bonds and to change the ID"
+            )
             a1id = bond.get_atom1().get_id()
             a2id = bond.get_atom2().get_id()
 
@@ -166,30 +281,75 @@ class CGOMMOptimizer(CGOptimizer):
 
         hb_str = " <HarmonicBondForce>\n"
         for bond_info in self._yield_bonds(molecule):
-            class1, class2, bond_k, bond_r = bond_info
+            type1, type2, bond_k, bond_r = bond_info
             hb_str += (
-                f'  <Bond type1="{class1}" type2="{class2}" '
+                f'  <Bond type1="{type1}" type2="{type2}" '
                 f'length="{bond_r/10}" k="{bond_k}"/>\n'
             )
         hb_str += " </HarmonicBondForce>\n\n"
 
         ha_str = " <HarmonicAngleForce>\n"
+        for angle_info in self._yield_angles(molecule):
+            (
+                centre_type,
+                outer1_type,
+                outer2_type,
+                angle_k,
+                angle_theta,
+            ) = angle_info
+            angle_theta_deg = np.radians(angle_theta)
+            ha_str += (
+                f'  <Angle type1="{outer1_type}" type2="{centre_type}" '
+                f' type3="{outer2_type}" angle="{angle_theta_deg}" '
+                f'k="{angle_k}"/>\n'
+            )
         ha_str += " </HarmonicAngleForce>\n\n"
 
         pt_str = " <PeriodicTorsionForce>\n"
+        for torsion_info in self._yield_torsions(molecule):
+            (
+                type1,
+                type2,
+                type3,
+                type4,
+                torsion_k,
+                torsion_n,
+                phi0,
+            ) = torsion_info
+            pt_str += (
+                f'  <Proper class1="{type1}" class2="{type2}" '
+                f'class3="{type3}" class4="{type4}" '
+                f'periodicity1="{torsion_n}" phase1="{phi0}" '
+                f'k1="{torsion_k}"/>\n'
+            )
+
         pt_str += " </PeriodicTorsionForce>\n\n"
 
+        nb_eqn = "sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12"
         nb_str = (
-            ' <NonbondedForce coulomb14scale="0.0" lj14scale="0.5">\n'
+            f' <CustomNonbondedForce energy="{nb_eqn}" '
+            'bondCutoff="0">\n'
         )
-        nb_str += " </NonbondedForce>\n\n"
+        nb_str += '  <PerParticleParameter name="sigma"/>\n'
+        nb_str += '  <PerParticleParameter name="epsilon"/>\n'
+        for atype in present_beads:
+            acgbead = present_beads[atype]
+            nb_str += (
+                f'  <Atom type="{atype}" sigma="{acgbead.sigma/10}" '
+                f'epsilon="{acgbead.bond_k}"/>\n'
+            )
+        nb_str += " </CustomNonbondedForce>\n\n"
 
         ff_str += at_str
         ff_str += re_str
-        ff_str += hb_str
-        # ff_str += ha_str
-        # ff_str += pt_str
-        # ff_str += nb_str
+        if self._bonds:
+            ff_str += hb_str
+        if self._angles:
+            ff_str += ha_str
+        if self._torsions:
+            ff_str += pt_str
+        if self._vdw:
+            ff_str += nb_str
         ff_str += "</ForceField>\n"
 
         with open(self._forcefield_path, "w") as f:
@@ -246,11 +406,6 @@ class CGOMMOptimizer(CGOptimizer):
                 atom2=atoms_added[a2_id],
             )
 
-        for atom in topology.atoms():
-            print(atom)
-        for bond in topology.bonds():
-            print(bond)
-
         return topology
 
     def _setup_simulation(self, molecule):
@@ -263,7 +418,7 @@ class CGOMMOptimizer(CGOptimizer):
         # Create system.
         topology = self._stk_to_topology(molecule)
         system = forcefield.createSystem(topology)
-        system = self._add_forces(system)
+        system = self._add_forces(system, molecule)
 
         # Default integrator.
         # raise SystemExit("better integrator?")
