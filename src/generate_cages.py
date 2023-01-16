@@ -62,8 +62,8 @@ def binder_beads():
         element_string="Pb",
         sigmas=(1,),
         angles=(180,),
-        bond_ks=(10,),
-        angle_ks=(20,),
+        bond_ks=(5e5,),
+        angle_ks=(5e2,),
         coordination=2,
     )
 
@@ -74,8 +74,8 @@ def beads_3c():
         element_string="C",
         sigmas=(2, 5, 10),
         angles=(60, 90, 109.5, 120),
-        bond_ks=(10,),
-        angle_ks=(20,),
+        bond_ks=(5e5,),
+        angle_ks=(5e2,),
         coordination=3,
     )
 
@@ -86,8 +86,8 @@ def beads_4c():
         element_string="Pd",
         sigmas=(2, 5, 10),
         angles=(50, 70, 90),
-        bond_ks=(10,),
-        angle_ks=(20,),
+        bond_ks=(5e5,),
+        angle_ks=(5e2,),
         coordination=4,
     )
 
@@ -99,7 +99,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
-        logging.info(f"optimising {name}")
+        logging.info(f"optimising {name}, no max_iterations")
         opt = CGOMMOptimizer(
             fileprefix=name,
             output_dir=output_dir,
@@ -109,6 +109,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
             angles=True,
             torsions=False,
             vdw=False,
+            # max_iterations=1000,
         )
         molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
@@ -446,7 +447,7 @@ def main():
         calculation_output=calculation_output,
         ligand_output=ligand_output,
     )
-    raise SystemExit()
+
     c3_blocks = build_building_block(
         topology=ThreeC1Arm,
         option1_lib=beads_3c_lib,
@@ -469,7 +470,7 @@ def main():
         f"{len(c3_blocks)} 3-C and "
         f"{len(c4_blocks)} 4-C building blocks."
     )
-
+    raise SystemExit()
     populations = {
         "3 + 2": {
             "t": cage_3p2_topologies,
@@ -553,6 +554,9 @@ def main():
                     bead_set=bead_set,
                 )
                 count += 1
+                raise SystemExit(
+                    "set force values for bonds, angles, vdw, torsions to be strict"
+                )
 
         logging.info(f"{count} {popn} cages built.")
 
