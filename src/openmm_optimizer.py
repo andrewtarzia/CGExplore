@@ -7,14 +7,15 @@ Module for CG Gulp optimizer.
 
 Author: Andrew Tarzia
 
+Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
+
 """
 
 import logging
 import numpy as np
 from openmm import openmm, app
 
-from optimizer import CGOptimizer, lorentz_berthelot_sigma_mixing
-from utilities import get_all_angles, get_all_torsions
+from optimizer import CGOptimizer
 
 
 class MDEmptyTrajcetoryError(Exception):
@@ -46,7 +47,7 @@ class CGOMMOptimizer(CGOptimizer):
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
 
     def _add_forces(self, system, molecule):
-        logging.info("might need this for dihedrals.")
+        logging.info("might need this for custom dihedrals.")
         return system
 
     def _group_forces(self, system):
@@ -69,8 +70,6 @@ class CGOMMOptimizer(CGOptimizer):
         forcegroups = {}
         for i in range(system.getNumForces()):
             force = system.getForce(i)
-            print("force", force)
-
             force.setForceGroup(i)
             forcegroups[force] = i
         return forcegroups
@@ -91,148 +90,171 @@ class CGOMMOptimizer(CGOptimizer):
             ).getPotentialEnergy()
         return energies
 
-    def _yield_bonds(self, mol):
-        logging.info("merge")
-        if self._bonds is False:
-            return ""
+    def _get_bond_string(self, molecule):
+        hb_str = " <HarmonicBondForce>\n"
 
-        bonds = list(mol.get_bonds())
-        for bond in bonds:
-            atom1 = bond.get_atom1()
-            name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
-            atom2 = bond.get_atom2()
-            name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
-            estring1 = atom1.__class__.__name__
-            estring2 = atom2.__class__.__name__
+        done_items = set()
+        for bond_info in self._yield_bonds(molecule):
+            name1, name2, cgbead1, cgbead2, bond_k, bond_r = bond_info
+            type1 = cgbead1.bead_type
+            type2 = cgbead2.bead_type
+            if (type1, type2) in done_items:
+                continue
+            hb_str += (
+                f'  <Bond type1="{type1}" type2="{type2}" '
+                f'length="{bond_r/10}" k="{bond_k}"/>\n'
+            )
+            done_items.add((type1, type2))
 
-            try:
-                cgbead1 = self._get_cgbead_from_element(estring1)
-                cgbead2 = self._get_cgbead_from_element(estring2)
-                bond_r = lorentz_berthelot_sigma_mixing(
-                    sigma1=cgbead1.sigma,
-                    sigma2=cgbead2.sigma,
-                )
-                bond_k = lorentz_berthelot_sigma_mixing(
-                    sigma1=cgbead1.bond_k,
-                    sigma2=cgbead2.bond_k,
-                )
-                yield (
-                    cgbead1.bead_type,
-                    cgbead2.bead_type,
-                    bond_k,
-                    bond_r,
-                )
-            except KeyError:
-                logging.info(
-                    f"OPT: {(name1, name2)} bond not assigned."
-                )
+        hb_str += " </HarmonicBondForce>\n\n"
+        return hb_str
+
+    def _get_angle_string(self, molecule):
+        ha_str = " <HarmonicAngleForce>\n"
+
+        done_items = set()
+        for angle_info in self._yield_angles(molecule):
+            (
+                centre_name,
+                outer_name1,
+                outer_name2,
+                centre_cgbead,
+                outer_cgbead1,
+                outer_cgbead2,
+                angle_k,
+                angle_theta,
+            ) = angle_info
+
+            outer1_type = outer_cgbead1.bead_type
+            centre_type = centre_cgbead.bead_type
+            outer2_type = outer_cgbead2.bead_type
+            if (outer1_type, centre_type, outer2_type) in done_items:
                 continue
 
-    def _yield_angles(self, mol):
-        logging.info("merge")
-        if self._angles is False:
+            angle_theta_rad = np.radians(angle_theta)
+            ha_str += (
+                f'  <Angle type1="{outer1_type}" type2="{centre_type}" '
+                f' type3="{outer2_type}" angle="{angle_theta_rad}" '
+                f'k="{angle_k}"/>\n'
+            )
+            done_items.add((outer1_type, centre_type, outer2_type))
+
+        ha_str += " </HarmonicAngleForce>\n\n"
+        return ha_str
+
+    def _yield_custom_torsions(self, molecule, chain_length=5):
+        logging.info(
+            "with custom torsions for omm, I think you need to fake a "
+            "bond in the template. Or just add a force using the "
+            "AddForce separate?"
+        )
+        raise SystemExit()
+        if self._custom_torsion_set is None:
             return ""
 
-        angles = get_all_angles(mol)
-
-        saved_angles = {}
-        for angle in angles:
-            outer_atom1, centre_atom, outer_atom2 = angle
-            outer_name1 = (
-                f"{outer_atom1.__class__.__name__}"
-                f"{outer_atom1.get_id()+1}"
-            )
-            centre_name = (
-                f"{centre_atom.__class__.__name__}"
-                f"{centre_atom.get_id()+1}"
-            )
-            outer_name2 = (
-                f"{outer_atom2.__class__.__name__}"
-                f"{outer_atom2.get_id()+1}"
-            )
-            outer_estring1 = outer_atom1.__class__.__name__
-            centre_estring = centre_atom.__class__.__name__
-            outer_estring2 = outer_atom2.__class__.__name__
-
-            try:
-                outer_cgbead1 = self._get_cgbead_from_element(
-                    estring=outer_estring1,
-                )
-                centre_cgbead = self._get_cgbead_from_element(
-                    estring=centre_estring,
-                )
-                outer_cgbead2 = self._get_cgbead_from_element(
-                    estring=outer_estring2,
-                )
-
-                if centre_cgbead.coordination == 4:
-                    raise NotImplementedError("fix")
-                    if centre_name not in saved_angles:
-                        saved_angles[centre_name] = []
-                    saved_angles[centre_name].append(
-                        (
-                            centre_cgbead.angle_centered,
-                            centre_cgbead.angle_k,
-                            outer_atom1.bead_type,
-                            outer_atom2.bead_type,
-                            centre_atom.bead_type,
-                        )
-                    )
-                    continue
-
-                angle_theta = centre_cgbead.angle_centered
-                angle_k = centre_cgbead.angle_k
-                yield (
-                    centre_cgbead.bead_type,
-                    outer_cgbead1.bead_type,
-                    outer_cgbead2.bead_type,
-                    angle_k,
-                    angle_theta,
-                )
-
-            except KeyError:
-                logging.info(
-                    f"OPT: {(outer_name1, centre_name, outer_name2)} "
-                    f"angle not assigned (centered on {centre_name})."
-                )
-                continue
-
-    def _yield_torsions(self, mol):
-        logging.info("merge")
-        if self._torsions is False:
-            return ""
-        logging.info("OPT: not setting torsion values yet.")
-        phi0 = 0
-        torsion_k = -5
-        torsion_n = 1
-
-        torsions = get_all_torsions(mol)
+        torsions = self._get_new_torsions(molecule, chain_length)
         for torsion in torsions:
-            atom1, atom2, atom3, atom4 = torsion
+            atom1, atom2, atom3, atom4, atom5 = torsion
+            names = list(
+                f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
+            )
 
-            atom1_estring = atom1.__class__.__name__
-            atom2_estring = atom2.__class__.__name__
-            atom3_estring = atom3.__class__.__name__
-            atom4_estring = atom4.__class__.__name__
-
-            try:
-                cgbead1 = self._get_cgbead_from_element(atom1_estring)
-                cgbead2 = self._get_cgbead_from_element(atom2_estring)
-                cgbead3 = self._get_cgbead_from_element(atom3_estring)
-                cgbead4 = self._get_cgbead_from_element(atom4_estring)
-
+            atom_estrings = list(i.__class__.__name__ for i in torsion)
+            cgbeads = list(
+                self._get_cgbead_from_element(i) for i in atom_estrings
+            )
+            cgbead_types = tuple(i.bead_type for i in cgbeads)
+            if cgbead_types in self._custom_torsion_set:
+                phi0 = self._custom_torsion_set[cgbead_types][0]
+                torsion_k = self._custom_torsion_set[cgbead_types][1]
+                torsion_n = -1
                 yield (
-                    cgbead1.bead_type,
-                    cgbead2.bead_type,
-                    cgbead3.bead_type,
-                    cgbead4.bead_type,
+                    names[0],
+                    names[1],
+                    names[3],
+                    names[4],
                     torsion_k,
                     torsion_n,
                     phi0,
                 )
+            continue
 
-            except KeyError:
+    def _get_torsion_string(self, molecule):
+        pt_str = " <PeriodicTorsionForce>\n"
+
+        done_items = set()
+        for torsion_info in self._yield_torsions(molecule):
+            (
+                name1,
+                name2,
+                name3,
+                name4,
+                cgbead1,
+                cgbead2,
+                cgbead3,
+                cgbead4,
+                torsion_k,
+                torsion_n,
+                phi0,
+            ) = torsion_info
+
+            type1 = cgbead1.bead_type
+            type2 = cgbead2.bead_type
+            type3 = cgbead3.bead_type
+            type4 = cgbead4.bead_type
+            if (type1, type2, type3, type4) in done_items:
                 continue
+
+            pt_str += (
+                f'  <Proper class1="{type1}" class2="{type2}" '
+                f'class3="{type3}" class4="{type4}" '
+                f'periodicity1="{torsion_n}" phase1="{phi0}" '
+                f'k1="{torsion_k}"/>\n'
+            )
+            done_items.add((type1, type2, type3, type4))
+
+        for torsion_info in self._yield_custom_torsions(molecule):
+            (
+                name1,
+                name2,
+                name3,
+                name4,
+                type1,
+                type2,
+                type3,
+                type4,
+                torsion_k,
+                torsion_n,
+                phi0,
+            ) = torsion_info
+            pt_str += (
+                f'  <Proper class1="{type1}" class2="{type2}" '
+                f'class3="{type3}" class4="{type4}" '
+                f'periodicity1="{torsion_n}" phase1="{phi0}" '
+                f'k1="{torsion_k}"/>\n'
+            )
+
+        pt_str += " </PeriodicTorsionForce>\n\n"
+        return pt_str
+
+    def _get_vdw_string(self, molecule, present_beads):
+        nb_eqn = "sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12"
+        nb_str = (
+            f' <CustomNonbondedForce energy="{nb_eqn}" '
+            'bondCutoff="0">\n'
+        )
+        nb_str += '  <PerParticleParameter name="sigma"/>\n'
+        nb_str += '  <PerParticleParameter name="epsilon"/>\n'
+        for atype in present_beads:
+            acgbead = present_beads[atype]
+            nb_str += (
+                f'  <Atom type="{atype}" sigma="{acgbead.sigma/10}" '
+                f'epsilon="{acgbead.bond_k}"/>\n'
+            )
+        nb_str += " </CustomNonbondedForce>\n\n"
+
+        logging.info("can add attractions in the future.")
+        return nb_str
 
     def _write_ff_file(self, molecule):
         ff_str = "<ForceField>\n\n"
@@ -279,77 +301,16 @@ class CGOMMOptimizer(CGOptimizer):
         re_str += "  </Residue>\n"
         re_str += " </Residues>\n\n"
 
-        hb_str = " <HarmonicBondForce>\n"
-        for bond_info in self._yield_bonds(molecule):
-            type1, type2, bond_k, bond_r = bond_info
-            hb_str += (
-                f'  <Bond type1="{type1}" type2="{type2}" '
-                f'length="{bond_r/10}" k="{bond_k}"/>\n'
-            )
-        hb_str += " </HarmonicBondForce>\n\n"
-
-        ha_str = " <HarmonicAngleForce>\n"
-        for angle_info in self._yield_angles(molecule):
-            (
-                centre_type,
-                outer1_type,
-                outer2_type,
-                angle_k,
-                angle_theta,
-            ) = angle_info
-            angle_theta_deg = np.radians(angle_theta)
-            ha_str += (
-                f'  <Angle type1="{outer1_type}" type2="{centre_type}" '
-                f' type3="{outer2_type}" angle="{angle_theta_deg}" '
-                f'k="{angle_k}"/>\n'
-            )
-        ha_str += " </HarmonicAngleForce>\n\n"
-
-        pt_str = " <PeriodicTorsionForce>\n"
-        for torsion_info in self._yield_torsions(molecule):
-            (
-                type1,
-                type2,
-                type3,
-                type4,
-                torsion_k,
-                torsion_n,
-                phi0,
-            ) = torsion_info
-            pt_str += (
-                f'  <Proper class1="{type1}" class2="{type2}" '
-                f'class3="{type3}" class4="{type4}" '
-                f'periodicity1="{torsion_n}" phase1="{phi0}" '
-                f'k1="{torsion_k}"/>\n'
-            )
-
-        pt_str += " </PeriodicTorsionForce>\n\n"
-
-        nb_eqn = "sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12"
-        nb_str = (
-            f' <CustomNonbondedForce energy="{nb_eqn}" '
-            'bondCutoff="0">\n'
-        )
-        nb_str += '  <PerParticleParameter name="sigma"/>\n'
-        nb_str += '  <PerParticleParameter name="epsilon"/>\n'
-        for atype in present_beads:
-            acgbead = present_beads[atype]
-            nb_str += (
-                f'  <Atom type="{atype}" sigma="{acgbead.sigma/10}" '
-                f'epsilon="{acgbead.bond_k}"/>\n'
-            )
-        nb_str += " </CustomNonbondedForce>\n\n"
-
         ff_str += at_str
         ff_str += re_str
         if self._bonds:
-            ff_str += hb_str
+            ff_str += self._get_bond_string(molecule)
         if self._angles:
-            ff_str += ha_str
+            ff_str += self._get_angle_string(molecule)
         if self._torsions:
-            ff_str += pt_str
+            ff_str += self._get_torsion_string(molecule)
         if self._vdw:
-            ff_str += nb_str
+            ff_str += self._get_vdw_string(molecule, present_beads)
         ff_str += "</ForceField>\n"
 
         with open(self._forcefield_path, "w") as f:
@@ -365,41 +326,25 @@ class CGOMMOptimizer(CGOptimizer):
         )
 
         atoms_added = {}
+        for atom in molecule.get_atoms():
+            a_id = atom.get_id()
+            a_estring = atom.__class__.__name__
+            a_element = app.element.Element.getByAtomicNumber(
+                atom.get_atomic_number()
+            )
+            a_cgbead = self._get_cgbead_from_element(a_estring)
+
+            omm_atom = topology.addAtom(
+                name=a_cgbead.bead_type,
+                element=a_element,
+                residue=residue,
+                id=str(a_id),
+            )
+            atoms_added[a_id] = omm_atom
+
         for bond in molecule.get_bonds():
-            atom1 = bond.get_atom1()
-            a1_id = atom1.get_id()
-            a1_estring = atom1.__class__.__name__
-            a1_element = app.element.Element.getByAtomicNumber(
-                atom1.get_atomic_number()
-            )
-            a1_cgbead = self._get_cgbead_from_element(a1_estring)
-
-            atom2 = bond.get_atom2()
-            a2_id = atom2.get_id()
-            a2_estring = atom2.__class__.__name__
-            a2_element = app.element.Element.getByAtomicNumber(
-                atom2.get_atomic_number()
-            )
-
-            a2_cgbead = self._get_cgbead_from_element(a2_estring)
-
-            if a1_id not in atoms_added:
-                omm_atom1 = topology.addAtom(
-                    name=a1_cgbead.bead_type,
-                    element=a1_element,
-                    residue=residue,
-                    id=str(a1_id),
-                )
-                atoms_added[a1_id] = omm_atom1
-
-            if a2_id not in atoms_added:
-                omm_atom2 = topology.addAtom(
-                    name=a2_cgbead.bead_type,
-                    element=a2_element,
-                    residue=residue,
-                    id=str(a2_id),
-                )
-                atoms_added[a2_id] = omm_atom2
+            a1_id = bond.get_atom1().get_id()
+            a2_id = bond.get_atom2().get_id()
 
             topology.addBond(
                 atom1=atoms_added[a1_id],
@@ -476,19 +421,15 @@ class CGOMMOptimizer(CGOptimizer):
 
     def _update_stk_molecule(self, molecule, state):
         positions = state.getPositions(asNumpy=True)
-        return molecule.with_position_matrix(positions * 10)
+        molecule = molecule.with_position_matrix(positions * 10)
+        return molecule
 
     def calculate_energy(self, molecule):
         simulation, system = self._setup_simulation(molecule)
         return self._get_energy(simulation, system)
 
     def optimize(self, molecule):
-
-        molecule.write("t1.mol")
         simulation, system = self._setup_simulation(molecule)
         opt_state = self._minimize_energy(simulation, system)
         molecule = self._update_stk_molecule(molecule, opt_state)
-        molecule.write("t2.mol")
-
-        raise SystemExit("better to have sep dir or not?")
         return molecule
