@@ -17,6 +17,24 @@ from scipy.spatial.distance import euclidean
 import os
 
 
+def check_long_distances(molecule, name, max_distance, step):
+
+    max_present = 0
+    for bond in molecule.get_bonds():
+        distance = get_atom_distance(
+            molecule=molecule,
+            atom1_id=bond.get_atom1().get_id(),
+            atom2_id=bond.get_atom2().get_id(),
+        )
+        max_present = max((distance, max_present))
+
+    if max_present >= max_distance:
+        raise ValueError(
+            f"a max dist of {max_distance} found for {name}. "
+            f"Suggests bad optimisation at step {step}."
+        )
+
+
 def convert_pyramid_angle(outer_angle):
     """
     Some basic trig on square-pyramids
