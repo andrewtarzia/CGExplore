@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Script to generate, optimise all CG models of two-c + three-c systems.
+Script to generate and optimise all CG models.
 
 Author: Andrew Tarzia
 
@@ -13,7 +13,6 @@ import sys
 import stk
 import os
 import json
-import numpy as np
 import logging
 import itertools
 from rdkit import RDLogger
@@ -26,11 +25,8 @@ from shape import (
 from geom import GeomMeasure
 from pore import PoreMeasure
 from env_set import cages
-from utilities import (
-    check_directory,
-    check_long_distances,
-)
-from gulp_optimizer import CGGulpOptimizer, extract_gulp_optimisation
+from utilities import check_directory, check_long_distances
+from openmm_optimizer import CGOMMOptimizer
 from cage_construction.topologies import cage_topology_options
 from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
 from beads import bead_library_check, produce_bead_library
@@ -42,8 +38,8 @@ def core_2c_beads():
         element_string="Ag",
         sigmas=(2, 5, 10),
         angles=(180,),
-        bond_ks=(10,),
-        angle_ks=(20,),
+        bond_ks=(5e5,),
+        angle_ks=(5e2,),
         coordination=2,
     )
 
@@ -54,8 +50,8 @@ def arm_2c_beads():
         element_string="Ba",
         sigmas=(1,),
         angles=range(90, 181, 5),
-        bond_ks=(10,),
-        angle_ks=(20,),
+        bond_ks=(5e5,),
+        angle_ks=(5e2,),
         coordination=2,
     )
 
@@ -98,48 +94,27 @@ def beads_4c():
 
 def optimise_ligand(molecule, name, output_dir, bead_set):
 
-    opt_xyz_file = os.path.join(output_dir, f"{name}_opted.xyz")
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
 
-    # Does optimisation.
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}")
-        opt = CGGulpOptimizer(
+        opt = CGOMMOptimizer(
             fileprefix=name,
             output_dir=output_dir,
             param_pool=bead_set,
-            max_cycles=2000,
-            conjugate_gradient=False,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
             torsions=False,
             vdw=False,
         )
-        _ = opt.optimize(molecule)
-        molecule = molecule.with_structure_from_file(opt_xyz_file)
+        molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
 
     return molecule
-
-
-def deform_molecule(molecule, percent):
-    old_pos_mat = molecule.get_position_matrix()
-    centroid = molecule.get_centroid()
-
-    generator = np.random.RandomState(1000)
-
-    new_pos_mat = []
-    for pos in old_pos_mat:
-        c_v = centroid - pos
-        c_v = percent * (c_v / np.linalg.norm(c_v))
-        move = generator.choice([-1, 1]) * c_v
-        new_pos = pos - move
-        new_pos_mat.append(new_pos)
-    return molecule.with_position_matrix(np.array((new_pos_mat)))
 
 
 def check_for_failed_min(path):
@@ -434,13 +409,13 @@ def main():
     else:
         pass
 
-    struct_output = cages() / "structures"
+    struct_output = cages() / "ommstructures"
     check_directory(struct_output)
-    figure_output = cages() / "figures"
+    figure_output = cages() / "ommfigures"
     check_directory(figure_output)
-    calculation_output = cages() / "calculations"
+    calculation_output = cages() / "ommcalculations"
     check_directory(calculation_output)
-    ligand_output = cages() / "ligands"
+    ligand_output = cages() / "ommligands"
     check_directory(ligand_output)
 
     # Define list of topology functions.
@@ -471,6 +446,7 @@ def main():
         calculation_output=calculation_output,
         ligand_output=ligand_output,
     )
+    raise SystemExit()
     c3_blocks = build_building_block(
         topology=ThreeC1Arm,
         option1_lib=beads_3c_lib,
