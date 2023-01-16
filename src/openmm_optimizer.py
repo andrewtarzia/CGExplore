@@ -33,6 +33,7 @@ class CGOMMOptimizer(CGOptimizer):
         angles,
         torsions,
         vdw,
+        # max_iterations,
     ):
         super().__init__(
             fileprefix,
@@ -45,9 +46,19 @@ class CGOMMOptimizer(CGOptimizer):
         )
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
+        # self._max_iterations = max_iterations
+        self._tolerance = 1 * openmm.unit.kilojoule / openmm.unit.mole
 
     def _add_forces(self, system, molecule):
         logging.info("might need this for custom dihedrals.")
+        if self._bonds:
+            system = self._add_bonds(system, molecule)
+        if self._angles:
+            system = self._add_angles(system, molecule)
+        if self._torsions:
+            system = self._add_torsions(system, molecule)
+        if self._custom_torsion_set:
+            system = self._add_custom_torsions(system, molecule)
         return system
 
     def _group_forces(self, system):
@@ -90,28 +101,30 @@ class CGOMMOptimizer(CGOptimizer):
             ).getPotentialEnergy()
         return energies
 
-    def _get_bond_string(self, molecule):
-        hb_str = " <HarmonicBondForce>\n"
+    def _add_bonds(self, system, molecule):
+        force = openmm.HarmonicBondForce()
+        system.addForce(force)
 
-        done_items = set()
         for bond_info in self._yield_bonds(molecule):
             name1, name2, cgbead1, cgbead2, bond_k, bond_r = bond_info
-            type1 = cgbead1.bead_type
-            type2 = cgbead2.bead_type
-            if (type1, type2) in done_items:
-                continue
-            hb_str += (
-                f'  <Bond type1="{type1}" type2="{type2}" '
-                f'length="{bond_r/10}" k="{bond_k}"/>\n'
+            id1 = int(name1[-1]) - 1
+            id2 = int(name2[-1]) - 1
+            force.addBond(
+                particle1=id1,
+                particle2=id2,
+                length=bond_r / 10,
+                k=bond_k,
             )
-            done_items.add((type1, type2))
 
-        hb_str += " </HarmonicBondForce>\n\n"
-        return hb_str
+        return system
 
-    def _get_angle_string(self, molecule):
+    def _get_angle_string(self, system, molecule):
         ha_str = " <HarmonicAngleForce>\n"
-
+        raise SystemExit(
+            " you need rewrite everything to use the AddForce API, not "
+            "the FF because of the issue with smae types in 4C bbs."
+        )
+        raise SystemExit("rewrite code, then rerun parameterisation")
         done_items = set()
         for angle_info in self._yield_angles(molecule):
             (
@@ -179,7 +192,7 @@ class CGOMMOptimizer(CGOptimizer):
                 )
             continue
 
-    def _get_torsion_string(self, molecule):
+    def _get_torsion_string(self, system, molecule):
         pt_str = " <PeriodicTorsionForce>\n"
 
         done_items = set()
@@ -303,12 +316,12 @@ class CGOMMOptimizer(CGOptimizer):
 
         ff_str += at_str
         ff_str += re_str
-        if self._bonds:
-            ff_str += self._get_bond_string(molecule)
-        if self._angles:
-            ff_str += self._get_angle_string(molecule)
-        if self._torsions:
-            ff_str += self._get_torsion_string(molecule)
+        # if self._bonds:
+        #     ff_str += self._get_bond_string(molecule)
+        # if self._angles:
+        #     ff_str += self._get_angle_string(molecule)
+        # if self._torsions:
+        #     ff_str += self._get_torsion_string(molecule)
         if self._vdw:
             ff_str += self._get_vdw_string(molecule, present_beads)
         ff_str += "</ForceField>\n"
@@ -409,7 +422,10 @@ class CGOMMOptimizer(CGOptimizer):
     def _minimize_energy(self, simulation, system):
 
         self._run_energy_decomp(simulation, system)
-        simulation.minimizeEnergy()
+        simulation.minimizeEnergy(
+            tolerance=self._tolerance,
+            # maxIterations=self._max_iterations,
+        )
         self._run_energy_decomp(simulation, system)
 
         state = simulation.context.getState(
