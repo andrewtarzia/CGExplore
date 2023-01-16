@@ -147,25 +147,25 @@ class CGOptimizer:
                     estring=outer_estring2,
                 )
 
+                angle_theta = centre_cgbead.angle_centered
+                angle_k = centre_cgbead.angle_k
                 if centre_cgbead.coordination == 4:
                     if centre_name not in saved_angles:
                         saved_angles[centre_name] = []
                     saved_angles[centre_name].append(
                         (
-                            centre_cgbead.angle_centered,
-                            centre_cgbead.angle_k,
+                            angle_theta,
+                            angle_k,
                             outer_atom1,
                             outer_atom2,
                             centre_atom,
-                            centre_cgbead.bead_type,
-                            outer_cgbead1.bead_type,
-                            outer_cgbead2.bead_type,
+                            centre_cgbead,
+                            outer_cgbead1,
+                            outer_cgbead2,
                         )
                     )
                     continue
 
-                angle_theta = centre_cgbead.angle_centered
-                angle_k = centre_cgbead.angle_k
                 yield (
                     centre_name,
                     outer_name1,
@@ -187,8 +187,8 @@ class CGOptimizer:
         # For four coordinate systems, only apply angles between
         # neighbouring atoms.
         for centre_name in saved_angles:
-            raise NotImplementedError("fix")
             sa_d = saved_angles[centre_name]
+
             all_angles = {
                 i: np.degrees(
                     angle_between(
@@ -203,20 +203,32 @@ class CGOptimizer:
             four_smallest = nsmallest(4, all_angles, key=all_angles.get)
             for used_ang_id in four_smallest:
                 used_ang = sa_d[used_ang_id]
-                angle_theta = used_ang[0]
-                angle_k = used_ang[1]
+                (
+                    angle_theta,
+                    angle_k,
+                    outer_atom1,
+                    outer_atom2,
+                    centre_atom,
+                    centre_cgbead,
+                    outer_cgbead1,
+                    outer_cgbead2,
+                ) = used_ang
+
                 outer_name1 = (
-                    f"{used_ang[2].__class__.__name__}"
-                    f"{used_ang[2].get_id()+1}"
+                    f"{outer_atom1.__class__.__name__}"
+                    f"{outer_atom1.get_id()+1}"
                 )
                 outer_name2 = (
-                    f"{used_ang[3].__class__.__name__}"
-                    f"{used_ang[3].get_id()+1}"
+                    f"{outer_atom2.__class__.__name__}"
+                    f"{outer_atom2.get_id()+1}"
                 )
                 yield (
                     centre_name,
                     outer_name1,
                     outer_name2,
+                    centre_cgbead,
+                    outer_cgbead1,
+                    outer_cgbead2,
                     angle_k,
                     angle_theta,
                 )
@@ -225,21 +237,32 @@ class CGOptimizer:
                 if used_ang_id in four_smallest:
                     continue
                 used_ang = sa_d[used_ang_id]
-                used_ang[0]
-                angle_theta = convert_pyramid_angle(used_ang[0])
-                angle_k = used_ang[1]
+                (
+                    angle_theta,
+                    angle_k,
+                    outer_atom1,
+                    outer_atom2,
+                    centre_atom,
+                    centre_cgbead,
+                    outer_cgbead1,
+                    outer_cgbead2,
+                ) = used_ang
+                angle_theta = convert_pyramid_angle(angle_theta)
                 outer_name1 = (
-                    f"{used_ang[2].__class__.__name__}"
-                    f"{used_ang[2].get_id()+1}"
+                    f"{outer_atom1.__class__.__name__}"
+                    f"{outer_atom1.get_id()+1}"
                 )
                 outer_name2 = (
-                    f"{used_ang[3].__class__.__name__}"
-                    f"{used_ang[3].get_id()+1}"
+                    f"{outer_atom2.__class__.__name__}"
+                    f"{outer_atom2.get_id()+1}"
                 )
                 yield (
                     centre_name,
                     outer_name1,
                     outer_name2,
+                    centre_cgbead,
+                    outer_cgbead1,
+                    outer_cgbead2,
                     angle_k,
                     angle_theta,
                 )
