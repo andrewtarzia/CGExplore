@@ -129,6 +129,7 @@ class CgBead:
     bond_k: float
     angle_centered: float
     angle_k: float
+    epsilon: float
     coordination: int
 
 
@@ -193,6 +194,7 @@ def produce_bead_library(
     angles,
     bond_ks,
     angle_ks,
+    epsilon,
     coordination,
 ):
     return {
@@ -203,6 +205,7 @@ def produce_bead_library(
             angle_centered=angle,
             bond_k=bond_k,
             angle_k=angle_k,
+            epsilon=epsilon,
             coordination=coordination,
         )
         for (i, sigma), (j, angle), (k, bond_k), (
