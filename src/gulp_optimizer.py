@@ -118,12 +118,12 @@ class CGGulpOptimizer(CGOptimizer):
 
         return run_data
 
-    def _get_coord_mass_string(self, mol):
+    def _get_coord_string(self, molecule):
         coord_string = "cartesian\n"
         mass_string = ""
 
-        pos_mat = mol.get_position_matrix()
-        atoms = list(mol.get_atoms())
+        pos_mat = molecule.get_position_matrix()
+        atoms = list(molecule.get_atoms())
         for atom, pos_ in zip(atoms, pos_mat):
             name = f"{atom.__class__.__name__}{atom.get_id()+1}"
             coord_string += (
@@ -134,10 +134,10 @@ class CGGulpOptimizer(CGOptimizer):
 
         return coord_string, mass_string
 
-    def _get_bond_string(self, mol):
+    def _get_bond_string(self, molecule):
         bond_string = "harm\n"
-        for bond_info in self._yield_bonds(mol):
-            name1, name2, bond_k, bond_r = bond_info
+        for bond_info in self._yield_bonds(molecule):
+            name1, name2, cgbead1, cgbead2, bond_k, bond_r = bond_info
             bond_string += (
                 f"{name1} {name2}  {bond_k} {bond_r} "
                 f"{self._bond_cutoff}\n"
@@ -145,13 +145,16 @@ class CGGulpOptimizer(CGOptimizer):
 
         return bond_string
 
-    def _get_angle_string(self, mol):
+    def _get_angle_string(self, molecule):
         angle_string = "three\n"
-        for angle_info in self._yield_angles(mol):
+        for angle_info in self._yield_angles(molecule):
             (
                 centre_name,
                 outer_name1,
                 outer_name2,
+                centre_cgbead,
+                outer_cgbead1,
+                outer_cgbead2,
                 angle_k,
                 angle_theta,
             ) = angle_info
@@ -165,11 +168,11 @@ class CGGulpOptimizer(CGOptimizer):
 
         return angle_string
 
-    def _yield_custom_torsions(self, mol, chain_length=5):
+    def _yield_custom_torsions(self, molecule, chain_length=5):
         if self._custom_torsion_set is None:
             return ""
 
-        torsions = self._get_new_torsions(mol, chain_length)
+        torsions = self._get_new_torsions(molecule, chain_length)
         for torsion in torsions:
             atom1, atom2, atom3, atom4, atom5 = torsion
             names = list(
@@ -196,27 +199,10 @@ class CGGulpOptimizer(CGOptimizer):
                 )
             continue
 
-    def _get_torsion_string(self, mol):
+    def _get_torsion_string(self, molecule):
         torsion_string = "torsion\n"
-        for torsion_info in self._yield_torsions(mol):
-            (
-                name1,
-                name2,
-                name3,
-                name4,
-                torsion_k,
-                torsion_n,
-                phi0,
-            ) = torsion_info
-            torsion_string += (
-                f"{name1} {name2} {name3} "
-                f"{name4} {torsion_k} {torsion_n} {phi0} "
-                f"{self._torsion_cutoff} "
-                f"{self._torsion_cutoff} "
-                f"{self._torsion_cutoff} "
-                f"{self._torsion_cutoff} \n"
-            )
-        for torsion_info in self._yield_custom_torsions(mol):
+
+        for torsion_info in self._yield_custom_torsions(molecule):
             (
                 name1,
                 name2,
@@ -237,7 +223,7 @@ class CGGulpOptimizer(CGOptimizer):
 
         return torsion_string
 
-    def _get_vdw_string(self, mol):
+    def _get_vdw_string(self, molecule):
         if self._vdw is False:
             return ""
         logging.info(
@@ -245,7 +231,7 @@ class CGGulpOptimizer(CGOptimizer):
         )
 
         vdw_string = "lennard epsilon\n"
-        for pair_info in self.__yield_nonbondeds(mol):
+        for pair_info in self.__yield_nonbondeds(molecule):
             name1, name2, epsilon, sigma = pair_info
 
             vdw_string += (
@@ -255,11 +241,11 @@ class CGGulpOptimizer(CGOptimizer):
 
         return vdw_string
 
-    def _get_fix_atom_string(self, mol):
+    def _get_fix_atom_string(self, molecule):
 
         string = "\n"
         count = 0
-        for atom in mol.get_atoms():
+        for atom in molecule.get_atoms():
             atom_no = atom.get_id() + 1
             estring = atom.__class__.__name__
             if estring in self._vdw_on_types:
@@ -270,17 +256,17 @@ class CGGulpOptimizer(CGOptimizer):
             logging.info(f"OPT: fixing {count} guest beads.")
         return string
 
-    def _write_gulp_input(self, mol):
+    def _write_gulp_input(self, molecule):
         if self._conjugate_gradient:
             top_string = "opti conj unit conv cartesian\n"
         else:
             top_string = "opti conv cartesian\n"
-        coord_string, mass_string = self._get_coord_mass_string(mol)
-        bond_string = self._get_bond_string(mol)
-        angle_string = self._get_angle_string(mol)
-        torsion_string = self._get_torsion_string(mol)
-        vdw_string = self._get_vdw_string(mol)
-        fix_string = self._get_fix_atom_string(mol)
+        coord_string, mass_string = self._get_coord_string(molecule)
+        bond_string = self._get_bond_string(molecule)
+        angle_string = self._get_angle_string(molecule)
+        torsion_string = self._get_torsion_string(molecule)
+        vdw_string = self._get_vdw_string(molecule)
+        fix_string = self._get_fix_atom_string(molecule)
         settings_string = (
             f"\nmaxcyc {self._maxcycles}\n"
             # f'output xyz movie {filename}_traj.xyz\n'
@@ -299,7 +285,7 @@ class CGGulpOptimizer(CGOptimizer):
             f.write(settings_string)
 
     def optimize(self, molecule):
-        self._write_gulp_input(mol=molecule)
+        self._write_gulp_input(molecule=molecule)
         self._run_gulp()
         return self.extract_gulp()
 
@@ -500,13 +486,13 @@ class CGGulpMD(CGGulpOptimizer):
 
         return run_data
 
-    def _write_gulp_input(self, mol):
+    def _write_gulp_input(self, molecule):
         top_string = "md conv cartesian\n"
-        coord_string, mass_string = self._get_coord_mass_string(mol)
-        bond_string = self._get_bond_string(mol)
-        angle_string = self._get_angle_string(mol)
-        torsion_string = self._get_torsion_string(mol)
-        vdw_string = self._get_vdw_string(mol)
+        coord_string, mass_string = self._get_coord_string(molecule)
+        bond_string = self._get_bond_string(molecule)
+        angle_string = self._get_angle_string(molecule)
+        torsion_string = self._get_torsion_string(molecule)
+        vdw_string = self._get_vdw_string(molecule)
 
         integrator = "stochastic"
         ensemble = "nvt"
@@ -545,6 +531,6 @@ class CGGulpMD(CGGulpOptimizer):
 
     def optimize(self, molecule):
         molecule.write(self._input_xyz_template)
-        self._write_gulp_input(mol=molecule)
+        self._write_gulp_input(molecule=molecule)
         self._run_gulp()
         return self.extract_gulp()

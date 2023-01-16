@@ -79,11 +79,11 @@ class CGOptimizer:
 
         return torsions
 
-    def _yield_bonds(self, mol):
+    def _yield_bonds(self, molecule):
         if self._bonds is False:
             return ""
 
-        bonds = list(mol.get_bonds())
+        bonds = list(molecule.get_bonds())
         for bond in bonds:
             atom1 = bond.get_atom1()
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
@@ -103,19 +103,19 @@ class CGOptimizer:
                     sigma1=cgbead1.bond_k,
                     sigma2=cgbead2.bond_k,
                 )
-                yield (name1, name2, bond_k, bond_r)
+                yield (name1, name2, cgbead1, cgbead2, bond_k, bond_r)
             except KeyError:
                 logging.info(
                     f"OPT: {(name1, name2)} bond not assigned."
                 )
                 continue
 
-    def _yield_angles(self, mol):
+    def _yield_angles(self, molecule):
         if self._angles is False:
             return ""
 
-        angles = get_all_angles(mol)
-        pos_mat = mol.get_position_matrix()
+        angles = get_all_angles(molecule)
+        pos_mat = molecule.get_position_matrix()
 
         saved_angles = {}
         for angle in angles:
@@ -132,11 +132,19 @@ class CGOptimizer:
                 f"{outer_atom2.__class__.__name__}"
                 f"{outer_atom2.get_id()+1}"
             )
+            outer_estring1 = outer_atom1.__class__.__name__
             centre_estring = centre_atom.__class__.__name__
+            outer_estring2 = outer_atom2.__class__.__name__
 
             try:
+                outer_cgbead1 = self._get_cgbead_from_element(
+                    estring=outer_estring1,
+                )
                 centre_cgbead = self._get_cgbead_from_element(
                     estring=centre_estring,
+                )
+                outer_cgbead2 = self._get_cgbead_from_element(
+                    estring=outer_estring2,
                 )
 
                 if centre_cgbead.coordination == 4:
@@ -149,6 +157,9 @@ class CGOptimizer:
                             outer_atom1,
                             outer_atom2,
                             centre_atom,
+                            centre_cgbead.bead_type,
+                            outer_cgbead1.bead_type,
+                            outer_cgbead2.bead_type,
                         )
                     )
                     continue
@@ -159,6 +170,9 @@ class CGOptimizer:
                     centre_name,
                     outer_name1,
                     outer_name2,
+                    centre_cgbead,
+                    outer_cgbead1,
+                    outer_cgbead2,
                     angle_k,
                     angle_theta,
                 )
@@ -173,6 +187,7 @@ class CGOptimizer:
         # For four coordinate systems, only apply angles between
         # neighbouring atoms.
         for centre_name in saved_angles:
+            raise NotImplementedError("fix")
             sa_d = saved_angles[centre_name]
             all_angles = {
                 i: np.degrees(
@@ -229,13 +244,15 @@ class CGOptimizer:
                     angle_theta,
                 )
 
-    def _yield_torsions(self, mol):
+    def _yield_torsions(self, molecule):
         if self._torsions is False:
             return ""
         logging.info("OPT: not setting torsion ns yet.")
+        phi0 = 0
         torsion_n = 1
+        torsion_k = -5
 
-        torsions = get_all_torsions(mol)
+        torsions = get_all_torsions(molecule)
         for torsion in torsions:
             atom1, atom2, atom3, atom4 = torsion
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
@@ -243,29 +260,26 @@ class CGOptimizer:
             name3 = f"{atom3.__class__.__name__}{atom3.get_id()+1}"
             name4 = f"{atom4.__class__.__name__}{atom4.get_id()+1}"
 
+            atom1_estring = atom1.__class__.__name__
             atom2_estring = atom2.__class__.__name__
             atom3_estring = atom3.__class__.__name__
+            atom4_estring = atom4.__class__.__name__
 
             try:
+                cgbead1 = self._get_cgbead_from_element(atom1_estring)
                 cgbead2 = self._get_cgbead_from_element(atom2_estring)
                 cgbead3 = self._get_cgbead_from_element(atom3_estring)
-                if cgbead2.dihedral_angle is None:
-                    continue
-                if cgbead3.dihedral_angle is None:
-                    continue
-                phi0 = lorentz_berthelot_sigma_mixing(
-                    sigma1=cgbead2.dihedral_angle,
-                    sigma2=cgbead3.dihedral_angle,
-                )
-                torsion_k = lorentz_berthelot_sigma_mixing(
-                    sigma1=cgbead2.dihedral_k,
-                    sigma2=cgbead3.dihedral_k,
-                )
+                cgbead4 = self._get_cgbead_from_element(atom4_estring)
+
                 yield (
                     name1,
                     name2,
                     name3,
                     name4,
+                    cgbead1,
+                    cgbead2,
+                    cgbead3,
+                    cgbead4,
                     torsion_k,
                     torsion_n,
                     phi0,
@@ -274,14 +288,14 @@ class CGOptimizer:
             except KeyError:
                 continue
 
-    def _yield_nonbondeds(self, mol):
+    def _yield_nonbondeds(self, molecule):
         if self._vdw is False:
             return ""
         logging.info(
             "OPT: only vdw interactions between host and guest."
         )
 
-        pairs = combinations(mol.get_atoms(), 2)
+        pairs = combinations(molecule.get_atoms(), 2)
         for pair in pairs:
             atom1, atom2 = pair
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
