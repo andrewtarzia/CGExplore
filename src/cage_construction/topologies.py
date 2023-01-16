@@ -15,29 +15,29 @@ import stk
 def cage_topology_options(fg_set):
     if fg_set == "2p3":
         topologies = {
-            "TwoPlusThree": stk.cage.TwoPlusThree,
-            "FourPlusSix": stk.cage.FourPlusSix,
-            "FourPlusSix2": stk.cage.FourPlusSix2,
-            "SixPlusNine": stk.cage.SixPlusNine,
-            "EightPlusTwelve": stk.cage.EightPlusTwelve,
+            "2P3": stk.cage.TwoPlusThree,
+            "4P6": stk.cage.FourPlusSix,
+            "4P62": stk.cage.FourPlusSix2,
+            "6P9": stk.cage.SixPlusNine,
+            "8P12": stk.cage.EightPlusTwelve,
         }
     if fg_set == "2p4":
         topologies = {
-            "TwoPlusFour": stk.cage.M2L4Lantern,
-            "ThreePlusSix": stk.cage.M3L6,
-            "FourPlusEight": stk.cage.M4L8,
-            "SixPlusTwelve": stk.cage.M6L12Cube,
-            "EightPlusSixteen": stk.cage.EightPlusSixteen,
-            "M12L24": CGM12L24,
+            "2P4": stk.cage.M2L4Lantern,
+            "3P6": stk.cage.M3L6,
+            "4P8": stk.cage.M4L8,
+            "6P12": stk.cage.M6L12Cube,
+            "8P6": stk.cage.EightPlusSixteen,
+            "12PL24": CGM12L24,
         }
     if fg_set == "3p3":
         topologies = {
-            "TwoPlusTwo": stk.cage.TwoPlusTwo,
-            "FourPlusFour": stk.cage.FourPlusFour,
+            "2P2": stk.cage.TwoPlusTwo,
+            "4P4": stk.cage.FourPlusFour,
         }
     if fg_set == "3p4":
         topologies = {
-            "SixPlusEight": stk.cage.SixPlusEight,
+            "6P8": stk.cage.SixPlusEight,
         }
 
     return topologies
