@@ -137,7 +137,7 @@ class CGGulpOptimizer(CGOptimizer):
     def _get_bond_string(self, molecule):
         bond_string = "harm\n"
         for bond_info in self._yield_bonds(molecule):
-            name1, name2, cgbead1, cgbead2, bond_k, bond_r = bond_info
+            name1, name2, id1, id2, bond_k, bond_r = bond_info
             bond_string += (
                 f"{name1} {name2}  {bond_k} {bond_r} "
                 f"{self._bond_cutoff}\n"
@@ -152,9 +152,9 @@ class CGGulpOptimizer(CGOptimizer):
                 centre_name,
                 outer_name1,
                 outer_name2,
-                centre_cgbead,
-                outer_cgbead1,
-                outer_cgbead2,
+                centre_id,
+                outer_id1,
+                outer_id2,
                 angle_k,
                 angle_theta,
             ) = angle_info
@@ -178,6 +178,7 @@ class CGGulpOptimizer(CGOptimizer):
             names = list(
                 f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
             )
+            ids = list(i.get_id() for i in torsion)
 
             atom_estrings = list(i.__class__.__name__ for i in torsion)
             cgbeads = list(
@@ -193,6 +194,10 @@ class CGGulpOptimizer(CGOptimizer):
                     names[1],
                     names[3],
                     names[4],
+                    ids[0],
+                    ids[1],
+                    ids[3],
+                    ids[4],
                     torsion_k,
                     torsion_n,
                     phi0,
@@ -208,6 +213,10 @@ class CGGulpOptimizer(CGOptimizer):
                 name2,
                 name3,
                 name4,
+                id1,
+                id2,
+                id3,
+                id4,
                 torsion_k,
                 torsion_n,
                 phi0,

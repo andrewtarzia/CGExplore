@@ -34,6 +34,7 @@ class CGOMMOptimizer(CGOptimizer):
         torsions,
         vdw,
         # max_iterations,
+        vdw_bond_cutoff=None,
     ):
         super().__init__(
             fileprefix,
@@ -48,9 +49,16 @@ class CGOMMOptimizer(CGOptimizer):
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         # self._max_iterations = max_iterations
         self._tolerance = 1 * openmm.unit.kilojoule / openmm.unit.mole
+        if self._vdw and vdw_bond_cutoff is None:
+            raise ValueError(
+                "if `vdw` is on, `vdw_bond_cutoff` should be set"
+            )
+        elif vdw_bond_cutoff is None:
+            self._vdw_bond_cutoff = 0
+        else:
+            self._vdw_bond_cutoff = vdw_bond_cutoff
 
     def _add_forces(self, system, molecule):
-        logging.info("might need this for custom dihedrals.")
         if self._bonds:
             system = self._add_bonds(system, molecule)
         if self._angles:
@@ -106,9 +114,7 @@ class CGOMMOptimizer(CGOptimizer):
         system.addForce(force)
 
         for bond_info in self._yield_bonds(molecule):
-            name1, name2, cgbead1, cgbead2, bond_k, bond_r = bond_info
-            id1 = int(name1[-1]) - 1
-            id2 = int(name2[-1]) - 1
+            name1, name2, id1, id2, bond_k, bond_r = bond_info
             force.addBond(
                 particle1=id1,
                 particle2=id2,
@@ -118,50 +124,33 @@ class CGOMMOptimizer(CGOptimizer):
 
         return system
 
-    def _get_angle_string(self, system, molecule):
-        ha_str = " <HarmonicAngleForce>\n"
-        raise SystemExit(
-            " you need rewrite everything to use the AddForce API, not "
-            "the FF because of the issue with smae types in 4C bbs."
-        )
-        raise SystemExit("rewrite code, then rerun parameterisation")
-        done_items = set()
+    def _add_angles(self, system, molecule):
+        force = openmm.HarmonicAngleForce()
+        system.addForce(force)
+
         for angle_info in self._yield_angles(molecule):
             (
                 centre_name,
                 outer_name1,
                 outer_name2,
-                centre_cgbead,
-                outer_cgbead1,
-                outer_cgbead2,
+                centre_id,
+                outer_id1,
+                outer_id2,
                 angle_k,
                 angle_theta,
             ) = angle_info
 
-            outer1_type = outer_cgbead1.bead_type
-            centre_type = centre_cgbead.bead_type
-            outer2_type = outer_cgbead2.bead_type
-            if (outer1_type, centre_type, outer2_type) in done_items:
-                continue
-
-            angle_theta_rad = np.radians(angle_theta)
-            ha_str += (
-                f'  <Angle type1="{outer1_type}" type2="{centre_type}" '
-                f' type3="{outer2_type}" angle="{angle_theta_rad}" '
-                f'k="{angle_k}"/>\n'
+            force.addAngle(
+                particle1=outer_id1,
+                particle2=centre_id,
+                particle3=outer_id2,
+                angle=np.radians(angle_theta),
+                k=angle_k,
             )
-            done_items.add((outer1_type, centre_type, outer2_type))
 
-        ha_str += " </HarmonicAngleForce>\n\n"
-        return ha_str
+        return system
 
     def _yield_custom_torsions(self, molecule, chain_length=5):
-        logging.info(
-            "with custom torsions for omm, I think you need to fake a "
-            "bond in the template. Or just add a force using the "
-            "AddForce separate?"
-        )
-        raise SystemExit()
         if self._custom_torsion_set is None:
             return ""
 
@@ -171,6 +160,7 @@ class CGOMMOptimizer(CGOptimizer):
             names = list(
                 f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
             )
+            ids = list(i.get_id() for i in torsion)
 
             atom_estrings = list(i.__class__.__name__ for i in torsion)
             cgbeads = list(
@@ -180,51 +170,56 @@ class CGOMMOptimizer(CGOptimizer):
             if cgbead_types in self._custom_torsion_set:
                 phi0 = self._custom_torsion_set[cgbead_types][0]
                 torsion_k = self._custom_torsion_set[cgbead_types][1]
-                torsion_n = -1
+                torsion_n = 1
                 yield (
                     names[0],
                     names[1],
                     names[3],
                     names[4],
+                    ids[0],
+                    ids[1],
+                    ids[3],
+                    ids[4],
                     torsion_k,
                     torsion_n,
                     phi0,
                 )
             continue
 
-    def _get_torsion_string(self, system, molecule):
-        pt_str = " <PeriodicTorsionForce>\n"
+    def _add_torsions(self, system, molecule):
+        force = openmm.PeriodicTorsionForce()
+        system.addForce(force)
 
-        done_items = set()
         for torsion_info in self._yield_torsions(molecule):
             (
                 name1,
                 name2,
                 name3,
                 name4,
-                cgbead1,
-                cgbead2,
-                cgbead3,
-                cgbead4,
+                id1,
+                id2,
+                id3,
+                id4,
                 torsion_k,
                 torsion_n,
                 phi0,
             ) = torsion_info
 
-            type1 = cgbead1.bead_type
-            type2 = cgbead2.bead_type
-            type3 = cgbead3.bead_type
-            type4 = cgbead4.bead_type
-            if (type1, type2, type3, type4) in done_items:
-                continue
-
-            pt_str += (
-                f'  <Proper class1="{type1}" class2="{type2}" '
-                f'class3="{type3}" class4="{type4}" '
-                f'periodicity1="{torsion_n}" phase1="{phi0}" '
-                f'k1="{torsion_k}"/>\n'
+            force.addTorsion(
+                particle1=id1,
+                particle2=id2,
+                particle3=id3,
+                particle4=id4,
+                periodicity=torsion_n,
+                phase=phi0,
+                k=torsion_k,
             )
-            done_items.add((type1, type2, type3, type4))
+
+        return system
+
+    def _add_custom_torsions(self, system, molecule):
+        force = openmm.PeriodicTorsionForce()
+        system.addForce(force)
 
         for torsion_info in self._yield_custom_torsions(molecule):
             (
@@ -232,29 +227,32 @@ class CGOMMOptimizer(CGOptimizer):
                 name2,
                 name3,
                 name4,
-                type1,
-                type2,
-                type3,
-                type4,
+                id1,
+                id2,
+                id3,
+                id4,
                 torsion_k,
                 torsion_n,
                 phi0,
             ) = torsion_info
-            pt_str += (
-                f'  <Proper class1="{type1}" class2="{type2}" '
-                f'class3="{type3}" class4="{type4}" '
-                f'periodicity1="{torsion_n}" phase1="{phi0}" '
-                f'k1="{torsion_k}"/>\n'
+
+            force.addTorsion(
+                particle1=id1,
+                particle2=id2,
+                particle3=id3,
+                particle4=id4,
+                periodicity=torsion_n,
+                phase=phi0,
+                k=torsion_k,
             )
 
-        pt_str += " </PeriodicTorsionForce>\n\n"
-        return pt_str
+        return system
 
     def _get_vdw_string(self, molecule, present_beads):
         nb_eqn = "sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12"
         nb_str = (
             f' <CustomNonbondedForce energy="{nb_eqn}" '
-            'bondCutoff="0">\n'
+            f'bondCutoff="{self._vdw_bond_cutoff}">\n'
         )
         nb_str += '  <PerParticleParameter name="sigma"/>\n'
         nb_str += '  <PerParticleParameter name="epsilon"/>\n'
@@ -262,7 +260,7 @@ class CGOMMOptimizer(CGOptimizer):
             acgbead = present_beads[atype]
             nb_str += (
                 f'  <Atom type="{atype}" sigma="{acgbead.sigma/10}" '
-                f'epsilon="{acgbead.bond_k}"/>\n'
+                f'epsilon="{acgbead.epsilon}"/>\n'
             )
         nb_str += " </CustomNonbondedForce>\n\n"
 
@@ -379,7 +377,7 @@ class CGOMMOptimizer(CGOptimizer):
         system = self._add_forces(system, molecule)
 
         # Default integrator.
-        # raise SystemExit("better integrator?")
+        logging.info("better integrator?")
         # random_seed = np.random.randint(1000)
         time_step = 0.25 * openmm.unit.femtoseconds
         temperature = 300 * openmm.unit.kelvin

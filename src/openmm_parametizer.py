@@ -34,6 +34,7 @@ def c_beads():
         angles=(90,),
         bond_ks=(10,),
         angle_ks=(20,),
+        epsilon=10.0,
         coordination=2,
     )
 
@@ -436,6 +437,7 @@ def test5(beads, calculation_output, figure_output):
             angles=False,
             torsions=False,
             vdw=True,
+            vdw_bond_cutoff=0,
         )
         energy = opt.calculate_energy(new_bb)
         distance = np.linalg.norm(new_posmat[1] - new_posmat[0])

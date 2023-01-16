@@ -86,8 +86,10 @@ class CGOptimizer:
         bonds = list(molecule.get_bonds())
         for bond in bonds:
             atom1 = bond.get_atom1()
+            id1 = atom1.get_id()
             name1 = f"{atom1.__class__.__name__}{atom1.get_id()+1}"
             atom2 = bond.get_atom2()
+            id2 = atom2.get_id()
             name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
             estring1 = atom1.__class__.__name__
             estring2 = atom2.__class__.__name__
@@ -103,7 +105,7 @@ class CGOptimizer:
                     sigma1=cgbead1.bond_k,
                     sigma2=cgbead2.bond_k,
                 )
-                yield (name1, name2, cgbead1, cgbead2, bond_k, bond_r)
+                yield (name1, name2, id1, id2, bond_k, bond_r)
             except KeyError:
                 logging.info(
                     f"OPT: {(name1, name2)} bond not assigned."
@@ -132,19 +134,14 @@ class CGOptimizer:
                 f"{outer_atom2.__class__.__name__}"
                 f"{outer_atom2.get_id()+1}"
             )
-            outer_estring1 = outer_atom1.__class__.__name__
+            outer_id1 = outer_atom1.get_id()
+            centre_id = centre_atom.get_id()
+            outer_id2 = outer_atom2.get_id()
             centre_estring = centre_atom.__class__.__name__
-            outer_estring2 = outer_atom2.__class__.__name__
 
             try:
-                outer_cgbead1 = self._get_cgbead_from_element(
-                    estring=outer_estring1,
-                )
                 centre_cgbead = self._get_cgbead_from_element(
                     estring=centre_estring,
-                )
-                outer_cgbead2 = self._get_cgbead_from_element(
-                    estring=outer_estring2,
                 )
 
                 angle_theta = centre_cgbead.angle_centered
@@ -159,9 +156,9 @@ class CGOptimizer:
                             outer_atom1,
                             outer_atom2,
                             centre_atom,
-                            centre_cgbead,
-                            outer_cgbead1,
-                            outer_cgbead2,
+                            centre_id,
+                            outer_id1,
+                            outer_id2,
                         )
                     )
                     continue
@@ -170,9 +167,9 @@ class CGOptimizer:
                     centre_name,
                     outer_name1,
                     outer_name2,
-                    centre_cgbead,
-                    outer_cgbead1,
-                    outer_cgbead2,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
                     angle_k,
                     angle_theta,
                 )
@@ -209,9 +206,9 @@ class CGOptimizer:
                     outer_atom1,
                     outer_atom2,
                     centre_atom,
-                    centre_cgbead,
-                    outer_cgbead1,
-                    outer_cgbead2,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
                 ) = used_ang
 
                 outer_name1 = (
@@ -226,9 +223,9 @@ class CGOptimizer:
                     centre_name,
                     outer_name1,
                     outer_name2,
-                    centre_cgbead,
-                    outer_cgbead1,
-                    outer_cgbead2,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
                     angle_k,
                     angle_theta,
                 )
@@ -243,9 +240,9 @@ class CGOptimizer:
                     outer_atom1,
                     outer_atom2,
                     centre_atom,
-                    centre_cgbead,
-                    outer_cgbead1,
-                    outer_cgbead2,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
                 ) = used_ang
                 angle_theta = convert_pyramid_angle(angle_theta)
                 outer_name1 = (
@@ -260,9 +257,9 @@ class CGOptimizer:
                     centre_name,
                     outer_name1,
                     outer_name2,
-                    centre_cgbead,
-                    outer_cgbead1,
-                    outer_cgbead2,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
                     angle_k,
                     angle_theta,
                 )
@@ -282,27 +279,21 @@ class CGOptimizer:
             name2 = f"{atom2.__class__.__name__}{atom2.get_id()+1}"
             name3 = f"{atom3.__class__.__name__}{atom3.get_id()+1}"
             name4 = f"{atom4.__class__.__name__}{atom4.get_id()+1}"
-
-            atom1_estring = atom1.__class__.__name__
-            atom2_estring = atom2.__class__.__name__
-            atom3_estring = atom3.__class__.__name__
-            atom4_estring = atom4.__class__.__name__
+            id1 = atom1.get_id()
+            id2 = atom2.get_id()
+            id3 = atom3.get_id()
+            id4 = atom4.get_id()
 
             try:
-                cgbead1 = self._get_cgbead_from_element(atom1_estring)
-                cgbead2 = self._get_cgbead_from_element(atom2_estring)
-                cgbead3 = self._get_cgbead_from_element(atom3_estring)
-                cgbead4 = self._get_cgbead_from_element(atom4_estring)
-
                 yield (
                     name1,
                     name2,
                     name3,
                     name4,
-                    cgbead1,
-                    cgbead2,
-                    cgbead3,
-                    cgbead4,
+                    id1,
+                    id2,
+                    id3,
+                    id4,
                     torsion_k,
                     torsion_n,
                     phi0,

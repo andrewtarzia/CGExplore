@@ -40,6 +40,7 @@ def core_2c_beads():
         angles=(180,),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        epsilon=10.0,
         coordination=2,
     )
 
@@ -52,6 +53,7 @@ def arm_2c_beads():
         angles=range(90, 181, 5),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        epsilon=10.0,
         coordination=2,
     )
 
@@ -64,6 +66,7 @@ def binder_beads():
         angles=(180,),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        epsilon=10.0,
         coordination=2,
     )
 
@@ -76,6 +79,7 @@ def beads_3c():
         angles=(60, 90, 109.5, 120),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        epsilon=10.0,
         coordination=3,
     )
 
@@ -88,6 +92,7 @@ def beads_4c():
         angles=(50, 70, 90),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        epsilon=10.0,
         coordination=4,
     )
 
@@ -118,15 +123,6 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
     return molecule
 
 
-def check_for_failed_min(path):
-    test_string = "Conditions for a minimum have not been satisfied"
-    with open(path, "r") as f:
-        for line in f.readlines():
-            if test_string in line:
-                return True
-    return False
-
-
 def optimise_cage(
     molecule,
     name,
@@ -136,31 +132,24 @@ def optimise_cage(
 ):
 
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
-    opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
-    opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
 
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}")
-        # Perform a slight deformation on ideal topologies to avoid
-        # fake local minima.
-        molecule = deform_molecule(molecule, percent=0.2)
-        opt_xyz_file = os.path.join(output_dir, f"{name}_o1_opted.xyz")
-        opt = CGGulpOptimizer(
-            fileprefix=f"{name}_o1",
+        opt = CGOMMOptimizer(
+            fileprefix=name,
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=custom_torsion_set,
-            max_cycles=2000,
-            conjugate_gradient=True,
             bonds=True,
             angles=True,
             torsions=False,
-            vdw=False,
+            vdw=True,
+            # max_iterations=1000,
+            vdw_bond_cutoff=2,
         )
-        _ = opt.optimize(molecule)
-        molecule = molecule.with_structure_from_file(opt_xyz_file)
+        molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
 
@@ -173,86 +162,8 @@ def optimise_cage(
         )
     except ValueError:
         logging.info(f"{name} opt failed in step 1. Should be ignored.")
+        raise SystemExit()
         return None
-
-    if os.path.exists(opt2_mol_file):
-        molecule = molecule.with_structure_from_file(opt2_mol_file)
-    else:
-        opt_xyz_file = os.path.join(output_dir, f"{name}_o2_opted.xyz")
-        opt = CGGulpOptimizer(
-            fileprefix=f"{name}_o2",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            max_cycles=2000,
-            conjugate_gradient=False,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=False,
-        )
-        _ = opt.optimize(molecule)
-        molecule = molecule.with_structure_from_file(opt_xyz_file)
-        molecule = molecule.with_centroid((0, 0, 0))
-        molecule.write(opt2_mol_file)
-
-    try:
-        check_long_distances(
-            molecule,
-            name=name,
-            max_distance=15,
-            step=2,
-        )
-    except ValueError:
-        logging.info(f"{name} opt failed in step 2. Should be ignored.")
-        return None
-
-    check2 = check_for_failed_min(
-        path=os.path.join(output_dir, f"{name}_o2.ginout"),
-    )
-    if check2:
-        # Does optimisation.
-        if os.path.exists(opt3_mol_file):
-            molecule = molecule.with_structure_from_file(opt3_mol_file)
-        else:
-            num_attempts = 20
-            for i in range(num_attempts):
-                logging.info(f"optimising {name} again")
-                # Perform a slight deformation on ideal topologies to
-                # avoid fake local minima.
-                molecule = deform_molecule(molecule, percent=0.4)
-                opt_xyz_file = os.path.join(
-                    output_dir, f"{name}_o3{i}_opted.xyz"
-                )
-                opt = CGGulpOptimizer(
-                    fileprefix=f"{name}_o3{i}",
-                    output_dir=output_dir,
-                    param_pool=bead_set,
-                    custom_torsion_set=custom_torsion_set,
-                    max_cycles=2000,
-                    conjugate_gradient=False,
-                    bonds=True,
-                    angles=True,
-                    torsions=False,
-                    vdw=False,
-                )
-                _ = opt.optimize(molecule)
-                molecule = molecule.with_structure_from_file(
-                    opt_xyz_file
-                )
-                molecule = molecule.with_centroid((0, 0, 0))
-                check2 = check_for_failed_min(
-                    path=os.path.join(
-                        output_dir, f"{name}_o3{i}.ginout"
-                    ),
-                )
-                if not check2:
-                    molecule.write(opt3_mol_file)
-                    logging.info(f"check optimisations broken at {i}")
-                    break
-            if i == 19 and check2:
-                logging.info(f"opt failed ({i} hit) for {name}")
-                return None
 
     return molecule
 
@@ -265,8 +176,6 @@ def analyse_cage(
 ):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
-    gulp_output_file2 = os.path.join(output_dir, f"{name}_o2.ginout")
-    gulp_output_file3 = os.path.join(output_dir, f"{name}_o3.ginout")
     shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
     shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
     # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
@@ -282,19 +191,10 @@ def analyse_cage(
             res_dict = json.load(f)
     else:
         logging.info(f"analysing {name}")
-        if os.path.exists(gulp_output_file3):
-            run_data = extract_gulp_optimisation(gulp_output_file3)
-        else:
-            run_data = extract_gulp_optimisation(gulp_output_file2)
+        fin_energy = 0
+        fin_gnorm = 0
 
-        try:
-            fin_energy = run_data["final_energy"]
-            fin_gnorm = run_data["final_gnorm"]
-        except KeyError:
-            raise KeyError(
-                "final energy not found in run_data, suggests failure "
-                f"of {name}"
-            )
+        raise SystemExit("get run data")
 
         n_shape_mol = get_shape_molecule_nodes(molecule, name)
         l_shape_mol = get_shape_molecule_ligands(molecule, name)
@@ -396,12 +296,6 @@ def target_torsions(bead_set, custom_torsion_option):
     return custom_torsion_set
 
 
-def save_idealised_topology(cage, cage_topo_str, struct_output):
-    output_name = struct_output / f"{cage_topo_str}_unopt.mol"
-    if not os.path.exists(output_name):
-        cage.write(str(output_name))
-
-
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -470,7 +364,7 @@ def main():
         f"{len(c3_blocks)} 3-C and "
         f"{len(c4_blocks)} 4-C building blocks."
     )
-    raise SystemExit()
+
     populations = {
         "3 + 2": {
             "t": cage_3p2_topologies,
@@ -485,7 +379,7 @@ def main():
     }
 
     custom_torsion_options = {
-        "ton": (0, 5),
+        "ton": (0, 50),
         "toff": None,
     }
 
@@ -510,12 +404,12 @@ def main():
                 (ba_bead,) = (
                     bb2_bead_set[i] for i in bb2_bead_set if "a" in i
                 )
-                bite_angle = (ba_bead.angle_centered - 90) * 2
+                # bite_angle = (ba_bead.angle_centered - 90) * 2
                 if custom_torsion_options[custom_torsion] is None:
                     custom_torsion_set = None
-                elif bite_angle == 180:
-                    # There are no torsions for bite angle == 180.
-                    custom_torsion_set = None
+                # elif bite_angle == 180:
+                #     # There are no torsions for bite angle == 180.
+                #     custom_torsion_set = None
                 else:
                     tors_option = custom_torsion_options[custom_torsion]
                     custom_torsion_set = target_torsions(
@@ -530,11 +424,6 @@ def main():
                         building_blocks=(bb2, bbl),
                     ),
                 )
-                save_idealised_topology(
-                    cage=cage,
-                    cage_topo_str=cage_topo_str,
-                    struct_output=struct_output,
-                )
 
                 cage = optimise_cage(
                     molecule=cage,
@@ -546,7 +435,7 @@ def main():
 
                 if cage is not None:
                     cage.write(str(struct_output / f"{name}_optc.mol"))
-
+                continue
                 analyse_cage(
                     molecule=cage,
                     name=name,
@@ -555,7 +444,8 @@ def main():
                 )
                 count += 1
                 raise SystemExit(
-                    "set force values for bonds, angles, vdw, torsions to be strict"
+                    "set force values for bonds, angles, vdw, torsions "
+                    "to be strict"
                 )
 
         logging.info(f"{count} {popn} cages built.")
