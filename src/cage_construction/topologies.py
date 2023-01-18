@@ -27,8 +27,8 @@ def cage_topology_options(fg_set):
             "3P6": stk.cage.M3L6,
             "4P8": stk.cage.M4L8,
             "6P12": stk.cage.M6L12Cube,
-            "8P6": stk.cage.EightPlusSixteen,
-            "12PL24": CGM12L24,
+            "8P16": stk.cage.EightPlusSixteen,
+            "12P24": CGM12L24,
         }
     if fg_set == "3p3":
         topologies = {
