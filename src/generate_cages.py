@@ -26,7 +26,7 @@ from geom import GeomMeasure
 from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory, check_long_distances
-from openmm_optimizer import CGOMMOptimizer
+from openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
 from cage_construction.topologies import cage_topology_options
 from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
 from beads import bead_library_check, produce_bead_library
@@ -129,43 +129,75 @@ def optimise_cage(
     output_dir,
     bead_set,
     custom_torsion_set,
+    custom_vdw_set,
 ):
+    print(name)
 
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
+    opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
 
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}")
         opt = CGOMMOptimizer(
-            fileprefix=name,
+            fileprefix=f"{name}_o1soft",
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
             torsions=False,
-            vdw=True,
+            vdw=custom_vdw_set,
             max_iterations=5,
             vdw_bond_cutoff=2,
         )
         molecule = opt.optimize(molecule)
 
         opt = CGOMMOptimizer(
-            fileprefix=name,
+            fileprefix=f"{name}_o1",
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=custom_torsion_set,
             bonds=True,
             angles=True,
             torsions=False,
-            vdw=True,
+            vdw=custom_vdw_set,
             # max_iterations=1000,
             vdw_bond_cutoff=2,
         )
         molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
+
+    if os.path.exists(opt2_mol_file):
+        molecule = molecule.with_structure_from_file(opt2_mol_file)
+    else:
+        logging.info(f"running MD {name}")
+        opt = CGOMMDynamics(
+            fileprefix=f"{name}_o2",
+            output_dir=output_dir,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=custom_vdw_set,
+            # max_iterations=1000,
+            vdw_bond_cutoff=2,
+            temperature=300,
+            random_seed=1000,
+        )
+        trajectory = opt.run_dynamics(molecule)
+        print(trajectory)
+        raise SystemExit("handle collection from trajectory")
+        raise SystemExit(
+            "get final step, or multilple steps, do things"
+        )
+
+        raise SystemExit("want a final simulation to do things with")
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt2_mol_file)
 
     try:
         check_long_distances(
@@ -245,6 +277,7 @@ def analyse_cage(
             for i in temp_custom_torsion_set
             for j in i
         ]
+        raise SystemExit("add Rg or avg sphericity of points")
         g_measure = GeomMeasure(custom_torsion_atoms)
         bond_data = g_measure.calculate_bonds(molecule)
         angle_data = g_measure.calculate_angles(molecule)
@@ -396,6 +429,10 @@ def main():
         "ton": (180, 50),
         "toff": None,
     }
+    custom_vdw_options = {
+        "von": True,
+        "voff": False,
+    }
 
     for popn in populations:
         logging.info(f"building {popn} population")
@@ -407,60 +444,74 @@ def main():
         count = 0
         for iteration in popn_iterator:
             for custom_torsion in custom_torsion_options:
-                tname = custom_torsion
-                cage_topo_str, bb2_str, bbl_str = iteration
-                name = f"{cage_topo_str}_{bbl_str}_{bb2_str}_{tname}"
-                bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
-                bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
+                for custom_vdw in custom_vdw_options:
+                    cage_topo_str, bb2_str, bbl_str = iteration
+                    name = (
+                        f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
+                        f"{custom_torsion}_{custom_vdw}"
+                    )
+                    bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
+                    bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
 
-                bead_set = bb2_bead_set.copy()
-                bead_set.update(bbl_bead_set)
-                (ba_bead,) = (
-                    bb2_bead_set[i] for i in bb2_bead_set if "a" in i
-                )
-                # bite_angle = (ba_bead.angle_centered - 90) * 2
-                if custom_torsion_options[custom_torsion] is None:
-                    custom_torsion_set = None
-                # elif bite_angle == 180:
-                #     # There are no torsions for bite angle == 180.
-                #     custom_torsion_set = None
-                else:
-                    tors_option = custom_torsion_options[custom_torsion]
-                    custom_torsion_set = target_torsions(
-                        bead_set=bead_set,
-                        custom_torsion_option=tors_option,
+                    bead_set = bb2_bead_set.copy()
+                    bead_set.update(bbl_bead_set)
+                    (ba_bead,) = (
+                        bb2_bead_set[i]
+                        for i in bb2_bead_set
+                        if "a" in i
+                    )
+                    # bite_angle = (ba_bead.angle_centered - 90) * 2
+                    if custom_torsion_options[custom_torsion] is None:
+                        custom_torsion_set = None
+                    # elif bite_angle == 180:
+                    #     # There are no torsions for bite angle == 180.
+                    #     custom_torsion_set = None
+                    else:
+                        tors_option = custom_torsion_options[
+                            custom_torsion
+                        ]
+                        custom_torsion_set = target_torsions(
+                            bead_set=bead_set,
+                            custom_torsion_option=tors_option,
+                        )
+
+                    custom_vdw_set = custom_vdw_options[custom_vdw]
+
+                    cage = stk.ConstructedMolecule(
+                        topology_graph=populations[popn]["t"][
+                            cage_topo_str
+                        ](
+                            building_blocks=(bb2, bbl),
+                        ),
                     )
 
-                cage = stk.ConstructedMolecule(
-                    topology_graph=populations[popn]["t"][
-                        cage_topo_str
-                    ](
-                        building_blocks=(bb2, bbl),
-                    ),
-                )
+                    cage = optimise_cage(
+                        molecule=cage,
+                        name=name,
+                        output_dir=calculation_output,
+                        bead_set=bead_set,
+                        custom_torsion_set=custom_torsion_set,
+                        custom_vdw_set=custom_vdw_set,
+                    )
 
-                cage = optimise_cage(
-                    molecule=cage,
-                    name=name,
-                    output_dir=calculation_output,
-                    bead_set=bead_set,
-                    custom_torsion_set=custom_torsion_set,
-                )
-
-                if cage is not None:
-                    cage.write(str(struct_output / f"{name}_optc.mol"))
-                continue
-                analyse_cage(
-                    molecule=cage,
-                    name=name,
-                    output_dir=calculation_output,
-                    bead_set=bead_set,
-                )
-                count += 1
-                raise SystemExit(
-                    "set force values for bonds, angles, vdw, torsions "
-                    "to be strict"
-                )
+                    if cage is not None:
+                        cage.write(
+                            str(struct_output / f"{name}_optc.mol")
+                        )
+                    continue
+                    analyse_cage(
+                        molecule=cage,
+                        name=name,
+                        output_dir=calculation_output,
+                        bead_set=bead_set,
+                        custom_torsion_set=custom_torsion_set,
+                        custom_vdw_set=custom_vdw_set,
+                    )
+                    count += 1
+                    raise SystemExit(
+                        "set force values for bonds, angles, vdw, torsions "
+                        "to be strict"
+                    )
 
         logging.info(f"{count} {popn} cages built.")
 
