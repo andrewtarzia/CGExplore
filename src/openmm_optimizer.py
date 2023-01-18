@@ -211,7 +211,7 @@ class CGOMMOptimizer(CGOptimizer):
                 particle3=id3,
                 particle4=id4,
                 periodicity=torsion_n,
-                phase=phi0,
+                phase=np.radians(phi0),
                 k=torsion_k,
             )
 
@@ -242,7 +242,7 @@ class CGOMMOptimizer(CGOptimizer):
                 particle3=id3,
                 particle4=id4,
                 periodicity=torsion_n,
-                phase=phi0,
+                phase=np.radians(phi0),
                 k=torsion_k,
             )
 

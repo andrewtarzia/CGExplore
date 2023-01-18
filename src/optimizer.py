@@ -268,9 +268,9 @@ class CGOptimizer:
         if self._torsions is False:
             return ""
         logging.info("OPT: not setting torsion ns yet.")
-        phi0 = 0
+        phi0 = 180
         torsion_n = 1
-        torsion_k = -5
+        torsion_k = 5
 
         torsions = get_all_torsions(molecule)
         for torsion in torsions:
