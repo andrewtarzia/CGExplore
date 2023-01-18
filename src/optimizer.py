@@ -267,10 +267,10 @@ class CGOptimizer:
     def _yield_torsions(self, molecule):
         if self._torsions is False:
             return ""
-        logging.info("OPT: not setting torsion ns yet.")
+        logging.info("OPT, WARNING: torsions are hardcoded!.")
         phi0 = 180
         torsion_n = 1
-        torsion_k = 5
+        torsion_k = 50
 
         torsions = get_all_torsions(molecule)
         for torsion in torsions:
