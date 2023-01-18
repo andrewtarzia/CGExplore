@@ -36,7 +36,7 @@ def core_2c_beads():
     return produce_bead_library(
         type_prefix="c",
         element_string="Ag",
-        sigmas=(2, 5, 10),
+        sigmas=(2, 5),
         angles=(180,),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
@@ -75,7 +75,7 @@ def beads_3c():
     return produce_bead_library(
         type_prefix="n",
         element_string="C",
-        sigmas=(2, 5, 10),
+        sigmas=(2, 5),
         angles=(60, 90, 109.5, 120),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
@@ -88,7 +88,7 @@ def beads_4c():
     return produce_bead_library(
         type_prefix="m",
         element_string="Pd",
-        sigmas=(2, 5, 10),
+        sigmas=(2, 5),
         angles=(50, 70, 90),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
@@ -137,6 +137,20 @@ def optimise_cage(
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}")
+        opt = CGOMMOptimizer(
+            fileprefix=name,
+            output_dir=output_dir,
+            param_pool=bead_set,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=True,
+            max_iterations=5,
+            vdw_bond_cutoff=2,
+        )
+        molecule = opt.optimize(molecule)
+
         opt = CGOMMOptimizer(
             fileprefix=name,
             output_dir=output_dir,
@@ -379,7 +393,7 @@ def main():
     }
 
     custom_torsion_options = {
-        "ton": (0, 50),
+        "ton": (180, 50),
         "toff": None,
     }
 
