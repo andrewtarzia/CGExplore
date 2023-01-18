@@ -12,6 +12,7 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 """
 
 import logging
+import time
 import numpy as np
 from openmm import openmm, app
 
@@ -33,7 +34,7 @@ class CGOMMOptimizer(CGOptimizer):
         angles,
         torsions,
         vdw,
-        # max_iterations,
+        max_iterations=None,
         vdw_bond_cutoff=None,
     ):
         super().__init__(
@@ -47,8 +48,13 @@ class CGOMMOptimizer(CGOptimizer):
         )
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
-        # self._max_iterations = max_iterations
-        self._tolerance = 1 * openmm.unit.kilojoule / openmm.unit.mole
+        self._output_path = output_dir / f"{fileprefix}_omm.out"
+        self._output_string = ""
+        if max_iterations is None:
+            self._max_iterations = 0
+        else:
+            self._max_iterations = max_iterations
+        self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
         if self._vdw and vdw_bond_cutoff is None:
             raise ValueError(
                 "if `vdw` is on, `vdw_bond_cutoff` should be set"
@@ -271,6 +277,14 @@ class CGOMMOptimizer(CGOptimizer):
         ff_str = "<ForceField>\n\n"
 
         logging.info("much redundancy here, can fix.")
+        logging.info(
+            "if you use BBs as templates, not whole mol, then you "
+            "need to change the ID"
+        )
+        logging.info(
+            "if you use BBs as templates, not whole mol, then you "
+            "need external bonds and to change the ID"
+        )
 
         at_str = " <AtomTypes>\n"
         re_str = " <Residues>\n"
@@ -290,17 +304,10 @@ class CGOMMOptimizer(CGOptimizer):
                     f'mass="{self._mass}"/>\n'
                 )
 
-            logging.info(
-                "if you use BBs as templates, not whole mol, then you "
-                "need to change the ID"
-            )
             re_str += f'   <Atom name="{aid}" type="{atype}"/>\n'
 
         for bond in molecule.get_bonds():
-            logging.info(
-                "if you use BBs as templates, not whole mol, then you "
-                "need external bonds and to change the ID"
-            )
+
             a1id = bond.get_atom1().get_id()
             a2id = bond.get_atom2().get_id()
 
@@ -396,14 +403,16 @@ class CGOMMOptimizer(CGOptimizer):
         return simulation, system
 
     def _run_energy_decomp(self, simulation, system):
-        logging.info("energy decomposition")
+        self._output_string += "energy decomposition:\n"
         fgroups = self._group_forces(system)
         egroups = self._get_energy_decomposition(
             context=simulation.context,
             forcegroups=fgroups,
         )
         for idd in egroups.keys():
-            logging.info(f"{idd}: {egroups[idd]}")
+            self._output_string += f"{idd}: {egroups[idd]}\n"
+
+        self._output_string += "\n"
 
     def _get_energy(self, simulation, system):
         self._run_energy_decomp(simulation, system)
@@ -422,7 +431,7 @@ class CGOMMOptimizer(CGOptimizer):
         self._run_energy_decomp(simulation, system)
         simulation.minimizeEnergy(
             tolerance=self._tolerance,
-            # maxIterations=self._max_iterations,
+            maxIterations=self._max_iterations,
         )
         self._run_energy_decomp(simulation, system)
 
@@ -443,7 +452,18 @@ class CGOMMOptimizer(CGOptimizer):
         return self._get_energy(simulation, system)
 
     def optimize(self, molecule):
+        start_time = time.time()
+        self._output_string += f"start time: {start_time}\n"
+        self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
+
         simulation, system = self._setup_simulation(molecule)
         opt_state = self._minimize_energy(simulation, system)
         molecule = self._update_stk_molecule(molecule, opt_state)
+
+        end_time = time.time()
+        self._output_string += f"end time: {end_time}\n"
+        total_time = end_time - start_time
+        self._output_string += f"total time: {total_time} [s]\n"
+        with open(self._output_path, "w") as f:
+            f.write(self._output_string)
         return molecule
