@@ -105,9 +105,19 @@ def plot_timings(gulp_timings, omm_timings):
         rasterized=True,
     )
     ax.scatter(
-        [omm_timings[i][0] for i in omm_timings],  # if "toff" in i],
-        [omm_timings[i][1] for i in omm_timings],  # if "toff" in i],
+        [omm_timings[i][0] for i in omm_timings if "voff" in i],
+        [omm_timings[i][1] for i in omm_timings if "voff" in i],
         c="skyblue",
+        s=20,
+        edgecolor="none",
+        alpha=0.6,
+        label="OpenMM",
+        rasterized=True,
+    )
+    ax.scatter(
+        [omm_timings[i][0] for i in omm_timings if "von" in i],
+        [omm_timings[i][1] for i in omm_timings if "von" in i],
+        c="gold",
         s=20,
         edgecolor="none",
         alpha=0.6,
