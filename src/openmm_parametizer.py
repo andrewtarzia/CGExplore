@@ -22,7 +22,7 @@ from rdkit import RDLogger
 
 from env_set import cages
 from utilities import check_directory, angle_between, get_dihedral
-from openmm_optimizer import CGOMMOptimizer
+from openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
 from beads import produce_bead_library, bead_library_check
 
 
@@ -32,8 +32,8 @@ def c_beads():
         element_string="Ag",
         sigmas=(2,),
         angles=(90,),
-        bond_ks=(10,),
-        angle_ks=(20,),
+        bond_ks=(5e5,),
+        angle_ks=(5e2,),
         epsilon=10.0,
         coordination=2,
     )
@@ -54,14 +54,49 @@ def test1(beads, calculation_output, figure_output):
     bead = beads["c0000"]
     linear_bb = stk.BuildingBlock(
         smiles=f"[{bead.element_string}][{bead.element_string}]",
-        position_matrix=[[0, 0, 0], [1, 0, 0]],
+        position_matrix=[[0, 0, 0], [2, 0, 0]],
     )
+
+    tcol = {
+        300: "gold",
+        100: "orange",
+        10: "green",
+    }
+
+    tdict = {}
+    for temp in tcol:
+        tdict[temp] = {}
+        logging.info(f"running MD test1; {temp}")
+        opt = CGOMMDynamics(
+            fileprefix=f"mdl1_{temp}",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=False,
+            torsions=False,
+            vdw=False,
+            temperature=temp,
+            random_seed=1000,
+        )
+        trajectory = opt.run_dynamics(linear_bb)
+
+        traj_log = trajectory.get_data()
+        for conformer in trajectory.yield_conformers():
+            timestep = conformer.timestep
+            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+            meas_temp = float(row["Temperature (K)"])
+            pot_energy = float(row["Potential Energy (kJ/mole)"])
+            posmat = conformer.molecule.get_position_matrix()
+            distance = np.linalg.norm(posmat[1] - posmat[0])
+            tdict[temp][timestep] = (meas_temp, pot_energy, distance)
 
     coords = np.linspace(0, 5, 20)
     xys = []
     for i, coord in enumerate(coords):
         name = f"l1_{i}"
-        new_posmat = linear_bb.get_position_matrix() * coord
+        new_posmat = linear_bb.get_position_matrix()
+        new_posmat[1] = np.array([1, 0, 0]) * coord
         new_bb = linear_bb.with_position_matrix(new_posmat)
         new_bb.write(str(calculation_output / f"{name}.mol"))
         logging.info(f"evaluating {name}")
@@ -112,6 +147,19 @@ def test1(beads, calculation_output, figure_output):
         alpha=1.0,
         label="numerical",
     )
+
+    for temp in tdict:
+        data = tdict[temp]
+        ax.scatter(
+            [data[i][2] for i in data],
+            [data[i][1] for i in data],
+            c=tcol[temp],
+            s=30,
+            edgecolor="none",
+            alpha=1.0,
+            label=f"{temp} K",
+        )
+
     ax.axhline(y=0, c="k", lw=2, linestyle="--")
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("distance [A]", fontsize=16)
@@ -137,8 +185,48 @@ def test2(beads, calculation_output, figure_output):
         position_matrix=[[0, 0, 0], [2, 0, 0], [3, 0, 0]],
     )
 
-    coords1 = np.linspace(0, 5, 25)
-    coords2 = np.linspace(0, 5, 25)
+    tcol = {
+        300: "gold",
+        100: "orange",
+        10: "green",
+    }
+
+    tdict = {}
+    for temp in tcol:
+        tdict[temp] = {}
+        logging.info(f"running MD test1; {temp}")
+        opt = CGOMMDynamics(
+            fileprefix=f"mdl2_{temp}",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=False,
+            torsions=False,
+            vdw=False,
+            temperature=temp,
+            random_seed=1000,
+        )
+        trajectory = opt.run_dynamics(linear_bb)
+
+        traj_log = trajectory.get_data()
+        for conformer in trajectory.yield_conformers():
+            timestep = conformer.timestep
+            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+            meas_temp = float(row["Temperature (K)"])
+            pot_energy = float(row["Potential Energy (kJ/mole)"])
+            posmat = conformer.molecule.get_position_matrix()
+            distance1 = np.linalg.norm(posmat[1] - posmat[0])
+            distance2 = np.linalg.norm(posmat[2] - posmat[1])
+            tdict[temp][timestep] = (
+                meas_temp,
+                pot_energy,
+                distance1,
+                distance2,
+            )
+
+    coords1 = np.linspace(0.6, 2, 25)
+    coords2 = np.linspace(0.6, 2, 25)
     xys = []
     for i, (coord1, coord2) in enumerate(
         itertools.product(coords1, coords2)
@@ -195,7 +283,6 @@ def test2(beads, calculation_output, figure_output):
         # edgecolor="k",
         s=30,
         cmap="Blues",
-        rasterized=True,
     )
     ax.scatter(
         min_xy[0],
@@ -205,6 +292,19 @@ def test2(beads, calculation_output, figure_output):
         edgecolor="k",
         s=40,
     )
+
+    for temp in tdict:
+        data = tdict[temp]
+        ax.scatter(
+            [data[i][2] for i in data],
+            [data[i][3] for i in data],
+            c=tcol[temp],
+            s=30,
+            edgecolor="none",
+            alpha=1.0,
+            label=f"{temp} K",
+        )
+
     ax.axhline(y=bead.sigma, c="k", lw=1)
     ax.axvline(x=bead.sigma, c="k", lw=1)
     ax.tick_params(axis="both", which="major", labelsize=16)
@@ -221,6 +321,7 @@ def test2(beads, calculation_output, figure_output):
     )
     cbar.ax.tick_params(labelsize=16)
     cbar.set_label("energy [kJmol-1]", fontsize=16)
+    ax.legend(fontsize=16)
     fig.tight_layout()
     fig.savefig(
         os.path.join(figure_output, "l2.pdf"),
@@ -240,6 +341,42 @@ def test3(beads, calculation_output, figure_output):
         ),
         position_matrix=[[0, 0, 0], [2, 0, 0], [1, 0, 0]],
     )
+
+    tcol = {
+        300: "gold",
+        100: "orange",
+        10: "green",
+    }
+
+    tdict = {}
+    for temp in tcol:
+        tdict[temp] = {}
+        logging.info(f"running MD test1; {temp}")
+        opt = CGOMMDynamics(
+            fileprefix=f"mdl3_{temp}",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+            temperature=temp,
+            random_seed=1000,
+        )
+        trajectory = opt.run_dynamics(linear_bb)
+
+        traj_log = trajectory.get_data()
+        for conformer in trajectory.yield_conformers():
+            timestep = conformer.timestep
+            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+            meas_temp = float(row["Temperature (K)"])
+            pot_energy = float(row["Potential Energy (kJ/mole)"])
+            posmat = conformer.molecule.get_position_matrix()
+            vector1 = posmat[1] - posmat[0]
+            vector2 = posmat[2] - posmat[0]
+            angle = np.degrees(angle_between(vector1, vector2))
+            tdict[temp][timestep] = (meas_temp, pot_energy, angle)
 
     coords = points_in_circum(r=2, n=100)
     xys = []
@@ -303,6 +440,19 @@ def test3(beads, calculation_output, figure_output):
         alpha=1.0,
         label="numerical",
     )
+
+    for temp in tdict:
+        data = tdict[temp]
+        ax.scatter(
+            [data[i][2] for i in data],
+            [data[i][1] for i in data],
+            c=tcol[temp],
+            s=30,
+            edgecolor="none",
+            alpha=1.0,
+            label=f"{temp} K",
+        )
+
     ax.axhline(y=0, c="k", lw=2, linestyle="--")
     ax.axvline(x=bead.angle_centered, c="k", lw=2)
 
@@ -327,8 +477,42 @@ def test4(beads, calculation_output, figure_output):
             f"[{bead.element_string}][{bead.element_string}]"
             f"[{bead.element_string}][{bead.element_string}]"
         ),
-        position_matrix=[[0, 2, 0], [0, 0, 0], [2, 0, 0], [2, 0, 0]],
+        position_matrix=[[0, 2, 0], [0, 0, 0], [2, 0, 0], [2, 2, 0]],
     )
+
+    tcol = {
+        300: "gold",
+        100: "orange",
+        10: "green",
+    }
+
+    tdict = {}
+    for temp in tcol:
+        tdict[temp] = {}
+        logging.info(f"running MD test1; {temp}")
+        opt = CGOMMDynamics(
+            fileprefix=f"mdl4_{temp}",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=True,
+            torsions=True,
+            vdw=False,
+            temperature=temp,
+            random_seed=1000,
+        )
+        trajectory = opt.run_dynamics(linear_bb)
+
+        traj_log = trajectory.get_data()
+        for conformer in trajectory.yield_conformers():
+            timestep = conformer.timestep
+            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+            meas_temp = float(row["Temperature (K)"])
+            pot_energy = float(row["Potential Energy (kJ/mole)"])
+            posmat = conformer.molecule.get_position_matrix()
+            distance = np.linalg.norm(posmat[1] - posmat[0])
+            tdict[temp][timestep] = (meas_temp, pot_energy, distance)
 
     coords = points_in_circum(r=2, n=20)
     xys = []
@@ -367,7 +551,7 @@ def test4(beads, calculation_output, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.set_title(
-        "n: 1, k=-5 [kJ/mol], phi0=0 [deg]",
+        "n: 1, k=50 [kJ/mol], phi0=180 [deg]",
         fontsize=16.0,
     )
 
@@ -378,7 +562,7 @@ def test4(beads, calculation_output, figure_output):
     x = np.linspace(min(torsions), max(torsions), 100)
     ax.plot(
         x,
-        fun(np.radians(x), -5, 0, 1),
+        fun(np.radians(x), 50, np.pi, 1),
         c="r",
         lw=2,
         label="analytical",
@@ -395,6 +579,18 @@ def test4(beads, calculation_output, figure_output):
     )
     ax.axhline(y=0.0, c="k", lw=2, linestyle="--")
     ax.axvline(x=0.0, c="k", lw=2)
+
+    for temp in tdict:
+        data = tdict[temp]
+        ax.scatter(
+            [data[i][2] for i in data],
+            [data[i][1] for i in data],
+            c=tcol[temp],
+            s=30,
+            edgecolor="none",
+            alpha=1.0,
+            label=f"{temp} K",
+        )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("torsion [theta]", fontsize=16)
