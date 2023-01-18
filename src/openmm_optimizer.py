@@ -13,10 +13,106 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 
 import logging
 import time
+import stk
+import pandas as pd
 import numpy as np
 from openmm import openmm, app
+from dataclasses import dataclass
 
 from optimizer import CGOptimizer
+
+
+@dataclass
+class Conformer:
+    molecule: stk.Molecule
+    timestep: int
+
+
+class Trajectory:
+    def __init__(
+        self,
+        base_molecule,
+        data_path,
+        traj_path,
+        forcefield_path,
+        output_path,
+        temperature,
+        random_seed,
+        num_steps,
+        time_step,
+        friction,
+        reporting_freq,
+        traj_freq,
+    ):
+        self._base_molecule = base_molecule
+        self._data_path = data_path
+        self._traj_path = traj_path
+        self._forcefield_path = forcefield_path
+        self._output_path = output_path
+        self._temperature = temperature
+        self._random_seed = random_seed
+        self._num_steps = num_steps
+        self._time_step = time_step
+        self._friction = friction
+        self._reporting_freq = reporting_freq
+        self._traj_freq = traj_freq
+        self._num_confs = int(self._num_steps / self._traj_freq)
+
+    def get_data(self):
+        return pd.read_csv(self._data_path)
+
+    def yield_conformers(self):
+        num_atoms = self._base_molecule.get_num_atoms()
+        start_trigger = "MODEL"
+        triggered = False
+        end_trigger = "ENDMDL"
+        model_number = 0
+        new_pos_mat = []
+        atom_trigger = "HETATM"
+
+        with open(self._traj_path, "r") as f:
+            for line in f.readlines():
+                if end_trigger in line:
+                    if len(new_pos_mat) != num_atoms:
+                        raise ValueError(
+                            f"num atoms ({num_atoms}) does not match "
+                            "size of collected position matrix "
+                            f"({len(new_pos_mat)})."
+                        )
+
+                    yield Conformer(
+                        molecule=(
+                            self._base_molecule.with_position_matrix(
+                                np.array(new_pos_mat)
+                            )
+                        ),
+                        timestep=model_number * self._traj_freq,
+                    )
+                    new_pos_mat = []
+                    triggered = False
+
+                if start_trigger in line:
+                    model_number = int(line.strip().split()[-1])
+                    triggered = True
+
+                if triggered:
+                    if atom_trigger in line:
+                        coords = [
+                            float(i) for i in line.strip().split()[6:9]
+                        ]
+                        new_pos_mat.append(coords)
+
+    def get_base_molecule(self):
+        return self._base_molecule
+
+    def __str__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(steps={self._num_steps}, "
+            f"conformers={self._num_confs})"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class MDEmptyTrajcetoryError(Exception):
@@ -384,14 +480,8 @@ class CGOMMOptimizer(CGOptimizer):
         system = self._add_forces(system, molecule)
 
         # Default integrator.
-        logging.info("better integrator?")
-        # random_seed = np.random.randint(1000)
-        time_step = 0.25 * openmm.unit.femtoseconds
-        temperature = 300 * openmm.unit.kelvin
-        friction = 1 / openmm.unit.picosecond
-        integrator = openmm.LangevinIntegrator(
-            temperature, friction, time_step
-        )
+        time_step = 0.1 * openmm.unit.femtoseconds
+        integrator = openmm.VerletIntegrator(time_step)
 
         # Define simulation.
         simulation = app.Simulation(topology, system, integrator)
@@ -429,20 +519,21 @@ class CGOMMOptimizer(CGOptimizer):
     def _minimize_energy(self, simulation, system):
 
         self._run_energy_decomp(simulation, system)
+
+        self._output_string += "minimizing energy\n\n"
         simulation.minimizeEnergy(
             tolerance=self._tolerance,
             maxIterations=self._max_iterations,
         )
         self._run_energy_decomp(simulation, system)
 
+        return simulation
+
+    def _update_stk_molecule(self, molecule, simulation):
         state = simulation.context.getState(
             getPositions=True,
             getEnergy=True,
         )
-
-        return state
-
-    def _update_stk_molecule(self, molecule, state):
         positions = state.getPositions(asNumpy=True)
         molecule = molecule.with_position_matrix(positions * 10)
         return molecule
@@ -457,8 +548,8 @@ class CGOMMOptimizer(CGOptimizer):
         self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
 
         simulation, system = self._setup_simulation(molecule)
-        opt_state = self._minimize_energy(simulation, system)
-        molecule = self._update_stk_molecule(molecule, opt_state)
+        simulation = self._minimize_energy(simulation, system)
+        molecule = self._update_stk_molecule(molecule, simulation)
 
         end_time = time.time()
         self._output_string += f"end time: {end_time}\n"
@@ -467,3 +558,198 @@ class CGOMMOptimizer(CGOptimizer):
         with open(self._output_path, "w") as f:
             f.write(self._output_string)
         return molecule
+
+
+class CGOMMDynamics(CGOMMOptimizer):
+    def __init__(
+        self,
+        fileprefix,
+        output_dir,
+        param_pool,
+        custom_torsion_set,
+        bonds,
+        angles,
+        torsions,
+        vdw,
+        temperature,
+        random_seed=None,
+        max_iterations=None,
+        vdw_bond_cutoff=None,
+    ):
+        super(CGOMMOptimizer, self).__init__(
+            fileprefix,
+            output_dir,
+            param_pool,
+            bonds,
+            angles,
+            torsions,
+            vdw,
+        )
+        self._custom_torsion_set = custom_torsion_set
+        self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
+        self._output_path = output_dir / f"{fileprefix}_omm.out"
+        self._trajectory_data = output_dir / f"{fileprefix}_traj.dat"
+        self._trajectory_file = output_dir / f"{fileprefix}_traj.pdb"
+
+        self._output_string = ""
+        if max_iterations is None:
+            self._max_iterations = 0
+        else:
+            self._max_iterations = max_iterations
+        self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
+        if self._vdw and vdw_bond_cutoff is None:
+            raise ValueError(
+                "if `vdw` is on, `vdw_bond_cutoff` should be set"
+            )
+        elif vdw_bond_cutoff is None:
+            self._vdw_bond_cutoff = 0
+        else:
+            self._vdw_bond_cutoff = vdw_bond_cutoff
+
+        self._temperature = temperature * openmm.unit.kelvin
+
+        if random_seed is None:
+            logging.info("make random seed constant if none")
+            self._random_seed = np.random.randint(1000)
+        else:
+            self._random_seed = random_seed
+
+        self._num_steps = 10000
+        self._time_step = 1 * openmm.unit.femtoseconds
+        self._friction = 1.0 / openmm.unit.picosecond
+        self._reporting_freq = 100
+        self._traj_freq = 100
+
+    def _add_trajectory_reporter(self, simulation):
+        simulation.reporters.append(
+            app.PDBReporter(
+                file=str(self._trajectory_file),
+                reportInterval=self._traj_freq,
+            )
+        )
+        return simulation
+
+    def _add_reporter(self, simulation):
+        simulation.reporters.append(
+            app.StateDataReporter(
+                file=str(self._trajectory_data),
+                reportInterval=self._reporting_freq,
+                step=True,
+                potentialEnergy=True,
+                kineticEnergy=True,
+                totalEnergy=False,
+                temperature=True,
+                volume=False,
+                density=False,
+                progress=False,
+                remainingTime=False,
+                speed=False,
+                totalSteps=self._num_steps,
+                separator=",",
+            )
+        )
+        return simulation
+
+    def _setup_simulation(self, molecule):
+        logging.info("explicit set units here?")
+
+        # Load force field.
+        self._write_ff_file(molecule)
+        forcefield = app.ForceField(self._forcefield_path)
+
+        # Create system.
+        topology = self._stk_to_topology(molecule)
+        system = forcefield.createSystem(topology)
+        system = self._add_forces(system, molecule)
+
+        # Default integrator.
+        logging.info("better integrator?")
+        integrator = openmm.LangevinIntegrator(
+            self._temperature,
+            self._friction,
+            self._time_step,
+        )
+
+        # Define simulation.
+        simulation = app.Simulation(topology, system, integrator)
+
+        # Set positions from structure.
+        simulation.context.setPositions(
+            molecule.get_position_matrix() / 10
+        )
+        return simulation, system
+
+    def _run_molecular_dynamics(self, simulation, system):
+
+        self._output_string += "simulation parameters:\n"
+        self._output_string += (
+            f"initalise velocities at T={self._temperature}\n"
+        )
+        simulation.context.setVelocitiesToTemperature(
+            self._temperature,
+            self._random_seed,
+        )
+
+        total_time = self._num_steps * self._time_step
+        tt_in_ns = total_time.in_units_of(openmm.unit.nanoseconds)
+        tf_in_ns = self._traj_freq * self._time_step
+        self._output_string += (
+            f"steps: {self._num_steps}\n"
+            f"time step: {self._time_step}\n"
+            f"total time: {tt_in_ns}\n"
+            f"report frequency: {self._reporting_freq}\n"
+            f"trajectory frequency per step: {self._traj_freq}\n"
+            f"trajectory frequency per ns: {tf_in_ns}\n"
+            f"seed: {self._random_seed}\n"
+        )
+
+        self._output_string += "running simulation\n"
+        simulation = self._add_reporter(simulation)
+        simulation = self._add_trajectory_reporter(simulation)
+
+        start = time.time()
+        simulation.step(self._num_steps)
+        end = time.time()
+        speed = self._num_steps / (end - start)
+        self._output_string += (
+            f"done in {end-start} s ({round(speed, 2)} steps/s)\n\n"
+        )
+
+        self._run_energy_decomp(simulation, system)
+
+        return simulation
+
+    def _get_trajectory(self, molecule):
+
+        return Trajectory(
+            base_molecule=molecule,
+            data_path=self._trajectory_data,
+            traj_path=self._trajectory_file,
+            forcefield_path=self._forcefield_path,
+            output_path=self._output_path,
+            temperature=self._temperature,
+            random_seed=self._random_seed,
+            num_steps=self._num_steps,
+            time_step=self._time_step,
+            friction=self._friction,
+            reporting_freq=self._reporting_freq,
+            traj_freq=self._traj_freq,
+        )
+
+    def run_dynamics(self, molecule):
+        start_time = time.time()
+        self._output_string += f"start time: {start_time}\n"
+        self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
+
+        simulation, system = self._setup_simulation(molecule)
+        simulation = self._minimize_energy(simulation, system)
+        simulation = self._run_molecular_dynamics(simulation, system)
+
+        end_time = time.time()
+        self._output_string += f"end time: {end_time}\n"
+        total_time = end_time - start_time
+        self._output_string += f"total time: {total_time} [s]\n"
+        with open(self._output_path, "w") as f:
+            f.write(self._output_string)
+
+        return self._get_trajectory(molecule)
