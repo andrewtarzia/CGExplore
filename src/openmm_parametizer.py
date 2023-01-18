@@ -646,7 +646,7 @@ def test5(beads, calculation_output, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.set_title(
-        f"{bead.sigma} A, epsilon: {bead.bond_k} kJ/mol",
+        f"{bead.sigma} A, epsilon: {bead.epsilon} kJ/mol",
         fontsize=16.0,
     )
 
@@ -662,9 +662,9 @@ def test5(beads, calculation_output, figure_output):
         x,
         fun(
             x / 10,
-            bead.bond_k,
+            bead.epsilon,
             bead.sigma / 10,
-            bead.bond_k,
+            bead.epsilon,
             bead.sigma / 10,
         ),
         c="r",
