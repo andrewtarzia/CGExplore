@@ -131,16 +131,29 @@ def optimise_cage(
     custom_torsion_set,
     custom_vdw_set,
 ):
-    print(name)
 
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
     opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
+    opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
+    fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
 
+    opt = CGOMMOptimizer(
+        fileprefix=f"{name}_o1",
+        output_dir=output_dir,
+        param_pool=bead_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=True,
+        angles=True,
+        torsions=False,
+        vdw=custom_vdw_set,
+        # max_iterations=1000,
+        vdw_bond_cutoff=2,
+    )
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}")
-        opt = CGOMMOptimizer(
+        soft_opt = CGOMMOptimizer(
             fileprefix=f"{name}_o1soft",
             output_dir=output_dir,
             param_pool=bead_set,
@@ -152,23 +165,12 @@ def optimise_cage(
             max_iterations=5,
             vdw_bond_cutoff=2,
         )
-        molecule = opt.optimize(molecule)
+        molecule = soft_opt.optimize(molecule)
 
-        opt = CGOMMOptimizer(
-            fileprefix=f"{name}_o1",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=custom_vdw_set,
-            # max_iterations=1000,
-            vdw_bond_cutoff=2,
-        )
         molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
+    first_energy = opt.calculate_energy(molecule)
 
     if os.path.exists(opt2_mol_file):
         molecule = molecule.with_structure_from_file(opt2_mol_file)
@@ -189,15 +191,44 @@ def optimise_cage(
             random_seed=1000,
         )
         trajectory = opt.run_dynamics(molecule)
-        print(trajectory)
-        raise SystemExit("handle collection from trajectory")
-        raise SystemExit(
-            "get final step, or multilple steps, do things"
-        )
-
-        raise SystemExit("want a final simulation to do things with")
+        traj_log = trajectory.get_data()
+        min_energy = 1e24
+        for conformer in trajectory.yield_conformers():
+            timestep = conformer.timestep
+            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+            pot_energy = float(row["Potential Energy (kJ/mole)"])
+            if pot_energy < min_energy:
+                logging.info(
+                    f"new lowest E conformer {timestep}: "
+                    f"{pot_energy} kJ/mol-1"
+                )
+                min_energy = pot_energy
+                molecule = molecule.with_position_matrix(
+                    conformer.molecule.get_position_matrix(),
+                )
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt2_mol_file)
+
+    opt = CGOMMOptimizer(
+        fileprefix=f"{name}_o3",
+        output_dir=output_dir,
+        param_pool=bead_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=True,
+        angles=True,
+        torsions=False,
+        vdw=custom_vdw_set,
+        # max_iterations=1000,
+        vdw_bond_cutoff=2,
+    )
+    if os.path.exists(opt3_mol_file):
+        molecule = molecule.with_structure_from_file(opt3_mol_file)
+    else:
+        logging.info(f"optimising {name}")
+        molecule = opt.optimize(molecule)
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt3_mol_file)
+    final_energy = opt.calculate_energy(molecule)
 
     try:
         check_long_distances(
@@ -210,6 +241,11 @@ def optimise_cage(
         logging.info(f"{name} opt failed in step 1. Should be ignored.")
         raise SystemExit()
         return None
+
+    if first_energy < final_energy:
+        logging.info("energy after opt1 < energy after MD search.")
+        molecule = molecule.with_structure_from_file(opt1_mol_file)
+    molecule.write(fina_mol_file)
 
     return molecule
 
