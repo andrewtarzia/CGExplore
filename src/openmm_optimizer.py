@@ -499,8 +499,14 @@ class CGOMMOptimizer(CGOptimizer):
             context=simulation.context,
             forcegroups=fgroups,
         )
+        tot_energy = openmm.unit.quantity.Quantity(
+            value=0,
+            unit=openmm.unit.kilojoules_per_mole,
+        )
         for idd in egroups.keys():
             self._output_string += f"{idd}: {egroups[idd]}\n"
+            tot_energy += egroups[idd]
+        self._output_string += f"total energy: {tot_energy}\n"
 
         self._output_string += "\n"
 
