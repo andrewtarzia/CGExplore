@@ -26,6 +26,25 @@ from openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
 from beads import produce_bead_library, bead_library_check
 
 
+def bond_function(x, k, sigma):
+    return (1 / 2) * k * (x - sigma / 1) ** 2
+
+
+def angle_function(x, k, theta0):
+    return (1 / 2) * k * (x - theta0) ** 2
+
+
+def torsion_function(x, k, theta0, n):
+    return k * (1 + np.cos(n * x - theta0))
+
+
+def nonbond_function(x, epsilon1, sigma1, epsilon2, sigma2):
+    return (
+        np.sqrt(epsilon1 * epsilon2)
+        * ((sigma1 + sigma2) / (2 * x)) ** 12
+    )
+
+
 def c_beads():
     return produce_bead_library(
         type_prefix="c",
@@ -125,14 +144,11 @@ def test1(beads, calculation_output, figure_output):
         fontsize=16.0,
     )
 
-    def fun(x, k, sigma):
-        return (1 / 2) * k * (x - sigma / 1) ** 2
-
     distances = [i[0] for i in xys]
     x = np.linspace(min(distances), max(distances), 100)
     ax.plot(
         x,
-        fun(x / 10, bead.bond_k, bead.sigma / 10),
+        bond_function(x / 10, bead.bond_k, bead.sigma / 10),
         c="r",
         lw=2,
         label="analytical",
@@ -416,14 +432,11 @@ def test3(beads, calculation_output, figure_output):
         fontsize=16.0,
     )
 
-    def fun(x, k, theta0):
-        return (1 / 2) * k * (x - theta0) ** 2
-
     angles = [i[0] for i in xys]
     x = np.linspace(min(angles), max(angles), 100)
     ax.plot(
         x,
-        fun(
+        angle_function(
             np.radians(x), bead.angle_k, np.radians(bead.angle_centered)
         ),
         c="r",
@@ -518,7 +531,6 @@ def test4(beads, calculation_output, figure_output):
     xys = []
     for i, coord in enumerate(coords):
         name = f"l4_{i}"
-        print(coord)
         new_posmat = linear_bb.get_position_matrix()
         new_posmat[3] = np.array([2, coord[0], coord[1]])
         new_bb = linear_bb.with_position_matrix(new_posmat)
@@ -555,14 +567,11 @@ def test4(beads, calculation_output, figure_output):
         fontsize=16.0,
     )
 
-    def fun(x, k, theta0, n):
-        return k * (1 + np.cos(n * x - theta0))
-
     torsions = [i[0] for i in xys]
     x = np.linspace(min(torsions), max(torsions), 100)
     ax.plot(
         x,
-        fun(np.radians(x), 50, np.pi, 1),
+        torsion_function(np.radians(x), 50, np.pi, 1),
         c="r",
         lw=2,
         label="analytical",
@@ -615,7 +624,6 @@ def test5(beads, calculation_output, figure_output):
 
     rmin = bead.sigma * (2 ** (1 / 6))
     rvdw = rmin / 2
-    print(rmin, rvdw)
     coords = np.linspace(rvdw + 0.8, 15, 50)
     xys = []
     for i, coord in enumerate(coords):
@@ -650,17 +658,11 @@ def test5(beads, calculation_output, figure_output):
         fontsize=16.0,
     )
 
-    def fun(x, epsilon1, sigma1, epsilon2, sigma2):
-        return (
-            np.sqrt(epsilon1 * epsilon2)
-            * ((sigma1 + sigma2) / (2 * x)) ** 12
-        )
-
     distances = [i[0] for i in xys]
     x = np.linspace(min(distances), max(distances), 100)
     ax.plot(
         x,
-        fun(
+        nonbond_function(
             x / 10,
             bead.epsilon,
             bead.sigma / 10,
@@ -683,7 +685,7 @@ def test5(beads, calculation_output, figure_output):
     )
     ax.axhline(y=0, c="k", lw=2, linestyle="--")
     ax.axvline(x=rmin, c="k", lw=2, linestyle="--")
-    ax.axvline(x=rvdw, lw=2, linestyle="--", c="r")
+    ax.axvline(x=rvdw, lw=2, linestyle="--", c="k")
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("distance [A]", fontsize=16)
     ax.set_ylabel("energy [kJmol-1]", fontsize=16)
