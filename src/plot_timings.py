@@ -124,6 +124,16 @@ def plot_timings(gulp_timings, omm_timings):
         label="OpenMM/w-dispersion",
         rasterized=True,
     )
+    ax.scatter(
+        [omm_timings[i][0] for i in omm_timings if "o2" in i],
+        [omm_timings[i][1] for i in omm_timings if "o2" in i],
+        c="green",
+        s=20,
+        edgecolor="none",
+        alpha=0.6,
+        label="OpenMM-MD",
+        rasterized=True,
+    )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("num. atoms", fontsize=16)
