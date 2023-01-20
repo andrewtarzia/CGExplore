@@ -97,10 +97,10 @@ class Trajectory:
 
                 if triggered:
                     if atom_trigger in line:
-                        coords = [
-                            float(i) for i in line.strip().split()[6:9]
-                        ]
-                        new_pos_mat.append(coords)
+                        x = float(line[30:38])
+                        y = float(line[38:46])
+                        z = float(line[46:54])
+                        new_pos_mat.append([x, y, z])
 
     def get_base_molecule(self):
         return self._base_molecule
