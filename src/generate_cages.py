@@ -76,7 +76,7 @@ def beads_3c():
         type_prefix="n",
         element_string="C",
         sigmas=(2, 5),
-        angles=(60, 90, 109.5, 120),
+        angles=(50, 60, 70, 80, 90, 110, 120),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
         epsilon=10.0,
@@ -89,7 +89,7 @@ def beads_4c():
         type_prefix="m",
         element_string="Pd",
         sigmas=(2, 5),
-        angles=(50, 70, 90),
+        angles=(50, 60, 70, 80, 90),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
         epsilon=10.0,
@@ -399,6 +399,7 @@ def main():
     # Define list of topology functions.
     cage_3p2_topologies = cage_topology_options("2p3")
     cage_4p2_topologies = cage_topology_options("2p4")
+    cage_3p4_topologies = cage_topology_options("3p4")
 
     # Define bead libraries.
     beads_core_2c_lib = core_2c_beads()
@@ -457,6 +458,11 @@ def main():
         "4 + 2": {
             "t": cage_4p2_topologies,
             "c2": c2_blocks,
+            "cl": c4_blocks,
+        },
+        "3 + 4": {
+            "t": cage_3p4_topologies,
+            "c2": c3_blocks,
             "cl": c4_blocks,
         },
     }
