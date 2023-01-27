@@ -366,21 +366,20 @@ class CGOMMOptimizer(CGOptimizer):
             )
         nb_str += " </CustomNonbondedForce>\n\n"
 
-        logging.info("can add attractions in the future.")
         return nb_str
 
     def _write_ff_file(self, molecule):
         ff_str = "<ForceField>\n\n"
 
-        logging.info("much redundancy here, can fix.")
-        logging.info(
-            "if you use BBs as templates, not whole mol, then you "
-            "need to change the ID"
-        )
-        logging.info(
-            "if you use BBs as templates, not whole mol, then you "
-            "need external bonds and to change the ID"
-        )
+        # logging.info("much redundancy here, can fix.")
+        # logging.info(
+        #     "if you use BBs as templates, not whole mol, then you "
+        #     "need to change the ID"
+        # )
+        # logging.info(
+        #     "if you use BBs as templates, not whole mol, then you "
+        #     "need external bonds and to change the ID"
+        # )
 
         at_str = " <AtomTypes>\n"
         re_str = " <Residues>\n"
@@ -434,10 +433,6 @@ class CGOMMOptimizer(CGOptimizer):
         topology = app.topology.Topology()
         chain = topology.addChain()
         residue = topology.addResidue(name="ALL", chain=chain)
-        logging.info(
-            "figure out if its quicker to have many small residues or "
-            "one big residue?"
-        )
 
         atoms_added = {}
         for atom in molecule.get_atoms():
@@ -468,7 +463,7 @@ class CGOMMOptimizer(CGOptimizer):
         return topology
 
     def _setup_simulation(self, molecule):
-        logging.info("explicit set units here?")
+        # logging.info("explicit set units here?")
 
         # Load force field.
         self._write_ff_file(molecule)
@@ -657,7 +652,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         return simulation
 
     def _setup_simulation(self, molecule):
-        logging.info("explicit set units here?")
+        # logging.info("explicit set units here?")
 
         # Load force field.
         self._write_ff_file(molecule)
@@ -669,7 +664,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         system = self._add_forces(system, molecule)
 
         # Default integrator.
-        logging.info("better integrator?")
+        # logging.info("better integrator?")
         integrator = openmm.LangevinIntegrator(
             self._temperature,
             self._friction,
