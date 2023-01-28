@@ -403,7 +403,11 @@ def collect_custom_torsion(
     custom_torsion,
     bead_set,
 ):
-    (ba_bead,) = (bb2_bead_set[i] for i in bb2_bead_set if "a" in i)
+    try:
+        (ba_bead,) = (bb2_bead_set[i] for i in bb2_bead_set if "a" in i)
+    except ValueError:
+        # For when 3+4 cages are being built
+        return None
     # bite_angle = (ba_bead.angle_centered - 90) * 2
     if custom_torsion_options[custom_torsion] is None:
         custom_torsion_set = None
@@ -418,6 +422,77 @@ def collect_custom_torsion(
         )
 
     return custom_torsion_set
+
+
+def build_populations(
+    populations,
+    custom_torsion_options,
+    custom_vdw_options,
+    struct_output,
+    calculation_output,
+):
+    for popn in populations:
+        logging.info(f"building {popn} population")
+        popn_iterator = itertools.product(
+            populations[popn]["t"],
+            populations[popn]["c2"],
+            populations[popn]["cl"],
+        )
+        count = 0
+        for iteration in popn_iterator:
+            for custom_torsion in custom_torsion_options:
+                for custom_vdw in custom_vdw_options:
+                    cage_topo_str, bb2_str, bbl_str = iteration
+                    name = (
+                        f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
+                        f"{custom_torsion}_{custom_vdw}"
+                    )
+                    bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
+                    bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
+
+                    bead_set = bb2_bead_set.copy()
+                    bead_set.update(bbl_bead_set)
+
+                    custom_torsion_set = collect_custom_torsion(
+                        bb2_bead_set=bb2_bead_set,
+                        custom_torsion_options=(custom_torsion_options),
+                        custom_torsion=custom_torsion,
+                        bead_set=bead_set,
+                    )
+
+                    custom_vdw_set = custom_vdw_options[custom_vdw]
+
+                    cage = stk.ConstructedMolecule(
+                        topology_graph=populations[popn]["t"][
+                            cage_topo_str
+                        ](
+                            building_blocks=(bb2, bbl),
+                        ),
+                    )
+
+                    cage = optimise_cage(
+                        molecule=cage,
+                        name=name,
+                        output_dir=calculation_output,
+                        bead_set=bead_set,
+                        custom_torsion_set=custom_torsion_set,
+                        custom_vdw_set=custom_vdw_set,
+                    )
+
+                    if cage is not None:
+                        cage.write(
+                            str(struct_output / f"{name}_optc.mol")
+                        )
+
+                    analyse_cage(
+                        molecule=cage,
+                        name=name,
+                        output_dir=calculation_output,
+                        bead_set=bead_set,
+                    )
+                    count += 1
+
+        logging.info(f"{count} {popn} cages built.")
 
 
 def main():
@@ -512,74 +587,13 @@ def main():
         "voff": False,
     }
 
-    for popn in populations:
-        logging.info(f"building {popn} population")
-        popn_iterator = itertools.product(
-            populations[popn]["t"],
-            populations[popn]["c2"],
-            populations[popn]["cl"],
-        )
-        count = 0
-        for iteration in popn_iterator:
-            for custom_torsion in custom_torsion_options:
-                for custom_vdw in custom_vdw_options:
-                    cage_topo_str, bb2_str, bbl_str = iteration
-                    name = (
-                        f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
-                        f"{custom_torsion}_{custom_vdw}"
-                    )
-                    bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
-                    bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
-
-                    bead_set = bb2_bead_set.copy()
-                    bead_set.update(bbl_bead_set)
-
-                    custom_torsion_set = collect_custom_torsion(
-                        bb2_bead_set=bb2_bead_set,
-                        custom_torsion_options=(custom_torsion_options),
-                        custom_torsion=custom_torsion,
-                        bead_set=bead_set,
-                    )
-
-                    custom_vdw_set = custom_vdw_options[custom_vdw]
-
-                    cage = stk.ConstructedMolecule(
-                        topology_graph=populations[popn]["t"][
-                            cage_topo_str
-                        ](
-                            building_blocks=(bb2, bbl),
-                        ),
-                    )
-
-                    cage = optimise_cage(
-                        molecule=cage,
-                        name=name,
-                        output_dir=calculation_output,
-                        bead_set=bead_set,
-                        custom_torsion_set=custom_torsion_set,
-                        custom_vdw_set=custom_vdw_set,
-                    )
-
-                    if cage is not None:
-                        cage.write(
-                            str(struct_output / f"{name}_optc.mol")
-                        )
-                    continue
-                    analyse_cage(
-                        molecule=cage,
-                        name=name,
-                        output_dir=calculation_output,
-                        bead_set=bead_set,
-                        custom_torsion_set=custom_torsion_set,
-                        custom_vdw_set=custom_vdw_set,
-                    )
-                    count += 1
-                    raise SystemExit(
-                        "set force values for bonds, angles, vdw, torsions "
-                        "to be strict"
-                    )
-
-        logging.info(f"{count} {popn} cages built.")
+    build_populations(
+        populations=populations,
+        custom_torsion_options=custom_torsion_options,
+        custom_vdw_options=custom_vdw_options,
+        struct_output=struct_output,
+        calculation_output=calculation_output,
+    )
 
     # Non-ditopic populations.
     populations = {
@@ -595,69 +609,13 @@ def main():
         "von": True,
         "voff": False,
     }
-
-    for popn in populations:
-        logging.info(f"building {popn} population")
-        popn_iterator = itertools.product(
-            populations[popn]["t"],
-            populations[popn]["c2"],
-            populations[popn]["cl"],
-        )
-        count = 0
-        for iteration in popn_iterator:
-            for custom_torsion in custom_torsion_options:
-                for custom_vdw in custom_vdw_options:
-                    cage_topo_str, bb2_str, bbl_str = iteration
-                    name = (
-                        f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
-                        f"{custom_torsion}_{custom_vdw}"
-                    )
-                    bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
-                    bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
-
-                    bead_set = bb2_bead_set.copy()
-                    bead_set.update(bbl_bead_set)
-
-                    custom_torsion_set = None
-                    custom_vdw_set = custom_vdw_options[custom_vdw]
-
-                    cage = stk.ConstructedMolecule(
-                        topology_graph=populations[popn]["t"][
-                            cage_topo_str
-                        ](
-                            building_blocks=(bb2, bbl),
-                        ),
-                    )
-
-                    cage = optimise_cage(
-                        molecule=cage,
-                        name=name,
-                        output_dir=calculation_output,
-                        bead_set=bead_set,
-                        custom_torsion_set=custom_torsion_set,
-                        custom_vdw_set=custom_vdw_set,
-                    )
-
-                    if cage is not None:
-                        cage.write(
-                            str(struct_output / f"{name}_optc.mol")
-                        )
-                    continue
-                    analyse_cage(
-                        molecule=cage,
-                        name=name,
-                        output_dir=calculation_output,
-                        bead_set=bead_set,
-                        custom_torsion_set=custom_torsion_set,
-                        custom_vdw_set=custom_vdw_set,
-                    )
-                    count += 1
-                    raise SystemExit(
-                        "set force values for bonds, angles, vdw, torsions "
-                        "to be strict"
-                    )
-
-        logging.info(f"{count} {popn} cages built.")
+    build_populations(
+        populations=populations,
+        custom_torsion_options=custom_torsion_options,
+        custom_vdw_options=custom_vdw_options,
+        struct_output=struct_output,
+        calculation_output=calculation_output,
+    )
 
 
 if __name__ == "__main__":
