@@ -302,6 +302,10 @@ def analyse_cage(
             res_dict = json.load(f)
     else:
         logging.info(f"analysing {name}")
+
+        mdexploded = False
+        mdfailed = False
+
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_o1",
             output_dir=output_dir,
@@ -370,137 +374,154 @@ def analyse_cage(
                 f"{name} Rg ({radius_gyration}) > max D ({max_diameter})"
             )
 
-        fileprefix = f"{name}_o2"
-        trajectory = OMMTrajectory(
-            base_molecule=molecule,
-            data_path=output_dir / f"{fileprefix}_traj.dat",
-            traj_path=output_dir / f"{fileprefix}_traj.pdb",
-            forcefield_path=output_dir / f"{fileprefix}_ff.xml",
-            output_path=output_dir / f"{fileprefix}_omm.out",
-            temperature=300 * openmm.unit.kelvin,
-            random_seed=1000,
-            num_steps=10000,
-            time_step=1 * openmm.unit.femtoseconds,
-            friction=1.0 / openmm.unit.picosecond,
-            reporting_freq=100,
-            traj_freq=100,
-        )
-        traj_log = trajectory.get_data()
-        trajectory_data = {}
-        for conformer in trajectory.yield_conformers():
-            timestep = conformer.timestep
-            time_ps = timestep / 1e3
-            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
-            pot_energy = float(row["Potential Energy (kJ/mole)"])
-            kin_energy = float(row["Kinetic Energy (kJ/mole)"])
-            conf_temp = float(row["Temperature (K)"])
-
-            conf_energy_decomp = opt.calculate_energy_decomposed(
-                conformer.molecule
+        failed_file = output_dir / f"{name}_mdfailed.txt"
+        exploded_file = output_dir / f"{name}_mdexploded.txt"
+        if os.path.exists(failed_file):
+            mdfailed = True
+        if os.path.exists(exploded_file):
+            mdexploded = True
+        if mdfailed or mdexploded:
+            trajectory_data = None
+            flexibilty = None
+        else:
+            fileprefix = f"{name}_o2"
+            trajectory = OMMTrajectory(
+                base_molecule=molecule,
+                data_path=output_dir / f"{fileprefix}_traj.dat",
+                traj_path=output_dir / f"{fileprefix}_traj.pdb",
+                forcefield_path=output_dir / f"{fileprefix}_ff.xml",
+                output_path=output_dir / f"{fileprefix}_omm.out",
+                temperature=300 * openmm.unit.kelvin,
+                random_seed=1000,
+                num_steps=10000,
+                time_step=1 * openmm.unit.femtoseconds,
+                friction=1.0 / openmm.unit.picosecond,
+                reporting_freq=100,
+                traj_freq=100,
             )
-            conf_energy_decomp = {
-                f"{i}_kjmol": conf_energy_decomp[i].value_in_unit(
-                    openmm.unit.kilojoules_per_mole
+            traj_log = trajectory.get_data()
+            trajectory_data = {}
+            for conformer in trajectory.yield_conformers():
+                timestep = conformer.timestep
+                time_ps = timestep / 1e3
+                row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+                pot_energy = float(row["Potential Energy (kJ/mole)"])
+                kin_energy = float(row["Kinetic Energy (kJ/mole)"])
+                conf_temp = float(row["Temperature (K)"])
+
+                conf_energy_decomp = opt.calculate_energy_decomposed(
+                    conformer.molecule
                 )
-                for i in conf_energy_decomp
-            }
+                conf_energy_decomp = {
+                    f"{i}_kjmol": conf_energy_decomp[i].value_in_unit(
+                        openmm.unit.kilojoules_per_mole
+                    )
+                    for i in conf_energy_decomp
+                }
 
-            c_n_shape_mol = get_shape_molecule_nodes(
-                conformer.molecule,
-                name,
-            )
-            c_l_shape_mol = get_shape_molecule_ligands(
-                conformer.molecule,
-                name,
-            )
-            if c_n_shape_mol is None:
-                conf_node_shape_measures = None
-            else:
-                conf_node_shape_measures = ShapeMeasure(
-                    output_dir=(
-                        output_dir / f"{name}_{timestep}_nshape"
-                    ),
-                    target_atmnums=None,
-                    shape_string=None,
-                ).calculate(c_n_shape_mol)
-
-            if l_shape_mol is None:
-                conf_lig_shape_measures = None
-            else:
-                conf_lig_shape_measures = ShapeMeasure(
-                    output_dir=(
-                        output_dir / f"{name}_{timestep}_lshape"
-                    ),
-                    target_atmnums=None,
-                    shape_string=None,
-                ).calculate(c_l_shape_mol)
-
-            conf_pore_data = PoreMeasure().calculate_min_distance(
-                conformer.molecule,
-            )
-
-            g_measure = GeomMeasure(custom_torsion_atoms)
-            conf_bond_data = g_measure.calculate_bonds(
-                conformer.molecule
-            )
-            conf_angle_data = g_measure.calculate_angles(
-                conformer.molecule
-            )
-            conf_dihedral_data = g_measure.calculate_dihedrals(
-                conformer.molecule
-            )
-            conf_min_b2b_distance = g_measure.calculate_minb2b(
-                conformer.molecule
-            )
-            conf_radius_gyration = g_measure.calculate_radius_gyration(
-                conformer.molecule
-            )
-            conf_max_diameter = g_measure.calculate_max_diameter(
-                conformer.molecule
-            )
-            if radius_gyration > max_diameter:
-                raise ValueError(
-                    f"{name} Rg ({radius_gyration}) > "
-                    f"max D ({max_diameter})"
+                c_n_shape_mol = get_shape_molecule_nodes(
+                    conformer.molecule,
+                    name,
                 )
-            trajectory_data[timestep] = {
-                "time_ps": time_ps,
-                "pot_energy_kjmol": pot_energy,
-                "kin_energy_kjmol": kin_energy,
-                "temperature_K": conf_temp,
-                "energy_decomp": conf_energy_decomp,
-                "pore_data": conf_pore_data,
-                "lig_shape_measures": conf_lig_shape_measures,
-                "node_shape_measures": conf_node_shape_measures,
-                "bond_data": conf_bond_data,
-                "angle_data": conf_angle_data,
-                "dihedral_data": conf_dihedral_data,
-                "min_b2b_distance": conf_min_b2b_distance,
-                "radius_gyration": conf_radius_gyration,
-                "max_diameter": conf_max_diameter,
-                "rg/md": conf_radius_gyration / conf_max_diameter,
-            }
+                c_l_shape_mol = get_shape_molecule_ligands(
+                    conformer.molecule,
+                    name,
+                )
+                if c_n_shape_mol is None:
+                    conf_node_shape_measures = None
+                else:
+                    conf_node_shape_measures = ShapeMeasure(
+                        output_dir=(
+                            output_dir / f"{name}_{timestep}_nshape"
+                        ),
+                        target_atmnums=None,
+                        shape_string=None,
+                    ).calculate(c_n_shape_mol)
 
-        flexibilty = (
-            np.std(
-                [
-                    rd["pore_data"]["min_distance"]
-                    for rd in trajectory_data.values()
-                ]
+                if l_shape_mol is None:
+                    conf_lig_shape_measures = None
+                else:
+                    conf_lig_shape_measures = ShapeMeasure(
+                        output_dir=(
+                            output_dir / f"{name}_{timestep}_lshape"
+                        ),
+                        target_atmnums=None,
+                        shape_string=None,
+                    ).calculate(c_l_shape_mol)
+
+                conf_pore_data = PoreMeasure().calculate_min_distance(
+                    conformer.molecule,
+                )
+
+                g_measure = GeomMeasure(custom_torsion_atoms)
+                conf_bond_data = g_measure.calculate_bonds(
+                    conformer.molecule
+                )
+                conf_angle_data = g_measure.calculate_angles(
+                    conformer.molecule
+                )
+                conf_dihedral_data = g_measure.calculate_dihedrals(
+                    conformer.molecule
+                )
+                conf_min_b2b_distance = g_measure.calculate_minb2b(
+                    conformer.molecule
+                )
+                conf_radius_gyration = (
+                    g_measure.calculate_radius_gyration(
+                        conformer.molecule
+                    )
+                )
+                conf_max_diameter = g_measure.calculate_max_diameter(
+                    conformer.molecule
+                )
+                if radius_gyration > max_diameter:
+                    raise ValueError(
+                        f"{name} Rg ({radius_gyration}) > "
+                        f"max D ({max_diameter})"
+                    )
+                trajectory_data[timestep] = {
+                    "time_ps": time_ps,
+                    "pot_energy_kjmol": pot_energy,
+                    "kin_energy_kjmol": kin_energy,
+                    "temperature_K": conf_temp,
+                    "energy_decomp": conf_energy_decomp,
+                    "pore_data": conf_pore_data,
+                    "lig_shape_measures": conf_lig_shape_measures,
+                    "node_shape_measures": conf_node_shape_measures,
+                    "bond_data": conf_bond_data,
+                    "angle_data": conf_angle_data,
+                    "dihedral_data": conf_dihedral_data,
+                    "min_b2b_distance": conf_min_b2b_distance,
+                    "radius_gyration": conf_radius_gyration,
+                    "max_diameter": conf_max_diameter,
+                    "rg/md": conf_radius_gyration / conf_max_diameter,
+                }
+
+            flexibilty = (
+                np.std(
+                    [
+                        rd["pore_data"]["min_distance"]
+                        for rd in trajectory_data.values()
+                    ]
+                )
+                + np.std(
+                    [
+                        rd["radius_gyration"]
+                        for rd in trajectory_data.values()
+                    ]
+                )
+                + np.std(
+                    [
+                        rd["max_diameter"]
+                        for rd in trajectory_data.values()
+                    ]
+                )
             )
-            + np.std(
-                [
-                    rd["radius_gyration"]
-                    for rd in trajectory_data.values()
-                ]
-            )
-            + np.std(
-                [rd["max_diameter"] for rd in trajectory_data.values()]
-            )
-        )
 
         res_dict = {
             "optimised": True,
+            "mdexploded": mdexploded,
+            "mdfailed": mdfailed,
             "fin_energy_kjmol": fin_energy,
             "fin_energy_decomp": energy_decomp,
             "opt_pore_data": opt_pore_data,
