@@ -13,10 +13,11 @@ import sys
 import stk
 import os
 import json
+import numpy as np
 import logging
 import itertools
 from rdkit import RDLogger
-from openmm import OpenMMException
+from openmm import OpenMMException, openmm
 
 from shape import (
     ShapeMeasure,
@@ -27,7 +28,11 @@ from geom import GeomMeasure
 from pore import PoreMeasure
 from env_set import cages
 from utilities import check_directory, check_long_distances
-from openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
+from openmm_optimizer import (
+    CGOMMOptimizer,
+    CGOMMDynamics,
+    OMMTrajectory,
+)
 from cage_construction.topologies import cage_topology_options
 from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
 from beads import bead_library_check, produce_bead_library
@@ -193,8 +198,13 @@ def optimise_cage(
             vdw=custom_vdw_set,
             # max_iterations=1000,
             vdw_bond_cutoff=2,
-            temperature=300,
+            temperature=300 * openmm.unit.kelvin,
             random_seed=1000,
+            num_steps=10000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
         )
         try:
             trajectory = opt.run_dynamics(molecule)
@@ -272,6 +282,8 @@ def analyse_cage(
     name,
     output_dir,
     bead_set,
+    custom_torsion_set,
+    custom_vdw_set,
 ):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
@@ -290,10 +302,37 @@ def analyse_cage(
             res_dict = json.load(f)
     else:
         logging.info(f"analysing {name}")
-        fin_energy = 0
-        fin_gnorm = 0
+        opt = CGOMMOptimizer(
+            fileprefix=f"{name}_o1",
+            output_dir=output_dir,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=custom_vdw_set,
+            # max_iterations=1000,
+            vdw_bond_cutoff=2,
+        )
+        # Always want to extract target torions.
+        temp_custom_torsion_set = target_torsions(
+            bead_set=bead_set,
+            custom_torsion_option=None,
+        )
+        custom_torsion_atoms = [
+            bead_set[j].element_string
+            for i in temp_custom_torsion_set
+            for j in i
+        ]
 
-        raise SystemExit("get run data")
+        energy_decomp = opt.calculate_energy_decomposed(molecule)
+        energy_decomp = {
+            f"{i}_kjmol": energy_decomp[i].value_in_unit(
+                openmm.unit.kilojoules_per_mole
+            )
+            for i in energy_decomp
+        }
+        fin_energy = energy_decomp["tot_energy_kjmol"]
 
         n_shape_mol = get_shape_molecule_nodes(molecule, name)
         l_shape_mol = get_shape_molecule_ligands(molecule, name)
@@ -319,29 +358,151 @@ def analyse_cage(
 
         opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
 
-        # Always want to extract target torions.
-        temp_custom_torsion_set = target_torsions(
-            bead_set=bead_set,
-            custom_torsion_option=None,
-        )
-
-        custom_torsion_atoms = [
-            bead_set[j].element_string
-            for i in temp_custom_torsion_set
-            for j in i
-        ]
-        raise SystemExit("add Rg or avg sphericity of points")
-        raise SystemExit("Rg / Max d")
         g_measure = GeomMeasure(custom_torsion_atoms)
         bond_data = g_measure.calculate_bonds(molecule)
         angle_data = g_measure.calculate_angles(molecule)
         dihedral_data = g_measure.calculate_dihedrals(molecule)
         min_b2b_distance = g_measure.calculate_minb2b(molecule)
+        radius_gyration = g_measure.calculate_radius_gyration(molecule)
+        max_diameter = g_measure.calculate_max_diameter(molecule)
+        if radius_gyration > max_diameter:
+            raise ValueError(
+                f"{name} Rg ({radius_gyration}) > max D ({max_diameter})"
+            )
+
+        fileprefix = f"{name}_o2"
+        trajectory = OMMTrajectory(
+            base_molecule=molecule,
+            data_path=output_dir / f"{fileprefix}_traj.dat",
+            traj_path=output_dir / f"{fileprefix}_traj.pdb",
+            forcefield_path=output_dir / f"{fileprefix}_ff.xml",
+            output_path=output_dir / f"{fileprefix}_omm.out",
+            temperature=300 * openmm.unit.kelvin,
+            random_seed=1000,
+            num_steps=10000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
+        )
+        traj_log = trajectory.get_data()
+        trajectory_data = {}
+        for conformer in trajectory.yield_conformers():
+            timestep = conformer.timestep
+            time_ps = timestep / 1e3
+            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+            pot_energy = float(row["Potential Energy (kJ/mole)"])
+            kin_energy = float(row["Kinetic Energy (kJ/mole)"])
+            conf_temp = float(row["Temperature (K)"])
+
+            conf_energy_decomp = opt.calculate_energy_decomposed(
+                conformer.molecule
+            )
+            conf_energy_decomp = {
+                f"{i}_kjmol": conf_energy_decomp[i].value_in_unit(
+                    openmm.unit.kilojoules_per_mole
+                )
+                for i in conf_energy_decomp
+            }
+
+            c_n_shape_mol = get_shape_molecule_nodes(
+                conformer.molecule,
+                name,
+            )
+            c_l_shape_mol = get_shape_molecule_ligands(
+                conformer.molecule,
+                name,
+            )
+            if c_n_shape_mol is None:
+                conf_node_shape_measures = None
+            else:
+                conf_node_shape_measures = ShapeMeasure(
+                    output_dir=(
+                        output_dir / f"{name}_{timestep}_nshape"
+                    ),
+                    target_atmnums=None,
+                    shape_string=None,
+                ).calculate(c_n_shape_mol)
+
+            if l_shape_mol is None:
+                conf_lig_shape_measures = None
+            else:
+                conf_lig_shape_measures = ShapeMeasure(
+                    output_dir=(
+                        output_dir / f"{name}_{timestep}_lshape"
+                    ),
+                    target_atmnums=None,
+                    shape_string=None,
+                ).calculate(c_l_shape_mol)
+
+            conf_pore_data = PoreMeasure().calculate_min_distance(
+                conformer.molecule,
+            )
+
+            g_measure = GeomMeasure(custom_torsion_atoms)
+            conf_bond_data = g_measure.calculate_bonds(
+                conformer.molecule
+            )
+            conf_angle_data = g_measure.calculate_angles(
+                conformer.molecule
+            )
+            conf_dihedral_data = g_measure.calculate_dihedrals(
+                conformer.molecule
+            )
+            conf_min_b2b_distance = g_measure.calculate_minb2b(
+                conformer.molecule
+            )
+            conf_radius_gyration = g_measure.calculate_radius_gyration(
+                conformer.molecule
+            )
+            conf_max_diameter = g_measure.calculate_max_diameter(
+                conformer.molecule
+            )
+            if radius_gyration > max_diameter:
+                raise ValueError(
+                    f"{name} Rg ({radius_gyration}) > "
+                    f"max D ({max_diameter})"
+                )
+            trajectory_data[timestep] = {
+                "time_ps": time_ps,
+                "pot_energy_kjmol": pot_energy,
+                "kin_energy_kjmol": kin_energy,
+                "temperature_K": conf_temp,
+                "energy_decomp": conf_energy_decomp,
+                "pore_data": conf_pore_data,
+                "lig_shape_measures": conf_lig_shape_measures,
+                "node_shape_measures": conf_node_shape_measures,
+                "bond_data": conf_bond_data,
+                "angle_data": conf_angle_data,
+                "dihedral_data": conf_dihedral_data,
+                "min_b2b_distance": conf_min_b2b_distance,
+                "radius_gyration": conf_radius_gyration,
+                "max_diameter": conf_max_diameter,
+                "rg/md": conf_radius_gyration / conf_max_diameter,
+            }
+
+        flexibilty = (
+            np.std(
+                [
+                    rd["pore_data"]["min_distance"]
+                    for rd in trajectory_data.values()
+                ]
+            )
+            + np.std(
+                [
+                    rd["radius_gyration"]
+                    for rd in trajectory_data.values()
+                ]
+            )
+            + np.std(
+                [rd["max_diameter"] for rd in trajectory_data.values()]
+            )
+        )
 
         res_dict = {
             "optimised": True,
-            "fin_energy": fin_energy,
-            "fin_gnorm": fin_gnorm,
+            "fin_energy_kjmol": fin_energy,
+            "fin_energy_decomp": energy_decomp,
             "opt_pore_data": opt_pore_data,
             "lig_shape_measures": lig_shape_measures,
             "node_shape_measures": node_shape_measures,
@@ -349,6 +510,11 @@ def analyse_cage(
             "angle_data": angle_data,
             "dihedral_data": dihedral_data,
             "min_b2b_distance": min_b2b_distance,
+            "radius_gyration": radius_gyration,
+            "max_diameter": max_diameter,
+            "rg/md": radius_gyration / max_diameter,
+            "trajectory": trajectory_data,
+            "flexibility_measure": flexibilty,
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
@@ -489,6 +655,8 @@ def build_populations(
                         name=name,
                         output_dir=calculation_output,
                         bead_set=bead_set,
+                        custom_torsion_set=custom_torsion_set,
+                        custom_vdw_set=custom_vdw_set,
                     )
                     count += 1
 
