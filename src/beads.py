@@ -186,6 +186,20 @@ def bead_library_check(bead_libraries):
                 f"you used a bead not available in PoreMapper: {string}"
             )
 
+    bl_string = "bead library:\n"
+    bl_string += (
+        "element name sigma[A] bond_k[kJ/mol/nm^2] angle[deg.] "
+        "angle_k[kJ/mol/radian2] epsilon[kJ/mol] coordination\n"
+    )
+    for bead in bead_libraries:
+        bl_string += (
+            f"{bead.element_string} {bead.bead_type} "
+            f"{bead.sigma} {bead.bond_k} "
+            f"{bead.angle_centered} {bead.angle_k} "
+            f"{bead.epsilon} {bead.coordination}\n"
+        )
+    logging.info(bl_string)
+
 
 def produce_bead_library(
     type_prefix,
