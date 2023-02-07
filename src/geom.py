@@ -102,3 +102,15 @@ class GeomMeasure:
             torsions[torsion_type].append(abs(torsion))
 
         return torsions
+
+    def calculate_radius_gyration(self, molecule):
+        centroid = molecule.get_centroid()
+        pos_mat = molecule.get_position_matrix()
+        vectors = pos_mat - centroid
+        distances2 = np.square(np.linalg.norm(vectors, axis=1))
+
+        rg2 = (1 / molecule.get_num_atoms()) * np.sum(distances2)
+        return np.sqrt(rg2)
+
+    def calculate_max_diameter(self, molecule):
+        return molecule.get_maximum_diameter()
