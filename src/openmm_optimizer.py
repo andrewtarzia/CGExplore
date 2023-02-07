@@ -620,6 +620,11 @@ class CGOMMDynamics(CGOMMOptimizer):
         torsions,
         vdw,
         temperature,
+        num_steps,
+        time_step,
+        friction,
+        reporting_freq,
+        traj_freq,
         random_seed=None,
         max_iterations=None,
         vdw_bond_cutoff=None,
@@ -662,11 +667,11 @@ class CGOMMDynamics(CGOMMOptimizer):
         else:
             self._random_seed = random_seed
 
-        self._num_steps = 10000
-        self._time_step = 1 * openmm.unit.femtoseconds
-        self._friction = 1.0 / openmm.unit.picosecond
-        self._reporting_freq = 100
-        self._traj_freq = 100
+        self._num_steps = num_steps
+        self._time_step = time_step
+        self._friction = friction
+        self._reporting_freq = reporting_freq
+        self._traj_freq = traj_freq
 
     def _add_trajectory_reporter(self, simulation):
         simulation.reporters.append(

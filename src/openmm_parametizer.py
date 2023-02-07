@@ -97,6 +97,11 @@ def test1(beads, calculation_output, figure_output):
             vdw=False,
             temperature=temp,
             random_seed=1000,
+            num_steps=10000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -222,6 +227,11 @@ def test2(beads, calculation_output, figure_output):
             vdw=False,
             temperature=temp,
             random_seed=1000,
+            num_steps=10000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -379,6 +389,11 @@ def test3(beads, calculation_output, figure_output):
             vdw=False,
             temperature=temp,
             random_seed=1000,
+            num_steps=10000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -514,6 +529,11 @@ def test4(beads, calculation_output, figure_output):
             vdw=False,
             temperature=temp,
             random_seed=1000,
+            num_steps=10000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
         )
         trajectory = opt.run_dynamics(linear_bb)
 
