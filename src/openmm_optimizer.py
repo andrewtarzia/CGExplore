@@ -146,18 +146,6 @@ class OMMTrajectory(Trajectory):
                         z = float(line[46:54])
                         new_pos_mat.append([x, y, z])
 
-    def get_base_molecule(self):
-        return self._base_molecule
-
-    def __str__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(steps={self._num_steps}, "
-            f"conformers={self._num_confs})"
-        )
-
-    def __repr__(self) -> str:
-        return str(self)
-
 
 class MDEmptyTrajcetoryError(Exception):
     ...
@@ -507,7 +495,6 @@ class CGOMMOptimizer(CGOptimizer):
         return topology
 
     def _setup_simulation(self, molecule):
-        # logging.info("explicit set units here?")
 
         # Load force field.
         self._write_ff_file(molecule)
@@ -532,26 +519,38 @@ class CGOMMOptimizer(CGOptimizer):
         return simulation, system
 
     def _run_energy_decomp(self, simulation, system):
-        self._output_string += "energy decomposition:\n"
         fgroups = self._group_forces(system)
         egroups = self._get_energy_decomposition(
             context=simulation.context,
             forcegroups=fgroups,
         )
-        tot_energy = openmm.unit.quantity.Quantity(
-            value=0,
-            unit=openmm.unit.kilojoules_per_mole,
-        )
-        for idd in egroups.keys():
-            self._output_string += f"{idd}: {egroups[idd]}\n"
-            tot_energy += egroups[idd]
-        self._output_string += f"total energy: {tot_energy}\n"
 
+        energy_decomp = {
+            "tot_energy": openmm.unit.quantity.Quantity(
+                value=0,
+                unit=openmm.unit.kilojoules_per_mole,
+            )
+        }
+        for idd in egroups.keys():
+            energy_decomp[idd] = egroups[idd]
+            energy_decomp["tot_energy"] += egroups[idd]
+
+        return energy_decomp
+
+    def _output_energy_decomp(self, simulation, system):
+        energy_decomp = self._run_energy_decomp(simulation, system)
+        self._output_string += "energy decomposition:\n"
+
+        for idd in energy_decomp:
+            if idd == "tot_energy":
+                continue
+            self._output_string += f"{idd}: {energy_decomp[idd]}\n"
+        self._output_string += (
+            f"total energy: {energy_decomp['tot_energy']}\n"
+        )
         self._output_string += "\n"
 
     def _get_energy(self, simulation, system):
-        self._run_energy_decomp(simulation, system)
-
         state = simulation.context.getState(
             getPositions=True,
             getEnergy=True,
@@ -563,14 +562,14 @@ class CGOMMOptimizer(CGOptimizer):
 
     def _minimize_energy(self, simulation, system):
 
-        self._run_energy_decomp(simulation, system)
+        self._output_energy_decomp(simulation, system)
 
         self._output_string += "minimizing energy\n\n"
         simulation.minimizeEnergy(
             tolerance=self._tolerance,
             maxIterations=self._max_iterations,
         )
-        self._run_energy_decomp(simulation, system)
+        self._output_energy_decomp(simulation, system)
 
         return simulation
 
@@ -586,6 +585,10 @@ class CGOMMOptimizer(CGOptimizer):
     def calculate_energy(self, molecule):
         simulation, system = self._setup_simulation(molecule)
         return self._get_energy(simulation, system)
+
+    def calculate_energy_decomposed(self, molecule):
+        simulation, system = self._setup_simulation(molecule)
+        return self._run_energy_decomp(simulation, system)
 
     def optimize(self, molecule):
         start_time = time.time()
@@ -651,7 +654,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         else:
             self._vdw_bond_cutoff = vdw_bond_cutoff
 
-        self._temperature = temperature * openmm.unit.kelvin
+        self._temperature = temperature
 
         if random_seed is None:
             logging.info("make random seed constant if none")
@@ -696,7 +699,6 @@ class CGOMMDynamics(CGOMMOptimizer):
         return simulation
 
     def _setup_simulation(self, molecule):
-        # logging.info("explicit set units here?")
 
         # Load force field.
         self._write_ff_file(molecule)
@@ -760,13 +762,13 @@ class CGOMMDynamics(CGOMMOptimizer):
             f"done in {end-start} s ({round(speed, 2)} steps/s)\n\n"
         )
 
-        self._run_energy_decomp(simulation, system)
+        self._output_energy_decomp(simulation, system)
 
         return simulation
 
     def _get_trajectory(self, molecule):
 
-        return Trajectory(
+        return OMMTrajectory(
             base_molecule=molecule,
             data_path=self._trajectory_data,
             traj_path=self._trajectory_file,
