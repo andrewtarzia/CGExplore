@@ -388,6 +388,8 @@ def data_to_array(json_files, output_dir):
     for j_file in sorted(json_files):
         with open(j_file, "r") as f:
             res_dict = json.load(f)
+        print(res_dict)
+        raise SystemExit("handle trajectory columns, add new columns")
         name = str(j_file.name).replace("_res.json", "")
         t_str, clbb_name, c2bb_name, torsions = name.split("_")
         cage_name = f"{t_str}_{clbb_name}_{c2bb_name}"

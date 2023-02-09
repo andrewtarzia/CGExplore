@@ -84,7 +84,7 @@ def visualise_bite_angle(all_data, figure_output):
                     (
                         str(row["index"]),
                         float(row["energy"]),
-                        float(row["c2angle"]),
+                        float(row["target_bite_angle"]),
                     )
                     for idx, row in show.iterrows()
                 ]
@@ -181,7 +181,9 @@ def visualise_self_sort(all_data, figure_output):
 
             show = bdata[bdata["torsions"] == tors]
             ctitle = "4C1" if "4C1" in bbpair else "3C1"
-            c2angle = float(list(show["c2angle"])[0])
+            target_bite_angle = float(
+                list(show["target_bite_angle"])[0]
+            )
             names_energies = []
             for tstr in topology_dict[ctitle]:
                 rowdata = show[show["topology"] == tstr]
@@ -199,7 +201,9 @@ def visualise_self_sort(all_data, figure_output):
                 ax = flat_axs[j]
                 ax.axis("off")
                 if i == 0 and j == 0:
-                    ax.set_title(f"ba: {c2angle}", fontsize=16)
+                    ax.set_title(
+                        f"ba: {target_bite_angle}", fontsize=16
+                    )
                 if cage_data is None:
                     continue
                 name, energy = cage_data
@@ -296,6 +300,11 @@ def main():
     opt_data = all_data[all_data["optimised"]]
     logging.info(f"there are {len(opt_data)} successfully opted")
     write_out_mapping(opt_data)
+
+    raise SystemExit(
+        "want to print out problematic structures, e.g. a-a distances "
+        "of zero, or nulll angles"
+    )
 
     visualise_self_sort(opt_data, figure_output)
     visualise_bite_angle(opt_data, figure_output)
