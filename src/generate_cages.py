@@ -323,11 +323,14 @@ def analyse_cage(
             bead_set=bead_set,
             custom_torsion_option=None,
         )
-        custom_torsion_atoms = [
-            bead_set[j].element_string
-            for i in temp_custom_torsion_set
-            for j in i
-        ]
+        if temp_custom_torsion_set is None:
+            custom_torsion_atoms = None
+        else:
+            custom_torsion_atoms = [
+                bead_set[j].element_string
+                for i in temp_custom_torsion_set
+                for j in i
+            ]
 
         energy_decomp = opt.calculate_energy_decomposed(molecule)
         energy_decomp = {
@@ -365,13 +368,13 @@ def analyse_cage(
         g_measure = GeomMeasure(custom_torsion_atoms)
         bond_data = g_measure.calculate_bonds(molecule)
         angle_data = g_measure.calculate_angles(molecule)
-        dihedral_data = g_measure.calculate_dihedrals(molecule)
+        dihedral_data = g_measure.calculate_torsions(molecule)
         min_b2b_distance = g_measure.calculate_minb2b(molecule)
         radius_gyration = g_measure.calculate_radius_gyration(molecule)
         max_diameter = g_measure.calculate_max_diameter(molecule)
         if radius_gyration > max_diameter:
             raise ValueError(
-                f"{name} Rg ({radius_gyration}) > max D ({max_diameter})"
+                f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
             )
 
         failed_file = output_dir / f"{name}_mdfailed.txt"
@@ -460,7 +463,7 @@ def analyse_cage(
                 conf_angle_data = g_measure.calculate_angles(
                     conformer.molecule
                 )
-                conf_dihedral_data = g_measure.calculate_dihedrals(
+                conf_dihedral_data = g_measure.calculate_torsions(
                     conformer.molecule
                 )
                 conf_min_b2b_distance = g_measure.calculate_minb2b(
@@ -569,8 +572,14 @@ def build_building_block(
 
 
 def target_torsions(bead_set, custom_torsion_option):
+    try:
+        (t_key_1,) = (i for i in bead_set if i[0] == "a")
+    except ValueError:
+        # For when 3+4 cages are being built - there are no target
+        # torsions.
+        return None
+
     (c_key,) = (i for i in bead_set if i[0] == "c")
-    (t_key_1,) = (i for i in bead_set if i[0] == "a")
     (t_key_2,) = (i for i in bead_set if i[0] == "b")
     custom_torsion_set = {
         (
@@ -590,17 +599,9 @@ def collect_custom_torsion(
     custom_torsion,
     bead_set,
 ):
-    try:
-        (ba_bead,) = (bb2_bead_set[i] for i in bb2_bead_set if "a" in i)
-    except ValueError:
-        # For when 3+4 cages are being built
-        return None
-    # bite_angle = (ba_bead.angle_centered - 90) * 2
+
     if custom_torsion_options[custom_torsion] is None:
         custom_torsion_set = None
-    # elif bite_angle == 180:
-    #     # There are no torsions for bite angle == 180.
-    #     custom_torsion_set = None
     else:
         tors_option = custom_torsion_options[custom_torsion]
         custom_torsion_set = target_torsions(
@@ -766,7 +767,6 @@ def main():
             "cl": c4_blocks,
         },
     }
-
     custom_torsion_options = {
         "ton": (180, 50),
         "toff": None,
@@ -775,7 +775,6 @@ def main():
         "von": True,
         "voff": False,
     }
-
     build_populations(
         populations=populations,
         custom_torsion_options=custom_torsion_options,
@@ -792,7 +791,6 @@ def main():
             "cl": c4_blocks,
         },
     }
-
     custom_torsion_options = {"toff": None}
     custom_vdw_options = {
         "von": True,

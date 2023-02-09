@@ -358,7 +358,7 @@ def analyse_cage(
         g_measure = GeomMeasure(custom_torsion_atoms)
         bond_data = g_measure.calculate_bonds(molecule)
         angle_data = g_measure.calculate_angles(molecule)
-        dihedral_data = g_measure.calculate_dihedrals(molecule)
+        dihedral_data = g_measure.calculate_torsions(molecule)
         min_b2b_distance = g_measure.calculate_minb2b(molecule)
 
         res_dict = {

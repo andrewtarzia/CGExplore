@@ -19,8 +19,11 @@ from utilities import get_atom_distance, angle_between, get_dihedral
 
 
 class GeomMeasure:
-    def __init__(self, torsion_set):
-        self._torsion_set = tuple(torsion_set)
+    def __init__(self, torsion_set=None):
+        if torsion_set is None:
+            self._torsion_set = None
+        else:
+            self._torsion_set = tuple(torsion_set)
 
     def _get_paths(self, molecule, path_length):
         return rdkit.FindAllPathsOfLengthN(
@@ -76,7 +79,10 @@ class GeomMeasure:
 
         return angles
 
-    def calculate_dihedrals(self, molecule):
+    def calculate_torsions(self, molecule):
+        if self._torsion_set is None:
+            return []
+
         torsions = defaultdict(list)
         for a_ids in self._get_paths(molecule, 5):
             atoms = list(
