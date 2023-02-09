@@ -20,13 +20,14 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 
-from generate_all_cages import (
+from generate_cages import (
     core_2c_beads,
     arm_2c_beads,
     beads_3c,
     beads_4c,
 )
 from shape import known_shape_vectors
+from cage_construction.topologies import cage_topology_options
 
 
 def isomer_energy():
@@ -45,8 +46,8 @@ def min_b2b_distance():
     return 0.5
 
 
-def topology_labels(short=False):
-    if short:
+def topology_labels(short):
+    if short == "+":
         return (
             "2+3",
             "4+6",
@@ -59,6 +60,22 @@ def topology_labels(short=False):
             "6+12",
             "8+16",
             "12+24",
+            "6+8",
+        )
+    elif short == "P":
+        return (
+            "2P3",
+            "4P6",
+            "4P62",
+            "6P9",
+            "8P12",
+            "2P4",
+            "3P6",
+            "4P8",
+            "6P12",
+            "8P16",
+            "12P24",
+            "6P8",
         )
     else:
         return (
@@ -104,6 +121,18 @@ def convert_topo(topo_str):
         "not": "not",
         "3C1": "3-c",
         "4C1": "4-c",
+        "2P3": "2+3",
+        "4P6": "4+6",
+        "4P62": "4+6(2)",
+        "6P9": "6+9",
+        "8P12": "8+12",
+        "2P4": "2+4",
+        "3P6": "3+6",
+        "4P8": "4+8",
+        "6P12": "6+12",
+        "8P16": "8+16",
+        "12P24": "12+24",
+        "6P8": "6+8",
     }[topo_str]
 
 
@@ -118,6 +147,13 @@ def convert_tors(topo_str, num=True):
             "ton": "restricted",
             "toff": "not restricted",
         }[topo_str]
+
+
+def convert_vdws(vstr):
+    return {
+        "von": "excl. vol.",
+        "voff": "no. NB",
+    }[vstr]
 
 
 def topo_to_colormap():
@@ -156,6 +192,18 @@ def stoich_map(tstr):
         "SixPlusTwelve": 24,
         "EightPlusSixteen": 32,
         "M12L24": 48,
+        "2P3": 6,
+        "4P6": 12,
+        "4P62": 12,
+        "6P9": 18,
+        "8P12": 24,
+        "2P4": 8,
+        "3P6": 12,
+        "4P8": 16,
+        "6P12": 24,
+        "8P16": 32,
+        "12P24": 48,
+        "6P8": 24,
     }[tstr]
 
 
@@ -388,20 +436,97 @@ def data_to_array(json_files, output_dir):
     for j_file in sorted(json_files):
         with open(j_file, "r") as f:
             res_dict = json.load(f)
-        print(res_dict)
-        raise SystemExit("handle trajectory columns, add new columns")
+
+        row = {}
+
         name = str(j_file.name).replace("_res.json", "")
-        t_str, clbb_name, c2bb_name, torsions = name.split("_")
-        cage_name = f"{t_str}_{clbb_name}_{c2bb_name}"
-        optimised = res_dict["optimised"]
-        if optimised:
-            energy = res_dict["fin_energy"]
-            energy_per_bond = res_dict["fin_energy"] / stoich_map(t_str)
-            gnorm = res_dict["fin_gnorm"]
-            min_distance = res_dict["opt_pore_data"]["min_distance"]
-            min_b2b = res_dict["min_b2b_distance"]
-            node_shape_vector = res_dict["node_shape_measures"]
-            lig_shape_vector = res_dict["lig_shape_measures"]
+        t_str, clbb_name, c2bb_name, torsions, vdws = name.split("_")
+        row["cage_name"] = f"{t_str}_{clbb_name}_{c2bb_name}"
+        row["clbb_name"] = clbb_name
+        row["c2bb_name"] = c2bb_name
+        row["topology"] = t_str
+        row["torsions"] = torsions
+        row["vdws"] = vdws
+
+        present_c2_beads = get_present_beads(c2bb_name)
+        present_cl_beads = get_present_beads(clbb_name)
+        row["clbb_b1"] = present_cl_beads[0]
+        row["clbb_b2"] = present_cl_beads[1]
+        row["c2bb_b1"] = present_c2_beads[0]
+        row["c2bb_b2"] = present_c2_beads[1]
+
+        cl_bead_libs = beads_3c().copy()
+        cl_bead_libs.update(beads_4c())
+        row["cltopo"] = int(clbb_name[0])
+        clangle = get_CGBead_from_string(
+            present_cl_beads[0],
+            cl_bead_libs,
+        ).angle_centered
+
+        row["bbpair"] = clbb_name + c2bb_name
+        row["optimised"] = res_dict["optimised"]
+        row["mdexploded"] = res_dict["mdexploded"]
+        row["mdfailed"] = res_dict["mdfailed"]
+
+        if t_str in cage_topology_options(
+            "2p3"
+        ) or t_str in cage_topology_options("2p4"):
+            cltitle = "3C1" if row["cltopo"] == 3 else "4C1"
+            row["c2sigma"] = get_CGBead_from_string(
+                present_c2_beads[0],
+                core_2c_beads(),
+            ).sigma
+            row["c2angle"] = get_CGBead_from_string(
+                present_c2_beads[1],
+                arm_2c_beads(),
+            ).angle_centered
+            row["target_bite_angle"] = (
+                get_CGBead_from_string(
+                    present_c2_beads[1],
+                    arm_2c_beads(),
+                ).angle_centered
+                - 90
+            ) * 2
+
+        elif t_str in cage_topology_options("3p4"):
+            cltitle = "4C1"
+            row["c3sigma"] = get_CGBead_from_string(
+                present_c2_beads[0],
+                cl_bead_libs,
+            ).sigma
+            row["c3angle"] = get_CGBead_from_string(
+                present_c2_beads[0],
+                cl_bead_libs,
+            ).angle_centered
+
+        row["cltitle"] = cltitle
+        row["clsigma"] = get_CGBead_from_string(
+            present_cl_beads[0],
+            cl_bead_libs,
+        ).sigma
+        row["clangle"] = clangle
+
+        if row["optimised"]:
+            row["energy_per_bond"] = res_dict[
+                "fin_energy_kjmol"
+            ] / stoich_map(t_str)
+            for force_title in res_dict["fin_energy_decomp"]:
+                if force_title in (
+                    "CMMotionRemover_kjmol",
+                    "tot_energy_kjmol",
+                ):
+                    continue
+                row[force_title] = res_dict["fin_energy_decomp"][
+                    force_title
+                ]
+
+            row["pore"] = res_dict["opt_pore_data"]["min_distance"]
+            row["min_b2b_distance"] = res_dict["min_b2b_distance"]
+            row["radius_gyration"] = res_dict["radius_gyration"]
+            row["max_diameter"] = res_dict["max_diameter"]
+            row["rg/md"] = res_dict["rg/md"]
+            row["flexibility_measure"] = res_dict["flexibility_measure"]
+
             bond_data = res_dict["bond_data"]
             angle_data = res_dict["angle_data"]
             dihedral_data = res_dict["dihedral_data"]
@@ -411,71 +536,15 @@ def data_to_array(json_files, output_dir):
                 "dihedrals": dihedral_data,
             }
 
-        else:
-            energy = None
-            min_distance = None
-            node_shape_vector = None
-            lig_shape_vector = None
+            node_shape_vector = res_dict["node_shape_measures"]
+            lig_shape_vector = res_dict["lig_shape_measures"]
+            if node_shape_vector is not None:
+                for sv in node_shape_vector:
+                    row[f"n_{sv}"] = node_shape_vector[sv]
+            if lig_shape_vector is not None:
+                for sv in lig_shape_vector:
+                    row[f"l_{sv}"] = lig_shape_vector[sv]
 
-        present_c2_beads = get_present_beads(c2bb_name)
-        present_cl_beads = get_present_beads(clbb_name)
-
-        cl_bead_libs = beads_3c().copy()
-        cl_bead_libs.update(beads_4c())
-        cltopo = int(clbb_name[0])
-        clangle = get_CGBead_from_string(
-            present_cl_beads[0],
-            cl_bead_libs,
-        ).angle_centered
-        cltitle = "4C1" if cltopo == 4 else "3C1"
-
-        row = {
-            "cage_name": cage_name,
-            "clbb_name": clbb_name,
-            "c2bb_name": c2bb_name,
-            "clbb_b1": present_cl_beads[0],
-            "clbb_b2": present_cl_beads[1],
-            "c2bb_b1": present_c2_beads[0],
-            "c2bb_b2": present_c2_beads[1],
-            "bbpair": clbb_name + c2bb_name,
-            "cltopo": cltopo,
-            "cltitle": cltitle,
-            "clsigma": get_CGBead_from_string(
-                present_cl_beads[0],
-                cl_bead_libs,
-            ).sigma,
-            "clangle": clangle,
-            "c2sigma": get_CGBead_from_string(
-                present_c2_beads[0],
-                core_2c_beads(),
-            ).sigma,
-            "c2angle": get_CGBead_from_string(
-                present_c2_beads[1],
-                arm_2c_beads(),
-            ).angle_centered,
-            "target_bite_angle": (
-                get_CGBead_from_string(
-                    present_c2_beads[1],
-                    arm_2c_beads(),
-                ).angle_centered
-                - 90
-            )
-            * 2,
-            "energy": energy,
-            "energy_per_bond": energy_per_bond,
-            "gnorm": gnorm,
-            "pore": min_distance,
-            "min_b2b": min_b2b,
-            "topology": t_str,
-            "torsions": torsions,
-            "optimised": optimised,
-        }
-        if node_shape_vector is not None:
-            for sv in node_shape_vector:
-                row[f"n_{sv}"] = node_shape_vector[sv]
-        if lig_shape_vector is not None:
-            for sv in lig_shape_vector:
-                row[f"l_{sv}"] = lig_shape_vector[sv]
         input_dict[name] = row
 
     input_array = pd.DataFrame.from_dict(
@@ -683,11 +752,17 @@ def write_out_mapping(all_data):
                     bite_angle_map[bid] = ba
 
     properties = [
-        "energy",
         "energy_per_bond",
-        "gnorm",
+        "HarmonicBondForce_kjmol",
+        "HarmonicAngleForce_kjmol",
         "pore",
-        "min_b2b",
+        "min_b2b_distance",
+        "radius_gyration",
+        "max_diameter",
+        "rg/md",
+        "flexibility_measure",
+        "CustomNonbondedForce_kjmol",
+        "PeriodicTorsionForce_kjmol",
         "sv_n_dist",
         "sv_l_dist",
         "persistent",

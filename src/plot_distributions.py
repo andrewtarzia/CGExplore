@@ -26,6 +26,7 @@ from analysis_utilities import (
     data_to_array,
     convert_topo,
     convert_tors,
+    convert_vdws,
     topology_labels,
     target_shapes,
     topo_to_colormap,
@@ -38,23 +39,23 @@ def identity_distributions(all_data, figure_output):
 
     fig, ax = plt.subplots(figsize=(16, 5))
 
-    categories = {i: 0 for i in topology_labels(short=True)}
-    categories.update({"X opt.": 0})
+    categories = {i: 0 for i in topology_labels(short="+")}
     count1 = all_data["topology"].value_counts()
-    countxopt = all_data["optimised"].value_counts()
+
     for tstr, count in count1.items():
         categories[convert_topo(tstr)] = count
-    categories["X opt."] = countxopt[False]
+
     num_cages = len(all_data)
 
     ax.bar(
         categories.keys(),
         categories.values(),
         # color="#06AED5",
-        color="#086788",
+        color="teal",
         # color="#DD1C1A",
         # color="#320E3B",
-        edgecolor="k",
+        edgecolor="teal",
+        lw=2,
     )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
@@ -442,14 +443,53 @@ def single_value_distributions(all_data, figure_output):
     logging.info("running single_value_distributions")
 
     to_plot = {
-        "energy": {"xtitle": "energy", "xlim": (0, 100)},
-        "gnorm": {"xtitle": "gnorm", "xlim": (0, 0.0005)},
+        "energy_per_bond": {
+            "xtitle": "E_bf [kJmol-1]",
+            "xlim": (0, 150),
+        },
         "pore": {"xtitle": "min. distance [A]", "xlim": (0, 20)},
-        "min_b2b": {"xtitle": "min. b2b distance [A]", "xlim": (0, 1)},
+        "min_b2b_distance": {
+            "xtitle": "min. b2b distance [A]",
+            "xlim": (0, 1),
+        },
+        "HarmonicBondForce_kjmol": {
+            "xtitle": "E_HB [kJmol-1]",
+            "xlim": (0, 1000),
+        },
+        "HarmonicAngleForce_kjmol": {
+            "xtitle": "E_HA [kJmol-1]",
+            "xlim": (0, 1000),
+        },
+        "CustomNonbondedForce_kjmol": {
+            "xtitle": "E_NB [kJmol-1]",
+            "xlim": (0, 1000),
+        },
+        "PeriodicTorsionForce_kjmol": {
+            "xtitle": "E_PT [kJmol-1]",
+            "xlim": (0, 1000),
+        },
+        "radius_gyration": {
+            "xtitle": "R_g [A]",
+            "xlim": (0, 2000),
+        },
+        "max_diameter": {
+            "xtitle": "max. diameter [A]",
+            "xlim": (0, 2000),
+        },
+        "rg/md": {"xtitle": "R_g / max. diameter", "xlim": (0, 200)},
+        "flexibility_measure": {
+            "xtitle": "flexibility $f$",
+            "xlim": (0, 1000),
+        },
     }
 
-    color_map = topo_to_colormap()
-    color_map.update({"3C1": "k", "4C1": "k"})
+    topologies = topology_labels(short="P")
+    color_map = {
+        ("ton", "von"): "plum",
+        ("ton", "voff"): "teal",
+        ("toff", "von"): "magenta",
+        ("toff", "voff"): "skyblue",
+    }
 
     for tp in to_plot:
         fig, ax = plt.subplots(figsize=(16, 5))
@@ -457,19 +497,20 @@ def single_value_distributions(all_data, figure_output):
         xlim = to_plot[tp]["xlim"]
         count = 0
         toptions = {}
-        for tstr in color_map:
+        for tstr in topologies:
             for tor in ("ton", "toff"):
-                color = {"ton": "gray", "toff": "r"}[tor]
-                toptions[(tstr, tor)] = (count, color)
-                count += 1
+                for vdw in ("von", "voff"):
+                    color = color_map[(tor, vdw)]
+                    toptions[(tstr, tor, vdw)] = (count, color)
+                    count += 1
 
         for i, topt in enumerate(toptions):
-            if topt[0] in ("3C1", "4C1"):
-                topo_frame = all_data[all_data["cltitle"] == topt[0]]
-            else:
-                topo_frame = all_data[all_data["topology"] == topt[0]]
-            fin_frame = topo_frame[topo_frame["torsions"] == topt[1]]
+            topo_frame = all_data[all_data["topology"] == topt[0]]
+            tor_frame = topo_frame[topo_frame["torsions"] == topt[1]]
+            fin_frame = tor_frame[tor_frame["vdws"] == topt[2]]
             values = fin_frame[tp]
+            if len(values) == 0:
+                continue
 
             xpos = toptions[topt][0]
             col = toptions[topt][1]
@@ -518,7 +559,9 @@ def single_value_distributions(all_data, figure_output):
             rotation=45,
         )
 
-        for tor, col in (("ton", "gray"), ("toff", "r")):
+        for lblkey in color_map:
+            tor, vdw = lblkey
+            col = color_map[lblkey]
             ax.scatter(
                 None,
                 None,
@@ -526,7 +569,7 @@ def single_value_distributions(all_data, figure_output):
                 edgecolor="none",
                 s=30,
                 alpha=0.2,
-                label=convert_tors(tor),
+                label=f"{convert_tors(tor)},{convert_vdws(vdw)}",
             )
         ax.legend(fontsize=16)
 
@@ -537,6 +580,7 @@ def single_value_distributions(all_data, figure_output):
             bbox_inches="tight",
         )
         plt.close()
+        raise SystemExit()
 
 
 def shape_vector_distributions(all_data, figure_output):
@@ -777,8 +821,8 @@ def main():
     else:
         pass
 
-    figure_output = cages() / "figures"
-    calculation_output = cages() / "calculations"
+    figure_output = cages() / "ommfigures"
+    calculation_output = cages() / "ommcalculations"
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
@@ -789,15 +833,20 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     opt_data = all_data[all_data["optimised"]]
     logging.info(f"there are {len(opt_data)} successfully opted")
+    _data = all_data[all_data["mdfailed"]]
+    logging.info(f"there are {len(_data)} with failed MD")
+    _data = all_data[all_data["mdexploded"]]
+    logging.info(f"there are {len(_data)} with exploded MD")
     write_out_mapping(opt_data)
 
     identity_distributions(all_data, figure_output)
-    single_value_distributions(opt_data, figure_output)
-    shape_vector_distributions(opt_data, figure_output)
-    shape_vectors_2(opt_data, figure_output)
-    shape_vectors_3(opt_data, figure_output)
-    rmsd_distributions(opt_data, calculation_output, figure_output)
-    geom_distributions(opt_data, geom_data, figure_output)
+    single_value_distributions(all_data, figure_output)
+    raise SystemExit()
+    shape_vector_distributions(all_data, figure_output)
+    shape_vectors_2(all_data, figure_output)
+    shape_vectors_3(all_data, figure_output)
+    rmsd_distributions(all_data, calculation_output, figure_output)
+    geom_distributions(all_data, geom_data, figure_output)
 
 
 if __name__ == "__main__":
