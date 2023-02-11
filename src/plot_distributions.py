@@ -17,6 +17,8 @@ import json
 import logging
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
 
 from env_set import cages
 
@@ -445,16 +447,16 @@ def single_value_distributions(all_data, figure_output):
     to_plot = {
         "energy_per_bond": {
             "xtitle": "E_bf [kJmol-1]",
-            "xlim": (0, 150),
+            "xlim": (0, 200),
         },
-        "pore": {"xtitle": "min. distance [A]", "xlim": (0, 20)},
+        "pore": {"xtitle": "min. distance [A]", "xlim": (0, 15)},
         "min_b2b_distance": {
             "xtitle": "min. b2b distance [A]",
-            "xlim": (0, 1),
+            "xlim": (0, 1.2),
         },
         "HarmonicBondForce_kjmol": {
             "xtitle": "E_HB [kJmol-1]",
-            "xlim": (0, 1000),
+            "xlim": (0, 40),
         },
         "HarmonicAngleForce_kjmol": {
             "xtitle": "E_HA [kJmol-1]",
@@ -462,33 +464,35 @@ def single_value_distributions(all_data, figure_output):
         },
         "CustomNonbondedForce_kjmol": {
             "xtitle": "E_NB [kJmol-1]",
-            "xlim": (0, 1000),
+            "xlim": (0, 400),
         },
         "PeriodicTorsionForce_kjmol": {
             "xtitle": "E_PT [kJmol-1]",
-            "xlim": (0, 1000),
+            "xlim": (0, 400),
         },
         "radius_gyration": {
             "xtitle": "R_g [A]",
-            "xlim": (0, 2000),
+            "xlim": (0, 20),
         },
         "max_diameter": {
-            "xtitle": "max. diameter [A]",
-            "xlim": (0, 2000),
+            "xtitle": "$D$ [A]",
+            "xlim": (0, 50),
         },
-        "rg/md": {"xtitle": "R_g / max. diameter", "xlim": (0, 200)},
+        "rg_md": {"xtitle": "R_g / $D$", "xlim": (0, 1)},
+        "pore_md": {"xtitle": "min. distance / $D$", "xlim": (0, 0.5)},
+        "pore_rg": {"xtitle": "min. distance / R_g", "xlim": (0, 1.2)},
         "flexibility_measure": {
             "xtitle": "flexibility $f$",
-            "xlim": (0, 1000),
+            "xlim": (0, 10),
         },
     }
 
     topologies = topology_labels(short="P")
     color_map = {
-        ("ton", "von"): "plum",
-        ("ton", "voff"): "teal",
-        ("toff", "von"): "magenta",
-        ("toff", "voff"): "skyblue",
+        ("ton", "von"): "#F9A03F",
+        ("ton", "voff"): "#086788",
+        ("toff", "von"): "#0B2027",
+        ("toff", "voff"): "#7A8B99",
     }
 
     for tp in to_plot:
@@ -498,8 +502,8 @@ def single_value_distributions(all_data, figure_output):
         count = 0
         toptions = {}
         for tstr in topologies:
-            for tor in ("ton", "toff"):
-                for vdw in ("von", "voff"):
+            for tor in ("toff", "ton"):
+                for vdw in ("voff", "von"):
                     color = color_map[(tor, vdw)]
                     toptions[(tstr, tor, vdw)] = (count, color)
                     count += 1
@@ -508,22 +512,24 @@ def single_value_distributions(all_data, figure_output):
             topo_frame = all_data[all_data["topology"] == topt[0]]
             tor_frame = topo_frame[topo_frame["torsions"] == topt[1]]
             fin_frame = tor_frame[tor_frame["vdws"] == topt[2]]
+
             values = fin_frame[tp]
+
             if len(values) == 0:
                 continue
 
             xpos = toptions[topt][0]
             col = toptions[topt][1]
 
-            ax.scatter(
-                [xpos for i in values],
-                [i for i in values],
-                c=col,
-                edgecolor="none",
-                s=30,
-                alpha=0.2,
-                rasterized=True,
-            )
+            # ax.scatter(
+            #     [xpos for i in values],
+            #     [i for i in values],
+            #     c=col,
+            #     edgecolor="none",
+            #     s=30,
+            #     alpha=0.2,
+            #     rasterized=True,
+            # )
 
             parts = ax.violinplot(
                 [i for i in values],
@@ -540,18 +546,26 @@ def single_value_distributions(all_data, figure_output):
             for pc in parts["bodies"]:
                 pc.set_facecolor(col)
                 pc.set_edgecolor("none")
-                pc.set_alpha(0.3)
+                pc.set_alpha(1.0)
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel(xtitle, fontsize=16)
         ax.set_ylim(xlim)
         xticks = {}
+        all_counts = {}
         for i in toptions:
             tstr = i[0]
-            if tstr in xticks:
-                xticks[tstr] = (toptions[i][0] + xticks[tstr]) / 2
-            else:
-                xticks[tstr] = toptions[i][0]
+            if tstr not in all_counts:
+                all_counts[tstr] = []
+            all_counts[tstr].append(toptions[i][0])
+
+        xticks = {i: sum(all_counts[i]) / 4 for i in all_counts}
+        ylines = [max(all_counts[i]) + 0.5 for i in all_counts][:-1] + [
+            0
+        ]
+
+        for yl in ylines:
+            ax.axvline(x=yl, c="gray", linestyle="--", alpha=0.4)
 
         ax.set_xticks([xticks[i] for i in xticks])
         ax.set_xticklabels(
@@ -559,19 +573,27 @@ def single_value_distributions(all_data, figure_output):
             rotation=45,
         )
 
+        labels = []
         for lblkey in color_map:
             tor, vdw = lblkey
             col = color_map[lblkey]
-            ax.scatter(
-                None,
-                None,
-                c=col,
-                edgecolor="none",
-                s=30,
-                alpha=0.2,
-                label=f"{convert_tors(tor)},{convert_vdws(vdw)}",
+            labels.append(
+                (
+                    mpatches.Patch(color=col),
+                    f"{convert_tors(tor)}, {convert_vdws(vdw)}",
+                )
             )
-        ax.legend(fontsize=16)
+            # ax.scatter(
+            #     None,
+            #     None,
+            #     c=col,
+            #     edgecolor="none",
+            #     s=30,
+            #     alpha=0.2,
+            #     label=,
+            # )
+        ax.legend(*zip(*labels), fontsize=16, ncols=4)
+        ax.set_xlim(-0.5, max(ylines) + 4.5)
 
         fig.tight_layout()
         fig.savefig(
@@ -580,7 +602,6 @@ def single_value_distributions(all_data, figure_output):
             bbox_inches="tight",
         )
         plt.close()
-        raise SystemExit()
 
 
 def shape_vector_distributions(all_data, figure_output):
