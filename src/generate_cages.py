@@ -497,7 +497,6 @@ def analyse_cage(
                     "min_b2b_distance": conf_min_b2b_distance,
                     "radius_gyration": conf_radius_gyration,
                     "max_diameter": conf_max_diameter,
-                    "rg/md": conf_radius_gyration / conf_max_diameter,
                 }
 
             flexibilty = (
@@ -536,7 +535,6 @@ def analyse_cage(
             "min_b2b_distance": min_b2b_distance,
             "radius_gyration": radius_gyration,
             "max_diameter": max_diameter,
-            "rg/md": radius_gyration / max_diameter,
             "trajectory": trajectory_data,
             "flexibility_measure": flexibilty,
         }

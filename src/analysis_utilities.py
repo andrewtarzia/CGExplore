@@ -524,7 +524,17 @@ def data_to_array(json_files, output_dir):
             row["min_b2b_distance"] = res_dict["min_b2b_distance"]
             row["radius_gyration"] = res_dict["radius_gyration"]
             row["max_diameter"] = res_dict["max_diameter"]
-            row["rg_md"] = res_dict["rg/md"]
+            row["rg_md"] = (
+                res_dict["radius_gyration"] / res_dict["max_diameter"]
+            )
+            row["pore_md"] = (
+                res_dict["opt_pore_data"]["min_distance"]
+                / res_dict["max_diameter"]
+            )
+            row["pore_rg"] = (
+                res_dict["opt_pore_data"]["min_distance"]
+                / res_dict["radius_gyration"]
+            )
             row["flexibility_measure"] = res_dict["flexibility_measure"]
 
             bond_data = res_dict["bond_data"]
