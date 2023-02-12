@@ -31,18 +31,22 @@ from cage_construction.topologies import cage_topology_options
 
 
 def isomer_energy():
+    raise SystemExit("if this is used, fix")
     return 0.05
 
 
 def max_energy():
+    raise SystemExit("if this is used, fix")
     return 1.0
 
 
 def min_radius():
+    raise SystemExit("if this is used, fix")
     return 1.0
 
 
 def min_b2b_distance():
+    raise SystemExit("if this is used, fix")
     return 0.5
 
 
@@ -157,6 +161,7 @@ def convert_vdws(vstr):
 
 
 def topo_to_colormap():
+    raise SystemExit("if this is used, fix")
     return {
         "TwoPlusThree": "#06AED5",
         "FourPlusSix": "#086788",
@@ -181,17 +186,6 @@ def torsion_to_colormap():
 
 def stoich_map(tstr):
     return {
-        "TwoPlusThree": 6,
-        "FourPlusSix": 12,
-        "FourPlusSix2": 12,
-        "SixPlusNine": 18,
-        "EightPlusTwelve": 24,
-        "TwoPlusFour": 8,
-        "ThreePlusSix": 12,
-        "FourPlusEight": 16,
-        "SixPlusTwelve": 24,
-        "EightPlusSixteen": 32,
-        "M12L24": 48,
         "2P3": 6,
         "4P6": 12,
         "4P62": 12,
@@ -208,6 +202,7 @@ def stoich_map(tstr):
 
 
 def cltype_to_colormap():
+    raise SystemExit("if this is used, fix")
     return {
         "3C1": "#06AED5",
         "4C1": "#086788",
@@ -215,6 +210,7 @@ def cltype_to_colormap():
 
 
 def cltypetopo_to_colormap():
+    raise SystemExit("if this is used, change it")
     return {
         "3C1": {
             "TwoPlusThree": "#1f77b4",
@@ -240,6 +236,7 @@ def cltypetopo_to_colormap():
 
 
 def shapevertices_to_colormap():
+    raise SystemExit("if this is used, fix")
     return {
         4: "#06AED5",
         5: "#086788",
@@ -250,6 +247,7 @@ def shapevertices_to_colormap():
 
 
 def shapelabels_to_colormap():
+    raise SystemExit("if this is used, fix")
     return {
         "3": "#F9A03F",
         "4": "#0B2027",
@@ -278,6 +276,7 @@ def target_shapes():
 
 
 def target_shapes_by_cltype(cltype):
+    raise SystemExit("if this is used, fix")
     if cltype == "4C1":
         return ("OC-6b", "TP-3", "SP-4", "OC-6")
     elif cltype == "3C1":
@@ -285,6 +284,7 @@ def target_shapes_by_cltype(cltype):
 
 
 def shapetarget_to_colormap():
+    raise SystemExit("if this is used, fix")
     return {
         "CU-8": "#06AED5",
         "OC-6": "#086788",
@@ -295,6 +295,7 @@ def shapetarget_to_colormap():
 
 
 def map_cltype_to_shapetopology():
+    raise SystemExit("if this is used, fix")
     return {
         "3C1": {
             "5": "TwoPlusThree",
@@ -314,6 +315,7 @@ def map_cltype_to_shapetopology():
 
 
 def mapshape_to_topology(mode):
+    raise SystemExit("if this is used, fix")
     if mode == "n":
         return {
             # "TwoPlusThree": "TBPY-5",
@@ -399,6 +401,7 @@ def get_sv_dist(row, mode):
     cosine_similarity = np.dot(a, b) / (
         np.linalg.norm(a) * np.linalg.norm(b)
     )
+    raise SystemExit("check this")
     return cosine_similarity
 
 
@@ -535,8 +538,33 @@ def data_to_array(json_files, output_dir):
                 res_dict["opt_pore_data"]["min_distance"]
                 / res_dict["radius_gyration"]
             )
-            row["flexibility_measure"] = res_dict["flexibility_measure"]
 
+            trajectory_data = res_dict["trajectory_data"]
+            if trajectory_data is None:
+                row["flexibility_measure"] = None
+            else:
+                row["flexibility_measure"] = (
+                    np.std(
+                        [
+                            rd["pore_data"]["min_distance"]
+                            for rd in trajectory_data.values()
+                        ]
+                    )
+                    + np.std(
+                        [
+                            rd["radius_gyration"]
+                            for rd in trajectory_data.values()
+                        ]
+                    )
+                    + np.std(
+                        [
+                            rd["max_diameter"]
+                            for rd in trajectory_data.values()
+                        ]
+                    )
+                )
+            print(row)
+            raise SystemExit()
             bond_data = res_dict["bond_data"]
             angle_data = res_dict["angle_data"]
             dihedral_data = res_dict["dihedral_data"]
@@ -554,6 +582,8 @@ def data_to_array(json_files, output_dir):
             if lig_shape_vector is not None:
                 for sv in lig_shape_vector:
                     row[f"l_{sv}"] = lig_shape_vector[sv]
+            print(row)
+            raise SystemExit("check this")
 
         input_dict[name] = row
 
