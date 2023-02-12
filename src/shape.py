@@ -52,14 +52,15 @@ def fill_position_matrix(
 
 def get_shape_molecule_nodes(constructed_molecule, name):
     topo_expected = {
-        "FourPlusSix": 4,
-        "FourPlusSix2": 4,
-        "SixPlusNine": 6,
-        "EightPlusTwelve": 8,
-        "ThreePlusSix": 3,
-        "FourPlusEight": 4,
-        "SixPlusTwelve": 6,
-        "EightPlusSixteen": 8,
+        "4P6": 4,
+        "4P62": 4,
+        "6P9": 6,
+        "8P12": 8,
+        "3P6": 3,
+        "4P8": 4,
+        "6P12": 6,
+        "8P16": 8,
+        "6P8": 6,
     }
 
     splits = name.split("_")
@@ -93,10 +94,11 @@ def get_shape_molecule_nodes(constructed_molecule, name):
 
 def get_shape_molecule_ligands(constructed_molecule, name):
     topo_expected = {
-        "TwoPlusThree": 3,
-        "FourPlusSix": 6,
-        "FourPlusSix2": 6,
-        "TwoPlusFour": 4,
+        "2P3": 3,
+        "4P6": 6,
+        "4P62": 6,
+        "2P4": 4,
+        "6P8": 8,
     }
 
     splits = name.split("_")

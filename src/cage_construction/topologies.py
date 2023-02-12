@@ -49,11 +49,3 @@ class CGM12L24(stk.cage.M12L24):
 
     def get_vertex_alignments(self):
         return self._vertex_alignments
-
-
-def unsymm_topology_options():
-    topologies = {
-        "CGM12L24": CGM12L24,
-    }
-
-    return topologies
