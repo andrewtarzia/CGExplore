@@ -13,7 +13,6 @@ import sys
 import stk
 import os
 import json
-import numpy as np
 import logging
 import itertools
 from rdkit import RDLogger
@@ -385,7 +384,6 @@ def analyse_cage(
             mdexploded = True
         if mdfailed or mdexploded:
             trajectory_data = None
-            flexibilty = None
         else:
             fileprefix = f"{name}_o2"
             trajectory = OMMTrajectory(
@@ -499,27 +497,6 @@ def analyse_cage(
                     "max_diameter": conf_max_diameter,
                 }
 
-            flexibilty = (
-                np.std(
-                    [
-                        rd["pore_data"]["min_distance"]
-                        for rd in trajectory_data.values()
-                    ]
-                )
-                + np.std(
-                    [
-                        rd["radius_gyration"]
-                        for rd in trajectory_data.values()
-                    ]
-                )
-                + np.std(
-                    [
-                        rd["max_diameter"]
-                        for rd in trajectory_data.values()
-                    ]
-                )
-            )
-
         res_dict = {
             "optimised": True,
             "mdexploded": mdexploded,
@@ -536,7 +513,6 @@ def analyse_cage(
             "radius_gyration": radius_gyration,
             "max_diameter": max_diameter,
             "trajectory": trajectory_data,
-            "flexibility_measure": flexibilty,
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
