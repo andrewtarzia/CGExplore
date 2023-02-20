@@ -32,7 +32,7 @@ from cage_construction.topologies import cage_topology_options
 
 def isomer_energy():
     # kJ/mol.
-    return 10.0
+    return 5.0
 
 
 def max_energy():
@@ -118,6 +118,9 @@ def convert_topo(topo_str):
         "EightPlusSixteen": "8+16",
         "M12L24": "12+24",
         "mixed": "mixed",
+        "mixed-2": "mixed (2)",
+        "mixed-3": "mixed (3)",
+        "mixed>3": "mixed (>3)",
         "all": "all",
         "unstable": "unstable",
         "not": "not",
@@ -158,23 +161,6 @@ def convert_vdws(vstr):
     }[vstr]
 
 
-def topo_to_colormap():
-    raise SystemExit("if this is used, fix")
-    return {
-        "TwoPlusThree": "#06AED5",
-        "FourPlusSix": "#086788",
-        "FourPlusSix2": "#DD1C1A",
-        "SixPlusNine": "#320E3B",
-        "EightPlusTwelve": "#CE7B91",
-        "TwoPlusFour": "#6969B3",
-        "ThreePlusSix": "#B279A7",
-        "FourPlusEight": "#C3423F",
-        "SixPlusTwelve": "#9BC53D",
-        "EightPlusSixteen": "k",
-        "M12L24": "k",
-    }
-
-
 def torsion_to_colormap():
     return {
         "ton": "k",
@@ -200,7 +186,7 @@ def stoich_map(tstr):
 
 
 def cltype_to_colormap():
-    raise SystemExit("if this is used, fix")
+    raise SystemExit("cltype_to_colormap, if this is used, fix")
     return {
         "3C1": "#06AED5",
         "4C1": "#086788",
@@ -208,33 +194,35 @@ def cltype_to_colormap():
 
 
 def cltypetopo_to_colormap():
-    raise SystemExit("if this is used, change it")
     return {
         "3C1": {
-            "TwoPlusThree": "#1f77b4",
-            "FourPlusSix": "#ff7f0e",
-            "FourPlusSix2": "#2ca02c",
-            "SixPlusNine": "#d62728",
-            "EightPlusTwelve": "#17becf",
+            "2P3": "#1f77b4",
+            "4P6": "#ff7f0e",
+            "4P62": "#2ca02c",
+            "6P9": "#d62728",
+            "8P12": "#17becf",
         },
         "4C1": {
-            "TwoPlusFour": "#1f77b4",
-            "ThreePlusSix": "#ff7f0e",
-            "FourPlusEight": "#2ca02c",
-            "SixPlusTwelve": "#d62728",
-            "EightPlusSixteen": "k",
-            "M12L24": "#17becf",
+            "2P4": "#1f77b4",
+            "3P6": "#ff7f0e",
+            "4P8": "#2ca02c",
+            "6P12": "#d62728",
+            "8P16": "#17becf",
+            "12P24": "#75499c",
         },
         "mixed": {
             # "2": "#7b4173",
             # ">2": "#de9ed6",
-            "mixed": "white",
+            # "mixed": "white",
+            "mixed-2": "white",
+            "mixed-3": "#8A8A8A",
+            "mixed>3": "#434343",
         },
     }
 
 
 def shapevertices_to_colormap():
-    raise SystemExit("if this is used, fix")
+    raise SystemExit("shapevertices_to_colormap, if this is used, fix")
     return {
         4: "#06AED5",
         5: "#086788",
@@ -245,7 +233,7 @@ def shapevertices_to_colormap():
 
 
 def shapelabels_to_colormap():
-    raise SystemExit("if this is used, fix")
+    raise SystemExit("shapelabels_to_colormap, if this is used, fix")
     return {
         "3": "#F9A03F",
         "4": "#0B2027",
@@ -274,7 +262,7 @@ def target_shapes():
 
 
 def target_shapes_by_cltype(cltype):
-    raise SystemExit("if this is used, fix")
+    raise SystemExit("target_shapes_by_cltype, if this is used, fix")
     if cltype == "4C1":
         return ("OC-6b", "TP-3", "SP-4", "OC-6")
     elif cltype == "3C1":
@@ -282,7 +270,7 @@ def target_shapes_by_cltype(cltype):
 
 
 def shapetarget_to_colormap():
-    raise SystemExit("if this is used, fix")
+    raise SystemExit("shapetarget_to_colormap, if this is used, fix")
     return {
         "CU-8": "#06AED5",
         "OC-6": "#086788",
@@ -292,23 +280,10 @@ def shapetarget_to_colormap():
     }
 
 
-def map_cltype_to_shapetopology():
-    raise SystemExit("if this is used, fix")
+def map_cltype_to_topology():
     return {
-        "3C1": {
-            "5": "TwoPlusThree",
-            "4": "FourPlusSix",
-            "b": "FourPlusSix2",
-            "6": "SixPlusNine",
-            "8": "EightPlusTwelve",
-        },
-        "4C1": {
-            "b": "TwoPlusFour",
-            "3": "ThreePlusSix",
-            "4": "FourPlusEight",
-            "6": "SixPlusTwelve",
-            "12": "M12L24",
-        },
+        "3C1": ("2P3", "4P6", "4P62", "6P9", "8P12"),
+        "4C1": ("2P4", "3P6", "4P8", "6P12", "8P16", "12P24"),
     }
 
 
@@ -807,7 +782,7 @@ def write_out_mapping(all_data):
     logging.info(f"\nclsigmas: {clsigma_map}\n")
     logging.info(f"\nbite_angles: {bite_angle_map}\n")
     logging.info(f"\nc2sigmas: {c2sigma_map}\n")
-    logging.info(f"available properties:\n {properties}")
+    logging.info(f"available properties:\n {properties}\n")
 
 
 def main():
