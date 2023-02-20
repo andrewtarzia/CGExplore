@@ -15,6 +15,7 @@ import stk
 import stko
 import json
 import logging
+import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -31,7 +32,6 @@ from analysis_utilities import (
     convert_vdws,
     topology_labels,
     target_shapes,
-    topo_to_colormap,
     mapshape_to_topology,
 )
 
@@ -129,19 +129,30 @@ def geom_distributions(all_data, geom_data, figure_output):
         },
     }
 
-    tcmap = topo_to_colormap()
-    tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
+    tcmap = topology_labels(short="P")
+    tcpos = {
+        tstr: i for i, tstr in enumerate(tcmap) if tstr not in ("6P8",)
+    }
 
     for comp in comparisons:
         cdict = comparisons[comp]
-        color_map = topo_to_colormap()
         column = cdict["column"]
 
-        fig, axs = plt.subplots(ncols=2, sharey=True, figsize=(16, 5))
-        for ax, tors in zip(axs, ("ton", "toff")):
+        fig, axs = plt.subplots(
+            ncols=2, nrows=2, sharey=True, figsize=(16, 10)
+        )
+        flat_axs = axs.flatten()
+        for ax, (tors, vdws) in zip(
+            flat_axs,
+            itertools.product(("ton", "toff"), ("von", "voff")),
+        ):
             tor_frame = all_data[all_data["torsions"] == tors]
-            for i, tstr in enumerate(color_map):
-                topo_frame = tor_frame[tor_frame["topology"] == tstr]
+            vdw_frame = tor_frame[tor_frame["vdws"] == vdws]
+            for i, tstr in enumerate(tcmap):
+                if tstr in ("6P8",):
+                    continue
+
+                topo_frame = vdw_frame[vdw_frame["topology"] == tstr]
 
                 values = []
                 # energies = []
@@ -157,12 +168,6 @@ def geom_distributions(all_data, geom_data, figure_output):
                             target_oppos = convert_pyramid_angle(target)
                         else:
                             target_oppos = None
-
-                    # Ignore torsions for target bite-angles near 180.
-                    if comp == "torsions":
-                        tba = float(row["target_bite_angle"])
-                        if tba == 180:
-                            continue
 
                     obsdata = geom_data[name][cdict["measure"]]
                     for lbl in cdict["label_options"]:
@@ -197,22 +202,11 @@ def geom_distributions(all_data, geom_data, figure_output):
 
                 xpos = tcpos[tstr]
 
-                ax.scatter(
-                    [xpos for i in values],
-                    [i for i in values],
-                    c="gray",
-                    # c=[i for i in energies],
-                    edgecolor="none",
-                    s=20,
-                    alpha=0.2,
-                    rasterized=True,
-                    # vmin=0,
-                    # vmax=vmax,
-                    # cmap="Blues",
-                )
                 if column is not None:
-                    ax.axhline(y=0, lw=2, c="k", linestyle="--")
+                    ax.axhline(y=0, lw=1, c="k", linestyle="--")
 
+                if len(values) == 0:
+                    continue
                 parts = ax.violinplot(
                     [i for i in values],
                     [xpos],
@@ -226,15 +220,16 @@ def geom_distributions(all_data, geom_data, figure_output):
                 )
 
                 for pc in parts["bodies"]:
-                    pc.set_facecolor("gray")
+                    pc.set_facecolor("#086788")
                     pc.set_edgecolor("none")
-                    pc.set_alpha(0.3)
+                    pc.set_alpha(1.0)
 
             ax.tick_params(axis="both", which="major", labelsize=16)
             ax.set_title(
                 (
                     f'{cdict["xlabel"]}: '
-                    f"{convert_tors(tors,num=False)}"
+                    f"{convert_tors(tors,num=False)}, "
+                    f"{convert_vdws(vdws)}"
                 ),
                 fontsize=16,
             )
@@ -247,17 +242,7 @@ def geom_distributions(all_data, geom_data, figure_output):
                 [convert_topo(i) for i in tcpos],
                 rotation=45,
             )
-
-        # cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-        # cmap = mpl.cm.Blues
-        # norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
-        # cbar = fig.colorbar(
-        #     mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-        #     cax=cbar_ax,
-        #     orientation="vertical",
-        # )
-        # cbar.ax.tick_params(labelsize=16)
-        # cbar.set_label("energy per bond formed [eV]", fontsize=16)
+            ax.set_xlim(-0.5, 10.5)
 
         fig.tight_layout()
         fig.savefig(
@@ -270,8 +255,9 @@ def geom_distributions(all_data, geom_data, figure_output):
 
 def rmsd_distributions(all_data, calculation_dir, figure_output):
     logging.info("running rmsd_distributions")
+    raise SystemExit("if you want this, need to align MD")
 
-    tcmap = topo_to_colormap()
+    tcmap = topology_labels(short="P")
 
     rmsd_file = calculation_dir / "all_rmsds.json"
     if os.path.exists(rmsd_file):
@@ -281,156 +267,119 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
         data = {}
         for tstr in tcmap:
             tdata = {}
-            for o1 in calculation_dir.glob(f"*{tstr}_*ton*_opted2.mol"):
-                if o1.name[0] in ("2", "3", "4"):
-                    continue
+            if tstr in ("6P8",):
+                search = f"*{tstr}_*toff*von*_final.mol"
+            else:
+                search = f"*{tstr}_*ton*von*_final.mol"
 
+            for o1 in calculation_dir.glob(search):
                 o1 = str(o1)
-                o2 = o1.replace("opted2", "opted1")
-                o3 = o1.replace("opted2", "opted3")
-                ooff = o1.replace("ton", "toff")
-                mol1 = stk.BuildingBlock.init_from_file(o1)
-                mol2 = stk.BuildingBlock.init_from_file(o2)
+                o2 = o1.replace("final", "opted1")
+                o3 = o1.replace("final", "opted2")
+                o4 = o1.replace("final", "opted3")
+                m1 = stk.BuildingBlock.init_from_file(o1)
+                m2 = stk.BuildingBlock.init_from_file(o2)
+                m3 = stk.BuildingBlock.init_from_file(o3)
+                m4 = stk.BuildingBlock.init_from_file(o4)
 
-                moloff = stk.BuildingBlock.init_from_file(ooff)
+                rmsd_calc = stko.RmsdCalculator(m1)
 
-                rmsd_calc = stko.RmsdCalculator(mol1)
-                # try:
-                rmsd1 = rmsd_calc.get_results(mol2).get_rmsd()
-                rmsdooff = rmsd_calc.get_results(moloff).get_rmsd()
-                if os.path.exists(o3):
-                    mol3 = stk.BuildingBlock.init_from_file(o3)
-                    rmsd3 = rmsd_calc.get_results(mol3).get_rmsd()
+                if tstr in ("6P8",):
+                    otoff_voff = o1.replace("von", "voff")
+                    mtoffvoff = stk.BuildingBlock.init_from_file(
+                        otoff_voff
+                    )
+                    tdata[o1] = {
+                        "r2": rmsd_calc.get_results(m2).get_rmsd(),
+                        "r3": rmsd_calc.get_results(m3).get_rmsd(),
+                        "r4": rmsd_calc.get_results(m4).get_rmsd(),
+                        "rtoffvon": None,
+                        "rtonvoff": None,
+                        "rtoffvoff": rmsd_calc.get_results(
+                            mtoffvoff
+                        ).get_rmsd(),
+                    }
                 else:
-                    rmsd3 = None
-                # except stko.DifferentMoleculeException:
-                #     logging.info(f"fail for {o1}, {o2}")
-
-                tdata[o1] = (rmsd1, rmsdooff, rmsd3)
+                    otoff_von = o1.replace("ton", "toff")
+                    oton_voff = o1.replace("von", "voff")
+                    otoff_voff = otoff_von.replace("von", "voff")
+                    mtoffvon = stk.BuildingBlock.init_from_file(
+                        otoff_von
+                    )
+                    mtonvoff = stk.BuildingBlock.init_from_file(
+                        oton_voff
+                    )
+                    mtoffvoff = stk.BuildingBlock.init_from_file(
+                        otoff_voff
+                    )
+                    tdata[o1] = {
+                        "r2": rmsd_calc.get_results(m2).get_rmsd(),
+                        "r3": rmsd_calc.get_results(m3).get_rmsd(),
+                        "r4": rmsd_calc.get_results(m4).get_rmsd(),
+                        "rtoffvon": rmsd_calc.get_results(
+                            mtoffvon
+                        ).get_rmsd(),
+                        "rtonvoff": rmsd_calc.get_results(
+                            mtonvoff
+                        ).get_rmsd(),
+                        "rtoffvoff": rmsd_calc.get_results(
+                            mtoffvoff
+                        ).get_rmsd(),
+                    }
             data[tstr] = tdata
 
         with open(rmsd_file, "w") as f:
-            json.dump(data, f)
+            json.dump(data, f, indent=4)
 
     tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
-    lentcpos = len(tcpos)
-    tcmap.update({"all": "k"})
-    tcpos.update({"all": lentcpos})
 
     fig, axs = plt.subplots(
-        nrows=1,
-        ncols=2,
+        nrows=3,
+        ncols=1,
         sharex=True,
         sharey=True,
-        figsize=(16, 5),
+        figsize=(8, 10),
     )
-    # flat_axs = axs.flatten()
+    flat_axs = axs.flatten()
 
-    ax = axs[0]
-    ax2 = axs[1]
-    allydata1 = []
-    allydata2 = []
-    for tstr in tcmap:
-        if tstr == "all":
-            ydata1 = allydata1
-            ydata2 = allydata2
-        else:
-            ydata1 = [i[0] for i in data[tstr].values()]
-            ydata2 = [i[1] for i in data[tstr].values()]
-            ydata3 = [
-                i[2] for i in data[tstr].values() if i[2] is not None
-            ]
-            allydata1.extend(ydata1)
-            allydata2.extend(ydata2)
+    for ax, col in zip(
+        flat_axs,
+        ("rtoffvon", "rtonvoff", "rtoffvoff"),
+    ):
 
-        xpos = tcpos[tstr]
+        for tstr in tcmap:
+            if tstr in ("6P8",) and col in ("rtoffvon", "rtonvoff"):
+                continue
 
-        ax.scatter(
-            [xpos for i in ydata1],
-            [i for i in ydata1],
-            c="gray",
-            edgecolor="none",
-            s=30,
-            alpha=0.2,
-            rasterized=True,
-        )
-
-        parts = ax.violinplot(
-            [i for i in ydata1],
-            [xpos],
-            # points=200,
-            vert=True,
-            widths=0.8,
-            showmeans=False,
-            showextrema=False,
-            showmedians=False,
-            # bw_method=0.5,
-        )
-
-        for pc in parts["bodies"]:
-            pc.set_facecolor("gray")
-            pc.set_edgecolor("none")
-            pc.set_alpha(0.3)
-
-        ax2.scatter(
-            [xpos for i in ydata2],
-            [i for i in ydata2],
-            c="gray",
-            edgecolor="none",
-            s=30,
-            alpha=0.2,
-            rasterized=True,
-        )
-
-        parts = ax2.violinplot(
-            [i for i in ydata2],
-            [xpos],
-            # points=200,
-            vert=True,
-            widths=0.8,
-            showmeans=False,
-            showextrema=False,
-            showmedians=False,
-            # bw_method=0.5,
-        )
-
-        for pc in parts["bodies"]:
-            pc.set_facecolor("gray")
-            pc.set_edgecolor("none")
-            pc.set_alpha(0.3)
-
-        if tstr != "all":
-            ax.scatter(
-                [xpos for i in ydata3],
-                [i for i in ydata3],
-                c="gold",
-                edgecolor="none",
-                s=20,
-                alpha=1.0,
-                rasterized=True,
+            ydata = [i[col] for i in data[tstr].values()]
+            xpos = tcpos[tstr]
+            parts = ax.violinplot(
+                [i for i in ydata],
+                [xpos],
+                # points=200,
+                vert=True,
+                widths=0.8,
+                showmeans=False,
+                showextrema=False,
+                showmedians=False,
+                # bw_method=0.5,
             )
 
-    ax.plot((-1, 12), (0, 0), c="k")
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_ylabel("RMSD [A]", fontsize=16)
-    ax.set_xlim(-0.5, 11.5)
-    ax.set_title("opt1->opt2; opt2->opt3", fontsize=16)
-    ax.set_xticks([tcpos[i] for i in tcpos])
-    ax.set_xticklabels(
-        [convert_topo(i) for i in tcpos],
-        rotation=45,
-    )
+            for pc in parts["bodies"]:
+                pc.set_facecolor("#086788")
+                pc.set_edgecolor("none")
+                pc.set_alpha(1.0)
 
-    ax2.plot((-1, 12), (0, 0), c="k")
-    ax2.tick_params(axis="both", which="major", labelsize=16)
-    # ax2.set_ylabel("RMSD [A]", fontsize=16)
-    ax2.set_xlim(-0.5, 11.5)
-    ax2.set_title("ton->toff", fontsize=16)
-    ax2.set_xticks([tcpos[i] for i in tcpos])
-    ax2.set_xticklabels(
-        [convert_topo(i) for i in tcpos],
-        rotation=45,
-    )
+        ax.plot((-1, 12), (0, 0), c="k")
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_ylabel("RMSD [A]", fontsize=16)
+        ax.set_xlim(-0.5, 11.5)
+        ax.set_title(f"{col}", fontsize=16)
+        ax.set_xticks([tcpos[i] for i in tcpos])
+        ax.set_xticklabels(
+            [convert_topo(i) for i in tcpos],
+            rotation=45,
+        )
 
     fig.tight_layout()
     fig.savefig(
@@ -608,8 +557,8 @@ def shape_vector_distributions(all_data, figure_output):
     logging.info("running shape_vector_distributions")
 
     present_shape_values = target_shapes()
-    num_cols = 5
-    num_rows = 2
+    num_cols = 2
+    num_rows = 5
 
     torsion_dict = {
         "ton": "-",
@@ -619,7 +568,7 @@ def shape_vector_distributions(all_data, figure_output):
     fig, axs = plt.subplots(
         nrows=num_rows,
         ncols=num_cols,
-        figsize=(16, 10),
+        figsize=(16, 16),
     )
     flat_axs = axs.flatten()
 
@@ -666,7 +615,7 @@ def shape_vector_distributions(all_data, figure_output):
         ax.set_xlabel(shape, fontsize=16)
         ax.set_ylabel("count", fontsize=16)
         # ax.set_xlim(0, xmax)
-        ax.set_yscale("log")
+        # ax.set_yscale("log")
 
     ax.legend(fontsize=16)
 
@@ -681,7 +630,7 @@ def shape_vector_distributions(all_data, figure_output):
 
 def shape_vectors_2(all_data, figure_output):
     logging.info("running shape_vectors_2")
-    tstrs = topo_to_colormap()
+    tstrs = topology_labels(short="P")
     ntstrs = mapshape_to_topology(mode="n")
     ltstrs = mapshape_to_topology(mode="l")
 
@@ -691,8 +640,8 @@ def shape_vectors_2(all_data, figure_output):
     }
 
     fig, axs = plt.subplots(
-        nrows=3,
-        ncols=3,
+        nrows=4,
+        ncols=4,
         sharex=True,
         sharey=True,
         figsize=(16, 10),
@@ -742,9 +691,9 @@ def shape_vectors_2(all_data, figure_output):
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("cosine similarity", fontsize=16)
-        ax.set_ylabel("log(count)", fontsize=16)
+        ax.set_ylabel("count", fontsize=16)
         ax.set_title(tstr, fontsize=16)
-        ax.set_yscale("log")
+        # ax.set_yscale("log")
         if count == 4:
             ax.legend(fontsize=16)
 
@@ -759,7 +708,7 @@ def shape_vectors_2(all_data, figure_output):
 
 def shape_vectors_3(all_data, figure_output):
     logging.info("running shape_vectors_3")
-    tstrs = topo_to_colormap()
+    tstrs = topology_labels(short="P")
     ntstrs = mapshape_to_topology(mode="n")
     ltstrs = mapshape_to_topology(mode="l")
 
@@ -769,8 +718,8 @@ def shape_vectors_3(all_data, figure_output):
     }
 
     fig, axs = plt.subplots(
-        nrows=3,
-        ncols=3,
+        nrows=4,
+        ncols=4,
         sharex=True,
         sharey=True,
         figsize=(16, 10),
@@ -789,7 +738,7 @@ def shape_vectors_3(all_data, figure_output):
     for ax, tstr in zip(flat_axs, mtstrs):
         t_data = all_data[all_data["topology"] == tstr]
 
-        ax_xlbl = {}
+        ax_xlbl = set()
         for tors in torsion_dict:
             tor_data = t_data[t_data["torsions"] == tors]
 
@@ -819,9 +768,9 @@ def shape_vectors_3(all_data, figure_output):
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("; ".join(list(ax_xlbl)), fontsize=16)
-        ax.set_ylabel("log(count)", fontsize=16)
+        ax.set_ylabel("count", fontsize=16)
         ax.set_title(tstr, fontsize=16)
-        ax.set_yscale("log")
+        # ax.set_yscale("log")
         if len(mtstrs[tstr]) == 2:
             ax.legend(fontsize=16)
 
@@ -858,16 +807,15 @@ def main():
     logging.info(f"there are {len(_data)} with failed MD")
     _data = all_data[all_data["mdexploded"]]
     logging.info(f"there are {len(_data)} with exploded MD")
-    write_out_mapping(opt_data)
+    write_out_mapping(all_data)
 
     identity_distributions(all_data, figure_output)
     single_value_distributions(all_data, figure_output)
-    raise SystemExit()
     shape_vector_distributions(all_data, figure_output)
     shape_vectors_2(all_data, figure_output)
     shape_vectors_3(all_data, figure_output)
-    rmsd_distributions(all_data, calculation_output, figure_output)
     geom_distributions(all_data, geom_data, figure_output)
+    rmsd_distributions(all_data, calculation_output, figure_output)
 
 
 if __name__ == "__main__":
