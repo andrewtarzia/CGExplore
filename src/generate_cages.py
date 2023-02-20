@@ -667,6 +667,8 @@ def main():
     else:
         pass
 
+    raise SystemExit("if you rerun, do the things in notion!")
+
     struct_output = cages() / "ommstructures"
     check_directory(struct_output)
     figure_output = cages() / "ommfigures"
