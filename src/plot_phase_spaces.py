@@ -20,23 +20,23 @@ from env_set import cages
 
 from analysis_utilities import (
     write_out_mapping,
-    map_cltype_to_shapetopology,
+    map_cltype_to_topology,
     convert_tors,
     convert_prop,
     convert_topo,
-    topo_to_colormap,
+    topology_labels,
     max_energy,
-    stoich_map,
     data_to_array,
     isomer_energy,
 )
 
 
 def phase_space_2(all_data, figure_output):
+    logging.info("doing phase space 2")
     fig, axs = plt.subplots(
-        nrows=2,
-        ncols=3,
-        figsize=(16, 5),
+        nrows=3,
+        ncols=2,
+        figsize=(16, 10),
     )
     flat_axs = axs.flatten()
 
@@ -94,8 +94,20 @@ def phase_space_2(all_data, figure_output):
         ax = axd["ax"]
         tdata = all_data[all_data["torsions"] == axd["tor"]]
         vdata = tdata[tdata["vdws"] == axd["vdw"]]
-        xvalues = vdata[axd["x"]]
-        yvalues = vdata[axd["y"]]
+        if axd["x"] == "flexibility_measure":
+            xvalues = [
+                j
+                for i, j in enumerate(vdata[axd["x"]])
+                if list(vdata[axd["x"]])[i] < 100
+            ]
+            yvalues = [
+                j
+                for i, j in enumerate(vdata[axd["y"]])
+                if list(vdata[axd["x"]])[i] < 100
+            ]
+        else:
+            xvalues = vdata[axd["x"]]
+            yvalues = vdata[axd["y"]]
         hb = ax.hexbin(
             xvalues,
             yvalues,
@@ -120,6 +132,7 @@ def phase_space_2(all_data, figure_output):
 
 
 def phase_space_3(all_data, figure_output):
+    logging.info("doing phase space 3")
     fig, axs = plt.subplots(
         nrows=2,
         ncols=2,
@@ -128,26 +141,30 @@ def phase_space_3(all_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    topologies = map_cltype_to_shapetopology()
+    topologies = map_cltype_to_topology()
 
-    opt_data = all_data[all_data["optimised"]]
-    groups = opt_data.groupby(["bbpair"])
+    vdata = all_data[all_data["vdws"] == "von"]
+    groups = vdata.groupby(["bbpair"])
     data = {
-        ("3C1", "toff"): {i: 0 for i in topologies["3C1"].values()},
-        ("3C1", "ton"): {i: 0 for i in topologies["3C1"].values()},
-        ("4C1", "toff"): {i: 0 for i in topologies["4C1"].values()},
-        ("4C1", "ton"): {i: 0 for i in topologies["4C1"].values()},
+        ("3C1", "toff"): {i: 0 for i in topologies["3C1"]},
+        ("3C1", "ton"): {i: 0 for i in topologies["3C1"]},
+        ("4C1", "toff"): {i: 0 for i in topologies["4C1"]},
+        ("4C1", "ton"): {i: 0 for i in topologies["4C1"]},
     }
     for gid, dfi in groups:
         bbtitle = gid[:3]
         for tors in ("ton", "toff"):
 
             fin_data = dfi[dfi["torsions"] == tors]
+            if "6P8" in set(fin_data["topology"]):
+                continue
             energies = {
-                str(row["topology"]): float(row["energy"])
-                / stoich_map(str(row["topology"]))
+                str(row["topology"]): float(row["energy_per_bond"])
                 for i, row in fin_data.iterrows()
             }
+            if len(energies) < 1:
+                continue
+
             num_mixed = len(
                 tuple(
                     i
@@ -155,6 +172,7 @@ def phase_space_3(all_data, figure_output):
                     if i < isomer_energy()
                 )
             )
+
             min_energy = min(energies.values())
             if min_energy > max_energy():
                 topo_str = "unstable"
@@ -209,6 +227,7 @@ def phase_space_3(all_data, figure_output):
 
 
 def phase_space_11(all_data, figure_output):
+    logging.info("doing phase space 11")
     raise SystemExit("redefine pers, then rerun,")
     fig, axs = plt.subplots(
         nrows=2,
@@ -218,7 +237,7 @@ def phase_space_11(all_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    topologies = map_cltype_to_shapetopology()
+    topologies = map_cltype_to_topology()
 
     opt_data = all_data[all_data["optimised"]]
     groups = opt_data.groupby(["bbpair"])
@@ -277,6 +296,7 @@ def phase_space_11(all_data, figure_output):
 
 
 def phase_space_12(all_data, figure_output):
+    logging.info("doing phase space 12")
     raise SystemExit("redefine pers, then rerun,")
     fig, axs = plt.subplots(
         nrows=2,
@@ -286,7 +306,7 @@ def phase_space_12(all_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    topologies = map_cltype_to_shapetopology()
+    topologies = map_cltype_to_topology()
 
     opt_data = all_data[all_data["optimised"]]
     groups = opt_data.groupby(["bbpair"])
@@ -343,10 +363,11 @@ def phase_space_12(all_data, figure_output):
 
 
 def phase_space_5(all_data, figure_output):
-
-    cmap = topo_to_colormap()
+    logging.info("doing ps5, shape vectors vs Energy")
+    raise NotImplementedError("if you want this, fix it.")
+    tstrs = topology_labels(short="P")
     clangles = sorted(set(all_data["clangle"]))
-    for tstr, clangle in itertools.product(cmap, clangles):
+    for tstr, clangle in itertools.product(tstrs, clangles):
         fig, axs = plt.subplots(
             nrows=1,
             ncols=2,
@@ -460,11 +481,10 @@ def main():
     write_out_mapping(all_data)
 
     phase_space_2(all_data, figure_output)
-    phase_space_5(all_data, figure_output)
-    raise SystemExit()
     phase_space_3(all_data, figure_output)
     phase_space_11(all_data, figure_output)
     phase_space_12(all_data, figure_output)
+    phase_space_5(all_data, figure_output)
 
 
 if __name__ == "__main__":
