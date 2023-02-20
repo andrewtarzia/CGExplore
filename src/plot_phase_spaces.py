@@ -35,7 +35,7 @@ from analysis_utilities import (
 def phase_space_2(all_data, figure_output):
     fig, axs = plt.subplots(
         nrows=2,
-        ncols=4,
+        ncols=3,
         figsize=(16, 5),
     )
     flat_axs = axs.flatten()
@@ -43,59 +43,59 @@ def phase_space_2(all_data, figure_output):
     axmap = (
         {
             "ax": flat_axs[0],
-            "tor": "toff",
+            "tor": "ton",
+            "vdw": "von",
             "x": "pore",
-            "y": "energy",
+            "y": "energy_per_bond",
+            "ylbl": "$E_{pb}$ [kJmol-1]",
+        },
+        {
+            "ax": flat_axs[1],
+            "tor": "ton",
+            "vdw": "von",
+            "x": "min_b2b_distance",
+            "y": "energy_per_bond",
+            "ylbl": "$E_{pb}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[4],
             "tor": "ton",
-            "x": "pore",
-            "y": "energy",
-        },
-        {
-            "ax": flat_axs[1],
-            "tor": "toff",
-            "x": "min_b2b",
-            "y": "energy",
+            "vdw": "von",
+            "x": "sv_l_dist",
+            "y": "energy_per_bond",
+            "ylbl": "$E_{pb}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[5],
             "tor": "ton",
-            "x": "min_b2b",
-            "y": "energy",
+            "vdw": "von",
+            "x": "sv_n_dist",
+            "y": "energy_per_bond",
+            "ylbl": "$E_{pb}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[2],
-            "tor": "toff",
-            "x": "sv_l_dist",
-            "y": "energy",
-        },
-        {
-            "ax": flat_axs[6],
             "tor": "ton",
-            "x": "sv_l_dist",
-            "y": "energy",
+            "vdw": "von",
+            "x": "radius_gyration",
+            "y": "energy_per_bond",
+            "ylbl": "$E_{pb}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[3],
-            "tor": "toff",
-            "x": "sv_n_dist",
-            "y": "energy",
-        },
-        {
-            "ax": flat_axs[7],
             "tor": "ton",
-            "x": "sv_n_dist",
-            "y": "energy",
+            "vdw": "von",
+            "x": "flexibility_measure",
+            "y": "energy_per_bond",
+            "ylbl": "$E_{pb}$ [kJmol-1]",
         },
     )
     for axd in axmap:
         ax = axd["ax"]
         tdata = all_data[all_data["torsions"] == axd["tor"]]
-        edata = tdata[tdata["energy"] < max_energy() * 50]
-        xvalues = edata[axd["x"]]
-        yvalues = edata[axd["y"]]
+        vdata = tdata[tdata["vdws"] == axd["vdw"]]
+        xvalues = vdata[axd["x"]]
+        yvalues = vdata[axd["y"]]
         hb = ax.hexbin(
             xvalues,
             yvalues,
@@ -108,7 +108,7 @@ def phase_space_2(all_data, figure_output):
         cbar.ax.tick_params(labelsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(f"{axd['x']}", fontsize=16)
-        ax.set_ylabel(f"{axd['y']}", fontsize=16)
+        ax.set_ylabel(f"{axd['ylbl']}", fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -449,23 +449,22 @@ def main():
     else:
         pass
 
-    figure_output = cages() / "figures"
-    calculation_output = cages() / "calculations"
+    figure_output = cages() / "ommfigures"
+    calculation_output = cages() / "ommcalculations"
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
         output_dir=calculation_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    opt_data = all_data[all_data["optimised"]]
-    logging.info(f"there are {len(opt_data)} successfully opted")
-    write_out_mapping(opt_data)
+    write_out_mapping(all_data)
 
-    phase_space_2(opt_data, figure_output)
-    phase_space_5(opt_data, figure_output)
-    phase_space_3(opt_data, figure_output)
-    phase_space_11(opt_data, figure_output)
-    phase_space_12(opt_data, figure_output)
+    phase_space_2(all_data, figure_output)
+    phase_space_5(all_data, figure_output)
+    raise SystemExit()
+    phase_space_3(all_data, figure_output)
+    phase_space_11(all_data, figure_output)
+    phase_space_12(all_data, figure_output)
 
 
 if __name__ == "__main__":
