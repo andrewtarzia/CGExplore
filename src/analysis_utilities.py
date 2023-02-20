@@ -315,28 +315,29 @@ def map_cltype_to_shapetopology():
 
 
 def mapshape_to_topology(mode):
-    raise SystemExit("if this is used, fix")
     if mode == "n":
         return {
-            # "TwoPlusThree": "TBPY-5",
-            "FourPlusSix": "T-4",
-            "FourPlusSix2": "T-4",
-            "SixPlusNine": "TPR-6",
-            "EightPlusTwelve": "CU-8",
-            # "TwoPlusFour": "OC-6b",
-            "ThreePlusSix": "TP-3",
-            "FourPlusEight": "SP-4",
-            "SixPlusTwelve": "OC-6",
-            # "EightPlusSixteen": "",
-            # "M12L24": "",
+            # "2P3": "TBPY-5",
+            "4P6": "T-4",
+            "4P62": "T-4",
+            "6P9": "TPR-6",
+            "8P12": "CU-8",
+            # "2P4": "OC-6b",
+            "3P6": "TP-3",
+            "4P8": "SP-4",
+            "6P12": "OC-6",
+            "8P16": "CU-8",
+            # "12P24": "",
+            "6P8": "OC-6",
         }
 
     elif mode == "l":
         return {
-            "TwoPlusThree": "TP-3",
-            "FourPlusSix": "OC-6",
-            "FourPlusSix2": "OC-6",
-            "TwoPlusFour": "SP-4",
+            "2P3": "TP-3",
+            "4P6": "OC-6",
+            "4P62": "OC-6",
+            "2P4": "SP-4",
+            "6P8": "CU-8",
         }
 
 
@@ -401,7 +402,7 @@ def get_sv_dist(row, mode):
     cosine_similarity = np.dot(a, b) / (
         np.linalg.norm(a) * np.linalg.norm(b)
     )
-    raise SystemExit("check this")
+
     return cosine_similarity
 
 
@@ -539,7 +540,7 @@ def data_to_array(json_files, output_dir):
                 / res_dict["radius_gyration"]
             )
 
-            trajectory_data = res_dict["trajectory_data"]
+            trajectory_data = res_dict["trajectory"]
             if trajectory_data is None:
                 row["flexibility_measure"] = None
             else:
@@ -563,8 +564,7 @@ def data_to_array(json_files, output_dir):
                         ]
                     )
                 )
-            print(row)
-            raise SystemExit()
+
             bond_data = res_dict["bond_data"]
             angle_data = res_dict["angle_data"]
             dihedral_data = res_dict["dihedral_data"]
@@ -582,8 +582,6 @@ def data_to_array(json_files, output_dir):
             if lig_shape_vector is not None:
                 for sv in lig_shape_vector:
                     row[f"l_{sv}"] = lig_shape_vector[sv]
-            print(row)
-            raise SystemExit("check this")
 
         input_dict[name] = row
 
