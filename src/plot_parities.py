@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from env_set import cages
 
 from analysis_utilities import (
-    topo_to_colormap,
+    topology_labels,
     write_out_mapping,
     data_to_array,
     convert_topo,
@@ -30,95 +30,75 @@ from analysis_utilities import (
 def parity_1(all_data, figure_output):
     logging.info("running parity_1")
 
-    tcmap = topo_to_colormap()
+    tcmap = topology_labels(short="P")
     tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
-    lentcpos = len(tcpos)
-    tcmap.update({"all": "k"})
-    tcpos.update({"all": lentcpos})
 
     fig, axs = plt.subplots(
-        nrows=2,
-        ncols=1,
+        nrows=1,
+        ncols=3,
         sharex=True,
-        figsize=(8, 8),
+        sharey=True,
+        figsize=(16, 5),
     )
-    # flat_axs = axs.flatten()
+    flat_axs = axs.flatten()
 
-    ax = axs[0]
-    ax2 = axs[1]
-    for tstr in tcmap:
-        if tstr == "all":
-            ton_data = all_data[all_data["torsions"] == "ton"]
-            toff_data = all_data[all_data["torsions"] == "toff"]
-        else:
+    for ax, (tors, vdws) in zip(
+        flat_axs, (("ton", "voff"), ("toff", "von"), ("toff", "voff"))
+    ):
+        for tstr in tcmap:
+            if tstr in ("6P8",):
+                if tors == "ton":
+                    continue
+                elif tors == "toff" and vdws == "von":
+                    continue
+
             tdata = all_data[all_data["topology"] == tstr]
-            ton_data = tdata[tdata["torsions"] == "ton"]
-            toff_data = tdata[tdata["torsions"] == "toff"]
+            if tstr in ("6P8",):
+                data1 = tdata[tdata["torsions"] == "toff"]
+                data1 = data1[data1["vdws"] == "von"]
+            else:
+                data1 = tdata[tdata["torsions"] == "ton"]
+                data1 = data1[data1["vdws"] == "von"]
+            data2 = tdata[tdata["torsions"] == tors]
+            data2 = data2[data2["vdws"] == vdws]
 
-        out_data = ton_data.merge(
-            toff_data,
-            on="cage_name",
+            out_data = data1.merge(
+                data2,
+                on="cage_name",
+            )
+
+            ydata = list(out_data["energy_per_bond_x"])
+            xdata = list(out_data["energy_per_bond_y"])
+            diffdata = [y - x for x, y, in zip(xdata, ydata)]
+            xpos = tcpos[tstr]
+
+            parts = ax.violinplot(
+                [i for i in diffdata],
+                [xpos],
+                # points=200,
+                vert=True,
+                widths=0.8,
+                showmeans=False,
+                showextrema=False,
+                showmedians=False,
+                # bw_method=0.5,
+            )
+
+            for pc in parts["bodies"]:
+                pc.set_facecolor("#086788")
+                pc.set_edgecolor("none")
+                pc.set_alpha(1.0)
+
+        ax.plot((-1, 12), (0, 0), c="k")
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_ylabel(f"ton,von - {tors},{vdws} [kJmol-1]", fontsize=16)
+        ax.set_xlim(-0.5, 11.5)
+        # ax.set_ylim(-22, 22)
+        ax.set_xticks([tcpos[i] for i in tcpos])
+        ax.set_xticklabels(
+            [convert_topo(i) for i in tcpos],
+            rotation=45,
         )
-
-        ydata = list(out_data["energy_x"])
-        xdata = list(out_data["energy_y"])
-        diffdata = [y - x for x, y, in zip(xdata, ydata)]
-        xpos = tcpos[tstr]
-
-        ax.scatter(
-            [xpos for i in diffdata],
-            [i for i in diffdata],
-            c="gray",
-            edgecolor="none",
-            s=30,
-            alpha=1.0,
-            rasterized=True,
-        )
-
-        ax2.scatter(
-            [xpos for i in diffdata if abs(i) < 20],
-            [i for i in diffdata if abs(i) < 20],
-            c="gray",
-            edgecolor="none",
-            s=30,
-            alpha=0.2,
-            rasterized=True,
-        )
-
-        parts = ax2.violinplot(
-            [i for i in diffdata if abs(i) < 20],
-            [xpos],
-            # points=200,
-            vert=True,
-            widths=0.8,
-            showmeans=False,
-            showextrema=False,
-            showmedians=False,
-            # bw_method=0.5,
-        )
-
-        for pc in parts["bodies"]:
-            pc.set_facecolor("gray")
-            pc.set_edgecolor("none")
-            pc.set_alpha(0.3)
-
-    ax.plot((-1, 12), (0, 0), c="k")
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_ylabel("ton - toff [eV]", fontsize=16)
-    ax.set_xlim(-0.5, 11.5)
-    # ax.set_xticks([tcpos[i] for i in tcpos])
-    # ax.set_xticklabels([convert_topo(i) for i in tcpos])
-
-    ax2.plot((-1, 12), (0, 0), c="k")
-    ax2.tick_params(axis="both", which="major", labelsize=16)
-    ax2.set_ylabel("ton - toff [eV]", fontsize=16)
-    ax2.set_xlim(-0.5, 11.5)
-    ax2.set_ylim(-22, 22)
-    ax2.set_xticks([tcpos[i] for i in tcpos])
-    ax2.set_xticklabels(
-        [convert_topo(i) for i in tcpos],
-        rotation=45,
-    )
 
     fig.tight_layout()
     fig.savefig(
@@ -131,11 +111,13 @@ def parity_1(all_data, figure_output):
 
 def parity_2(all_data, geom_data, figure_output):
     logging.info("running parity_2")
-    tcmap = topo_to_colormap()
+    tcmap = topology_labels(short="P")
 
     c2labels = ("Pb_Ba_Ag",)
     vmax = max_energy()
     for tstr in tcmap:
+        if tstr in ("6P8",):
+            continue
         fig, axs = plt.subplots(
             nrows=1,
             ncols=2,
@@ -172,9 +154,9 @@ def parity_2(all_data, geom_data, figure_output):
                 vmin=0,
                 vmax=vmax,
                 alpha=1.0,
-                edgecolor="k",
+                # edgecolor="k",
                 s=50,
-                cmap="Blues",
+                cmap="Blues_r",
                 rasterized=True,
             )
 
@@ -192,7 +174,7 @@ def parity_2(all_data, geom_data, figure_output):
             )
 
         cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-        cmap = mpl.cm.Blues
+        cmap = mpl.cm.Blues_r
         norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
         cbar = fig.colorbar(
             mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
@@ -200,77 +182,11 @@ def parity_2(all_data, geom_data, figure_output):
             orientation="vertical",
         )
         cbar.ax.tick_params(labelsize=16)
-        cbar.set_label("energy per bond formed [eV]", fontsize=16)
+        cbar.set_label("energy per bond formed [kJmol-1]", fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
             os.path.join(figure_output, f"par_2_{tstr}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-
-def parity_3(all_data, geom_data, figure_output):
-    logging.info("running parity_3")
-    tcmap = topo_to_colormap()
-
-    c2labels = ("Pb_Ba_Ag",)
-
-    for tstr in tcmap:
-        fig, axs = plt.subplots(
-            nrows=1,
-            ncols=2,
-            sharex=True,
-            sharey=True,
-            figsize=(12, 5),
-        )
-        flat_axs = axs.flatten()
-        topo_frame = all_data[all_data["topology"] == tstr]
-        for tors, ax in zip(("ton", "toff"), flat_axs):
-            tor_frame = topo_frame[topo_frame["torsions"] == tors]
-            target_c2s = []
-            measured_c2 = []
-            energies = []
-            for i, row in tor_frame.iterrows():
-                target_angle = float(row["c2angle"])
-                name = str(row["index"])
-                energy = float(row["energy_per_bond"])
-                c2data = geom_data[name]["angles"]
-
-                for lbl in c2labels:
-                    if lbl in c2data:
-                        lbldata = c2data[lbl]
-                        for mc2 in lbldata:
-                            measured_c2.append(mc2)
-                            target_c2s.append(target_angle)
-                            energies.append(energy)
-            ax.scatter(
-                [j - i for i, j in zip(measured_c2, target_c2s)],
-                energies,
-                c="gray",
-                alpha=1.0,
-                edgecolor="none",
-                rasterized=True,
-                s=30,
-            )
-
-            ax.axhline(y=0, c="k", lw=2, linestyle="--")
-
-            ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_xlabel("target - observed [deg]", fontsize=16)
-            ax.set_ylabel("energy per bond formed [eV]", fontsize=16)
-            ax.set_title(
-                (
-                    f"{convert_topo(tstr)}: "
-                    f"{convert_tors(tors, num=False)}"
-                ),
-                fontsize=16,
-            )
-
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"par_3_{tstr}.pdf"),
             dpi=720,
             bbox_inches="tight",
         )
@@ -285,8 +201,8 @@ def main():
     else:
         pass
 
-    figure_output = cages() / "figures"
-    calculation_output = cages() / "calculations"
+    figure_output = cages() / "ommfigures"
+    calculation_output = cages() / "ommcalculations"
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
@@ -295,13 +211,10 @@ def main():
     with open(calculation_output / "all_geom.json", "r") as f:
         geom_data = json.load(f)
     logging.info(f"there are {len(all_data)} collected data")
-    opt_data = all_data[all_data["optimised"]]
-    logging.info(f"there are {len(opt_data)} successfully opted")
-    write_out_mapping(opt_data)
+    write_out_mapping(all_data)
 
-    parity_1(opt_data, figure_output)
-    parity_2(opt_data, geom_data, figure_output)
-    parity_3(opt_data, geom_data, figure_output)
+    parity_1(all_data, figure_output)
+    parity_2(all_data, geom_data, figure_output)
 
 
 if __name__ == "__main__":

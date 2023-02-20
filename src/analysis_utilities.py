@@ -31,22 +31,20 @@ from cage_construction.topologies import cage_topology_options
 
 
 def isomer_energy():
-    raise SystemExit("if this is used, fix")
-    return 0.05
+    # kJ/mol.
+    return 10.0
 
 
 def max_energy():
-    raise SystemExit("if this is used, fix")
-    return 1.0
+    # kJ/mol.
+    return 50.0
 
 
 def min_radius():
-    raise SystemExit("if this is used, fix")
     return 1.0
 
 
 def min_b2b_distance():
-    raise SystemExit("if this is used, fix")
     return 0.5
 
 
