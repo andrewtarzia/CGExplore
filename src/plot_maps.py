@@ -452,6 +452,7 @@ def selfsort_map(all_data, figure_output):
                 str(row["topology"]): float(row["energy_per_bond"])
                 for i, row in plot_data.iterrows()
             }
+
             mixed_energies = {
                 i: energies[i]
                 for i in energies
