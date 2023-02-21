@@ -513,6 +513,7 @@ def data_to_array(json_files, output_dir):
                 / res_dict["radius_gyration"]
             )
 
+            raise SystemExit("check  units of flex measure")
             trajectory_data = res_dict["trajectory"]
             if trajectory_data is None:
                 row["flexibility_measure"] = None
