@@ -1100,6 +1100,64 @@ def shape_vectors_3(all_data, figure_output):
     plt.close()
 
 
+def correlation_matrix(all_data, figure_output):
+    trim = all_data[all_data["clsigma"] == 5]
+    trim = trim[trim["c2sigma"] == 5]
+
+    target_cols = [
+        "topology",
+        "torsions",
+        "vdws",
+        "cltopo",
+        "c2sigma",
+        "c2angle",
+        "target_bite_angle",
+        "cltitle",
+        "clsigma",
+        "clangle",
+        "energy_per_bond",
+        "HarmonicBondForce_kjmol",
+        "HarmonicAngleForce_kjmol",
+        "pore",
+        "min_b2b_distance",
+        "radius_gyration",
+        "max_diameter",
+        "rg_md",
+        "pore_md",
+        "pore_rg",
+        "flexibility_measure",
+        "CustomNonbondedForce_kjmol",
+        "PeriodicTorsionForce_kjmol",
+        "sv_n_dist",
+        "sv_l_dist",
+        "persistent",
+    ]
+    targ_data = trim[target_cols].copy()
+
+    fig, ax = plt.subplots(figsize=(5, 5))
+    corr = targ_data.corr()
+    # corr.iloc[6:, 0:6].style.background_gradient(
+    #     cmap="Spectral"
+    # ).set_precision(3)
+    # corr.iloc[6:, 1:6].style.background_gradient(
+    #     cmap="twilight_shifted",
+    #     vmin=-1,
+    #     vmax=1,
+    # ).set_precision(3)
+    ax.matshow(corr)
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "correlation_matrix.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+    raise SystemExit()
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -1126,6 +1184,7 @@ def main():
     logging.info(f"there are {len(_data)} with exploded MD")
     write_out_mapping(all_data)
 
+    correlation_matrix(all_data, figure_output)
     identity_distributions(all_data, figure_output)
     mixed_distributions(all_data, figure_output)
     single_value_distributions(all_data, figure_output)
