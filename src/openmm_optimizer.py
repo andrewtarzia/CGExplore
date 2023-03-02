@@ -662,7 +662,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._temperature = temperature
 
         if random_seed is None:
-            logging.info("make random seed constant if none")
+            logging.info("a random random seed is used")
             self._random_seed = np.random.randint(1000)
         else:
             self._random_seed = random_seed
@@ -721,6 +721,7 @@ class CGOMMDynamics(CGOMMOptimizer):
             self._friction,
             self._time_step,
         )
+        integrator.setRandomNumberSeed(self._random_seed)
 
         # Define simulation.
         simulation = app.Simulation(topology, system, integrator)
