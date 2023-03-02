@@ -125,10 +125,11 @@ def string_to_atom_number(string):
 class CgBead:
     element_string: str
     bead_type: str
-    sigma: float
+    bond_r: float
     bond_k: float
     angle_centered: float
     angle_k: float
+    sigma: float
     epsilon: float
     coordination: int
 
@@ -142,32 +143,6 @@ class GuestBead:
 
 def guest_beads():
     return (GuestBead("Li", sigma=3.0, epsilon=1.0),)
-
-
-def sets_in_library(library, sigma=None, angle=None):
-    set_beads = set()
-    for cgbead in library:
-        sig_p = False
-        if sigma is None:
-            sig_p = True
-        else:
-            if cgbead.sigma == sigma:
-                sig_p = True
-            else:
-                sig_p = False
-
-        if angle is None:
-            ang_p = True
-        else:
-            if cgbead.angle_centered == angle:
-                ang_p = True
-            else:
-                ang_p = False
-
-        if ang_p and sig_p:
-            set_beads.add(cgbead.element_string)
-
-    return set_beads
 
 
 def bead_library_check(bead_libraries):
@@ -188,15 +163,15 @@ def bead_library_check(bead_libraries):
 
     bl_string = "bead library:\n"
     bl_string += (
-        "element name sigma[A] bond_k[kJ/mol/nm^2] angle[deg.] "
-        "angle_k[kJ/mol/radian2] epsilon[kJ/mol] coordination\n"
+        "element name bond_r[A] bond_k[kJ/mol/nm^2] angle[deg.] "
+        "angle_k[kJ/mol/radian2] sigma[A] epsilon[kJ/mol] coord.\n"
     )
     for bead in bead_libraries:
         bl_string += (
             f"{bead.element_string} {bead.bead_type} "
-            f"{bead.sigma} {bead.bond_k} "
+            f"{bead.bond_r} {bead.bond_k} "
             f"{bead.angle_centered} {bead.angle_k} "
-            f"{bead.epsilon} {bead.coordination}\n"
+            f"{bead.sigma} {bead.epsilon} {bead.coordination}\n"
         )
     logging.info(bl_string)
 
@@ -204,10 +179,11 @@ def bead_library_check(bead_libraries):
 def produce_bead_library(
     type_prefix,
     element_string,
-    sigmas,
+    bond_rs,
     angles,
     bond_ks,
     angle_ks,
+    sigma,
     epsilon,
     coordination,
 ):
@@ -215,18 +191,19 @@ def produce_bead_library(
         f"{type_prefix}{i}{j}{k}{l}": CgBead(
             element_string=element_string,
             bead_type=f"{type_prefix}{i}{j}{k}{l}",
-            sigma=sigma,
+            bond_r=bond_r,
             angle_centered=angle,
             bond_k=bond_k,
             angle_k=angle_k,
+            sigma=sigma,
             epsilon=epsilon,
             coordination=coordination,
         )
-        for (i, sigma), (j, angle), (k, bond_k), (
+        for (i, bond_r), (j, angle), (k, bond_k), (
             l,
             angle_k,
         ) in itertools.product(
-            enumerate(sigmas),
+            enumerate(bond_rs),
             enumerate(angles),
             enumerate(bond_ks),
             enumerate(angle_ks),
