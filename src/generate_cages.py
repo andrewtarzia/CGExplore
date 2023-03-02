@@ -41,10 +41,11 @@ def core_2c_beads():
     return produce_bead_library(
         type_prefix="c",
         element_string="Ag",
-        sigmas=(2, 5),
         angles=(180,),
+        bond_rs=(2, 5),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        sigma=1,
         epsilon=10.0,
         coordination=2,
     )
@@ -54,10 +55,11 @@ def arm_2c_beads():
     return produce_bead_library(
         type_prefix="a",
         element_string="Ba",
-        sigmas=(1,),
+        bond_rs=(1,),
         angles=range(90, 181, 5),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        sigma=1,
         epsilon=10.0,
         coordination=2,
     )
@@ -67,10 +69,11 @@ def binder_beads():
     return produce_bead_library(
         type_prefix="b",
         element_string="Pb",
-        sigmas=(1,),
+        bond_rs=(1,),
         angles=(180,),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        sigma=1,
         epsilon=10.0,
         coordination=2,
     )
@@ -80,10 +83,11 @@ def beads_3c():
     return produce_bead_library(
         type_prefix="n",
         element_string="C",
-        sigmas=(2, 5),
-        angles=(50, 60, 70, 80, 90, 110, 120),
+        bond_rs=(2, 5),
+        angles=(50, 60, 70, 80, 90, 100, 110, 120),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        sigma=1,
         epsilon=10.0,
         coordination=3,
     )
@@ -93,10 +97,11 @@ def beads_4c():
     return produce_bead_library(
         type_prefix="m",
         element_string="Pd",
-        sigmas=(2, 5),
+        bond_rs=(2, 5),
         angles=(50, 60, 70, 80, 90),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        sigma=1,
         epsilon=10.0,
         coordination=4,
     )
@@ -666,8 +671,6 @@ def main():
         sys.exit()
     else:
         pass
-
-    raise SystemExit("if you rerun, do the things in notion!")
 
     struct_output = cages() / "ommstructures"
     check_directory(struct_output)
