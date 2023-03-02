@@ -26,8 +26,8 @@ from openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
 from beads import produce_bead_library, bead_library_check
 
 
-def bond_function(x, k, sigma):
-    return (1 / 2) * k * (x - sigma / 1) ** 2
+def bond_function(x, k, r0):
+    return (1 / 2) * k * (x - r0 / 1) ** 2
 
 
 def angle_function(x, k, theta0):
@@ -49,10 +49,11 @@ def c_beads():
     return produce_bead_library(
         type_prefix="c",
         element_string="Ag",
-        sigmas=(2,),
+        bond_rs=(2,),
         angles=(90,),
         bond_ks=(5e5,),
         angle_ks=(5e2,),
+        sigma=1,
         epsilon=10.0,
         coordination=2,
     )
@@ -66,6 +67,144 @@ def points_in_circum(r, n=100):
         )
         for x in range(0, n + 1)
     ]
+
+
+def random_test(beads, calculation_output, figure_output):
+
+    bead = beads["c0000"]
+    linear_bb = stk.BuildingBlock(
+        smiles=(
+            f"[{bead.element_string}]([{bead.element_string}])"
+            f"[{bead.element_string}]"
+        ),
+        position_matrix=[[0, 0, 0], [2, 0, 0], [1, 0, 0]],
+    )
+
+    temperature = 10
+
+    runs = {
+        0: (None, 1000, "-"),
+        1: ("k", 1000, "--"),
+        2: ("green", 2000, "-"),
+        3: ("r", 2000, "--"),
+        4: ("b", None, "-"),
+        5: ("gold", None, "--"),
+    }
+
+    tdict = {}
+    for run in runs:
+        tdict[run] = {}
+        logging.info(f"running MD random test; {run}")
+        opt = CGOMMDynamics(
+            fileprefix=f"mdr_{run}",
+            output_dir=calculation_output,
+            param_pool=beads,
+            custom_torsion_set=None,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=False,
+            temperature=temperature,
+            random_seed=runs[run][1],
+            num_steps=10000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
+        )
+        trajectory = opt.run_dynamics(linear_bb)
+
+        traj_log = trajectory.get_data()
+        for conformer in trajectory.yield_conformers():
+            timestep = conformer.timestep
+            row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+            meas_temp = float(row["Temperature (K)"])
+            pot_energy = float(row["Potential Energy (kJ/mole)"])
+            posmat = conformer.molecule.get_position_matrix()
+            tdict[run][timestep] = (meas_temp, pot_energy, posmat)
+
+    fig, axs = plt.subplots(nrows=3, sharex=True, figsize=(8, 8))
+
+    for run in tdict:
+        if run == 0:
+            continue
+        data = tdict[run]
+        zero_data = tdict[0]
+        xs = []
+        tdata = []
+        rdata = []
+        edata = []
+        for timestep in data:
+            xs.append(timestep)
+            m_temp = data[timestep][0]
+            z_temp = zero_data[timestep][0]
+            tdata.append(m_temp - z_temp)
+            m_pe = data[timestep][1]
+            z_pe = zero_data[timestep][1]
+            edata.append(m_pe - z_pe)
+            m_posmat = data[timestep][2]
+            z_posmat = zero_data[timestep][2]
+            rdata.append(
+                np.sqrt(
+                    np.sum((m_posmat - z_posmat) ** 2) / len(m_posmat)
+                )
+            )
+
+        axs[0].plot(
+            xs,
+            rdata,
+            c=runs[run][0],
+            lw=2,
+            linestyle=runs[run][2],
+            # s=30,
+            # edgecolor="none",
+            alpha=1.0,
+            label=f"run {run}",
+        )
+        axs[1].plot(
+            xs,
+            tdata,
+            c=runs[run][0],
+            lw=2,
+            linestyle=runs[run][2],
+            # s=30,
+            # edgecolor="none",
+            alpha=1.0,
+            label=f"run {run}",
+        )
+        axs[2].plot(
+            xs,
+            edata,
+            c=runs[run][0],
+            lw=2,
+            linestyle=runs[run][2],
+            # s=30,
+            # edgecolor="none",
+            alpha=1.0,
+            label=f"run {run}",
+        )
+
+    # ax.axhline(y=0, c="k", lw=2, linestyle="--")
+    # ax.axvline(x=bead.angle_centered, c="k", lw=2)
+
+    axs[0].tick_params(axis="both", which="major", labelsize=16)
+    axs[0].set_xlabel("timestep [s]", fontsize=16)
+    axs[0].set_ylabel("RMSD [A]", fontsize=16)
+
+    axs[1].tick_params(axis="both", which="major", labelsize=16)
+    axs[1].set_ylabel("deltaT [K]", fontsize=16)
+
+    axs[2].tick_params(axis="both", which="major", labelsize=16)
+    axs[2].set_ylabel("deltaE [kJmol-1]", fontsize=16)
+    axs[2].legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "random_test.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 def test1(beads, calculation_output, figure_output):
@@ -145,7 +284,7 @@ def test1(beads, calculation_output, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.set_title(
-        f"{bead.sigma} A, {bead.bond_k} kJ/mol/nm2",
+        f"{bead.bond_r} A, {bead.bond_k} kJ/mol/nm2",
         fontsize=16.0,
     )
 
@@ -153,7 +292,7 @@ def test1(beads, calculation_output, figure_output):
     x = np.linspace(min(distances), max(distances), 100)
     ax.plot(
         x,
-        bond_function(x / 10, bead.bond_k, bead.sigma / 10),
+        bond_function(x / 10, bead.bond_k, bead.bond_r / 10),
         c="r",
         lw=2,
         label="analytical",
@@ -295,7 +434,7 @@ def test2(beads, calculation_output, figure_output):
     vmax = 10
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.set_title(
-        f"{bead.sigma} A, {bead.bond_k} kJ/mol/nm2",
+        f"{bead.bond_r} A, {bead.bond_k} kJ/mol/nm2",
         fontsize=16.0,
     )
 
@@ -331,8 +470,8 @@ def test2(beads, calculation_output, figure_output):
             label=f"{temp} K",
         )
 
-    ax.axhline(y=bead.sigma, c="k", lw=1)
-    ax.axvline(x=bead.sigma, c="k", lw=1)
+    ax.axhline(y=bead.bond_r, c="k", lw=1)
+    ax.axvline(x=bead.bond_r, c="k", lw=1)
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("distance 1 [A]", fontsize=16)
     ax.set_xlabel("distance 2 [A]", fontsize=16)
@@ -442,7 +581,7 @@ def test3(beads, calculation_output, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.set_title(
-        f"{bead.sigma} A, {bead.angle_centered} [deg], {bead.angle_k}"
+        f"{bead.bond_r} A, {bead.angle_centered} [deg], {bead.angle_k}"
         " kJ/mol/radian2",
         fontsize=16.0,
     )
@@ -642,9 +781,8 @@ def test5(beads, calculation_output, figure_output):
         position_matrix=[[0, 0, 0], [1, 0, 0]],
     )
 
-    rmin = bead.sigma * (2 ** (1 / 6))
-    rvdw = rmin / 2
-    coords = np.linspace(rvdw + 0.8, 15, 50)
+    rvdw = bead.sigma
+    coords = np.linspace(rvdw, 10, 50)
     xys = []
     for i, coord in enumerate(coords):
         name = f"l5_{i}"
@@ -674,7 +812,7 @@ def test5(beads, calculation_output, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.set_title(
-        f"{bead.sigma} A, epsilon: {bead.epsilon} kJ/mol",
+        f"sigma: {bead.sigma} A, epsilon: {bead.epsilon} kJ/mol",
         fontsize=16.0,
     )
 
@@ -704,7 +842,7 @@ def test5(beads, calculation_output, figure_output):
         label="numerical",
     )
     ax.axhline(y=0, c="k", lw=2, linestyle="--")
-    ax.axvline(x=rmin, c="k", lw=2, linestyle="--")
+    # ax.axvline(x=rmin, c="gray", lw=2, linestyle="--")
     ax.axvline(x=rvdw, lw=2, linestyle="--", c="k")
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("distance [A]", fontsize=16)
@@ -739,6 +877,7 @@ def main():
     full_bead_library = list(beads.values())
     bead_library_check(full_bead_library)
 
+    random_test(beads, calculation_output, figure_output)
     test1(beads, calculation_output, figure_output)
     test2(beads, calculation_output, figure_output)
     test3(beads, calculation_output, figure_output)
