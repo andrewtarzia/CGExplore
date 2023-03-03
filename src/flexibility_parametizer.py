@@ -222,7 +222,7 @@ def measure_flexibility(beads, calculation_output, figure_output):
                         conformer.molecule
                     )
                 )
-            flexibility = np.std(rgs)
+            flexibility = np.std(rgs) / np.mean(rgs)
             tdict[temp][system] = (num_atoms, flexibility)
 
     fig, ax = plt.subplots(figsize=(8, 5))
