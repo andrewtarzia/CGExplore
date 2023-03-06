@@ -98,8 +98,8 @@ class CGOptimizer:
                 cgbead1 = self._get_cgbead_from_element(estring1)
                 cgbead2 = self._get_cgbead_from_element(estring2)
                 bond_r = lorentz_berthelot_sigma_mixing(
-                    sigma1=cgbead1.sigma,
-                    sigma2=cgbead2.sigma,
+                    sigma1=cgbead1.bond_r,
+                    sigma2=cgbead2.bond_r,
                 )
                 bond_k = lorentz_berthelot_sigma_mixing(
                     sigma1=cgbead1.bond_k,
@@ -303,6 +303,7 @@ class CGOptimizer:
                 continue
 
     def _yield_nonbondeds(self, molecule):
+        raise NotImplementedError()
         if self._vdw is False:
             return ""
         logging.info(
