@@ -19,6 +19,7 @@ import logging
 import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import matplotlib.patches as mpatches
 
 
@@ -98,10 +99,10 @@ def geom_distributions(all_data, geom_data, figure_output):
                 # "Pd_Pb_Ba",
             ),
         },
-        "clsigma": {
+        "clr0": {
             "measure": "bonds",
             "xlabel": "CL bond length [A]",
-            "column": "clsigma",
+            "column": "clr0",
             "label_options": ("Pd_Pb", "C_Pb"),
         },
         "c2angle": {
@@ -116,10 +117,10 @@ def geom_distributions(all_data, geom_data, figure_output):
             "column": None,
             "label_options": ("Ba_Ag_Ba",),
         },
-        "c2sigma": {
+        "c2r0": {
             "measure": "bonds",
             "xlabel": "C2 backbone length [A]",
-            "column": "c2sigma",
+            "column": "c2r0",
             "label_options": ("Ba_Ag",),
         },
         "c2bonder": {
@@ -180,10 +181,10 @@ def geom_distributions(all_data, geom_data, figure_output):
 
                                 # For some comparisons, need to use
                                 # matching rules.
-                                if comp == "clsigma":
+                                if comp == "clr0":
                                     new_target = (target + 1) / 2
                                     value = observed - new_target
-                                elif comp == "c2sigma":
+                                elif comp == "c2r0":
                                     new_target = (target + 1) / 2
                                     value = observed - new_target
                                 else:
@@ -428,22 +429,36 @@ def single_value_distributions(all_data, figure_output):
             "xtitle": "$D$ [A]",
             "xlim": (0, 50),
         },
-        "rg_md": {"xtitle": "R_g / $D$", "xlim": (0, 1)},
+        "rg_md": {"xtitle": "R_g / $D$", "xlim": (0, 0.6)},
         "pore_md": {"xtitle": "min. distance / $D$", "xlim": (0, 0.5)},
         "pore_rg": {"xtitle": "min. distance / R_g", "xlim": (0, 1.2)},
-        "flexibility_measure": {
-            "xtitle": "flexibility $f$",
-            "xlim": (0, 10),
+        "structure_dynamics": {
+            "xtitle": r"$\sigma$($R_g$)/average [unitless]",
+            "xlim": (0, 1),
+        },
+        "pore_dynamics": {
+            "xtitle": r"$\sigma$(pore measure)/average [unitless]",
+            "xlim": (0, 5),
+        },
+        "node_shape_dynamics": {
+            "xtitle": r"$\sigma$(node shape cos.sim.) [unitless]",
+            "xlim": (0, 0.5),
+        },
+        "lig_shape_dynamics": {
+            "xtitle": r"$\sigma$(lig shape cos.sim.) [unitless]",
+            "xlim": (0, 0.5),
         },
     }
 
     topologies = topology_labels(short="P")
     color_map = {
-        ("ton", "von"): "#F9A03F",
-        ("ton", "voff"): "#086788",
-        ("toff", "von"): "#0B2027",
-        ("toff", "voff"): "#7A8B99",
+        ("ton", "von"): "#086788",
+        # ("ton", "voff"): "#F9A03F",
+        # ("toff", "von"): "#0B2027",
+        # ("toff", "voff"): "#7A8B99",
     }
+    tor = "ton"
+    vdw = "von"
 
     for tp in to_plot:
         fig, ax = plt.subplots(figsize=(16, 5))
@@ -452,18 +467,20 @@ def single_value_distributions(all_data, figure_output):
         count = 0
         toptions = {}
         for tstr in topologies:
-            for tor in ("toff", "ton"):
-                for vdw in ("voff", "von"):
-                    color = color_map[(tor, vdw)]
-                    toptions[(tstr, tor, vdw)] = (count, color)
-                    count += 1
+            # for tor in ("toff", "ton"):
+            #     for vdw in ("voff", "von"):
+            color = color_map[(tor, vdw)]
+            if tstr == "6P8":
+                continue
+            toptions[(tstr, tor, vdw)] = (count, color)
+            count += 1
 
         for i, topt in enumerate(toptions):
             topo_frame = all_data[all_data["topology"] == topt[0]]
             tor_frame = topo_frame[topo_frame["torsions"] == topt[1]]
             fin_frame = tor_frame[tor_frame["vdws"] == topt[2]]
 
-            values = fin_frame[tp]
+            values = [i for i in fin_frame[tp] if not np.isnan(i)]
 
             if len(values) == 0:
                 continue
@@ -482,7 +499,7 @@ def single_value_distributions(all_data, figure_output):
             # )
 
             parts = ax.violinplot(
-                [i for i in values],
+                values,
                 [xpos],
                 # points=200,
                 vert=True,
@@ -509,10 +526,8 @@ def single_value_distributions(all_data, figure_output):
                 all_counts[tstr] = []
             all_counts[tstr].append(toptions[i][0])
 
-        xticks = {i: sum(all_counts[i]) / 4 for i in all_counts}
-        ylines = [max(all_counts[i]) + 0.5 for i in all_counts][:-1] + [
-            0
-        ]
+        xticks = {i: sum(all_counts[i]) / 1 for i in all_counts}
+        ylines = [xticks[i] + 0.5 for i in xticks][:-1]
 
         for yl in ylines:
             ax.axvline(x=yl, c="gray", linestyle="--", alpha=0.4)
@@ -542,8 +557,8 @@ def single_value_distributions(all_data, figure_output):
             #     alpha=0.2,
             #     label=,
             # )
-        ax.legend(*zip(*labels), fontsize=16, ncols=4)
-        ax.set_xlim(-0.5, max(ylines) + 4.5)
+        # ax.legend(*zip(*labels), fontsize=16, ncols=4)
+        ax.set_xlim(-0.5, max(ylines) + 1.0)
 
         fig.tight_layout()
         fig.savefig(
@@ -708,7 +723,7 @@ def plot_clangle(cl_data, color_map, figure_output):
         ax.set_xlabel("threshold [kJmol-1]", fontsize=16)
         ax.set_ylabel(r"% sorted", fontsize=16)
         ax.set_xlim(0, max_)
-        ax.set_ylim(0, 50)
+        ax.set_ylim(0, 60)
 
     ax.legend(fontsize=16)
 
@@ -826,26 +841,34 @@ def plot_average(bb_data, color_map, figure_output):
     plt.close()
 
 
-def mixed_distributions(all_data, figure_output):
+def mixed_distributions(all_data, figure_output, trim_data):
     logging.info("running mixed distributions")
-    color_map = {
-        ("ton", "von"): "#F9A03F",
-        ("ton", "voff"): "#086788",
-        ("toff", "von"): "#0B2027",
-        ("toff", "voff"): "#7A8B99",
-    }
 
-    # trim = all_data[all_data["clsigma"] == 5]
-    # trim = trim[trim["c2sigma"] == 5]
-    # trim = trim[trim["c2sigma"] == 5]
+    trim = all_data[all_data["torsions"] == "ton"]
+    trim = trim[trim["vdws"] == "von"]
+    if trim_data:
+        color_map = {
+            ("ton", "von"): "#086788",
+        }
+    else:
+        color_map = {
+            ("ton", "von"): "#086788",
+            ("ton", "voff"): "#F9A03F",
+            ("toff", "von"): "#0B2027",
+            ("toff", "voff"): "#7A8B99",
+        }
 
-    bbs = set(all_data["bbpair"])
+    # trim = all_data[all_data["clr0"] == 5]
+    # trim = trim[trim["c2r0"] == 5]
+    # trim = trim[trim["c2r0"] == 5]
+
+    bbs = set(trim["bbpair"])
     bb_data = {}
     cl_data = {}
     for bb_pair in bbs:
         if "4C1" in bb_pair and "3C1" in bb_pair:
             continue
-        bbd = all_data[all_data["bbpair"] == bb_pair]
+        bbd = trim[trim["bbpair"] == bb_pair]
 
         for tor, vdw in color_map:
             data = bbd[bbd["vdws"] == vdw]
@@ -873,14 +896,12 @@ def mixed_distributions(all_data, figure_output):
 def shape_vector_distributions(all_data, figure_output):
     logging.info("running shape_vector_distributions")
 
+    trim = all_data[all_data["torsions"] == "ton"]
+    trim = trim[trim["vdws"] == "von"]
+
     present_shape_values = target_shapes()
     num_cols = 2
     num_rows = 5
-
-    torsion_dict = {
-        "ton": "-",
-        "toff": "--",
-    }
 
     fig, axs = plt.subplots(
         nrows=num_rows,
@@ -894,39 +915,41 @@ def shape_vector_distributions(all_data, figure_output):
         # c = color_map[nv]
         ax = flat_axs[i]
 
-        keys = tuple(all_data.columns)
+        keys = tuple(trim.columns)
         nshape = f"n_{shape}"
         lshape = f"l_{shape}"
 
-        for tors in torsion_dict:
-            tor_data = all_data[all_data["torsions"] == tors]
-            if nshape in keys:
-                filt_data = tor_data[tor_data[nshape].notna()]
-                n_values = list(filt_data[nshape])
-                ax.hist(
-                    x=n_values,
-                    bins=50,
-                    density=False,
-                    histtype="step",
-                    color="#DD1C1A",
-                    lw=3,
-                    linestyle=torsion_dict[tors],
-                    label=f"node: {convert_tors(tors, num=False)}",
-                )
+        # for tors in torsion_dict:
+        #     tor_data = trim[all_data["torsions"] == tors]
+        if nshape in keys:
+            filt_data = trim[trim[nshape].notna()]
+            n_values = list(filt_data[nshape])
+            ax.hist(
+                x=n_values,
+                bins=50,
+                density=False,
+                histtype="step",
+                color="#DD1C1A",
+                lw=3,
+                # linestyle=torsion_dict[tors],
+                # label=f"node: {convert_tors(tors, num=False)}",
+                label="node",
+            )
 
-            if lshape in keys:
-                filt_data = tor_data[tor_data[lshape].notna()]
-                l_values = list(filt_data[lshape])
-                ax.hist(
-                    x=l_values,
-                    bins=50,
-                    density=False,
-                    histtype="step",
-                    color="k",
-                    lw=2,
-                    linestyle=torsion_dict[tors],
-                    label=f"ligand: {convert_tors(tors, num=False)}",
-                )
+        if lshape in keys:
+            filt_data = trim[trim[lshape].notna()]
+            l_values = list(filt_data[lshape])
+            ax.hist(
+                x=l_values,
+                bins=50,
+                density=False,
+                histtype="step",
+                color="k",
+                lw=2,
+                # linestyle=torsion_dict[tors],
+                # label=f"ligand: {convert_tors(tors, num=False)}",
+                label="ligand",
+            )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(shape, fontsize=16)
@@ -1101,52 +1124,68 @@ def shape_vectors_3(all_data, figure_output):
 
 
 def correlation_matrix(all_data, figure_output):
-    trim = all_data[all_data["clsigma"] == 5]
-    trim = trim[trim["c2sigma"] == 5]
+    trim = all_data[all_data["torsions"] == "ton"]
+    trim = trim[trim["vdws"] == "von"]
+    trim = trim[trim["clr0"] == 5]
+    trim = trim[trim["c2r0"] == 5]
 
     target_cols = [
-        "topology",
-        "torsions",
-        "vdws",
-        "cltopo",
-        "c2sigma",
-        "c2angle",
+        # "topology",
+        # "torsions",
+        # "vdws",
+        # "cltopo",
+        # "c2r0",
+        # "c2angle",
         "target_bite_angle",
-        "cltitle",
-        "clsigma",
+        # "cltitle",
+        # "clr0",
         "clangle",
         "energy_per_bond",
-        "HarmonicBondForce_kjmol",
-        "HarmonicAngleForce_kjmol",
         "pore",
-        "min_b2b_distance",
+        # "min_b2b_distance",
         "radius_gyration",
-        "max_diameter",
-        "rg_md",
-        "pore_md",
-        "pore_rg",
-        "flexibility_measure",
-        "CustomNonbondedForce_kjmol",
-        "PeriodicTorsionForce_kjmol",
+        # "max_diameter",
+        # "rg_md",
+        # "pore_md",
+        # "pore_rg",
         "sv_n_dist",
         "sv_l_dist",
-        "persistent",
+        # "HarmonicBondForce_kjmol",
+        # "HarmonicAngleForce_kjmol",
+        # "CustomNonbondedForce_kjmol",
+        # "PeriodicTorsionForce_kjmol",
+        "structure_dynamics",
+        "pore_dynamics",
+        "node_shape_dynamics",
+        "lig_shape_dynamics",
     ]
     targ_data = trim[target_cols].copy()
 
     fig, ax = plt.subplots(figsize=(5, 5))
     corr = targ_data.corr()
-    # corr.iloc[6:, 0:6].style.background_gradient(
-    #     cmap="Spectral"
-    # ).set_precision(3)
-    # corr.iloc[6:, 1:6].style.background_gradient(
-    #     cmap="twilight_shifted",
-    #     vmin=-1,
-    #     vmax=1,
-    # ).set_precision(3)
-    ax.matshow(corr)
+    ax.matshow(corr, vmin=-1, vmax=1, cmap="Spectral")
 
-    ax.tick_params(axis="both", which="major", labelsize=16)
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.Spectral
+    norm = mpl.colors.Normalize(vmin=-1, vmax=1)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label(
+        "correlation",
+        fontsize=16,
+    )
+
+    ax.tick_params(axis="both", which="major", labelsize=6)
+    ax.set_xticks(
+        range(len(corr.columns)),
+        corr.columns,
+        rotation="vertical",
+    )
+    ax.set_yticks(range(len(corr.columns)), corr.columns)
 
     fig.tight_layout()
     fig.savefig(
@@ -1155,7 +1194,6 @@ def correlation_matrix(all_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
-    raise SystemExit()
 
 
 def main():
@@ -1186,7 +1224,7 @@ def main():
 
     correlation_matrix(all_data, figure_output)
     identity_distributions(all_data, figure_output)
-    mixed_distributions(all_data, figure_output)
+    mixed_distributions(all_data, figure_output, trim_data=True)
     single_value_distributions(all_data, figure_output)
     shape_vector_distributions(all_data, figure_output)
     shape_vectors_2(all_data, figure_output)

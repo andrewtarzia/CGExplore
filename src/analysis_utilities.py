@@ -380,6 +380,7 @@ def get_sv_dist(row, mode):
 
 
 def is_persistent(row):
+    raise NotImplementedError()
 
     n_vector_distance = get_sv_dist(row, mode="n")
     l_vector_distance = get_sv_dist(row, mode="l")
@@ -410,7 +411,11 @@ def data_to_array(json_files, output_dir):
 
     input_dict = {}
     geom_data = {}
-    for j_file in sorted(json_files):
+    json_files = sorted(json_files)
+    len_jsons = len(json_files)
+    count = 0
+    for j_file in json_files:
+        logging.info(f"arraying {j_file.name} ({count}/{len_jsons})")
         with open(j_file, "r") as f:
             res_dict = json.load(f)
 
@@ -449,10 +454,10 @@ def data_to_array(json_files, output_dir):
             "2p3"
         ) or t_str in cage_topology_options("2p4"):
             cltitle = "3C1" if row["cltopo"] == 3 else "4C1"
-            row["c2sigma"] = get_CGBead_from_string(
+            row["c2r0"] = get_CGBead_from_string(
                 present_c2_beads[0],
                 core_2c_beads(),
-            ).sigma
+            ).bond_r
             row["c2angle"] = get_CGBead_from_string(
                 present_c2_beads[1],
                 arm_2c_beads(),
@@ -467,20 +472,20 @@ def data_to_array(json_files, output_dir):
 
         elif t_str in cage_topology_options("3p4"):
             cltitle = "4C1"
-            row["c3sigma"] = get_CGBead_from_string(
+            row["c3r0"] = get_CGBead_from_string(
                 present_c2_beads[0],
                 cl_bead_libs,
-            ).sigma
+            ).bond_r
             row["c3angle"] = get_CGBead_from_string(
                 present_c2_beads[0],
                 cl_bead_libs,
             ).angle_centered
 
         row["cltitle"] = cltitle
-        row["clsigma"] = get_CGBead_from_string(
+        row["clr0"] = get_CGBead_from_string(
             present_cl_beads[0],
             cl_bead_libs,
-        ).sigma
+        ).bond_r
         row["clangle"] = clangle
 
         if row["optimised"]:
@@ -513,31 +518,64 @@ def data_to_array(json_files, output_dir):
                 / res_dict["radius_gyration"]
             )
 
-            raise SystemExit("check  units of flex measure")
             trajectory_data = res_dict["trajectory"]
             if trajectory_data is None:
-                row["flexibility_measure"] = None
+                row["pore_dynamics"] = None
+                row["structure_dynamics"] = None
+                row["node_shape_dynamics"] = None
+                row["lig_shape_dynamics"] = None
             else:
-                row["flexibility_measure"] = (
-                    np.std(
-                        [
-                            rd["pore_data"]["min_distance"]
-                            for rd in trajectory_data.values()
-                        ]
-                    )
-                    + np.std(
-                        [
-                            rd["radius_gyration"]
-                            for rd in trajectory_data.values()
-                        ]
-                    )
-                    + np.std(
-                        [
-                            rd["max_diameter"]
-                            for rd in trajectory_data.values()
-                        ]
-                    )
+                list_of_rgs = [
+                    rd["radius_gyration"]
+                    for rd in trajectory_data.values()
+                ]
+                list_of_pores = [
+                    rd["pore_data"]["min_distance"]
+                    for rd in trajectory_data.values()
+                ]
+                row["structure_dynamics"] = np.std(
+                    list_of_rgs
+                ) / np.mean(list_of_rgs)
+                row["pore_dynamics"] = np.std(list_of_pores) / np.mean(
+                    list_of_pores
                 )
+
+                list_of_node_sv_cosdists = []
+                list_of_lig_sv_cosdists = []
+                for rd in trajectory_data.values():
+                    rd_series = pd.Series(dtype="object")
+                    rd_series["topology"] = row["topology"]
+                    r_node_shape_vector = rd["node_shape_measures"]
+                    r_lig_shape_vector = rd["lig_shape_measures"]
+                    if r_node_shape_vector is not None:
+                        for sv in r_node_shape_vector:
+                            rd_series[f"n_{sv}"] = r_node_shape_vector[
+                                sv
+                            ]
+                    if r_lig_shape_vector is not None:
+                        for sv in r_lig_shape_vector:
+                            rd_series[f"l_{sv}"] = r_lig_shape_vector[
+                                sv
+                            ]
+                    list_of_node_sv_cosdists.append(
+                        get_sv_dist(rd_series, mode="n")
+                    )
+                    list_of_lig_sv_cosdists.append(
+                        get_sv_dist(rd_series, mode="l")
+                    )
+
+                if list_of_node_sv_cosdists[0] is None:
+                    row["node_shape_dynamics"] = None
+                else:
+                    row["node_shape_dynamics"] = np.std(
+                        list_of_node_sv_cosdists
+                    )
+                if list_of_lig_sv_cosdists[0] is None:
+                    row["lig_shape_dynamics"] = None
+                else:
+                    row["lig_shape_dynamics"] = np.std(
+                        list_of_lig_sv_cosdists
+                    )
 
             bond_data = res_dict["bond_data"]
             angle_data = res_dict["angle_data"]
@@ -558,6 +596,7 @@ def data_to_array(json_files, output_dir):
                     row[f"l_{sv}"] = lig_shape_vector[sv]
 
         input_dict[name] = row
+        count += 1
 
     input_array = pd.DataFrame.from_dict(
         input_dict,
@@ -570,10 +609,6 @@ def data_to_array(json_files, output_dir):
     )
     input_array["sv_l_dist"] = input_array.apply(
         lambda row: get_sv_dist(row, mode="l"),
-        axis=1,
-    )
-    input_array["persistent"] = input_array.apply(
-        lambda row: is_persistent(row),
         axis=1,
     )
 
@@ -739,8 +774,8 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
 def write_out_mapping(all_data):
     bite_angle_map = {}
     clangle_map = {}
-    clsigma_map = {}
-    c2sigma_map = {}
+    clr0_map = {}
+    c2r0_map = {}
 
     for t_angle in set(list(all_data["clangle"])):
         clan_data = all_data[all_data["clangle"] == t_angle]
@@ -748,15 +783,15 @@ def write_out_mapping(all_data):
         for clbb in set(sorted(clan_data["clbb_b1"])):
             clangle_map[clbb] = t_angle
 
-        for c1_opt in sorted(set(clan_data["c2sigma"])):
-            test_data = clan_data[clan_data["c2sigma"] == c1_opt]
-            for c2_opt in sorted(set(test_data["clsigma"])):
-                plot_data = test_data[test_data["clsigma"] == c2_opt]
+        for c1_opt in sorted(set(clan_data["c2r0"])):
+            test_data = clan_data[clan_data["c2r0"] == c1_opt]
+            for c2_opt in sorted(set(test_data["clr0"])):
+                plot_data = test_data[test_data["clr0"] == c2_opt]
 
                 for clbb in set(sorted(plot_data["clbb_b1"])):
-                    clsigma_map[clbb] = c2_opt
+                    clr0_map[clbb] = c2_opt
 
-                c2sigma_map[plot_data.iloc[0]["c2bb_b1"]] = c1_opt
+                c2r0_map[plot_data.iloc[0]["c2bb_b1"]] = c1_opt
                 for bid, ba in zip(
                     list(plot_data["c2bb_b2"]),
                     list(plot_data["target_bite_angle"]),
@@ -765,24 +800,28 @@ def write_out_mapping(all_data):
 
     properties = [
         "energy_per_bond",
-        "HarmonicBondForce_kjmol",
-        "HarmonicAngleForce_kjmol",
         "pore",
         "min_b2b_distance",
         "radius_gyration",
         "max_diameter",
         "rg_md",
-        "flexibility_measure",
+        "pore_md",
+        "pore_rg",
+        "HarmonicBondForce_kjmol",
+        "HarmonicAngleForce_kjmol",
         "CustomNonbondedForce_kjmol",
         "PeriodicTorsionForce_kjmol",
+        "structure_dynamics",
+        "pore_dynamics",
+        "node_shape_dynamics",
+        "lig_shape_dynamics",
         "sv_n_dist",
         "sv_l_dist",
-        "persistent",
     ]
     logging.info(f"\nclangles: {clangle_map}\n")
-    logging.info(f"\nclsigmas: {clsigma_map}\n")
+    logging.info(f"\nclr0s: {clr0_map}\n")
     logging.info(f"\nbite_angles: {bite_angle_map}\n")
-    logging.info(f"\nc2sigmas: {c2sigma_map}\n")
+    logging.info(f"\nc2r0s: {c2r0_map}\n")
     logging.info(f"available properties:\n {properties}\n")
 
 
