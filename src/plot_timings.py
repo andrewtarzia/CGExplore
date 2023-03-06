@@ -85,8 +85,8 @@ def plot_timings(gulp_timings, omm_timings):
 
     num_atoms = sorted(
         set(
-            # [gulp_timings[i][0] for i in gulp_timings] +
-            [omm_timings[i][0] for i in omm_timings]
+            [gulp_timings[i][0] for i in gulp_timings]
+            # + [omm_timings[i][0] for i in omm_timings]
         )
     )
     print(num_atoms)
