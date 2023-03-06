@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Script to generate, optimise all CG models of two-c + three-c systems.
+Script to run OpenMM tests.
 
 Author: Andrew Tarzia
 
