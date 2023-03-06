@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 import sys
+import numpy as np
 import os
 import json
 import matplotlib.pyplot as plt
@@ -82,63 +83,124 @@ def gulp_timings():
 def plot_timings(gulp_timings, omm_timings):
     figure_output = cages() / "ommfigures"
 
+    num_atoms = sorted(
+        set(
+            # [gulp_timings[i][0] for i in gulp_timings] +
+            [omm_timings[i][0] for i in omm_timings]
+        )
+    )
+    print(num_atoms)
+    time_means = {
+        "gulp": [0 for i in num_atoms],
+        # "gulp-CG": [0 for i in num_atoms],
+        "OpenMM": [0 for i in num_atoms],
+        "OpenMM/vdw": [0 for i in num_atoms],
+        "OpenMM-MD/vdw": [0 for i in num_atoms],
+    }
+    time_stds = {
+        "gulp": [0 for i in num_atoms],
+        # "gulp-CG": [0 for i in num_atoms],
+        "OpenMM": [0 for i in num_atoms],
+        "OpenMM/vdw": [0 for i in num_atoms],
+        "OpenMM-MD/vdw": [0 for i in num_atoms],
+    }
+
+    for i, na in enumerate(num_atoms):
+        gulp_trim = {
+            i: gulp_timings[i]
+            for i in gulp_timings
+            if gulp_timings[i][0] == na
+        }
+        g_all_timings = [gulp_trim[i][1] for i in gulp_trim]
+        # g_cg_timings = [gulp_trim[i][1] for i in gulp_trim if "o1" in i]
+
+        omm_trim = {
+            i: omm_timings[i]
+            for i in omm_timings
+            if omm_timings[i][0] == na
+        }
+        o_voff_timings = [
+            omm_trim[i][1]
+            for i in omm_trim
+            if "o2" not in i
+            if "voff" in i
+        ]
+        o_von_timings = [
+            omm_trim[i][1]
+            for i in omm_trim
+            if "o2" not in i
+            if "von" in i
+        ]
+        o_md_timings = [
+            omm_trim[i][1] for i in omm_trim if "o2" in i and "von" in i
+        ]
+
+        for idx in omm_trim:
+            if omm_trim[idx][1] > 10:
+                print(idx, omm_trim[idx][1])
+
+        time_means["gulp"][i] = np.mean(g_all_timings)
+        time_means["OpenMM"][i] = np.mean(o_voff_timings)
+        time_means["OpenMM/vdw"][i] = np.mean(o_von_timings)
+        time_means["OpenMM-MD/vdw"][i] = np.mean(o_md_timings)
+
+        time_stds["gulp"][i] = np.std(g_all_timings)
+        time_stds["OpenMM"][i] = np.std(o_voff_timings)
+        time_stds["OpenMM/vdw"][i] = np.std(o_von_timings)
+        time_stds["OpenMM-MD/vdw"][i] = np.std(o_md_timings)
+    print(time_means)
+    print(time_stds)
+
+    # x = np.arange(len(num_atoms))
+    # width = 0.3
+    # multiplier = 0
+
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    ax.scatter(
-        [gulp_timings[i][0] for i in gulp_timings],  # if "toff" in i],
-        [gulp_timings[i][1] for i in gulp_timings],  # if "toff" in i],
-        c="gray",
-        s=30,
-        edgecolor="none",
-        alpha=0.5,
-        label="GULP",
-        rasterized=True,
-    )
-    ax.scatter(
-        [gulp_timings[i][0] for i in gulp_timings if "o1" in i],
-        [gulp_timings[i][1] for i in gulp_timings if "o1" in i],
-        c="r",
-        s=30,
-        edgecolor="none",
-        alpha=0.5,
-        label="GULP-CG=True",
-        rasterized=True,
-    )
-    ax.scatter(
-        [omm_timings[i][0] for i in omm_timings if "voff" in i],
-        [omm_timings[i][1] for i in omm_timings if "voff" in i],
-        c="skyblue",
-        s=20,
-        edgecolor="none",
-        alpha=0.6,
-        label="OpenMM",
-        rasterized=True,
-    )
-    ax.scatter(
-        [omm_timings[i][0] for i in omm_timings if "von" in i],
-        [omm_timings[i][1] for i in omm_timings if "von" in i],
-        c="gold",
-        s=20,
-        edgecolor="none",
-        alpha=0.6,
-        label="OpenMM/w-dispersion",
-        rasterized=True,
-    )
-    ax.scatter(
-        [omm_timings[i][0] for i in omm_timings if "o2" in i],
-        [omm_timings[i][1] for i in omm_timings if "o2" in i],
-        c="green",
-        s=20,
-        edgecolor="none",
-        alpha=0.6,
-        label="OpenMM-MD",
-        rasterized=True,
-    )
+    gulp_means = time_means["gulp"]
+
+    for run_type in time_means:
+        if run_type == "gulp":
+            continue
+        means = time_means[run_type]
+        relative_means = [i / j for i, j in zip(means, gulp_means)]
+        # stds = time_stds[run_type]
+
+        # offset = width * multiplier
+        # ax.bar(
+        #     x + offset,
+        #     relative_means,
+        #     width,
+        #     # yerr=stds,
+        #     label=run_type,
+        # )
+        ax.plot(
+            num_atoms,
+            relative_means,
+            # width,
+            # yerr=stds,
+            marker="o",
+            markersize=8,
+            lw=2,
+            label=run_type,
+        )
+        # ax.bar_label(rects, padding=3)
+        # multiplier += 1
+
+    ax.axhline(y=1, c="k", linestyle="--")
+    # for i in x:
+    #     ax.axvline(
+    #         x=i + 1.0 - (width / 2) - 0.05, c="gray", linestyle="--"
+    #     )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("num. atoms", fontsize=16)
-    ax.set_ylabel("CPU time [s]", fontsize=16)
+    ax.set_xlabel("num. beads", fontsize=16)
+    # ax.set_ylabel("CPU time [s]", fontsize=16)
+    ax.set_ylabel("mean time/mean gulp time [s]", fontsize=16)
     ax.set_yscale("log")
+    # ax.set_xticks(x)
+    # ax.set_xticklabels(num_atoms)
+
     ax.legend(fontsize=16)
     fig.tight_layout()
     fig.savefig(
