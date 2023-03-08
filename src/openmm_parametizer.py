@@ -216,6 +216,7 @@ def test1(beads, calculation_output, figure_output):
     )
 
     tcol = {
+        700: "k",
         300: "gold",
         100: "orange",
         10: "green",
@@ -346,6 +347,7 @@ def test2(beads, calculation_output, figure_output):
     )
 
     tcol = {
+        700: "k",
         300: "gold",
         100: "orange",
         10: "green",
@@ -508,6 +510,7 @@ def test3(beads, calculation_output, figure_output):
     )
 
     tcol = {
+        700: "k",
         300: "gold",
         100: "orange",
         10: "green",
@@ -648,6 +651,7 @@ def test4(beads, calculation_output, figure_output):
     )
 
     tcol = {
+        700: "k",
         300: "gold",
         100: "orange",
         10: "green",
