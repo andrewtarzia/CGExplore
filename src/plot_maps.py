@@ -17,17 +17,14 @@ import math
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.gridspec as grid_spec
 
 from env_set import cages
 from analysis_utilities import (
     data_to_array,
-    max_energy,
     isomer_energy,
     topology_labels,
     cltypetopo_to_colormap,
     write_out_mapping,
-    torsion_to_colormap,
     convert_tors,
     convert_topo,
     convert_vdws,
@@ -37,206 +34,113 @@ from analysis_utilities import (
 def bite_angle_relationship(all_data, figure_output):
     logging.info("running bite_angle_relationship")
 
-    color_map = topo_to_colormap()
-    for torsion in ("ton", "toff"):
-        tor_data = all_data[all_data["torsions"] == torsion]
-        for tstr in color_map:
-            filt_data = tor_data[tor_data["topology"] == tstr]
-            for t_angle in set(list(filt_data["clangle"])):
-                clan_data = filt_data[filt_data["clangle"] == t_angle]
-                fig, ax = plt.subplots(figsize=(8, 5))
-                for c1_opt in sorted(set(clan_data["c2sigma"])):
-                    test_data = clan_data[
-                        clan_data["c2sigma"] == c1_opt
-                    ]
-                    for c2_opt in sorted(set(test_data["clsigma"])):
-                        plot_data = test_data[
-                            test_data["clsigma"] == c2_opt
-                        ]
-                        xs = list(plot_data["target_bite_angle"])
-                        ys = list(plot_data["energy"])
-                        xs, ys = zip(*sorted(zip(xs, ys)))
-                        ax.plot(
-                            xs,
-                            ys,
-                            lw=3,
-                            alpha=1.0,
-                            label=f"{c1_opt}.{c2_opt}",
-                            marker="o",
-                        )
+    trim = all_data[all_data["vdws"] == "von"]
 
-                    ax.tick_params(
-                        axis="both", which="major", labelsize=16
-                    )
-                    ax.set_xlabel("target 2c bite angle", fontsize=16)
-                    ax.set_ylabel("energy", fontsize=16)
-                    ax.legend()
-                    ax.set_ylim(0, 2 * max_energy())
-
-                fig.tight_layout()
-                filename = f"ar_{torsion}_{t_angle}_{tstr}.pdf"
-                fig.savefig(
-                    os.path.join(figure_output, filename),
-                    dpi=720,
-                    bbox_inches="tight",
-                )
-                plt.close()
-
-
-def energy_map(all_data, figure_output):
-    logging.info("running energy_map")
-
-    cols_to_map = [
-        "clsigma",
-        "c2sigma",
-        "torsions",
-    ]
-    cols_to_iter = [
-        "clangle",
-        "topology",
-        # "target_bite_angle",
-    ]
-    properties = {
-        "energy_per_bond": {
-            "ylbl": "energy per bond [kJmol-1]",
-            "yline": max_energy(),
-            "ylim": (0, max_energy() * 2),
-        },
-        # "pore": {
-        #     "ylbl": "pore",
-        #     "yline": None,
-        #     "ylim": (0, 50),
-        # },
-        # "min_b2b": {
-        #     "ylbl": "min b2b",
-        #     "yline": None,
-        #     "ylim": (0, 3),
-        # },
+    cmap = {
+        "toff": ("#F9A03F", "o", "-"),
+        "ton": ("#086788", "o", "-"),
     }
 
-    von_data = all_data[all_data["vdws"] == "von"]
-    io1 = sorted(set(von_data[cols_to_iter[0]]))
-    io2 = sorted(set(von_data[cols_to_iter[1]]))
-    for cla in io1:
-        for to in io2:
-            if to in ("6P8",):
-                continue
-            filt_data = von_data[von_data[cols_to_iter[0]] == cla]
-            filt_data = filt_data[filt_data[cols_to_iter[1]] == to]
-            if len(filt_data) == 0:
-                continue
-            uo1 = sorted(set(filt_data[cols_to_map[0]]))
-            uo2 = sorted(set(filt_data[cols_to_map[1]]))
-            uo3 = sorted(set(filt_data[cols_to_map[2]]))
+    for tstr in topology_labels(short="P"):
+        if tstr == "6P8":
+            continue
+        filt_data = trim[trim["topology"] == tstr]
+        clangles = sorted(set(filt_data["clangle"]))
+        if len(clangles) == 0:
+            continue
+        fig, axs = plt.subplots(
+            nrows=len(clangles),
+            sharex=True,
+            sharey=True,
+            figsize=(8, 12),
+        )
 
-            gs = grid_spec.GridSpec(len(uo1), len(uo2))
-            for prop in properties:
-                ybl = properties[prop]["ylbl"]
-                yline = properties[prop]["yline"]
-                ylim = properties[prop]["ylim"]
+        for ax, t_angle in zip(axs, clangles):
+            clan_data = filt_data[filt_data["clangle"] == t_angle]
+            for tors in cmap:
+                tor_data = clan_data[clan_data["torsions"] == tors]
+                tors_output = {}
+                for c1_opt in sorted(set(clan_data["c2r0"])):
+                    test_data = tor_data[tor_data["c2r0"] == c1_opt]
+                    for c2_opt in sorted(set(test_data["clr0"])):
+                        plot_data = test_data[
+                            test_data["clr0"] == c2_opt
+                        ]
+                        xs = list(plot_data["target_bite_angle"])
+                        ys = list(plot_data["energy_per_bond"])
+                        xs, ys = zip(*sorted(zip(xs, ys)))
+                        tors_output[(c1_opt, c2_opt)] = {
+                            x: y for x, y in zip(xs, ys)
+                        }
+                        x_to_plot = xs
 
-                fig = plt.figure(figsize=(16, 10))
-                ax_objs = []
-                for i, o1 in enumerate(uo1):
-                    for j, o2 in enumerate(uo2):
-                        ax_objs.append(
-                            fig.add_subplot(gs[i : i + 1, j : j + 1])
-                        )
-                        for k, o3 in enumerate(uo3):
-                            plot_data = filt_data[
-                                filt_data[cols_to_map[0]] == o1
-                            ]
-                            plot_data = plot_data[
-                                plot_data[cols_to_map[1]] == o2
-                            ]
-                            plot_data = plot_data[
-                                plot_data[cols_to_map[2]] == o3
-                            ]
-                            if len(plot_data) == 0:
-                                continue
-                            ax = ax_objs[-1]
-                            rect = ax.patch
-                            rect.set_alpha(0)
+                y_medians = []
+                y_stds = []
+                for x in x_to_plot:
+                    y_list = []
+                    for sizes in tors_output:
+                        y_list.append(tors_output[sizes][x])
+                    y_medians.append(np.median(y_list))
+                    y_stds.append(np.std(y_list))
 
-                            xs = list(plot_data["target_bite_angle"])
-                            ys = list(plot_data[prop])
-                            xs, ys = zip(*sorted(zip(xs, ys)))
-                            torlbl = convert_tors(
-                                o3,
-                                num=False,
-                            )
-                            ax.plot(
-                                xs,
-                                ys,
-                                c=torsion_to_colormap()[o3],
-                                lw=3,
-                                alpha=1.0,
-                                label=f"{torlbl}",
-                                marker="o",
-                            )
-                            # ax.set_title(" min e value")
-                            ax.set_title(
-                                f"CLsig{o1}/C2sig{o2}",
-                                fontsize=16,
-                            )
-                            if i == 0 and j == 0:
-                                ax.legend(fontsize=16)
-                            if i == 1 and j == 0:
-                                ax.set_ylabel(ybl, fontsize=16)
-                            if i == 1 and j == 1:
-                                ax.set_xlabel(
-                                    "bite angle [deg]",
-                                    fontsize=16,
-                                )
-                            ax.tick_params(
-                                axis="both",
-                                which="both",
-                                bottom=False,
-                                top=False,
-                                left=False,
-                                right=False,
-                                labelsize=16,
-                            )
-                            if i == 1:
-                                ax.tick_params(
-                                    axis="y",
-                                    which="major",
-                                    labelsize=16,
-                                )
-                            else:
-                                ax.set_xticklabels([])
-                            if j == 0:
-                                ax.tick_params(
-                                    axis="x",
-                                    which="major",
-                                    labelsize=16,
-                                )
-                            else:
-                                ax.set_yticklabels([])
-
-                            if yline is not None:
-                                ax.axhline(
-                                    y=yline,
-                                    c="k",
-                                    lw=2,
-                                    linestyle="--",
-                                )
-
-                for i, ax in enumerate(ax_objs):
-                    ax.set_ylim(ylim)
-                    # spines = ["top", "right", "left", "bottom"]
-                    # for s in spines:
-                    #     ax.spines[s].set_visible(False)
-
-                fig.suptitle(f"{to}, {cla}", fontsize=16)
-                fig.tight_layout()
-                filename = f"em_{cla}_{to}_{prop}.pdf"
-                fig.savefig(
-                    os.path.join(figure_output, filename),
-                    dpi=720,
-                    bbox_inches="tight",
+                ax.plot(
+                    x_to_plot,
+                    y_medians,
+                    # zs=t_angle,
+                    lw=3,
+                    c=cmap[tors][0],
+                    alpha=1.0,
+                    # linestyle=cmap[(c1_opt, c2_opt)][2],
+                    # label=f"C2 r0 {c1_opt}/CL r0 {c2_opt}",
+                    label=f"{convert_tors(tors,num=False)}",
+                    marker=cmap[tors][1],
                 )
-                plt.close()
+                ax.fill_between(
+                    x_to_plot,
+                    [i - j for i, j in zip(y_medians, y_stds)],
+                    [i + j for i, j in zip(y_medians, y_stds)],
+                    facecolor=cmap[tors][0],
+                    alpha=0.3,
+                )
+
+                for x, y in zip(x_to_plot, y_medians):
+                    if y < isomer_energy():
+                        if tors == "ton":
+                            yx = [23]
+                        elif tors == "toff":
+                            yx = [23]
+                        ax.scatter(
+                            [x],
+                            yx,
+                            marker="P",
+                            c=cmap[tors][0],
+                            s=80,
+                            edgecolor="white",
+                            zorder=2,
+                        )
+                # ax.axvline(
+                #     x=xs[min(range(len(ys)), key=ys.__getitem__)],
+                #     c=cmap[(c1_opt, c2_opt)][0],
+                #     linestyle="--",
+                #     alpha=0.5,
+                # )
+
+            ax.set_ylabel(r"$E_{bf}$", fontsize=16)
+            ax.set_title(t_angle, fontsize=16)
+            ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("target 2c bite angle", fontsize=16)
+        ax.legend(ncol=2, fontsize=16)
+        ax.set_ylim(0, 25)
+        ax.set_xlim(-1, 181)
+
+        fig.tight_layout()
+        filename = f"ar_{tstr}.pdf"
+        fig.savefig(
+            os.path.join(figure_output, filename),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
 
 
 def selectivity_map(all_data, figure_output):
