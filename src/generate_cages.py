@@ -17,7 +17,8 @@ import logging
 import numpy as np
 import itertools
 from rdkit import RDLogger
-from openmm import openmm  # , OpenMMException
+from dataclasses import replace
+from openmm import openmm, OpenMMException
 
 from shape import (
     ShapeMeasure,
@@ -214,16 +215,23 @@ def optimise_cage(
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}")
+        soft_bead_set = {}
+        for i in bead_set:
+            new_bead = replace(bead_set[i])
+            new_bead.bond_k = bead_set[i].bond_k / 10
+            new_bead.angle_k = bead_set[i].angle_k / 10
+            soft_bead_set[i] = new_bead
+
         soft_opt = CGOMMOptimizer(
             fileprefix=f"{name}_o1soft",
             output_dir=output_dir,
-            param_pool=bead_set,
+            param_pool=soft_bead_set,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
             torsions=False,
             vdw=custom_vdw_set,
-            max_iterations=5,
+            max_iterations=100,
             vdw_bond_cutoff=2,
         )
         molecule = soft_opt.optimize(molecule)
@@ -348,8 +356,6 @@ def analyse_cage(
     output_file = os.path.join(output_dir, f"{name}_res.json")
     shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
     shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
-    # xyz_template = os.path.join(output_dir, f"{name}_temp.xyz")
-    # pm_output_file = os.path.join(output_dir, f"{name}_pm.json")
 
     if molecule is None:
         res_dict = {"optimised": False}
