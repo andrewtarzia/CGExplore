@@ -30,7 +30,7 @@ from env_set import cages
 from utilities import check_directory, check_long_distances
 from openmm_optimizer import (
     CGOMMOptimizer,
-    # CGOMMDynamics,
+    CGOMMDynamics,
     # OMMTrajectory,
 )
 from cage_construction.topologies import cage_topology_options
@@ -156,22 +156,26 @@ def deform_molecule(molecule, generator, percent):
 
 def deform_and_optimisations(name, molecule, opt):
     min_energy = opt.calculate_energy(molecule)
+    # molecule.write("1_o.mol")
     deformations = 20
     generator = np.random.default_rng(seed=1000)
     for drun in range(deformations):
         # logging.info(f"optimising deformation {drun}")
         dmolecule = deform_molecule(molecule, generator, percent=1)
+        # dmolecule.write(f"1_{drun}.mol")
         dmolecule = opt.optimize(dmolecule)
         dmolecule = dmolecule.with_centroid((0, 0, 0))
+        # dmolecule.write(f"1_{drun}o.mol")
         post_deform_energy = opt.calculate_energy(dmolecule)
         if post_deform_energy < min_energy:
-            # logging.info(
-            #     f"new lowest energy conformer: "
-            #     f"{post_deform_energy}, cf. {min_energy}"
-            # )
+            logging.info(
+                f"new low. E conformer (deform.): "
+                f"{post_deform_energy}, cf. {min_energy}"
+            )
             min_energy = post_deform_energy
             molecule = dmolecule.clone()
 
+    # molecule.write("1_f.mol")
     return molecule
 
 
@@ -185,10 +189,10 @@ def optimise_cage(
 ):
 
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
-    # opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
-    # opt2_fai_file = os.path.join(output_dir, f"{name}_mdfailed.txt")
-    # opt2_exp_file = os.path.join(output_dir, f"{name}_mdexploded.txt")
-    # opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
+    opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
+    opt2_fai_file = os.path.join(output_dir, f"{name}_mdfailed.txt")
+    opt2_exp_file = os.path.join(output_dir, f"{name}_mdexploded.txt")
+    opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
 
     if os.path.exists(fina_mol_file):
@@ -223,8 +227,9 @@ def optimise_cage(
             vdw_bond_cutoff=2,
         )
         molecule = soft_opt.optimize(molecule)
-
+        # molecule.write("1_s.mol")
         molecule = opt.optimize(molecule)
+        # molecule.write("1_oo.mol")
 
         # Run an optimisation on a deformed step and use that if lower
         # in energy.
@@ -232,81 +237,81 @@ def optimise_cage(
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
 
-    # opt_energy = opt.calculate_energy(molecule)
+    opt_energy = opt.calculate_energy(molecule)
 
-    # if os.path.exists(opt2_mol_file):
-    #     molecule = molecule.with_structure_from_file(opt2_mol_file)
-    # else:
-    #     logging.info(f"running MD {name}")
-    #     opt = CGOMMDynamics(
-    #         fileprefix=f"{name}_o2",
-    #         output_dir=output_dir,
-    #         param_pool=bead_set,
-    #         custom_torsion_set=custom_torsion_set,
-    #         bonds=True,
-    #         angles=True,
-    #         torsions=False,
-    #         vdw=custom_vdw_set,
-    #         # max_iterations=1000,
-    #         vdw_bond_cutoff=2,
-    #         temperature=300 * openmm.unit.kelvin,
-    #         random_seed=1000,
-    #         num_steps=5000,
-    #         time_step=1 * openmm.unit.femtoseconds,
-    #         friction=1.0 / openmm.unit.picosecond,
-    #         reporting_freq=100,
-    #         traj_freq=100,
-    #     )
-    #     try:
-    #         trajectory = opt.run_dynamics(molecule)
-    #         traj_log = trajectory.get_data()
-    #         min_energy = 1e24
-    #         for conformer in trajectory.yield_conformers():
-    #             timestep = conformer.timestep
-    #             row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
-    #             pot_energy = float(row["Potential Energy (kJ/mole)"])
-    #             if pot_energy < min_energy:
-    #                 logging.info(
-    #                     f"new lowest E conformer {timestep}: "
-    #                     f"{pot_energy} kJ/mol-1"
-    #                 )
-    #                 min_energy = pot_energy
-    #                 molecule = molecule.with_position_matrix(
-    #                     conformer.molecule.get_position_matrix(),
-    #                 )
-    #         molecule = molecule.with_centroid((0, 0, 0))
-    #         molecule.write(opt2_mol_file)
-    #     except ValueError:
-    #         logging.info(f"{name} MD failed")
-    #         molecule.write(opt2_mol_file)
-    #         with open(opt2_fai_file, "w") as f:
-    #             f.write("failed.")
-    #     except OpenMMException:
-    #         logging.info(f"{name} MD exploded")
-    #         molecule.write(opt2_mol_file)
-    #         with open(opt2_exp_file, "w") as f:
-    #             f.write("exploded.")
+    if os.path.exists(opt2_mol_file):
+        molecule = molecule.with_structure_from_file(opt2_mol_file)
+    else:
+        logging.info(f"running MD {name}")
+        opt = CGOMMDynamics(
+            fileprefix=f"{name}_o2",
+            output_dir=output_dir,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=custom_vdw_set,
+            # max_iterations=1000,
+            vdw_bond_cutoff=2,
+            temperature=300 * openmm.unit.kelvin,
+            random_seed=1000,
+            num_steps=5000,
+            time_step=1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=100,
+            traj_freq=100,
+        )
+        try:
+            trajectory = opt.run_dynamics(molecule)
+            traj_log = trajectory.get_data()
+            min_energy = 1e24
+            for conformer in trajectory.yield_conformers():
+                timestep = conformer.timestep
+                row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
+                pot_energy = float(row["Potential Energy (kJ/mole)"])
+                if pot_energy < min_energy:
+                    logging.info(
+                        f"new low. E conformer {timestep} (MD): "
+                        f"{pot_energy} kJ/mol-1"
+                    )
+                    min_energy = pot_energy
+                    molecule = molecule.with_position_matrix(
+                        conformer.molecule.get_position_matrix(),
+                    )
+            molecule = molecule.with_centroid((0, 0, 0))
+            molecule.write(opt2_mol_file)
+        except ValueError:
+            logging.info(f"{name} MD failed")
+            molecule.write(opt2_mol_file)
+            with open(opt2_fai_file, "w") as f:
+                f.write("failed.")
+        except OpenMMException:
+            logging.info(f"{name} MD exploded")
+            molecule.write(opt2_mol_file)
+            with open(opt2_exp_file, "w") as f:
+                f.write("exploded.")
 
-    # opt = CGOMMOptimizer(
-    #     fileprefix=f"{name}_o3",
-    #     output_dir=output_dir,
-    #     param_pool=bead_set,
-    #     custom_torsion_set=custom_torsion_set,
-    #     bonds=True,
-    #     angles=True,
-    #     torsions=False,
-    #     vdw=custom_vdw_set,
-    #     # max_iterations=1000,
-    #     vdw_bond_cutoff=2,
-    # )
-    # if os.path.exists(opt3_mol_file):
-    #     molecule = molecule.with_structure_from_file(opt3_mol_file)
-    # else:
-    #     logging.info(f"optimising {name}")
-    #     molecule = opt.optimize(molecule)
-    #     molecule = molecule.with_centroid((0, 0, 0))
-    #     molecule.write(opt3_mol_file)
-    # md_opt_energy = opt.calculate_energy(molecule)
+    opt = CGOMMOptimizer(
+        fileprefix=f"{name}_o3",
+        output_dir=output_dir,
+        param_pool=bead_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=True,
+        angles=True,
+        torsions=False,
+        vdw=custom_vdw_set,
+        # max_iterations=1000,
+        vdw_bond_cutoff=2,
+    )
+    if os.path.exists(opt3_mol_file):
+        molecule = molecule.with_structure_from_file(opt3_mol_file)
+    else:
+        logging.info(f"optimising {name}")
+        molecule = opt.optimize(molecule)
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt3_mol_file)
+    md_opt_energy = opt.calculate_energy(molecule)
 
     try:
         check_long_distances(
@@ -320,12 +325,12 @@ def optimise_cage(
         raise SystemExit()
         return None
 
-    # if opt_energy < md_opt_energy:
-    #     logging.info(
-    #         "energy after first optimisation < energy after MD "
-    #         " and optimisation."
-    #     )
-    #     molecule = molecule.with_structure_from_file(opt1_mol_file)
+    if opt_energy < md_opt_energy:
+        logging.info(
+            "energy after first optimisation < energy after MD "
+            " and optimisation."
+        )
+        molecule = molecule.with_structure_from_file(opt1_mol_file)
     molecule.write(fina_mol_file)
 
     return molecule
@@ -357,8 +362,8 @@ def analyse_cage(
     else:
         logging.info(f"analysing {name}")
 
-        # mdexploded = False
-        # mdfailed = False
+        mdexploded = False
+        mdfailed = False
 
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_o1",
@@ -431,12 +436,12 @@ def analyse_cage(
                 f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
             )
 
-        # failed_file = output_dir / f"{name}_mdfailed.txt"
-        # exploded_file = output_dir / f"{name}_mdexploded.txt"
-        # if os.path.exists(failed_file):
-        #     mdfailed = True
-        # if os.path.exists(exploded_file):
-        #     mdexploded = True
+        failed_file = output_dir / f"{name}_mdfailed.txt"
+        exploded_file = output_dir / f"{name}_mdexploded.txt"
+        if os.path.exists(failed_file):
+            mdfailed = True
+        if os.path.exists(exploded_file):
+            mdexploded = True
         # if mdfailed or mdexploded:
         #     trajectory_data = None
         # else:
@@ -554,8 +559,8 @@ def analyse_cage(
 
         res_dict = {
             "optimised": True,
-            # "mdexploded": mdexploded,
-            # "mdfailed": mdfailed,
+            "mdexploded": mdexploded,
+            "mdfailed": mdfailed,
             "fin_energy_kjmol": fin_energy,
             "fin_energy_decomp": energy_decomp,
             "opt_pore_data": opt_pore_data,
@@ -734,11 +739,6 @@ def main():
     ligand_output = cages() / "ommligands"
     check_directory(ligand_output)
 
-    # Define list of topology functions.
-    cage_3p2_topologies = cage_topology_options("2p3")
-    cage_4p2_topologies = cage_topology_options("2p4")
-    cage_3p4_topologies = cage_topology_options("3p4")
-
     # Define bead libraries.
     beads_core_2c_lib = core_2c_beads()
     beads_4c_lib = beads_4c()
@@ -786,6 +786,11 @@ def main():
         f"{len(c3_blocks)} 3-C and "
         f"{len(c4_blocks)} 4-C building blocks."
     )
+
+    # Define list of topology functions.
+    cage_3p2_topologies = cage_topology_options("2p3")
+    cage_4p2_topologies = cage_topology_options("2p4")
+    cage_3p4_topologies = cage_topology_options("3p4")
 
     populations = {
         "3 + 2": {
