@@ -3,20 +3,19 @@
 # Distributed under the terms of the MIT License.
 
 """
-Script to generate and optimise all CG models.
+Module for cage generation utilities.
 
 Author: Andrew Tarzia
 
 """
 
-import sys
 import stk
 import os
 import json
 import logging
 import numpy as np
 import itertools
-from rdkit import RDLogger
+
 from dataclasses import replace
 from openmm import openmm, OpenMMException
 
@@ -27,16 +26,52 @@ from shape import (
 )
 from geom import GeomMeasure
 from pore import PoreMeasure
-from env_set import cages
-from utilities import check_directory, check_long_distances
+from utilities import check_long_distances
 from openmm_optimizer import (
     CGOMMOptimizer,
     CGOMMDynamics,
     # OMMTrajectory,
 )
-from cage_construction.topologies import cage_topology_options
-from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
-from beads import bead_library_check, produce_bead_library
+from beads import produce_bead_library
+
+
+def custom_torsion_definitions(population):
+    return {
+        "2p3": {
+            "ton": (180, 50),
+            # "toff": None,
+        },
+        "2p4": {
+            "ton": (180, 50),
+            # "toff": None,
+        },
+        "3p4": {"toff": None},
+    }[population]
+
+
+def custom_vdw_definitions(population):
+    return {
+        "2p3": {
+            "von": True,
+            # "voff": False,
+        },
+        "2p4": {
+            "von": True,
+            # "voff": False,
+        },
+        "3p4": {
+            "von": True,
+            # "voff": False,
+        },
+    }[population]
+
+
+def bond_k():
+    return 1e5
+
+
+def angle_k():
+    return 1e2
 
 
 def core_2c_beads():
@@ -44,9 +79,9 @@ def core_2c_beads():
         type_prefix="c",
         element_string="Ag",
         angles=(180,),
-        bond_rs=(2, 5),
-        bond_ks=(5e5,),
-        angle_ks=(5e2,),
+        bond_rs=(2,),
+        bond_ks=(bond_k(),),
+        angle_ks=(angle_k(),),
         sigma=1,
         epsilon=10.0,
         coordination=2,
@@ -59,8 +94,9 @@ def arm_2c_beads():
         element_string="Ba",
         bond_rs=(1,),
         angles=range(90, 181, 5),
-        bond_ks=(5e5,),
-        angle_ks=(5e2,),
+        # angles=(90, 100, 120, 140, 160, 180),
+        bond_ks=(bond_k(),),
+        angle_ks=(angle_k(),),
         sigma=1,
         epsilon=10.0,
         coordination=2,
@@ -73,8 +109,8 @@ def binder_beads():
         element_string="Pb",
         bond_rs=(1,),
         angles=(180,),
-        bond_ks=(5e5,),
-        angle_ks=(5e2,),
+        bond_ks=(bond_k(),),
+        angle_ks=(angle_k(),),
         sigma=1,
         epsilon=10.0,
         coordination=2,
@@ -85,10 +121,10 @@ def beads_3c():
     return produce_bead_library(
         type_prefix="n",
         element_string="C",
-        bond_rs=(2, 5),
+        bond_rs=(2,),
         angles=(50, 60, 70, 80, 90, 100, 110, 120),
-        bond_ks=(5e5,),
-        angle_ks=(5e2,),
+        bond_ks=(bond_k(),),
+        angle_ks=(angle_k(),),
         sigma=1,
         epsilon=10.0,
         coordination=3,
@@ -99,10 +135,10 @@ def beads_4c():
     return produce_bead_library(
         type_prefix="m",
         element_string="Pd",
-        bond_rs=(2, 5),
+        bond_rs=(2,),
         angles=(50, 60, 70, 80, 90),
-        bond_ks=(5e5,),
-        angle_ks=(5e2,),
+        bond_ks=(bond_k(),),
+        angle_ks=(angle_k(),),
         sigma=1,
         epsilon=10.0,
         coordination=4,
@@ -135,7 +171,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
     return molecule
 
 
-def deform_molecule(molecule, generator, percent):
+def deform_molecule(molecule, generator):
     old_pos_mat = molecule.get_position_matrix()
     centroid = molecule.get_centroid()
 
@@ -146,12 +182,13 @@ def deform_molecule(molecule, generator, percent):
             c_v = c_v / np.linalg.norm(c_v)
             # move = generator.choice([-1, 1]) * c_v
             # move = generator.random((3,)) * percent
-            move = (c_v + generator.random((3,))) * percent
+            move = c_v * 2
             new_pos = pos - move
         else:
-            move = generator.random((3,)) * percent
-            new_pos = pos - move
+            # move = generator.random((3,)) * 2
+            new_pos = pos
         new_pos_mat.append(new_pos)
+
     return molecule.with_position_matrix(np.array((new_pos_mat)))
 
 
@@ -162,11 +199,12 @@ def deform_and_optimisations(name, molecule, opt):
     generator = np.random.default_rng(seed=1000)
     for drun in range(deformations):
         # logging.info(f"optimising deformation {drun}")
-        dmolecule = deform_molecule(molecule, generator, percent=1)
-        # dmolecule.write(f"1_{drun}.mol")
+        dmolecule = deform_molecule(molecule, generator)
+        dmolecule.write(f"1_{drun}u.mol")
         dmolecule = opt.optimize(dmolecule)
         dmolecule = dmolecule.with_centroid((0, 0, 0))
-        # dmolecule.write(f"1_{drun}o.mol")
+        dmolecule.write(f"1_{drun}o.mol")
+        # raise SystemExit()
         post_deform_energy = opt.calculate_energy(dmolecule)
         if post_deform_energy < min_energy:
             logging.info(
@@ -196,11 +234,52 @@ def optimise_cage(
     opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
 
+    molecule.write("temo.mol")
+
     if os.path.exists(fina_mol_file):
         return molecule.with_structure_from_file(fina_mol_file)
 
-    opt = CGOMMOptimizer(
+    soft_bead_set = {}
+    for i in bead_set:
+        new_bead = replace(bead_set[i])
+        new_bead.bond_k = bead_set[i].bond_k / 10
+        new_bead.angle_k = bead_set[i].angle_k / 10
+        soft_bead_set[i] = new_bead
+
+    # if custom_torsion_set is None:
+    #     new_custom_torsion_set = None
+    # else:
+    #     new_custom_torsion_set = {
+    #         i: (
+    #             custom_torsion_set[i][0],
+    #             custom_torsion_set[i][1] / 10,
+    #         )
+    #         for i in custom_torsion_set
+    #     }
+
+    intra_bb_bonds = []
+    for bond_info in molecule.get_bond_infos():
+        if bond_info.get_building_block_id() is not None:
+            bond = bond_info.get_bond()
+            intra_bb_bonds.append(
+                (bond.get_atom1().get_id(), bond.get_atom2().get_id())
+            )
+
+    constrained_opt = CGOMMOptimizer(
         fileprefix=f"{name}_o1",
+        output_dir=output_dir,
+        param_pool=soft_bead_set,
+        custom_torsion_set=None,
+        bonds=True,
+        angles=False,
+        torsions=False,
+        vdw=custom_vdw_set,
+        max_iterations=10,
+        vdw_bond_cutoff=2,
+        atom_constraints=intra_bb_bonds,
+    )
+    dopt = CGOMMOptimizer(
+        fileprefix=f"{name}_o1d",
         output_dir=output_dir,
         param_pool=bead_set,
         custom_torsion_set=custom_torsion_set,
@@ -208,50 +287,70 @@ def optimise_cage(
         angles=True,
         torsions=False,
         vdw=custom_vdw_set,
-        # max_iterations=1000,
+        max_iterations=50,
         vdw_bond_cutoff=2,
     )
     if os.path.exists(opt1_mol_file):
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
-        logging.info(f"optimising {name}")
-        soft_bead_set = {}
-        for i in bead_set:
-            new_bead = replace(bead_set[i])
-            new_bead.bond_k = bead_set[i].bond_k / 10
-            new_bead.angle_k = bead_set[i].angle_k / 10
-            soft_bead_set[i] = new_bead
-
-        soft_opt = CGOMMOptimizer(
-            fileprefix=f"{name}_o1soft",
-            output_dir=output_dir,
-            param_pool=soft_bead_set,
-            custom_torsion_set=None,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=custom_vdw_set,
-            max_iterations=100,
-            vdw_bond_cutoff=2,
+        logging.info(
+            f"optimising {name} with {len(intra_bb_bonds)} constraints"
         )
-        molecule = soft_opt.optimize(molecule)
-        # molecule.write("1_s.mol")
-        molecule = opt.optimize(molecule)
-        # molecule.write("1_oo.mol")
-
+        molecule.write("1_uu.mol")
+        molecule = constrained_opt.optimize(molecule)
+        # molecule.write(f"1_oo.mol")
+        # raise SystemExit()
+        # soft_opt = CGOMMOptimizer(
+        #     fileprefix=f"{name}_o1soft",
+        #     output_dir=output_dir,
+        #     param_pool=soft_bead_set,
+        #     custom_torsion_set=new_custom_torsion_set,
+        #     bonds=True,
+        #     angles=True,
+        #     torsions=False,
+        #     vdw=None,
+        #     # max_iterations=50,
+        #     vdw_bond_cutoff=2,
+        # )
+        # molecule = soft_opt.optimize(molecule)
         # Run an optimisation on a deformed step and use that if lower
         # in energy.
-        molecule = deform_and_optimisations(name, molecule, opt)
+        # molecule = deform_and_optimisations(
+        #     name,
+        #     molecule,
+        #     constrained_opt,
+        # )
+        # molecule.write("1_s.mol")
+        # molecule = opt.optimize(molecule)
+        molecule.write("1_oo.mol")
+        molecule = dopt.optimize(molecule)
+        molecule.write("1_ooo.mol")
+        # raise SystemExit()
+
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
 
-    opt_energy = opt.calculate_energy(molecule)
+    opt_energy = dopt.calculate_energy(molecule)
 
     if os.path.exists(opt2_mol_file):
         molecule = molecule.with_structure_from_file(opt2_mol_file)
     else:
         logging.info(f"running MD {name}")
-        opt = CGOMMDynamics(
+
+        mdopt = CGOMMOptimizer(
+            fileprefix=f"{name}_o2md",
+            output_dir=output_dir,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=custom_vdw_set,
+            # max_iterations=50,
+            vdw_bond_cutoff=2,
+        )
+
+        md = CGOMMDynamics(
             fileprefix=f"{name}_o2",
             output_dir=output_dir,
             param_pool=bead_set,
@@ -264,29 +363,29 @@ def optimise_cage(
             vdw_bond_cutoff=2,
             temperature=300 * openmm.unit.kelvin,
             random_seed=1000,
-            num_steps=5000,
-            time_step=1 * openmm.unit.femtoseconds,
-            friction=1.0 / openmm.unit.picosecond,
-            reporting_freq=100,
+            num_steps=1000,
+            time_step=2 * openmm.unit.femtoseconds,
+            friction=10.0 / openmm.unit.picosecond,
+            reporting_freq=1000,
             traj_freq=100,
         )
         try:
-            trajectory = opt.run_dynamics(molecule)
-            traj_log = trajectory.get_data()
-            min_energy = 1e24
+            trajectory = md.run_dynamics(molecule)
+            # traj_log = trajectory.get_data()
+            min_energy = opt_energy
             for conformer in trajectory.yield_conformers():
-                timestep = conformer.timestep
-                row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
-                pot_energy = float(row["Potential Energy (kJ/mole)"])
-                if pot_energy < min_energy:
+                opt_conformer = mdopt.optimize(conformer.molecule)
+                conformer_energy = mdopt.calculate_energy(opt_conformer)
+                if conformer_energy < min_energy:
                     logging.info(
-                        f"new low. E conformer {timestep} (MD): "
-                        f"{pot_energy} kJ/mol-1"
+                        f"new low. E conformer (MD): "
+                        f"{conformer_energy}, cf. {min_energy}"
                     )
-                    min_energy = pot_energy
+                    min_energy = conformer_energy
                     molecule = molecule.with_position_matrix(
-                        conformer.molecule.get_position_matrix(),
+                        opt_conformer.get_position_matrix(),
                     )
+
             molecule = molecule.with_centroid((0, 0, 0))
             molecule.write(opt2_mol_file)
         except ValueError:
@@ -318,7 +417,9 @@ def optimise_cage(
         logging.info(f"optimising {name}")
         molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write("w.mol")
         molecule.write(opt3_mol_file)
+        raise SystemExit()
     md_opt_energy = opt.calculate_energy(molecule)
 
     try:
@@ -697,11 +798,14 @@ def build_populations(
 
             custom_vdw_set = custom_vdw_options[custom_vdw]
 
+            logging.info(f"building {name}")
             cage = stk.ConstructedMolecule(
                 topology_graph=populations[popn]["t"][cage_topo_str](
                     building_blocks=(bb2, bbl),
+                    # optimizer=stk.MCHammer(num_steps=500),
                 ),
             )
+            cage.write("uu.mol")
 
             cage = optimise_cage(
                 molecule=cage,
@@ -726,132 +830,3 @@ def build_populations(
             count += 1
 
         logging.info(f"{count} {popn} cages built.")
-
-
-def main():
-    first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
-    struct_output = cages() / "ommstructures"
-    check_directory(struct_output)
-    figure_output = cages() / "ommfigures"
-    check_directory(figure_output)
-    calculation_output = cages() / "ommcalculations"
-    check_directory(calculation_output)
-    ligand_output = cages() / "ommligands"
-    check_directory(ligand_output)
-
-    # Define bead libraries.
-    beads_core_2c_lib = core_2c_beads()
-    beads_4c_lib = beads_4c()
-    beads_3c_lib = beads_3c()
-    beads_arm_2c_lib = arm_2c_beads()
-    beads_binder_lib = binder_beads()
-    full_bead_library = (
-        list(beads_3c_lib.values())
-        + list(beads_4c_lib.values())
-        + list(beads_arm_2c_lib.values())
-        + list(beads_core_2c_lib.values())
-        + list(beads_binder_lib.values())
-    )
-    bead_library_check(full_bead_library)
-
-    logging.info("building building blocks")
-    c2_blocks = build_building_block(
-        topology=TwoC1Arm,
-        option1_lib=beads_core_2c_lib,
-        option2_lib=beads_arm_2c_lib,
-        full_bead_library=full_bead_library,
-        calculation_output=calculation_output,
-        ligand_output=ligand_output,
-    )
-
-    c3_blocks = build_building_block(
-        topology=ThreeC1Arm,
-        option1_lib=beads_3c_lib,
-        option2_lib=beads_binder_lib,
-        full_bead_library=full_bead_library,
-        calculation_output=calculation_output,
-        ligand_output=ligand_output,
-    )
-    c4_blocks = build_building_block(
-        topology=FourC1Arm,
-        option1_lib=beads_4c_lib,
-        option2_lib=beads_binder_lib,
-        full_bead_library=full_bead_library,
-        calculation_output=calculation_output,
-        ligand_output=ligand_output,
-    )
-
-    logging.info(
-        f"there are {len(c2_blocks)} 2-C and "
-        f"{len(c3_blocks)} 3-C and "
-        f"{len(c4_blocks)} 4-C building blocks."
-    )
-
-    # Define list of topology functions.
-    cage_3p2_topologies = cage_topology_options("2p3")
-    cage_4p2_topologies = cage_topology_options("2p4")
-    cage_3p4_topologies = cage_topology_options("3p4")
-
-    populations = {
-        "3 + 2": {
-            "t": cage_3p2_topologies,
-            "c2": c2_blocks,
-            "cl": c3_blocks,
-        },
-        "4 + 2": {
-            "t": cage_4p2_topologies,
-            "c2": c2_blocks,
-            "cl": c4_blocks,
-        },
-    }
-    custom_torsion_options = {
-        "ton": (180, 50),
-        "toff": None,
-    }
-    custom_vdw_options = {
-        "von": True,
-        "voff": False,
-    }
-    build_populations(
-        populations=populations,
-        custom_torsion_options=custom_torsion_options,
-        custom_vdw_options=custom_vdw_options,
-        struct_output=struct_output,
-        calculation_output=calculation_output,
-    )
-
-    # Non-ditopic populations.
-    populations = {
-        "3 + 4": {
-            "t": cage_3p4_topologies,
-            "c2": c3_blocks,
-            "cl": c4_blocks,
-        },
-    }
-    custom_torsion_options = {"toff": None}
-    custom_vdw_options = {
-        "von": True,
-        "voff": False,
-    }
-    build_populations(
-        populations=populations,
-        custom_torsion_options=custom_torsion_options,
-        custom_vdw_options=custom_vdw_options,
-        struct_output=struct_output,
-        calculation_output=calculation_output,
-    )
-
-
-if __name__ == "__main__":
-    RDLogger.DisableLog("rdApp.*")
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
-    main()
