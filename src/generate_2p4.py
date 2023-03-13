@@ -54,7 +54,7 @@ def main():
     beads_arm_2c_lib = arm_2c_beads()
     beads_binder_lib = binder_beads()
     full_bead_library = (
-        +list(beads_4c_lib.values())
+        list(beads_4c_lib.values())
         + list(beads_arm_2c_lib.values())
         + list(beads_core_2c_lib.values())
         + list(beads_binder_lib.values())
