@@ -46,7 +46,7 @@ class CGOptimizer:
         self._angles = angles
         self._torsions = torsions
         self._vdw = vdw
-        self._mass = 1
+        self._mass = 10
         self._bond_cutoff = 30
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
