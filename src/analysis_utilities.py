@@ -9,7 +9,6 @@ Author: Andrew Tarzia
 
 """
 
-import sys
 import os
 import json
 import numpy as np
@@ -20,7 +19,7 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 
-from generate_cages import (
+from generation_utilities import (
     core_2c_beads,
     arm_2c_beads,
     beads_3c,
@@ -32,7 +31,7 @@ from cage_construction.topologies import cage_topology_options
 
 def isomer_energy():
     # kJ/mol.
-    return 5.0
+    return 1.0
 
 
 def max_energy():
@@ -422,13 +421,28 @@ def data_to_array(json_files, output_dir):
         row = {}
 
         name = str(j_file.name).replace("_res.json", "")
-        t_str, clbb_name, c2bb_name, torsions, vdws = name.split("_")
+        try:
+            (
+                t_str,
+                clbb_name,
+                c2bb_name,
+                torsions,
+                vdws,
+                run_number,
+            ) = name.split("_")
+        except ValueError:
+            logging.info("remove this")
+            t_str, clbb_name, c2bb_name, torsions, vdws = name.split(
+                "_"
+            )
+            run_number = 1
         row["cage_name"] = f"{t_str}_{clbb_name}_{c2bb_name}"
         row["clbb_name"] = clbb_name
         row["c2bb_name"] = c2bb_name
         row["topology"] = t_str
         row["torsions"] = torsions
         row["vdws"] = vdws
+        row["run_number"] = run_number
 
         present_c2_beads = get_present_beads(c2bb_name)
         present_cl_beads = get_present_beads(clbb_name)
@@ -489,6 +503,7 @@ def data_to_array(json_files, output_dir):
         row["clangle"] = clangle
 
         if row["optimised"]:
+            row["strain_energy"] = res_dict["fin_energy_kjmol"]
             row["energy_per_bond"] = res_dict[
                 "fin_energy_kjmol"
             ] / stoich_map(t_str)
@@ -518,64 +533,64 @@ def data_to_array(json_files, output_dir):
                 / res_dict["radius_gyration"]
             )
 
-            trajectory_data = res_dict["trajectory"]
-            if trajectory_data is None:
-                row["pore_dynamics"] = None
-                row["structure_dynamics"] = None
-                row["node_shape_dynamics"] = None
-                row["lig_shape_dynamics"] = None
-            else:
-                list_of_rgs = [
-                    rd["radius_gyration"]
-                    for rd in trajectory_data.values()
-                ]
-                list_of_pores = [
-                    rd["pore_data"]["min_distance"]
-                    for rd in trajectory_data.values()
-                ]
-                row["structure_dynamics"] = np.std(
-                    list_of_rgs
-                ) / np.mean(list_of_rgs)
-                row["pore_dynamics"] = np.std(list_of_pores) / np.mean(
-                    list_of_pores
-                )
+            # trajectory_data = res_dict["trajectory"]
+            # if trajectory_data is None:
+            #     row["pore_dynamics"] = None
+            #     row["structure_dynamics"] = None
+            #     row["node_shape_dynamics"] = None
+            #     row["lig_shape_dynamics"] = None
+            # else:
+            #     list_of_rgs = [
+            #         rd["radius_gyration"]
+            #         for rd in trajectory_data.values()
+            #     ]
+            #     list_of_pores = [
+            #         rd["pore_data"]["min_distance"]
+            #         for rd in trajectory_data.values()
+            #     ]
+            #     row["structure_dynamics"] = np.std(
+            #         list_of_rgs
+            #     ) / np.mean(list_of_rgs)
+            #     row["pore_dynamics"] = np.std(list_of_pores) / np.mean(
+            #         list_of_pores
+            #     )
 
-                list_of_node_sv_cosdists = []
-                list_of_lig_sv_cosdists = []
-                for rd in trajectory_data.values():
-                    rd_series = pd.Series(dtype="object")
-                    rd_series["topology"] = row["topology"]
-                    r_node_shape_vector = rd["node_shape_measures"]
-                    r_lig_shape_vector = rd["lig_shape_measures"]
-                    if r_node_shape_vector is not None:
-                        for sv in r_node_shape_vector:
-                            rd_series[f"n_{sv}"] = r_node_shape_vector[
-                                sv
-                            ]
-                    if r_lig_shape_vector is not None:
-                        for sv in r_lig_shape_vector:
-                            rd_series[f"l_{sv}"] = r_lig_shape_vector[
-                                sv
-                            ]
-                    list_of_node_sv_cosdists.append(
-                        get_sv_dist(rd_series, mode="n")
-                    )
-                    list_of_lig_sv_cosdists.append(
-                        get_sv_dist(rd_series, mode="l")
-                    )
+            #     list_of_node_sv_cosdists = []
+            #     list_of_lig_sv_cosdists = []
+            #     for rd in trajectory_data.values():
+            #         rd_series = pd.Series(dtype="object")
+            #         rd_series["topology"] = row["topology"]
+            #         r_node_shape_vector = rd["node_shape_measures"]
+            #         r_lig_shape_vector = rd["lig_shape_measures"]
+            #         if r_node_shape_vector is not None:
+            #             for sv in r_node_shape_vector:
+            #                 rd_series[f"n_{sv}"] = r_node_shape_vector[
+            #                     sv
+            #                 ]
+            #         if r_lig_shape_vector is not None:
+            #             for sv in r_lig_shape_vector:
+            #                 rd_series[f"l_{sv}"] = r_lig_shape_vector[
+            #                     sv
+            #                 ]
+            #         list_of_node_sv_cosdists.append(
+            #             get_sv_dist(rd_series, mode="n")
+            #         )
+            #         list_of_lig_sv_cosdists.append(
+            #             get_sv_dist(rd_series, mode="l")
+            #         )
 
-                if list_of_node_sv_cosdists[0] is None:
-                    row["node_shape_dynamics"] = None
-                else:
-                    row["node_shape_dynamics"] = np.std(
-                        list_of_node_sv_cosdists
-                    )
-                if list_of_lig_sv_cosdists[0] is None:
-                    row["lig_shape_dynamics"] = None
-                else:
-                    row["lig_shape_dynamics"] = np.std(
-                        list_of_lig_sv_cosdists
-                    )
+            #     if list_of_node_sv_cosdists[0] is None:
+            #         row["node_shape_dynamics"] = None
+            #     else:
+            #         row["node_shape_dynamics"] = np.std(
+            #             list_of_node_sv_cosdists
+            #         )
+            #     if list_of_lig_sv_cosdists[0] is None:
+            #         row["lig_shape_dynamics"] = None
+            #     else:
+            #         row["lig_shape_dynamics"] = np.std(
+            #             list_of_lig_sv_cosdists
+            #         )
 
             bond_data = res_dict["bond_data"]
             angle_data = res_dict["angle_data"]
@@ -811,10 +826,10 @@ def write_out_mapping(all_data):
         "HarmonicAngleForce_kjmol",
         "CustomNonbondedForce_kjmol",
         "PeriodicTorsionForce_kjmol",
-        "structure_dynamics",
-        "pore_dynamics",
-        "node_shape_dynamics",
-        "lig_shape_dynamics",
+        # "structure_dynamics",
+        # "pore_dynamics",
+        # "node_shape_dynamics",
+        # "lig_shape_dynamics",
         "sv_n_dist",
         "sv_l_dist",
     ]
@@ -823,30 +838,3 @@ def write_out_mapping(all_data):
     logging.info(f"\nbite_angles: {bite_angle_map}\n")
     logging.info(f"\nc2r0s: {c2r0_map}\n")
     logging.info(f"available properties:\n {properties}\n")
-
-
-def main():
-    first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
-    raise SystemExit(
-        "next I want map of target bite angle to actual bite angle "
-    )
-    raise SystemExit(
-        "next I want PCA maps of shapes for all in each topology "
-    )
-    raise SystemExit(
-        "next I want PCA maps of all shapes for each BB property "
-    )
-
-
-if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
-    main()
