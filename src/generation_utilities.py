@@ -30,7 +30,6 @@ from utilities import check_long_distances
 from openmm_optimizer import (
     CGOMMOptimizer,
     CGOMMDynamics,
-    # OMMTrajectory,
 )
 from beads import produce_bead_library
 
@@ -39,11 +38,11 @@ def custom_torsion_definitions(population):
     return {
         "2p3": {
             "ton": (180, 50),
-            # "toff": None,
+            "toff": None,
         },
         "2p4": {
             "ton": (180, 50),
-            # "toff": None,
+            "toff": None,
         },
         "3p4": {"toff": None},
     }[population]
@@ -171,7 +170,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
     return molecule
 
 
-def deform_molecule(molecule, generator):
+def deform_molecule(molecule, generator, kick):
     old_pos_mat = molecule.get_position_matrix()
     centroid = molecule.get_centroid()
 
@@ -182,7 +181,7 @@ def deform_molecule(molecule, generator):
             c_v = c_v / np.linalg.norm(c_v)
             # move = generator.choice([-1, 1]) * c_v
             # move = generator.random((3,)) * percent
-            move = c_v * 2
+            move = c_v * kick * generator.random()
             new_pos = pos - move
         else:
             # move = generator.random((3,)) * 2
@@ -192,30 +191,142 @@ def deform_molecule(molecule, generator):
     return molecule.with_position_matrix(np.array((new_pos_mat)))
 
 
-def deform_and_optimisations(name, molecule, opt):
-    min_energy = opt.calculate_energy(molecule)
-    # molecule.write("1_o.mol")
-    deformations = 20
-    generator = np.random.default_rng(seed=1000)
-    for drun in range(deformations):
-        # logging.info(f"optimising deformation {drun}")
-        dmolecule = deform_molecule(molecule, generator)
-        dmolecule.write(f"1_{drun}u.mol")
-        dmolecule = opt.optimize(dmolecule)
-        dmolecule = dmolecule.with_centroid((0, 0, 0))
-        dmolecule.write(f"1_{drun}o.mol")
-        # raise SystemExit()
-        post_deform_energy = opt.calculate_energy(dmolecule)
-        if post_deform_energy < min_energy:
-            logging.info(
-                f"new low. E conformer (deform.): "
-                f"{post_deform_energy}, cf. {min_energy}"
-            )
-            min_energy = post_deform_energy
-            molecule = dmolecule.clone()
+def deform_and_optimisations(
+    name,
+    molecule,
+    opt,
+    kick,
+    seed,
+    num_deformations=None,
+):
+    """
+    Run metropolis MC scheme to find a new lower energy conformer.
 
-    # molecule.write("1_f.mol")
+    """
+
+    # Ensure same stream of random numbers.
+    generator = np.random.default_rng(seed=seed)
+    beta = 10
+
+    if num_deformations is None:
+        num_iterations = 200
+    else:
+        num_iterations = num_deformations
+
+    num_passed = 0
+    num_run = 0
+    for drun in range(num_iterations):
+        # logging.info(f"running MC step {drun}")
+
+        current_energy = opt.calculate_energy(molecule).value_in_unit(
+            openmm.unit.kilojoules_per_mole
+        )
+
+        # Perform deformation.
+        test_molecule = deform_molecule(molecule, generator, kick)
+        test_molecule = opt.optimize(test_molecule)
+
+        # Calculate energy.
+        test_energy = opt.calculate_energy(test_molecule).value_in_unit(
+            openmm.unit.kilojoules_per_mole
+        )
+
+        passed = False
+        if test_energy < current_energy:
+            passed = True
+        elif (
+            np.exp(-beta * (test_energy - current_energy))
+            > generator.random()
+        ):
+            passed = True
+
+        # Pass or fail.
+        if passed:
+            # logging.info(
+            #     f"new conformer (MC): "
+            #     f"{test_energy}, cf. {current_energy}"
+            # )
+            num_passed += 1
+            molecule = test_molecule.clone().with_centroid((0, 0, 0))
+            if num_deformations is None:
+                return molecule
+
+        num_run += 1
+
+    logging.info(
+        f"{num_passed} passed out of {num_run} ({num_passed/num_run})"
+    )
+
+    if num_deformations is None:
+        raise RuntimeError(
+            f"no lower energy conformers found in {num_iterations}"
+        )
+
     return molecule
+
+
+def run_md_cycle(
+    name,
+    molecule,
+    md_class,
+    expected_num_steps,
+    opt_class=None,
+    min_energy=None,
+):
+    failed = False
+    exploded = False
+    try:
+        trajectory = md_class.run_dynamics(molecule)
+        traj_log = trajectory.get_data()
+
+        # Check that the trajectory is as long as it should be.
+        num_conformers = len(traj_log)
+        if num_conformers != expected_num_steps:
+            raise ValueError()
+
+        if min_energy is None:
+            min_energy = md_class.calculate_energy(
+                molecule
+            ).value_in_unit(openmm.unit.kilojoules_per_mole)
+
+        for conformer in trajectory.yield_conformers():
+            if opt_class is None:
+                conformer_energy = float(
+                    traj_log[traj_log['#"Step"'] == conformer.timestep][
+                        "Potential Energy (kJ/mole)"
+                    ]
+                )
+            else:
+                opt_conformer = opt_class.optimize(conformer.molecule)
+                conformer_energy = opt_class.calculate_energy(
+                    opt_conformer
+                ).value_in_unit(openmm.unit.kilojoules_per_mole)
+
+            if conformer_energy < min_energy:
+                logging.info(
+                    f"new low. E conformer (MD): "
+                    f"{conformer_energy}, cf. {min_energy}"
+                )
+                min_energy = conformer_energy
+                if opt_class is None:
+                    molecule = molecule.with_position_matrix(
+                        conformer.molecule.get_position_matrix(),
+                    )
+                else:
+                    molecule = molecule.with_position_matrix(
+                        opt_conformer.get_position_matrix(),
+                    )
+
+        molecule = molecule.with_centroid((0, 0, 0))
+
+    except ValueError:
+        logging.info(f"!!!!! {name} MD failed !!!!!")
+        failed = True
+    except OpenMMException:
+        logging.info(f"!!!!! {name} MD exploded !!!!!")
+        exploded = True
+
+    return molecule, failed, exploded
 
 
 def optimise_cage(
@@ -225,6 +336,7 @@ def optimise_cage(
     bead_set,
     custom_torsion_set,
     custom_vdw_set,
+    run_seed,
 ):
 
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
@@ -233,8 +345,6 @@ def optimise_cage(
     opt2_exp_file = os.path.join(output_dir, f"{name}_mdexploded.txt")
     opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
-
-    molecule.write("temo.mol")
 
     if os.path.exists(fina_mol_file):
         return molecule.with_structure_from_file(fina_mol_file)
@@ -278,7 +388,7 @@ def optimise_cage(
         vdw_bond_cutoff=2,
         atom_constraints=intra_bb_bonds,
     )
-    dopt = CGOMMOptimizer(
+    opt = CGOMMOptimizer(
         fileprefix=f"{name}_o1d",
         output_dir=output_dir,
         param_pool=bead_set,
@@ -296,49 +406,28 @@ def optimise_cage(
         logging.info(
             f"optimising {name} with {len(intra_bb_bonds)} constraints"
         )
-        molecule.write("1_uu.mol")
         molecule = constrained_opt.optimize(molecule)
-        # molecule.write(f"1_oo.mol")
-        # raise SystemExit()
-        # soft_opt = CGOMMOptimizer(
-        #     fileprefix=f"{name}_o1soft",
-        #     output_dir=output_dir,
-        #     param_pool=soft_bead_set,
-        #     custom_torsion_set=new_custom_torsion_set,
-        #     bonds=True,
-        #     angles=True,
-        #     torsions=False,
-        #     vdw=None,
-        #     # max_iterations=50,
-        #     vdw_bond_cutoff=2,
-        # )
-        # molecule = soft_opt.optimize(molecule)
-        # Run an optimisation on a deformed step and use that if lower
-        # in energy.
-        # molecule = deform_and_optimisations(
-        #     name,
-        #     molecule,
-        #     constrained_opt,
-        # )
-        # molecule.write("1_s.mol")
-        # molecule = opt.optimize(molecule)
-        molecule.write("1_oo.mol")
-        molecule = dopt.optimize(molecule)
-        molecule.write("1_ooo.mol")
-        # raise SystemExit()
-
+        molecule = opt.optimize(molecule)
+        # Run an optimisation on deformed structures and use that if
+        # lower in energy.
+        molecule = deform_and_optimisations(
+            name=name,
+            molecule=molecule,
+            opt=opt,
+            kick=3,
+            num_deformations=50,
+            seed=run_seed,
+        )
         molecule = molecule.with_centroid((0, 0, 0))
         molecule.write(opt1_mol_file)
 
-    opt_energy = dopt.calculate_energy(molecule)
+    opt_energy = opt.calculate_energy(molecule)
 
     if os.path.exists(opt2_mol_file):
         molecule = molecule.with_structure_from_file(opt2_mol_file)
     else:
-        logging.info(f"running MD {name}")
-
         mdopt = CGOMMOptimizer(
-            fileprefix=f"{name}_o2md",
+            fileprefix=f"{name}_o2opt",
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=custom_torsion_set,
@@ -350,6 +439,38 @@ def optimise_cage(
             vdw_bond_cutoff=2,
         )
 
+        soft_num_steps = 100
+        soft_traj_freq = 10
+        softmd = CGOMMDynamics(
+            fileprefix=f"{name}_o2soft",
+            output_dir=output_dir,
+            param_pool=bead_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw=custom_vdw_set,
+            # max_iterations=1000,
+            vdw_bond_cutoff=2,
+            temperature=10 * openmm.unit.kelvin,
+            random_seed=run_seed,
+            num_steps=soft_num_steps,
+            time_step=0.1 * openmm.unit.femtoseconds,
+            friction=1.0 / openmm.unit.picosecond,
+            reporting_freq=10,
+            traj_freq=soft_traj_freq,
+        )
+        logging.info(f"running soft MD {name}")
+        molecule, failed, exploded = run_md_cycle(
+            name=name,
+            molecule=molecule,
+            md_class=softmd,
+            expected_num_steps=soft_num_steps / soft_traj_freq,
+            opt_class=None,
+        )
+
+        num_steps = 1000
+        traj_freq = 100
         md = CGOMMDynamics(
             fileprefix=f"{name}_o2",
             output_dir=output_dir,
@@ -362,42 +483,50 @@ def optimise_cage(
             # max_iterations=1000,
             vdw_bond_cutoff=2,
             temperature=300 * openmm.unit.kelvin,
-            random_seed=1000,
-            num_steps=1000,
+            random_seed=run_seed,
+            num_steps=num_steps,
             time_step=2 * openmm.unit.femtoseconds,
             friction=10.0 / openmm.unit.picosecond,
-            reporting_freq=1000,
-            traj_freq=100,
+            reporting_freq=traj_freq,
+            traj_freq=traj_freq,
         )
-        try:
-            trajectory = md.run_dynamics(molecule)
-            # traj_log = trajectory.get_data()
-            min_energy = opt_energy
-            for conformer in trajectory.yield_conformers():
-                opt_conformer = mdopt.optimize(conformer.molecule)
-                conformer_energy = mdopt.calculate_energy(opt_conformer)
-                if conformer_energy < min_energy:
-                    logging.info(
-                        f"new low. E conformer (MD): "
-                        f"{conformer_energy}, cf. {min_energy}"
-                    )
-                    min_energy = conformer_energy
-                    molecule = molecule.with_position_matrix(
-                        opt_conformer.get_position_matrix(),
-                    )
+        logging.info(f"running MD {name}")
+        molecule, failed, exploded = run_md_cycle(
+            name=name,
+            molecule=molecule,
+            md_class=md,
+            expected_num_steps=num_steps / traj_freq,
+            opt_class=mdopt,
+        )
 
-            molecule = molecule.with_centroid((0, 0, 0))
-            molecule.write(opt2_mol_file)
-        except ValueError:
-            logging.info(f"{name} MD failed")
-            molecule.write(opt2_mol_file)
-            with open(opt2_fai_file, "w") as f:
-                f.write("failed.")
-        except OpenMMException:
-            logging.info(f"{name} MD exploded")
-            molecule.write(opt2_mol_file)
+        if failed or exploded:
+            # Do a run of deformations and try again.
+            molecule = deform_and_optimisations(
+                name=name,
+                molecule=molecule,
+                opt=mdopt,
+                kick=4,
+                num_deformations=50,
+                seed=run_seed,
+            )
+            molecule, failed, exploded = run_md_cycle(
+                name=name,
+                molecule=molecule,
+                md_class=md,
+                expected_num_steps=num_steps / traj_freq,
+                opt_class=mdopt,
+            )
+
+        # Only try once, then accept defeat.
+        if failed:
             with open(opt2_exp_file, "w") as f:
                 f.write("exploded.")
+        if exploded:
+            with open(opt2_fai_file, "w") as f:
+                f.write("failed.")
+
+        molecule = molecule.with_centroid((0, 0, 0))
+        molecule.write(opt2_mol_file)
 
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_o3",
@@ -414,12 +543,9 @@ def optimise_cage(
     if os.path.exists(opt3_mol_file):
         molecule = molecule.with_structure_from_file(opt3_mol_file)
     else:
-        logging.info(f"optimising {name}")
         molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
-        molecule.write("w.mol")
         molecule.write(opt3_mol_file)
-        raise SystemExit()
     md_opt_energy = opt.calculate_energy(molecule)
 
     try:
@@ -441,7 +567,6 @@ def optimise_cage(
         )
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     molecule.write(fina_mol_file)
-
     return molecule
 
 
@@ -473,7 +598,7 @@ def analyse_cage(
         mdfailed = False
 
         opt = CGOMMOptimizer(
-            fileprefix=f"{name}_o1",
+            fileprefix=f"{name}_ey",
             output_dir=output_dir,
             param_pool=bead_set,
             custom_torsion_set=custom_torsion_set,
@@ -760,6 +885,14 @@ def build_populations(
     struct_output,
     calculation_output,
 ):
+
+    seeds = {
+        0: 1000,
+        1: 2973,
+        2: 87,
+        3: 5552,
+        4: 9741244,
+    }
     for popn in populations:
         logging.info(f"building {popn} population")
         popn_iterator = itertools.product(
@@ -779,10 +912,6 @@ def build_populations(
                 custom_vdw,
             ) = iteration
 
-            name = (
-                f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
-                f"{custom_torsion}_{custom_vdw}"
-            )
             bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
             bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
 
@@ -798,35 +927,43 @@ def build_populations(
 
             custom_vdw_set = custom_vdw_options[custom_vdw]
 
-            logging.info(f"building {name}")
-            cage = stk.ConstructedMolecule(
-                topology_graph=populations[popn]["t"][cage_topo_str](
-                    building_blocks=(bb2, bbl),
-                    # optimizer=stk.MCHammer(num_steps=500),
-                ),
-            )
-            cage.write("uu.mol")
+            for run in seeds:
+                name = (
+                    f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
+                    f"{custom_torsion}_{custom_vdw}_{run}"
+                )
+                run_seed = seeds[run]
 
-            cage = optimise_cage(
-                molecule=cage,
-                name=name,
-                output_dir=calculation_output,
-                bead_set=bead_set,
-                custom_torsion_set=custom_torsion_set,
-                custom_vdw_set=custom_vdw_set,
-            )
+                logging.info(f"building {name}")
+                cage = stk.ConstructedMolecule(
+                    topology_graph=populations[popn]["t"][
+                        cage_topo_str
+                    ](
+                        building_blocks=(bb2, bbl),
+                    ),
+                )
 
-            if cage is not None:
-                cage.write(str(struct_output / f"{name}_optc.mol"))
+                cage = optimise_cage(
+                    molecule=cage,
+                    name=name,
+                    output_dir=calculation_output,
+                    bead_set=bead_set,
+                    custom_torsion_set=custom_torsion_set,
+                    custom_vdw_set=custom_vdw_set,
+                    run_seed=run_seed,
+                )
 
-            analyse_cage(
-                molecule=cage,
-                name=name,
-                output_dir=calculation_output,
-                bead_set=bead_set,
-                custom_torsion_set=custom_torsion_set,
-                custom_vdw_set=custom_vdw_set,
-            )
+                if cage is not None:
+                    cage.write(str(struct_output / f"{name}_optc.mol"))
+
+                analyse_cage(
+                    molecule=cage,
+                    name=name,
+                    output_dir=calculation_output,
+                    bead_set=bead_set,
+                    custom_torsion_set=custom_torsion_set,
+                    custom_vdw_set=custom_vdw_set,
+                )
             count += 1
 
         logging.info(f"{count} {popn} cages built.")
