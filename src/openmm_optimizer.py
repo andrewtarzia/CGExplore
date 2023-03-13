@@ -20,6 +20,7 @@ from openmm import openmm, app
 from dataclasses import dataclass
 
 from optimizer import CGOptimizer
+from utilities import get_atom_distance
 
 
 @dataclass
@@ -164,6 +165,7 @@ class CGOMMOptimizer(CGOptimizer):
         vdw,
         max_iterations=None,
         vdw_bond_cutoff=None,
+        atom_constraints=None,
     ):
         super().__init__(
             fileprefix,
@@ -192,6 +194,8 @@ class CGOMMOptimizer(CGOptimizer):
         else:
             self._vdw_bond_cutoff = vdw_bond_cutoff
 
+        self._atom_constraints = atom_constraints
+
     def _add_forces(self, system, molecule):
         if self._bonds:
             system = self._add_bonds(system, molecule)
@@ -201,6 +205,8 @@ class CGOMMOptimizer(CGOptimizer):
             system = self._add_torsions(system, molecule)
         if self._custom_torsion_set:
             system = self._add_custom_torsions(system, molecule)
+        if self._atom_constraints is not None:
+            system = self._add_atom_constraints(system, molecule)
         return system
 
     def _group_forces(self, system):
@@ -282,6 +288,27 @@ class CGOMMOptimizer(CGOptimizer):
                 k=angle_k,
             )
 
+        return system
+
+    def _add_atom_constraints(self, system, molecule):
+        self._output_string += "   constraints applied:\n"
+        for constraint in self._atom_constraints:
+            current_distance = get_atom_distance(
+                molecule=molecule,
+                atom1_id=constraint[0],
+                atom2_id=constraint[1],
+            )
+            system.addConstraint(
+                particle1=constraint[0],
+                particle2=constraint[1],
+                distance=current_distance / 10,
+            )
+            self._output_string += (
+                f"{constraint[0]} {constraint[1]} "
+                f"{current_distance / 10} nm\n"
+            )
+
+        self._output_string += "\n"
         return system
 
     def _yield_custom_torsions(self, molecule, chain_length=5):
@@ -628,6 +655,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         random_seed=None,
         max_iterations=None,
         vdw_bond_cutoff=None,
+        atom_constraints=None,
     ):
         super(CGOMMOptimizer, self).__init__(
             fileprefix,
@@ -658,6 +686,8 @@ class CGOMMDynamics(CGOMMOptimizer):
             self._vdw_bond_cutoff = 0
         else:
             self._vdw_bond_cutoff = vdw_bond_cutoff
+
+        self._atom_constraints = atom_constraints
 
         self._temperature = temperature
 
