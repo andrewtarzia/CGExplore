@@ -892,6 +892,11 @@ def build_populations(
         2: 87,
         3: 5552,
         4: 9741244,
+        5: 6425,
+        6: 123,
+        7: 26533,
+        8: 782,
+        9: 10000,
     }
     for popn in populations:
         logging.info(f"building {popn} population")
