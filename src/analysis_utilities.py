@@ -421,21 +421,16 @@ def data_to_array(json_files, output_dir):
         row = {}
 
         name = str(j_file.name).replace("_res.json", "")
-        try:
-            (
-                t_str,
-                clbb_name,
-                c2bb_name,
-                torsions,
-                vdws,
-                run_number,
-            ) = name.split("_")
-        except ValueError:
-            logging.info("remove this")
-            t_str, clbb_name, c2bb_name, torsions, vdws = name.split(
-                "_"
-            )
-            run_number = 1
+
+        (
+            t_str,
+            clbb_name,
+            c2bb_name,
+            torsions,
+            vdws,
+            run_number,
+        ) = name.split("_")
+
         row["cage_name"] = f"{t_str}_{clbb_name}_{c2bb_name}"
         row["clbb_name"] = clbb_name
         row["c2bb_name"] = c2bb_name
@@ -838,3 +833,35 @@ def write_out_mapping(all_data):
     logging.info(f"\nbite_angles: {bite_angle_map}\n")
     logging.info(f"\nc2r0s: {c2r0_map}\n")
     logging.info(f"available properties:\n {properties}\n")
+
+
+def get_lowest_energy_data(all_data, output_dir):
+    logging.info("defining low energy array")
+    output_csv = output_dir / "lowe_array.csv"
+
+    if os.path.exists(output_csv):
+        input_array = pd.read_csv(output_csv)
+        input_array = input_array.loc[
+            :, ~input_array.columns.str.contains("^Unnamed")
+        ]
+        return input_array
+
+    lowe_array = pd.DataFrame()
+    grouped_data = all_data.groupby(["cage_name"])
+    for system in set(all_data["cage_name"]):
+        rows = grouped_data.get_group(system)
+        for tors in ("ton", "toff"):
+            trows = rows[rows["torsions"] == tors]
+            if len(trows) == 0:
+                continue
+            final_row = trows[
+                trows["energy_per_bond"]
+                == trows["energy_per_bond"].min()
+            ]
+            # Get lowest energy row, and add to new dict.
+            lowe_array = pd.concat([lowe_array, final_row.iloc[[0]]])
+
+    lowe_array.reset_index()
+    lowe_array.to_csv(output_csv, index=False)
+
+    return lowe_array
