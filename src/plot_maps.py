@@ -262,7 +262,6 @@ def selectivity_map(all_data, figure_output):
     )
     clangles = sorted([float(i) for i in set(all_data["clangle"])])
 
-    vcount = 1
     properties = {
         "energy": {
             "col": "energy_per_bond",
@@ -292,81 +291,77 @@ def selectivity_map(all_data, figure_output):
                 topology_order[tstr] = count
                 count += 1
 
-        for clangle in clangles:
-            fig, axs = plt.subplots(
-                ncols=2,
-                nrows=2,
-                sharex=True,
-                sharey=True,
-                figsize=(16, 10),
-            )
-            flat_axs = axs.flatten()
+        fig, axs = plt.subplots(
+            ncols=len(clangles),
+            nrows=2,
+            sharex=True,
+            sharey=True,
+            figsize=(16, 10),
+        )
 
-            cdata = all_data[all_data["clangle"] == clangle]
-            for ax, (vdw, tors) in zip(
-                flat_axs,
-                itertools.product(("von", "voff"), ("ton", "toff")),
-            ):
-                tordata = cdata[cdata["torsions"] == tors]
-                vdwdata = tordata[tordata["vdws"] == vdw]
+        for r_axs, tors in zip(axs, ("ton", "toff")):
+            tordata = all_data[all_data["torsions"] == tors]
+            for clangle, ax in zip(clangles, r_axs):
+                cdata = tordata[tordata["clangle"] == clangle]
                 for tstr in topology_order:
                     xvalues = []
                     yvalues = []
                     cvalues = []
                     yvalue = topology_order[tstr]
-                    tdata = vdwdata[vdwdata["topology"] == tstr]
+                    tdata = cdata[cdata["topology"] == tstr]
                     for ba in bite_angles:
                         plotdata = tdata[
                             tdata["target_bite_angle"] == ba
                         ]
-                        total_count = len(plotdata)
+                        # total_count = len(plotdata)
 
                         property_list = list(plotdata[pdict["col"]])
-                        print(plotdata)
-                        raise SystemExit("include all sizes?")
                         if pdict["dir"] == "<":
                             under_cut = [
                                 i
                                 for i in property_list
                                 if i < pdict["cut"]
                             ]
-                            order_string = "<"
+                            # order_string = "<"
                         elif pdict["dir"] == ">":
                             under_cut = [
                                 i
                                 for i in property_list
                                 if i > pdict["cut"]
                             ]
-                            order_string = ">"
-                        # print(under_cut)
+                            # order_string = ">"
+
                         under_count = len(under_cut)
                         xvalue = ba
                         xvalues.append(xvalue)
                         yvalues.append(yvalue)
-                        if under_count == 0 or total_count == 0:
-                            cvalues.append(0)
+                        if under_count == 0:  # or total_count == 0:
+                            cvalues.append("white")
                         else:
-                            cvalues.append(under_count / total_count)
+                            cvalues.append("k")
+                            #     'under_count'
+                            # )  # / total_count)
 
                     ax.scatter(
                         xvalues,
                         yvalues,
                         # c=under_count / total_count,
                         c=cvalues,
-                        vmin=0,
-                        vmax=vcount,
+                        # vmin=0,
+                        # vmax=vcount,
                         alpha=1.0,
                         edgecolor="none",
-                        s=80,
-                        marker="s",
-                        cmap="Blues",
+                        s=60,
+                        marker="o",
+                        # cmap="Blues",
                     )
 
                 ax.set_title(
-                    (
-                        f"{convert_tors(tors, num=False)}, "
-                        f"{convert_vdws(vdw)}, {clangle}"
-                    ),
+                    # (
+                    #     f"{convert_tors(tors, num=False)}, "
+                    #     f"{convert_vdws(vdw)}, {clangle}"
+                    # ),
+                    clangle,
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
@@ -378,91 +373,113 @@ def selectivity_map(all_data, figure_output):
                     [convert_topo(i) for i in topology_order]
                 )
 
-                ax.set_xlabel("bite angle [deg]", fontsize=16)
+            ax.set_xlabel("bite angle [deg]", fontsize=16)
 
-            cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-            cmap = mpl.cm.Blues
-            norm = mpl.colors.Normalize(vmin=0, vmax=vcount)
-            cbar = fig.colorbar(
-                mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-                cax=cbar_ax,
-                orientation="vertical",
-            )
-            cbar.ax.tick_params(labelsize=16)
-            cbar.set_label(
-                f"prop. {pdict['clbl']} {order_string} {pdict['cut']}",
-                fontsize=16,
-            )
+        # cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+        # cmap = mpl.cm.Blues
+        # norm = mpl.colors.Normalize(vmin=0, vmax=vcount)
+        # cbar = fig.colorbar(
+        #     mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        #     cax=cbar_ax,
+        #     orientation="vertical",
+        # )
+        # cbar.ax.tick_params(labelsize=16)
+        # cbar.set_label(
+        #     f"prop. {pdict['clbl']} {order_string} {pdict['cut']}",
+        #     fontsize=16,
+        # )
 
-            fig.tight_layout()
-            fig.savefig(
-                os.path.join(
-                    figure_output, f"sel_{prop}_{int(clangle)}.pdf"
-                ),
-                dpi=720,
-                bbox_inches="tight",
-            )
-            plt.close()
+        fig.tight_layout()
+        fig.savefig(
+            os.path.join(figure_output, f"sel_{prop}.pdf"),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
 
 
-def draw_cloud(colours, xpos, ypos, size, ax):
+# def draw_pie(colours, xpos, ypos, size, ax):
+#     """
+#     From:
+#     https://stackoverflow.com/questions/56337732/how-to-plot-scatter-
+#     pie-chart-using-matplotlib
 
-    cloud_defintiions = {
-        1: ((0, 0),),
-        2: (
-            (-0.5, 0),
-            (0.5, 0),
-        ),
-        3: (
-            (0, 0),
-            (0, 0),
-            (0, 0),
-        ),
-        4: (
-            (0, 0),
-            (0, 0),
-            (0, 0),
-            (0, 0),
-        ),
-        5: (
-            (0, 0),
-            (0, 0),
-            (0, 0),
-            (0, 0),
-            (0, 0),
-        ),
-        6: (
-            (0, 0),
-            (0, 0),
-            (0, 0),
-            (0, 0),
-            (0, 0),
-            (0, 0),
-        ),
-    }
+#     """
+
+#     num_points =
+
+#     # for incremental pie slices
+#     cumsum = np.cumsum(ratios)
+#     cumsum = cumsum / cumsum[-1]
+#     pie = [0] + cumsum.tolist()
+
+#     for r1, r2, c in zip(pie[:-1], pie[1:], colours):
+#         angles = np.linspace(2 * np.pi * r1, 2 * np.pi * r2, 100)
+#         x = [0] + np.cos(angles).tolist()
+#         y = [0] + np.sin(angles).tolist()
+
+#         xy = np.column_stack([x, y])
+
+#         ax.scatter([xpos], [ypos], marker=xy, s=size, c=[c])
+
+#     return ax
+
+
+def draw_pie(colours, xpos, ypos, size, ax):
+    """
+    From:
+    https://stackoverflow.com/questions/56337732/how-to-plot-scatter-
+    pie-chart-using-matplotlib
+
+    """
 
     num_points = len(colours)
-    cloud = cloud_defintiions[num_points]
-
-    for pt, col in zip(cloud, colours):
+    if num_points == 1:
         ax.scatter(
-            xpos + pt[0],
-            ypos + pt[1],
-            marker="o",
+            xpos,
+            ypos,
+            c=colours[0],
+            edgecolors="k",
             s=size,
-            c=col,
-            edgecolor="k",
         )
+    else:
+        ratios = [1 / num_points for i in range(num_points)]
+        assert sum(ratios) <= 1, "sum of ratios needs to be < 1"
 
-    return ax
+        markers = []
+        previous = 0
+        # calculate the points of the pie pieces
+        for color, ratio in zip(colours, ratios):
+            this = 2 * np.pi * ratio + previous
+            x = (
+                [0]
+                + np.cos(np.linspace(previous, this, 100)).tolist()
+                + [0]
+            )
+            y = (
+                [0]
+                + np.sin(np.linspace(previous, this, 100)).tolist()
+                + [0]
+            )
+            xy = np.column_stack([x, y])
+            previous = this
+            markers.append(
+                {
+                    "marker": xy,
+                    "s": np.abs(xy).max() ** 2 * np.array(size),
+                    "facecolor": color,
+                    "edgecolors": "k",
+                }
+            )
+
+        # scatter each of the pie pieces to create pies
+        for marker in markers:
+            ax.scatter(xpos, ypos, **marker)
 
 
 def selfsort_map(all_data, figure_output):
     logging.info("running selfsort_map")
 
-    raise SystemExit("try and remove trim?")
-    trim = all_data[all_data["clr0"] == 5]
-    trim = trim[trim["c2r0"] == 5]
     cols_to_map = ["clangle", "target_bite_angle"]
     cols_to_iter = [
         "torsions",
@@ -475,7 +492,7 @@ def selfsort_map(all_data, figure_output):
     io3 = sorted(set(all_data[cols_to_iter[2]]))
     for tor, vdw, cltitle in itertools.product(io1, io2, io3):
 
-        data = trim[trim[cols_to_iter[0]] == tor]
+        data = all_data[all_data[cols_to_iter[0]] == tor]
         data = data[data[cols_to_iter[1]] == vdw]
         data = data[data[cols_to_iter[2]] == cltitle]
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -523,7 +540,7 @@ def selfsort_map(all_data, figure_output):
                     for i in mixed_energies
                 ]
 
-            draw_cloud(
+            draw_pie(
                 colours=colours,
                 xpos=xvalue,
                 ypos=yvalue,
@@ -660,9 +677,15 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=calculation_output,
     )
+    low_e_data = get_lowest_energy_data(
+        all_data=all_data,
+        output_dir=calculation_output,
+    )
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
+    selectivity_map(low_e_data, figure_output)
+    selfsort_map(low_e_data, figure_output)
     clangle_relationship(all_data, figure_output)
     bite_angle_relationship(all_data, figure_output)
     raise SystemExit()
