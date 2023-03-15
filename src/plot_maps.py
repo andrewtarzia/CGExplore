@@ -21,6 +21,8 @@ import matplotlib.pyplot as plt
 from env_set import cages
 from analysis_utilities import (
     data_to_array,
+    stoich_map,
+    get_lowest_energy_data,
     isomer_energy,
     topology_labels,
     cltypetopo_to_colormap,
@@ -72,53 +74,56 @@ def clangle_relationship(all_data, figure_output):
             if len(clan_output) == 0:
                 continue
 
-            y_medians = []
-            y_stds = []
+            xys = []
+            y_mins = []
             for x in xs:
                 y_list = []
                 for run_num in clan_output:
                     if x in clan_output[run_num]:
+                        xys.append((x, clan_output[run_num][x]))
                         y_list.append(clan_output[run_num][x])
-                y_medians.append(np.median(y_list))
-                y_stds.append(np.std(y_list))
+                y_mins.append(min(y_list))
 
+            ax.scatter(
+                [i[0] for i in xys],
+                [i[1] for i in xys],
+                marker="o",
+                c="#086788",
+                s=40,
+                edgecolor="none",
+                zorder=2,
+            )
             ax.plot(
                 xs,
-                y_medians,
+                y_mins,
                 # zs=t_angle,
-                lw=3,
+                lw=1,
                 c="#086788",
                 alpha=1.0,
-                # linestyle=cmap[(c1_opt, c2_opt)][2],
+                linestyle="--",
                 # label=f"C2 r0 {c1_opt}/CL r0 {c2_opt}",
-                marker="o",
-            )
-            ax.fill_between(
-                xs,
-                [i - j for i, j in zip(y_medians, y_stds)],
-                [i + j for i, j in zip(y_medians, y_stds)],
-                facecolor="#086788",
-                alpha=0.3,
+                # marker="o",
             )
 
-            for x, y in zip(xs, y_medians):
-                if y < isomer_energy():
-                    yx = [4.6]
-                    ax.scatter(
-                        [x],
-                        yx,
-                        marker="P",
-                        c="#086788",
-                        s=120,
-                        edgecolor="k",
-                        zorder=2,
-                    )
+            # for x, y in zip(xs, y_medians):
+            #     if y < isomer_energy():
+            #         yx = [4.6]
+            #         ax.scatter(
+            #             [x],
+            #             yx,
+            #             marker="P",
+            #             c="#086788",
+            #             s=120,
+            #             edgecolor="k",
+            #             zorder=2,
+            #         )
 
             ax.set_ylabel(r"$E_{bf}$", fontsize=16)
             ax.set_title(t_angle, fontsize=16)
             ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("c3 angle", fontsize=16)
         ax.set_ylim(0, 5)
+        # ax.set_yscale("log")
 
         fig.tight_layout()
         filename = f"cr_{tstr}.pdf"
@@ -180,51 +185,53 @@ def bite_angle_relationship(all_data, figure_output):
                 if len(tors_output) == 0:
                     continue
 
-                y_medians = []
-                y_stds = []
+                y_mins = []
+                xys = []
                 for x in xs:
                     y_list = []
                     for run_num in tors_output:
                         if x in tors_output[run_num]:
                             y_list.append(tors_output[run_num][x])
-                    y_medians.append(np.median(y_list))
-                    y_stds.append(np.std(y_list))
+                            xys.append((x, tors_output[run_num][x]))
+                    y_mins.append(min(y_list))
 
+                ax.scatter(
+                    [i[0] for i in xys],
+                    [i[1] for i in xys],
+                    marker="o",
+                    c=cmap[tors][0],
+                    s=40,
+                    edgecolor="none",
+                    zorder=2,
+                )
                 ax.plot(
                     xs,
-                    y_medians,
+                    y_mins,
                     # zs=t_angle,
-                    lw=3,
+                    lw=1,
                     c=cmap[tors][0],
                     alpha=1.0,
-                    # linestyle=cmap[(c1_opt, c2_opt)][2],
+                    linestyle="--",
                     # label=f"C2 r0 {c1_opt}/CL r0 {c2_opt}",
                     label=f"{convert_tors(tors,num=False)}",
                     marker=cmap[tors][1],
                 )
-                ax.fill_between(
-                    xs,
-                    [i - j for i, j in zip(y_medians, y_stds)],
-                    [i + j for i, j in zip(y_medians, y_stds)],
-                    facecolor=cmap[tors][0],
-                    alpha=0.3,
-                )
 
-                for x, y in zip(xs, y_medians):
-                    if y < isomer_energy():
-                        if tors == "ton":
-                            yx = [4.6]
-                        elif tors == "toff":
-                            yx = [4.6]
-                        ax.scatter(
-                            [x],
-                            yx,
-                            marker="P",
-                            c=cmap[tors][0],
-                            s=120,
-                            edgecolor="k",
-                            zorder=2,
-                        )
+                # for x, y in zip(xs, y_medians):
+                #     if y < isomer_energy():
+                #         if tors == "ton":
+                #             yx = [4.6]
+                #         elif tors == "toff":
+                #             yx = [4.6]
+                #         ax.scatter(
+                #             [x],
+                #             yx,
+                #             marker="P",
+                #             c=cmap[tors][0],
+                #             s=120,
+                #             edgecolor="k",
+                #             zorder=2,
+                #         )
                 # ax.axvline(
                 #     x=xs[min(range(len(ys)), key=ys.__getitem__)],
                 #     c=cmap[(c1_opt, c2_opt)][0],
@@ -239,6 +246,7 @@ def bite_angle_relationship(all_data, figure_output):
         ax.legend(ncol=2, fontsize=16)
         ax.set_ylim(0, 5)
         ax.set_xlim(-1, 181)
+        # ax.set_yscale("log")
 
         fig.tight_layout()
         filename = f"ar_{tstr}.pdf"
@@ -535,10 +543,12 @@ def selfsort_map(all_data, figure_output):
             #     dists = [1]
 
             else:
-                colours = [
-                    cltypetopo_to_colormap()[cltitle][i]
-                    for i in mixed_energies
-                ]
+                colours = sorted(
+                    [
+                        cltypetopo_to_colormap()[cltitle][i]
+                        for i in mixed_energies
+                    ]
+                )
 
             draw_pie(
                 colours=colours,
@@ -568,8 +578,8 @@ def selfsort_map(all_data, figure_output):
                     None,
                     None,
                     c=cltypetopo_to_colormap()[i][j],
-                    edgecolor="none",
-                    s=300,
+                    edgecolor="k",
+                    s=400,
                     marker="o",
                     alpha=1.0,
                     label=convert_topo(string),
@@ -590,7 +600,130 @@ def selfsort_map(all_data, figure_output):
             bbox_inches="tight",
         )
         plt.close()
-        raise SystemExit("check clouds")
+
+
+def kinetic_selfsort_map(all_data, figure_output):
+    logging.info("running kinetic_selfsort_map")
+
+    cols_to_map = ["clangle", "target_bite_angle"]
+    cols_to_iter = [
+        "torsions",
+        "vdws",
+        "cltitle",
+    ]
+
+    io1 = sorted(set(all_data[cols_to_iter[0]]))
+    io2 = sorted(set(all_data[cols_to_iter[1]]))
+    io3 = sorted(set(all_data[cols_to_iter[2]]))
+    for tor, vdw, cltitle in itertools.product(io1, io2, io3):
+
+        data = all_data[all_data[cols_to_iter[0]] == tor]
+        data = data[data[cols_to_iter[1]] == vdw]
+        data = data[data[cols_to_iter[2]] == cltitle]
+        fig, ax = plt.subplots(figsize=(8, 5))
+
+        uo1 = sorted(set(data[cols_to_map[0]]))
+        uo2 = sorted(set(data[cols_to_map[1]]))
+
+        for (i, cla), (j, ba) in itertools.product(
+            enumerate(uo1), enumerate(uo2)
+        ):
+            plot_data = data[data[cols_to_map[0]] == cla]
+            plot_data = plot_data[plot_data[cols_to_map[1]] == ba]
+
+            xvalue = ba
+            yvalue = cla
+
+            if len(plot_data) == 0:
+                continue
+
+            energies = {
+                str(row["topology"]): float(row["energy_per_bond"])
+                for i, row in plot_data.iterrows()
+            }
+
+            mixed_energies = {
+                i: energies[i]
+                for i in energies
+                if energies[i] < isomer_energy()
+            }
+            if len(mixed_energies) == 0:
+                colours = ["white"]
+            else:
+                stoichiometries = {
+                    i: stoich_map(i) for i in mixed_energies
+                }
+                min_stoichiometry = min(stoichiometries.values())
+                kinetic_energies = {
+                    i: mixed_energies[i]
+                    for i in stoichiometries
+                    if stoichiometries[i] == min_stoichiometry
+                }
+
+                if len(kinetic_energies) > 1:
+                    colours = sorted(
+                        [
+                            cltypetopo_to_colormap()[cltitle][i]
+                            for i in kinetic_energies
+                        ]
+                    )
+                else:
+                    colours = [
+                        cltypetopo_to_colormap()[cltitle][
+                            list(kinetic_energies.keys())[0]
+                        ]
+                    ]
+
+            draw_pie(
+                colours=colours,
+                xpos=xvalue,
+                ypos=yvalue,
+                size=400,
+                ax=ax,
+            )
+
+            # rect = ax.patch
+            # rect.set_alpha(0)
+
+            ax.set_title(convert_tors(tor, num=False), fontsize=16)
+            ax.set_ylabel("CL angle [deg]", fontsize=16)
+            ax.set_xlabel("bite angle [deg]", fontsize=16)
+            ax.tick_params(axis="both", which="major", labelsize=16)
+
+        for i in cltypetopo_to_colormap():
+            if i not in (cltitle,):
+                continue
+            for j in cltypetopo_to_colormap()[i]:
+                # if i == "mixed":
+                #     string = f"mixed: {j}"
+                # else:
+                string = j
+                ax.scatter(
+                    None,
+                    None,
+                    c=cltypetopo_to_colormap()[i][j],
+                    edgecolor="k",
+                    s=400,
+                    marker="o",
+                    alpha=1.0,
+                    label=convert_topo(string),
+                )
+
+        fig.legend(
+            bbox_to_anchor=(0, 1.02, 2, 0.2),
+            loc="lower left",
+            ncol=5,
+            fontsize=16,
+        )
+
+        fig.tight_layout()
+        filename = f"kss_{cltitle}_{tor}_{vdw}.pdf"
+        fig.savefig(
+            os.path.join(figure_output, filename),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
 
 
 def angle_map(all_data, figure_output):
@@ -684,14 +817,13 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
+    kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
     selfsort_map(low_e_data, figure_output)
     clangle_relationship(all_data, figure_output)
     bite_angle_relationship(all_data, figure_output)
     raise SystemExit()
-    selfsort_map(all_data, figure_output)
-    selectivity_map(all_data, figure_output)
-    angle_map(all_data, figure_output)
+    angle_map(low_e_data, figure_output)
 
 
 if __name__ == "__main__":
