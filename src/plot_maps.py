@@ -29,7 +29,6 @@ from analysis_utilities import (
     write_out_mapping,
     convert_tors,
     convert_topo,
-    convert_vdws,
 )
 
 
@@ -731,31 +730,37 @@ def angle_map(all_data, figure_output):
 
     color_map = topology_labels(short="P")
 
-    raise SystemExit(
-        "try to make this contain all sizes? like error in the colours?"
-    )
-    trim = all_data[all_data["clr0"] == 2]
-    trim = trim[trim["c2r0"] == 5]
     vmax = isomer_energy() * 2
 
     for tstr in color_map:
-        fig, axs = plt.subplots(
-            ncols=2,
-            nrows=2,
-            sharey=True,
-            figsize=(16, 10),
-        )
-        flat_axs = axs.flatten()
-        tdata = trim[trim["topology"] == tstr]
-        for ax, (tor, vdw) in zip(
-            flat_axs,
-            itertools.product(("ton", "toff"), ("von", "voff")),
-        ):
+        if tstr == "6P8":
+            fig, ax = plt.subplots(figsize=(8, 5))
+            tor_tests = ("toff",)
+            flat_axs = (ax,)
+        else:
+            fig, axs = plt.subplots(
+                ncols=2,
+                nrows=1,
+                sharey=True,
+                figsize=(16, 5),
+            )
+            tor_tests = ("ton", "toff")
+            flat_axs = axs.flatten()
+
+        tdata = all_data[all_data["topology"] == tstr]
+        for ax, tor in zip(flat_axs, tor_tests):
             pdata = tdata[tdata["torsions"] == tor]
-            pdata = pdata[pdata["vdws"] == vdw]
+            if tstr == "6P8":
+                x = pdata["c3angle"]
+                y = pdata["clangle"]
+
+            else:
+                x = pdata["target_bite_angle"]
+                y = pdata["clangle"]
+
             ax.scatter(
-                pdata["target_bite_angle"],
-                pdata["clangle"],
+                x,
+                y,
                 c=pdata["energy_per_bond"],
                 vmin=0,
                 vmax=vmax,
@@ -767,7 +772,7 @@ def angle_map(all_data, figure_output):
             )
 
             ax.set_title(
-                f"{convert_tors(tor, num=False)}; {convert_vdws(vdw)}",
+                f"{convert_tors(tor, num=False)}",
                 fontsize=16,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
@@ -817,13 +822,12 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
+    angle_map(low_e_data, figure_output)
     kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
     selfsort_map(low_e_data, figure_output)
     clangle_relationship(all_data, figure_output)
     bite_angle_relationship(all_data, figure_output)
-    raise SystemExit()
-    angle_map(low_e_data, figure_output)
 
 
 if __name__ == "__main__":
