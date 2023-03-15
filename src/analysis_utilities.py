@@ -29,6 +29,10 @@ from shape import known_shape_vectors
 from cage_construction.topologies import cage_topology_options
 
 
+def eb_str():
+    return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
+
+
 def isomer_energy():
     # kJ/mol.
     return 1.0

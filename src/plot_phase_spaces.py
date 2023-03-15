@@ -47,7 +47,7 @@ def phase_space_2(all_data, figure_output):
             "vdw": "von",
             "x": "pore",
             "y": "energy_per_bb",
-            "ylbl": "$E_{b}$ [kJmol-1]",
+            "ylbl": eb_str(),
         },
         {
             "ax": flat_axs[1],
@@ -55,7 +55,7 @@ def phase_space_2(all_data, figure_output):
             "vdw": "von",
             "x": "min_b2b_distance",
             "y": "energy_per_bb",
-            "ylbl": "$E_{b}$ [kJmol-1]",
+            "ylbl": eb_str(),
         },
         {
             "ax": flat_axs[4],
@@ -63,7 +63,7 @@ def phase_space_2(all_data, figure_output):
             "vdw": "von",
             "x": "sv_l_dist",
             "y": "energy_per_bb",
-            "ylbl": "$E_{b}$ [kJmol-1]",
+            "ylbl": eb_str(),
         },
         {
             "ax": flat_axs[5],
@@ -71,7 +71,7 @@ def phase_space_2(all_data, figure_output):
             "vdw": "von",
             "x": "sv_n_dist",
             "y": "energy_per_bb",
-            "ylbl": "$E_{b}$ [kJmol-1]",
+            "ylbl": eb_str(),
         },
         {
             "ax": flat_axs[2],
@@ -79,7 +79,7 @@ def phase_space_2(all_data, figure_output):
             "vdw": "von",
             "x": "radius_gyration",
             "y": "energy_per_bb",
-            "ylbl": "$E_{b}$ [kJmol-1]",
+            "ylbl": eb_str(),
         },
         {
             "ax": flat_axs[3],
@@ -87,7 +87,7 @@ def phase_space_2(all_data, figure_output):
             "vdw": "von",
             "x": "flexibility_measure",
             "y": "energy_per_bb",
-            "ylbl": "$E_{b}$ [kJmol-1]",
+            "ylbl": eb_str(),
         },
     )
     for axd in axmap:

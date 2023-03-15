@@ -22,6 +22,7 @@ from env_set import cages
 from analysis_utilities import (
     data_to_array,
     stoich_map,
+    eb_str,
     get_lowest_energy_data,
     isomer_energy,
     topology_labels,
@@ -117,7 +118,7 @@ def clangle_relationship(all_data, figure_output):
             #             zorder=2,
             #         )
 
-            ax.set_ylabel(r"$E_{bf}$", fontsize=16)
+            ax.set_ylabel(eb_str(), fontsize=16)
             ax.set_title(t_angle, fontsize=16)
             ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("c3 angle", fontsize=16)
@@ -274,7 +275,7 @@ def selectivity_map(all_data, figure_output):
             "col": "energy_per_bb",
             "cut": isomer_energy(),
             "dir": "<",
-            "clbl": r"$E_{b}$",
+            "clbl": eb_str(),
         },
         # "pore": {"col": "pore", "cut": min_radius() * 2, "dir": "<"},
         # "min_b2b": {
@@ -788,7 +789,7 @@ def angle_map(all_data, figure_output):
             orientation="vertical",
         )
         cbar.ax.tick_params(labelsize=16)
-        cbar.set_label("$E_{b}$ [kJmol-1]", fontsize=16)
+        cbar.set_label(eb_str(), fontsize=16)
 
         fig.tight_layout()
         filename = f"am_{tstr}.pdf"

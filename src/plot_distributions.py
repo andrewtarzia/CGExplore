@@ -28,7 +28,10 @@ from env_set import cages
 from utilities import convert_pyramid_angle
 from analysis_utilities import (
     write_out_mapping,
+    eb_str,
     data_to_array,
+    isomer_energy,
+    get_lowest_energy_data,
     convert_topo,
     convert_tors,
     convert_vdws,
@@ -397,7 +400,7 @@ def single_value_distributions(all_data, figure_output):
 
     to_plot = {
         "energy_per_bb": {
-            "xtitle": "E_b [kJmol-1]",
+            "xtitle": eb_str(),
             "xlim": (0, 200),
         },
         "pore": {"xtitle": "min. distance [A]", "xlim": (0, 15)},
@@ -406,19 +409,19 @@ def single_value_distributions(all_data, figure_output):
             "xlim": (0, 1.2),
         },
         "HarmonicBondForce_kjmol": {
-            "xtitle": "E_HB [kJmol-1]",
+            "xtitle": r"$E_{\mathrm{bond}}$ [kJmol$^{-1}$]",
             "xlim": (0, 40),
         },
         "HarmonicAngleForce_kjmol": {
-            "xtitle": "E_HA [kJmol-1]",
+            "xtitle": r"$E_{\mathrm{angle}}$ [kJmol$^{-1}$]",
             "xlim": (0, 1000),
         },
         "CustomNonbondedForce_kjmol": {
-            "xtitle": "E_NB [kJmol-1]",
+            "xtitle": r"$E_{\mathrm{excl. vol.}}$ [kJmol$^{-1}$]",
             "xlim": (0, 400),
         },
         "PeriodicTorsionForce_kjmol": {
-            "xtitle": "E_PT [kJmol-1]",
+            "xtitle": r"$E_{\mathrm{dihedral}}$ [kJmol$^{-1}$]",
             "xlim": (0, 400),
         },
         "radius_gyration": {
@@ -571,46 +574,48 @@ def single_value_distributions(all_data, figure_output):
 
 def plot_sorted(bb_data, color_map, figure_output):
 
-    fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
-    max_ = 51
+    fig, ax = plt.subplots(figsize=(8, 5))
+    max_ = 11
 
-    for ax, cltitle in zip(axs, ("3C1", "4C1")):
-        for tor, vdw in color_map:
-            data = bb_data[(tor, vdw)]
-            if cltitle == "3C1":
-                flag = "2P3"
-            elif cltitle == "4C1":
-                flag = "2P4"
+    # for ax, cltitle in zip(axs, ("3C1", "4C1")):
+    for tor, cltitle in color_map:
+        data = bb_data[(tor, cltitle)]
+        if cltitle == "3C1":
+            flag = "2P3"
+        elif cltitle == "4C1":
+            flag = "2P4"
 
-            xs = []
-            ys = []
-            for x in range(1, max_):
-                stable_isomers = [
-                    sum(i[j] < x for j in i) for i in data if flag in i
-                ]
+        xs = []
+        ys = []
+        for x in np.linspace(0.01, max_, 100):
+            stable_isomers = [
+                sum(i[j] < x for j in i) for i in data if flag in i
+            ]
 
-                percent_sorted = (
-                    len([i for i in stable_isomers if i == 1])
-                    / len(stable_isomers)
-                ) * 100
-                xs.append(x)
-                ys.append(percent_sorted)
+            percent_sorted = (
+                len([i for i in stable_isomers if i == 1])
+                / len(stable_isomers)
+            ) * 100
+            xs.append(x)
+            ys.append(percent_sorted)
 
-            ax.plot(
-                xs,
-                ys,
-                marker="o",
-                c=color_map[(tor, vdw)],
-                lw=2,
-                label=f"{convert_tors(tor)}; {convert_vdws(vdw)}",
-            )
+        ax.plot(
+            xs,
+            ys,
+            # marker="o",
+            c=color_map[(tor, cltitle)],
+            lw=4,
+            label=f"{cltitle}: {convert_tors(tor, num=False)}",
+        )
 
-        ax.set_title(f"{cltitle}", fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("threshold [kJmol-1]", fontsize=16)
-        ax.set_ylabel(r"% sorted", fontsize=16)
-        ax.set_xlim(0, max_)
-        ax.set_ylim(0, 50)
+    # ax.set_title(f"{cltitle}", fontsize=16)
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
+    ax.set_ylabel(r"% sorted", fontsize=16)
+    ax.set_xlim(0, max_ + 0.1)
+    ax.set_ylim(0, None)
+
+    ax.axvline(x=isomer_energy(), c="gray", linestyle="--", lw=2)
 
     ax.legend(fontsize=16)
 
@@ -623,48 +628,68 @@ def plot_sorted(bb_data, color_map, figure_output):
     plt.close()
 
 
-def plot_mixed(bb_data, color_map, figure_output):
+def plot_mixed_unstable(bb_data, color_map, figure_output):
 
-    fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
-    max_ = 51
+    fig, ax = plt.subplots(figsize=(8, 5))
+    max_ = 3
 
-    for ax, cltitle in zip(axs, ("3C1", "4C1")):
-        for tor, vdw in color_map:
-            data = bb_data[(tor, vdw)]
-            if cltitle == "3C1":
-                flag = "2P3"
-            elif cltitle == "4C1":
-                flag = "2P4"
+    # for ax, cltitle in zip(axs, ("3C1", "4C1")):
+    for tor, cltitle in color_map:
+        if tor == "toff":
+            continue
+        data = bb_data[(tor, cltitle)]
+        if cltitle == "3C1":
+            flag = "2P3"
+        elif cltitle == "4C1":
+            flag = "2P4"
 
-            xs = []
-            ys = []
-            for x in range(1, max_):
-                stable_isomers = [
-                    sum(i[j] < x for j in i) for i in data if flag in i
-                ]
+        xs = []
+        ys_unstable = []
+        ys_mixed = []
+        for x in np.linspace(0.01, max_, 100):
+            stable_isomers = [
+                sum(i[j] < x for j in i) for i in data if flag in i
+            ]
 
-                percent_mixed = (
-                    len([i for i in stable_isomers if i > 1])
-                    / len(stable_isomers)
-                ) * 100
-                xs.append(x)
-                ys.append(percent_mixed)
+            percent_mixed = (
+                len([i for i in stable_isomers if i > 1])
+                / len(stable_isomers)
+            ) * 100
+            percent_unstable = (
+                len([i for i in stable_isomers if i == 0])
+                / len(stable_isomers)
+            ) * 100
 
-            ax.plot(
-                xs,
-                ys,
-                marker="o",
-                c=color_map[(tor, vdw)],
-                lw=2,
-                label=f"{convert_tors(tor)}; {convert_vdws(vdw)}",
-            )
+            xs.append(x)
+            ys_unstable.append(percent_unstable)
+            ys_mixed.append(percent_mixed)
 
-        ax.set_title(f"{cltitle}", fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("threshold [kJmol-1]", fontsize=16)
-        ax.set_ylabel(r"% mixed", fontsize=16)
-        ax.set_xlim(0, max_)
-        ax.set_ylim(0, 100)
+        ax.plot(
+            xs,
+            ys_unstable,
+            # marker="o",
+            c=color_map[(tor, cltitle)],
+            lw=2,
+            linestyle="-",
+            label=(
+                f"{cltitle}: {convert_tors(tor, num=False)}, unstable"
+            ),
+        )
+        ax.plot(
+            xs,
+            ys_mixed,
+            # marker="o",
+            c=color_map[(tor, cltitle)],
+            lw=2,
+            linestyle="--",
+            label=f"{cltitle}: {convert_tors(tor, num=False)}, mixed",
+        )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
+    ax.set_ylabel(r"% mixed or % unstable", fontsize=16)
+    ax.set_xlim(0, max_ + 0.1)
+    ax.set_ylim(0, 100)
 
     ax.legend(fontsize=16)
 
@@ -679,10 +704,10 @@ def plot_mixed(bb_data, color_map, figure_output):
 
 def plot_clangle(cl_data, color_map, figure_output):
 
-    fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
-    max_ = 51
+    max_ = 6
 
     clangles = sorted([int(i) for i in cl_data.keys()])
+    fig, axs = plt.subplots(ncols=2, sharey=True, figsize=(16, 5))
 
     for ax, cltitle in zip(axs, ("3C1", "4C1")):
         for clangle in clangles:
@@ -694,7 +719,8 @@ def plot_clangle(cl_data, color_map, figure_output):
 
             xs = []
             ys = []
-            for x in range(1, max_):
+            cs = []
+            for x in np.linspace(0.01, max_, 100):
                 stable_isomers = [
                     sum(i[j] < x for j in i) for i in data if flag in i
                 ]
@@ -706,26 +732,53 @@ def plot_clangle(cl_data, color_map, figure_output):
                     / len(stable_isomers)
                 ) * 100
 
+                # if percent_sorted > 5:
                 xs.append(x)
-                ys.append(percent_sorted)
+                ys.append(clangle)
+                cs.append(percent_sorted)
 
-            ax.plot(
+            # ax.plot(
+            #     xs,
+            #     ys,
+            #     # marker="o",
+            #     # c=color_map[(tor, vdw)],
+            #     lw=3,
+            #     label=f"{clangle}",
+            # )
+            ax.scatter(
                 xs,
                 ys,
-                marker="o",
-                # c=color_map[(tor, vdw)],
-                lw=2,
-                label=f"{clangle}",
+                c=cs,
+                vmin=0,
+                vmax=30,
+                s=30,
+                marker="s",
+                cmap="Oranges",
             )
+
+        cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+        cmap = mpl.cm.Oranges
+        norm = mpl.colors.Normalize(vmin=0, vmax=30)
+        cbar = fig.colorbar(
+            mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=cbar_ax,
+            orientation="vertical",
+        )
+        cbar.ax.tick_params(labelsize=16)
+        cbar.set_label(
+            r"% sorted",
+            fontsize=16,
+        )
 
         ax.set_title(f"{cltitle}", fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("threshold [kJmol-1]", fontsize=16)
-        ax.set_ylabel(r"% sorted", fontsize=16)
-        ax.set_xlim(0, max_)
-        ax.set_ylim(0, 60)
+        ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
+        # ax.set_ylabel(r"% sorted", fontsize=16)
+        ax.set_ylabel("clangle [deg]", fontsize=16)
+        # ax.set_xlim(0, max_ + 0.1)
+        # ax.set_ylim(0, None)
 
-    ax.legend(fontsize=16)
+    # ax.legend(fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -736,71 +789,17 @@ def plot_clangle(cl_data, color_map, figure_output):
     plt.close()
 
 
-def plot_unstable(bb_data, color_map, figure_output):
-
-    fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
-    max_ = 51
-
-    for ax, cltitle in zip(axs, ("3C1", "4C1")):
-        for tor, vdw in color_map:
-            data = bb_data[(tor, vdw)]
-            if cltitle == "3C1":
-                flag = "2P3"
-            elif cltitle == "4C1":
-                flag = "2P4"
-
-            xs = []
-            ys = []
-            for x in range(1, max_):
-                stable_isomers = [
-                    sum(i[j] < x for j in i) for i in data if flag in i
-                ]
-
-                percent_unstable = (
-                    len([i for i in stable_isomers if i == 0])
-                    / len(stable_isomers)
-                ) * 100
-                xs.append(x)
-                ys.append(percent_unstable)
-
-            ax.plot(
-                xs,
-                ys,
-                marker="o",
-                c=color_map[(tor, vdw)],
-                lw=2,
-                label=f"{convert_tors(tor)}; {convert_vdws(vdw)}",
-            )
-
-        ax.set_title(f"{cltitle}", fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("threshold [kJmol-1]", fontsize=16)
-        ax.set_ylabel(r"% unstable", fontsize=16)
-        ax.set_xlim(0, max_)
-        ax.set_ylim(0, 100)
-
-    ax.legend(fontsize=16)
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "unstable_isomers.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
 def plot_average(bb_data, color_map, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    max_ = 51
+    max_ = 11
 
-    for tor, vdw in color_map:
-        data = bb_data[(tor, vdw)]
+    for tor, cltitle in color_map:
+        data = bb_data[(tor, cltitle)]
         xs = []
         ys = []
         yerrs = []
-        for x in range(1, max_):
+        for x in np.linspace(0.01, max_, 100):
             stable_isomers = [sum(i[j] < x for j in i) for i in data]
             mean_stable_isomers = np.mean(stable_isomers)
             std = np.std(stable_isomers)
@@ -811,24 +810,24 @@ def plot_average(bb_data, color_map, figure_output):
         ax.plot(
             xs,
             ys,
-            marker="o",
-            c=color_map[(tor, vdw)],
-            lw=2,
-            label=f"{convert_tors(tor)}; {convert_vdws(vdw)}",
+            # marker="o",
+            c=color_map[(tor, cltitle)],
+            lw=3,
+            label=f"{cltitle}: {convert_tors(tor, num=False)}",
         )
         ax.fill_between(
             xs,
             [i - j for i, j in zip(ys, yerrs)],
             [i + j for i, j in zip(ys, yerrs)],
-            facecolor=color_map[(tor, vdw)],
-            alpha=0.3,
+            facecolor=color_map[(tor, cltitle)],
+            alpha=0.2,
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("threshold [kJmol-1]", fontsize=16)
-    ax.set_ylabel("mean stable isomers", fontsize=16)
-    ax.set_xlim(0, max_)
-    ax.set_ylim(0, 7)
+    ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
+    ax.set_ylabel(r"mean num. stable isomers", fontsize=16)
+    ax.set_xlim(0, max_ + 0.1)
+    ax.set_ylim(0, None)
 
     ax.legend(fontsize=16)
 
@@ -841,26 +840,16 @@ def plot_average(bb_data, color_map, figure_output):
     plt.close()
 
 
-def mixed_distributions(all_data, figure_output, trim_data):
+def mixed_distributions(all_data, figure_output):
     logging.info("running mixed distributions")
 
-    trim = all_data[all_data["torsions"] == "ton"]
-    trim = trim[trim["vdws"] == "von"]
-    if trim_data:
-        color_map = {
-            ("ton", "von"): "#086788",
-        }
-    else:
-        color_map = {
-            ("ton", "von"): "#086788",
-            ("ton", "voff"): "#F9A03F",
-            ("toff", "von"): "#0B2027",
-            ("toff", "voff"): "#7A8B99",
-        }
-
-    # trim = all_data[all_data["clr0"] == 5]
-    # trim = trim[trim["c2r0"] == 5]
-    # trim = trim[trim["c2r0"] == 5]
+    trim = all_data[all_data["vdws"] == "von"]
+    color_map = {
+        ("ton", "3C1"): "#086788",
+        ("ton", "4C1"): "#F9A03F",
+        ("toff", "3C1"): "#0B2027",
+        ("toff", "4C1"): "#7A8B99",
+    }
 
     bbs = set(trim["bbpair"])
     bb_data = {}
@@ -870,27 +859,29 @@ def mixed_distributions(all_data, figure_output, trim_data):
             continue
         bbd = trim[trim["bbpair"] == bb_pair]
 
-        for tor, vdw in color_map:
-            data = bbd[bbd["vdws"] == vdw]
+        for tor, cltitle in color_map:
+            data = bbd[bbd["cltitle"] == cltitle]
+            if len(data) == 0:
+                continue
+
             data = data[data["torsions"] == tor]
             energies = {
-                str(row["topology"]): float(row["energy_per_bond"])
+                str(row["topology"]): float(row["energy_per_bb"])
                 for i, row in data.iterrows()
             }
             clangle = str(set(data["clangle"]).pop())
-            if (tor, vdw) not in bb_data:
-                bb_data[(tor, vdw)] = []
-            bb_data[(tor, vdw)].append(energies)
-            if tor == "ton" and vdw == "von":
+            if (tor, cltitle) not in bb_data:
+                bb_data[(tor, cltitle)] = []
+            bb_data[(tor, cltitle)].append(energies)
+            if tor == "ton":
                 if clangle not in cl_data:
                     cl_data[clangle] = []
                 cl_data[clangle].append(energies)
 
     plot_sorted(bb_data, color_map, figure_output)
-    plot_mixed(bb_data, color_map, figure_output)
+    plot_mixed_unstable(bb_data, color_map, figure_output)
     plot_clangle(cl_data, color_map, figure_output)
     plot_average(bb_data, color_map, figure_output)
-    plot_unstable(bb_data, color_map, figure_output)
 
 
 def shape_vector_distributions(all_data, figure_output):
@@ -1125,9 +1116,6 @@ def shape_vectors_3(all_data, figure_output):
 
 def correlation_matrix(all_data, figure_output):
     trim = all_data[all_data["torsions"] == "ton"]
-    trim = trim[trim["vdws"] == "von"]
-    trim = trim[trim["clr0"] == 5]
-    trim = trim[trim["c2r0"] == 5]
 
     target_cols = [
         # "topology",
@@ -1140,24 +1128,25 @@ def correlation_matrix(all_data, figure_output):
         # "cltitle",
         # "clr0",
         "clangle",
-        "energy_per_bond",
+        "energy_per_bb",
+        "strain_energy",
         "pore",
         # "min_b2b_distance",
         "radius_gyration",
-        # "max_diameter",
-        # "rg_md",
-        # "pore_md",
-        # "pore_rg",
+        "max_diameter",
+        "rg_md",
+        "pore_md",
+        "pore_rg",
         "sv_n_dist",
         "sv_l_dist",
         # "HarmonicBondForce_kjmol",
         # "HarmonicAngleForce_kjmol",
         # "CustomNonbondedForce_kjmol",
         # "PeriodicTorsionForce_kjmol",
-        "structure_dynamics",
-        "pore_dynamics",
-        "node_shape_dynamics",
-        "lig_shape_dynamics",
+        # "structure_dynamics",
+        # "pore_dynamics",
+        # "node_shape_dynamics",
+        # "lig_shape_dynamics",
     ]
     targ_data = trim[target_cols].copy()
 
@@ -1196,6 +1185,12 @@ def correlation_matrix(all_data, figure_output):
     plt.close()
 
 
+def check_odd_outcomes(all_data, figure_output):
+
+    print("check cases where toff is higher E than ton")
+    raise SystemExit()
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -1211,8 +1206,10 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=calculation_output,
     )
-    with open(calculation_output / "all_geom.json", "r") as f:
-        geom_data = json.load(f)
+    low_e_data = get_lowest_energy_data(
+        all_data=all_data,
+        output_dir=calculation_output,
+    )
     logging.info(f"there are {len(all_data)} collected data")
     opt_data = all_data[all_data["optimised"]]
     logging.info(f"there are {len(opt_data)} successfully opted")
@@ -1222,13 +1219,17 @@ def main():
     logging.info(f"there are {len(_data)} with exploded MD")
     write_out_mapping(all_data)
 
-    correlation_matrix(all_data, figure_output)
+    with open(calculation_output / "all_geom.json", "r") as f:
+        geom_data = json.load(f)
+
+    correlation_matrix(low_e_data, figure_output)
     identity_distributions(all_data, figure_output)
-    mixed_distributions(all_data, figure_output, trim_data=True)
-    single_value_distributions(all_data, figure_output)
-    shape_vector_distributions(all_data, figure_output)
-    shape_vectors_2(all_data, figure_output)
-    shape_vectors_3(all_data, figure_output)
+    mixed_distributions(low_e_data, figure_output)
+    check_odd_outcomes(all_data, figure_output)
+    single_value_distributions(low_e_data, figure_output)
+    shape_vector_distributions(low_e_data, figure_output)
+    shape_vectors_2(low_e_data, figure_output)
+    shape_vectors_3(low_e_data, figure_output)
     geom_distributions(all_data, geom_data, figure_output)
     rmsd_distributions(all_data, calculation_output, figure_output)
 
