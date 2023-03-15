@@ -160,7 +160,7 @@ def geom_distributions(all_data, geom_data, figure_output):
                 # energies = []
                 for i, row in topo_frame.iterrows():
                     name = str(row["index"])
-                    # energy = float(row["energy_per_bond"])
+                    # energy = float(row["energy_per_bb"])
                     if column is None:
                         target = 0
                         target_oppos = None
@@ -396,8 +396,8 @@ def single_value_distributions(all_data, figure_output):
     logging.info("running single_value_distributions")
 
     to_plot = {
-        "energy_per_bond": {
-            "xtitle": "E_bf [kJmol-1]",
+        "energy_per_bb": {
+            "xtitle": "E_b [kJmol-1]",
             "xlim": (0, 200),
         },
         "pore": {"xtitle": "min. distance [A]", "xlim": (0, 15)},

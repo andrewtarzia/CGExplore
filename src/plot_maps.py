@@ -66,7 +66,7 @@ def clangle_relationship(all_data, figure_output):
                 #     for c2_opt in sorted(set(test_data["clr0"])):
                 #         plot_data = test_data[test_data["clr0"] == c2_opt]
                 xs = list(plot_data["c3angle"])
-                ys = list(plot_data["energy_per_bond"])
+                ys = list(plot_data["energy_per_bb"])
                 xs, ys = zip(*sorted(zip(xs, ys)))
                 clan_output[run_number] = {x: y for x, y in zip(xs, ys)}
 
@@ -175,7 +175,7 @@ def bite_angle_relationship(all_data, figure_output):
                     #     test_data["clr0"] == c2_opt
                     # ]
                     xs = list(plot_data["target_bite_angle"])
-                    ys = list(plot_data["energy_per_bond"])
+                    ys = list(plot_data["energy_per_bb"])
                     xs, ys = zip(*sorted(zip(xs, ys)))
                     tors_output[run_number] = {
                         x: y for x, y in zip(xs, ys)
@@ -238,7 +238,7 @@ def bite_angle_relationship(all_data, figure_output):
                 #     alpha=0.5,
                 # )
 
-            ax.set_ylabel(r"$E_{bf}$", fontsize=16)
+            ax.set_ylabel(r"$E_{b}$", fontsize=16)
             ax.set_title(t_angle, fontsize=16)
             ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("target 2c bite angle", fontsize=16)
@@ -271,10 +271,10 @@ def selectivity_map(all_data, figure_output):
 
     properties = {
         "energy": {
-            "col": "energy_per_bond",
+            "col": "energy_per_bb",
             "cut": isomer_energy(),
             "dir": "<",
-            "clbl": "$E_{bf}$",
+            "clbl": r"$E_{b}$",
         },
         # "pore": {"col": "pore", "cut": min_radius() * 2, "dir": "<"},
         # "min_b2b": {
@@ -520,7 +520,7 @@ def selfsort_map(all_data, figure_output):
                 continue
 
             energies = {
-                str(row["topology"]): float(row["energy_per_bond"])
+                str(row["topology"]): float(row["energy_per_bb"])
                 for i, row in plot_data.iterrows()
             }
 
@@ -637,7 +637,7 @@ def kinetic_selfsort_map(all_data, figure_output):
                 continue
 
             energies = {
-                str(row["topology"]): float(row["energy_per_bond"])
+                str(row["topology"]): float(row["energy_per_bb"])
                 for i, row in plot_data.iterrows()
             }
 
@@ -761,7 +761,7 @@ def angle_map(all_data, figure_output):
             ax.scatter(
                 x,
                 y,
-                c=pdata["energy_per_bond"],
+                c=pdata["energy_per_bb"],
                 vmin=0,
                 vmax=vmax,
                 alpha=1.0,
@@ -788,7 +788,7 @@ def angle_map(all_data, figure_output):
             orientation="vertical",
         )
         cbar.ax.tick_params(labelsize=16)
-        cbar.set_label("$E_{pb}$ [kJmol-1]", fontsize=16)
+        cbar.set_label("$E_{b}$ [kJmol-1]", fontsize=16)
 
         fig.tight_layout()
         filename = f"am_{tstr}.pdf"

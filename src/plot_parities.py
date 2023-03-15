@@ -67,8 +67,8 @@ def parity_1(all_data, figure_output):
                 on="cage_name",
             )
 
-            ydata = list(out_data["energy_per_bond_x"])
-            xdata = list(out_data["energy_per_bond_y"])
+            ydata = list(out_data["energy_per_bb_x"])
+            xdata = list(out_data["energy_per_bb_y"])
             diffdata = [y - x for x, y, in zip(xdata, ydata)]
             xpos = tcpos[tstr]
 
@@ -137,7 +137,7 @@ def parity_2(all_data, geom_data, figure_output):
                 target_bite_angle = float(row["target_bite_angle"])
                 target_angle = (target_bite_angle / 2) + 90
                 name = str(row["index"])
-                energy = float(row["energy_per_bond"])
+                energy = float(row["energy_per_bb"])
                 c2data = geom_data[name]["angles"]
 
                 for lbl in c2labels:

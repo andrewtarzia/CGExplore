@@ -46,48 +46,48 @@ def phase_space_2(all_data, figure_output):
             "tor": "ton",
             "vdw": "von",
             "x": "pore",
-            "y": "energy_per_bond",
-            "ylbl": "$E_{pb}$ [kJmol-1]",
+            "y": "energy_per_bb",
+            "ylbl": "$E_{b}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[1],
             "tor": "ton",
             "vdw": "von",
             "x": "min_b2b_distance",
-            "y": "energy_per_bond",
-            "ylbl": "$E_{pb}$ [kJmol-1]",
+            "y": "energy_per_bb",
+            "ylbl": "$E_{b}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[4],
             "tor": "ton",
             "vdw": "von",
             "x": "sv_l_dist",
-            "y": "energy_per_bond",
-            "ylbl": "$E_{pb}$ [kJmol-1]",
+            "y": "energy_per_bb",
+            "ylbl": "$E_{b}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[5],
             "tor": "ton",
             "vdw": "von",
             "x": "sv_n_dist",
-            "y": "energy_per_bond",
-            "ylbl": "$E_{pb}$ [kJmol-1]",
+            "y": "energy_per_bb",
+            "ylbl": "$E_{b}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[2],
             "tor": "ton",
             "vdw": "von",
             "x": "radius_gyration",
-            "y": "energy_per_bond",
-            "ylbl": "$E_{pb}$ [kJmol-1]",
+            "y": "energy_per_bb",
+            "ylbl": "$E_{b}$ [kJmol-1]",
         },
         {
             "ax": flat_axs[3],
             "tor": "ton",
             "vdw": "von",
             "x": "flexibility_measure",
-            "y": "energy_per_bond",
-            "ylbl": "$E_{pb}$ [kJmol-1]",
+            "y": "energy_per_bb",
+            "ylbl": "$E_{b}$ [kJmol-1]",
         },
     )
     for axd in axmap:
@@ -159,7 +159,7 @@ def phase_space_3(all_data, figure_output):
             if "6P8" in set(fin_data["topology"]):
                 continue
             energies = {
-                str(row["topology"]): float(row["energy_per_bond"])
+                str(row["topology"]): float(row["energy_per_bb"])
                 for i, row in fin_data.iterrows()
             }
             if len(energies) < 1:
@@ -383,7 +383,7 @@ def phase_space_5(all_data, figure_output):
 
         for ax, tor in zip(axs, ("ton", "toff")):
             findata = cdata[cdata["torsions"] == tor]
-            xvalues = list(findata["energy_per_bond"])
+            xvalues = list(findata["energy_per_bb"])
             yvalues = list(findata["sv_n_dist"])
             lvalues = list(findata["sv_l_dist"])
             to_plot_x = []
@@ -429,7 +429,7 @@ def phase_space_5(all_data, figure_output):
                 fontsize=16,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_xlabel(convert_prop("energy_per_bond"), fontsize=16)
+            ax.set_xlabel(convert_prop("energy_per_bb"), fontsize=16)
             ax.set_ylabel(convert_prop("both_sv_n_dist"), fontsize=16)
             ax.set_ylim(0.0, 1.05)
 

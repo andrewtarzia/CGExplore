@@ -95,8 +95,9 @@ def topology_labels(short):
 
 
 def convert_prop(prop_str):
+    raise NotImplementedError("check convert propr")
     return {
-        "energy_per_bond": "E_bf [eV]",
+        "energy_per_bb": "E_b [eV]",
         "sv_n_dist": "node shape similarity",
         "sv_l_dist": "lig. shape similarity",
         "both_sv_n_dist": "shape similarity",
@@ -168,19 +169,24 @@ def torsion_to_colormap():
 
 
 def stoich_map(tstr):
+    """
+    Stoichiometry maps to the number of building blocks.
+
+    """
+
     return {
-        "2P3": 6,
-        "4P6": 12,
-        "4P62": 12,
-        "6P9": 18,
-        "8P12": 24,
-        "2P4": 8,
-        "3P6": 12,
-        "4P8": 16,
-        "6P12": 24,
-        "8P16": 32,
-        "12P24": 48,
-        "6P8": 24,
+        "2P3": 5,
+        "4P6": 10,
+        "4P62": 10,
+        "6P9": 17,
+        "8P12": 20,
+        "2P4": 6,
+        "3P6": 9,
+        "4P8": 12,
+        "6P12": 18,
+        "8P16": 24,
+        "12P24": 36,
+        "6P8": 14,
     }[tstr]
 
 
@@ -499,7 +505,7 @@ def data_to_array(json_files, output_dir):
 
         if row["optimised"]:
             row["strain_energy"] = res_dict["fin_energy_kjmol"]
-            row["energy_per_bond"] = res_dict[
+            row["energy_per_bb"] = res_dict[
                 "fin_energy_kjmol"
             ] / stoich_map(t_str)
             for force_title in res_dict["fin_energy_decomp"]:
@@ -809,7 +815,7 @@ def write_out_mapping(all_data):
                     bite_angle_map[bid] = ba
 
     properties = [
-        "energy_per_bond",
+        "energy_per_bb",
         "pore",
         "min_b2b_distance",
         "radius_gyration",
@@ -855,8 +861,7 @@ def get_lowest_energy_data(all_data, output_dir):
             if len(trows) == 0:
                 continue
             final_row = trows[
-                trows["energy_per_bond"]
-                == trows["energy_per_bond"].min()
+                trows["energy_per_bb"] == trows["energy_per_bb"].min()
             ]
             # Get lowest energy row, and add to new dict.
             lowe_array = pd.concat([lowe_array, final_row.iloc[[0]]])
