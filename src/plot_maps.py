@@ -359,16 +359,12 @@ def selectivity_map(all_data, figure_output):
                         # vmax=vcount,
                         alpha=1.0,
                         edgecolor="none",
-                        s=60,
-                        marker="o",
+                        s=40,
+                        marker="s",
                         # cmap="Blues",
                     )
 
                 ax.set_title(
-                    # (
-                    #     f"{convert_tors(tors, num=False)}, "
-                    #     f"{convert_vdws(vdw)}, {clangle}"
-                    # ),
                     clangle,
                     fontsize=16,
                 )
@@ -383,20 +379,6 @@ def selectivity_map(all_data, figure_output):
 
             ax.set_xlabel("bite angle [deg]", fontsize=16)
 
-        # cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-        # cmap = mpl.cm.Blues
-        # norm = mpl.colors.Normalize(vmin=0, vmax=vcount)
-        # cbar = fig.colorbar(
-        #     mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-        #     cax=cbar_ax,
-        #     orientation="vertical",
-        # )
-        # cbar.ax.tick_params(labelsize=16)
-        # cbar.set_label(
-        #     f"prop. {pdict['clbl']} {order_string} {pdict['cut']}",
-        #     fontsize=16,
-        # )
-
         fig.tight_layout()
         fig.savefig(
             os.path.join(figure_output, f"sel_{prop}.pdf"),
@@ -404,33 +386,6 @@ def selectivity_map(all_data, figure_output):
             bbox_inches="tight",
         )
         plt.close()
-
-
-# def draw_pie(colours, xpos, ypos, size, ax):
-#     """
-#     From:
-#     https://stackoverflow.com/questions/56337732/how-to-plot-scatter-
-#     pie-chart-using-matplotlib
-
-#     """
-
-#     num_points =
-
-#     # for incremental pie slices
-#     cumsum = np.cumsum(ratios)
-#     cumsum = cumsum / cumsum[-1]
-#     pie = [0] + cumsum.tolist()
-
-#     for r1, r2, c in zip(pie[:-1], pie[1:], colours):
-#         angles = np.linspace(2 * np.pi * r1, 2 * np.pi * r2, 100)
-#         x = [0] + np.cos(angles).tolist()
-#         y = [0] + np.sin(angles).tolist()
-
-#         xy = np.column_stack([x, y])
-
-#         ax.scatter([xpos], [ypos], marker=xy, s=size, c=[c])
-
-#     return ax
 
 
 def draw_pie(colours, xpos, ypos, size, ax):
