@@ -39,7 +39,6 @@ def pore_str():
 
 
 def rg_str():
-    # return r"min(centroid-bead) [$\mathrm{\AA}$]"
     return r"$R_{\mathrm{g}}$ [$\mathrm{\AA}$]"
 
 
