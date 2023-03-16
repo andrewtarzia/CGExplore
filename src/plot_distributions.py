@@ -945,7 +945,6 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
 
 def plot_topology_flex(data, figure_output):
 
-    print(data)
     fig, ax = plt.subplots(figsize=(8, 5))
 
     categories_ton = {convert_topo(i): 0 for i in data}
@@ -1033,7 +1032,6 @@ def flexeffect_per_property(all_data, figure_output):
         figure_output=figure_output,
     )
     plot_topology_flex(topology_data, figure_output)
-    raise SystemExit()
 
 
 def shape_vector_distributions(all_data, figure_output):
