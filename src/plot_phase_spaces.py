@@ -216,6 +216,7 @@ def phase_space_2(all_data, figure_output):
 
 def phase_space_3(all_data, figure_output):
     logging.info("doing phase space 3")
+
     fig, axs = plt.subplots(
         nrows=2,
         ncols=2,
@@ -234,41 +235,9 @@ def phase_space_3(all_data, figure_output):
         ("4C1", "toff"): {i: 0 for i in topologies["4C1"]},
         ("4C1", "ton"): {i: 0 for i in topologies["4C1"]},
     }
+
     for gid, dfi in groups:
         bbtitle = gid[:3]
-        for tors in ("ton", "toff"):
-
-            fin_data = dfi[dfi["torsions"] == tors]
-            if "6P8" in set(fin_data["topology"]):
-                continue
-            energies = {
-                str(row["topology"]): float(row["energy_per_bb"])
-                for i, row in fin_data.iterrows()
-            }
-            if len(energies) < 1:
-                continue
-
-            num_mixed = len(
-                tuple(
-                    i
-                    for i in list(energies.values())
-                    if i < isomer_energy()
-                )
-            )
-
-            min_energy = min(energies.values())
-            if min_energy > isomer_energy():
-                topo_str = "unstable"
-            elif num_mixed > 1:
-                topo_str = "mixed"
-            else:
-                topo_str = list(energies.keys())[
-                    list(energies.values()).index(min_energy)
-                ]
-            if topo_str not in data[(bbtitle, tors)]:
-                data[(bbtitle, tors)][topo_str] = 0
-            data[(bbtitle, tors)][topo_str] += 1
-
         if "mixed" not in data[(bbtitle, "toff")]:
             data[(bbtitle, "toff")]["mixed"] = 0
         if "mixed" not in data[(bbtitle, "ton")]:
@@ -278,131 +247,23 @@ def phase_space_3(all_data, figure_output):
         if "unstable" not in data[(bbtitle, "ton")]:
             data[(bbtitle, "ton")]["unstable"] = 0
 
-    for ax, (bbtitle, torsion) in zip(flat_axs, data):
-        coords = data[(bbtitle, torsion)]
-        bars = ax.bar(
-            [convert_topo(i) for i in coords.keys()],
-            coords.values(),
-            # color="#06AED5",
-            # color="#086788",
-            # color="#DD1C1A",
-            color="#de9ed6",
-            edgecolor="k",
-        )
-
-        ax.bar_label(bars, padding=3, fontsize=16)
-
-        title = f"{bbtitle}, {torsion}: {isomer_energy()}eV"
-        ax.set_title(title, fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_ylabel("count", fontsize=16)
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "ps_3.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def phase_space_11(all_data, figure_output):
-    logging.info("doing phase space 11")
-    raise SystemExit("redefine pers, then rerun,")
-    fig, axs = plt.subplots(
-        nrows=2,
-        ncols=2,
-        sharey=True,
-        figsize=(16, 10),
-    )
-    flat_axs = axs.flatten()
-
-    topologies = map_cltype_to_topology()
-
-    opt_data = all_data[all_data["optimised"]]
-    groups = opt_data.groupby(["bbpair"])
-    data = {
-        ("3C1", "toff"): {i: 0 for i in topologies["3C1"].values()},
-        ("3C1", "ton"): {i: 0 for i in topologies["3C1"].values()},
-        ("4C1", "toff"): {i: 0 for i in topologies["4C1"].values()},
-        ("4C1", "ton"): {i: 0 for i in topologies["4C1"].values()},
-    }
-    for gid, dfi in groups:
-        bbtitle = gid[:3]
         for tors in ("ton", "toff"):
+
             fin_data = dfi[dfi["torsions"] == tors]
-            for tstr in topologies[bbtitle].values():
-                t_data = fin_data[fin_data["topology"] == tstr]
-                if len(t_data) != 1:
-                    continue
-                if t_data.iloc[0]["persistent"]:
-                    topo_str = tstr
-                else:
-                    topo_str = "not"
+            if "6P8" in set(fin_data["topology"]):
+                continue
+            mixed_energies = {
+                str(row["topology"]): float(row["energy_per_bb"])
+                for i, row in fin_data.iterrows()
+                if float(row["energy_per_bb"]) < isomer_energy()
+            }
 
-                if topo_str not in data[(bbtitle, tors)]:
-                    data[(bbtitle, tors)][topo_str] = 0
-                data[(bbtitle, tors)][topo_str] += 1
-
-    for ax, (bbtitle, torsion) in zip(flat_axs, data):
-        coords = data[(bbtitle, torsion)]
-        bars = ax.bar(
-            [convert_topo(i) for i in coords.keys()],
-            coords.values(),
-            # color="#06AED5",
-            # color="#086788",
-            # color="#DD1C1A",
-            color="#de9ed6",
-            edgecolor="k",
-        )
-
-        ax.bar_label(bars, padding=3, fontsize=16)
-
-        title = f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
-        ax.set_title(title, fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_ylabel("num. persistent", fontsize=16)
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "ps_11.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def phase_space_12(all_data, figure_output):
-    logging.info("doing phase space 12")
-    raise SystemExit("redefine pers, then rerun,")
-    fig, axs = plt.subplots(
-        nrows=2,
-        ncols=2,
-        sharey=True,
-        figsize=(16, 10),
-    )
-    flat_axs = axs.flatten()
-
-    topologies = map_cltype_to_topology()
-
-    opt_data = all_data[all_data["optimised"]]
-    groups = opt_data.groupby(["bbpair"])
-    data = {
-        ("3C1", "toff"): {i: 0 for i in topologies["3C1"].values()},
-        ("3C1", "ton"): {i: 0 for i in topologies["3C1"].values()},
-        ("4C1", "toff"): {i: 0 for i in topologies["4C1"].values()},
-        ("4C1", "ton"): {i: 0 for i in topologies["4C1"].values()},
-    }
-    for gid, dfi in groups:
-        bbtitle = gid[:3]
-        for tors in ("ton", "toff"):
-            fin_data = dfi[dfi["torsions"] == tors]
-            per_data = fin_data[fin_data["persistent"]]
-            present_topologies = list(per_data["topology"])
-            if len(present_topologies) == 1:
-                topo_str = present_topologies[0]
-            else:
+            if len(mixed_energies) == 0:
+                topo_str = "unstable"
+            elif len(mixed_energies) > 1:
                 topo_str = "mixed"
+            else:
+                topo_str = list(mixed_energies.keys())[0]
 
             if topo_str not in data[(bbtitle, tors)]:
                 data[(bbtitle, tors)][topo_str] = 0
@@ -413,23 +274,21 @@ def phase_space_12(all_data, figure_output):
         bars = ax.bar(
             [convert_topo(i) for i in coords.keys()],
             coords.values(),
-            # color="#06AED5",
-            # color="#086788",
-            # color="#DD1C1A",
-            color="#de9ed6",
+            color="#086788",
             edgecolor="k",
         )
 
-        ax.bar_label(bars, padding=3, fontsize=16)
+        ax.bar_label(bars, padding=2, fontsize=16)
 
-        title = f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
+        title = f"{convert_tors(torsion, num=False)}"
         ax.set_title(title, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_ylabel("num. persistent and sorted", fontsize=16)
+        ax.set_ylabel("count", fontsize=16)
+        ax.set_ylim(0, 140)
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "ps_12.pdf"),
+        os.path.join(figure_output, "ps_3.pdf"),
         dpi=720,
         bbox_inches="tight",
     )
@@ -559,10 +418,8 @@ def main():
     write_out_mapping(all_data)
 
     phase_space_2(low_e_data, figure_output)
-    raise SystemExit()
     phase_space_3(low_e_data, figure_output)
-    phase_space_11(low_e_data, figure_output)
-    phase_space_12(low_e_data, figure_output)
+    raise SystemExit()
     phase_space_5(low_e_data, figure_output)
 
 
