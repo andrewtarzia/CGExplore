@@ -20,10 +20,10 @@ from env_set import cages
 from analysis_utilities import (
     topology_labels,
     write_out_mapping,
+    get_lowest_energy_data,
     data_to_array,
     convert_topo,
     convert_tors,
-    max_energy,
 )
 
 
@@ -193,6 +193,33 @@ def parity_2(all_data, geom_data, figure_output):
         plt.close()
 
 
+def pore_b2b_distance(all_data, figure_output):
+    logging.info("running pore_b2b parity")
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    ax.scatter(
+        all_data["pore"],
+        all_data["min_b2b_distance"],
+        c="gray",
+        alpha=0.2,
+        # edgecolor="k",
+        s=30,
+        rasterized=True,
+    )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("pore [A]", fontsize=16)
+    ax.set_ylabel("min_b2b [A]", fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "pore_vs_minb2b.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -211,10 +238,16 @@ def main():
     with open(calculation_output / "all_geom.json", "r") as f:
         geom_data = json.load(f)
     logging.info(f"there are {len(all_data)} collected data")
+    low_e_data = get_lowest_energy_data(
+        all_data=all_data,
+        output_dir=calculation_output,
+    )
     write_out_mapping(all_data)
 
-    parity_1(all_data, figure_output)
-    parity_2(all_data, geom_data, figure_output)
+    pore_b2b_distance(low_e_data, figure_output)
+    raise SystemExit()
+    parity_1(low_e_data, figure_output)
+    parity_2(low_e_data, geom_data, figure_output)
 
 
 if __name__ == "__main__":
