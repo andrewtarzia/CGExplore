@@ -884,6 +884,158 @@ def mixed_distributions(all_data, figure_output):
     plot_average(bb_data, color_map, figure_output)
 
 
+def plot_vs_2d_distributions(data, color_map, figure_output):
+
+    topologies = [i for i in topology_labels(short="P") if i != "6P8"]
+
+    topology_data = {}
+    fig, axs = plt.subplots(
+        ncols=4,
+        nrows=3,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    for ax, tstr in zip(flat_axs, topologies):
+        tdata = data[data["topology"] == tstr]
+        topology_data[tstr] = {}
+
+        for tor in color_map:
+            tor_data = tdata[tdata["torsions"] == tor]
+            if len(data) == 0:
+                continue
+
+            stable_data = tor_data[
+                tor_data["energy_per_bb"] < isomer_energy()
+            ]
+            bas = stable_data["target_bite_angle"]
+            clangles = stable_data["clangle"]
+            ax.scatter(
+                bas,
+                clangles,
+                c=color_map[tor][0],
+                marker=color_map[tor][1],
+                label=convert_tors(tor, num=False),
+                s=color_map[tor][2],
+                edgecolor=color_map[tor][3],
+            )
+            topology_data[tstr][tor] = (len(stable_data), len(tor_data))
+
+        ax.set_title(tstr, fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("target bite angle [deg]", fontsize=16)
+    ax.set_ylabel("clangle [deg]", fontsize=16)
+    # ax.set_xlim(0, max_ + 0.1)
+    # ax.set_ylim(0, None)
+
+    ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "flexeffect_biteangle.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    return topology_data
+
+
+def plot_topology_flex(data, figure_output):
+
+    print(data)
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    categories_ton = {convert_topo(i): 0 for i in data}
+    categories_toff = {convert_topo(i): 0 for i in data}
+    categories_subtracted = {convert_topo(i): 0 for i in data}
+
+    for tstr in data:
+        categories_ton[convert_topo(tstr)] = (
+            data[tstr]["ton"][0] / data[tstr]["ton"][1]
+        ) * 100
+        categories_toff[convert_topo(tstr)] = (
+            data[tstr]["toff"][0] / data[tstr]["toff"][1]
+        ) * 100
+        categories_subtracted[convert_topo(tstr)] = (
+            categories_toff[convert_topo(tstr)]
+            - categories_ton[convert_topo(tstr)]
+        ) / categories_toff[convert_topo(tstr)]
+
+    ax.bar(
+        categories_ton.keys(),
+        categories_ton.values(),
+        # color="#06AED5",
+        color="#086788",
+        # color="#DD1C1A",
+        # color="#320E3B",
+        edgecolor="none",
+        lw=2,
+        label=convert_tors("ton", num=False),
+    )
+
+    ax.bar(
+        categories_toff.keys(),
+        categories_toff.values(),
+        # color="#06AED5",
+        color="none",
+        # color="#DD1C1A",
+        # color="#320E3B",
+        edgecolor="k",
+        lw=2,
+        label=convert_tors("toff", num=False),
+    )
+
+    for x, tstr in enumerate(categories_toff):
+        ax.text(
+            x=x - 0.3,
+            y=3,
+            s=round(categories_subtracted[tstr], 1),
+            c="white",
+            fontsize=16,
+        )
+
+    ax.axvline(x=4.5, linestyle="--", c="gray", lw=2)
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    # ax.set_xlabel("topology", fontsize=16)
+    ax.set_ylabel("stable / total ", fontsize=16)
+    ax.set_ylim(0, 100)
+    ax.legend(fontsize=16)
+    ax.set_xticks(range(len(categories_toff)))
+    ax.set_xticklabels(categories_ton.keys(), rotation=45)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "flexeffect_topologies.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
+def flexeffect_per_property(all_data, figure_output):
+    logging.info("running self sort vs property distributions")
+
+    trim = all_data[all_data["vdws"] == "von"]
+    color_map = {
+        "toff": ("white", "o", 120, "k"),
+        "ton": ("#086788", "o", 80, "none"),
+        # "toff", "3C1"): "#0B2027",
+        # "toff", "4C1"): "#7A8B99",
+    }
+
+    topology_data = plot_vs_2d_distributions(
+        data=trim,
+        color_map=color_map,
+        figure_output=figure_output,
+    )
+    plot_topology_flex(topology_data, figure_output)
+    raise SystemExit()
+
+
 def shape_vector_distributions(all_data, figure_output):
     logging.info("running shape_vector_distributions")
 
@@ -1222,6 +1374,7 @@ def main():
     with open(calculation_output / "all_geom.json", "r") as f:
         geom_data = json.load(f)
 
+    flexeffect_per_property(low_e_data, figure_output)
     correlation_matrix(low_e_data, figure_output)
     identity_distributions(all_data, figure_output)
     mixed_distributions(low_e_data, figure_output)
