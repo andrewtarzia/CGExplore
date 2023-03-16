@@ -19,6 +19,7 @@ from env_set import cages
 
 from analysis_utilities import (
     topology_labels,
+    eb_str,
     write_out_mapping,
     get_lowest_energy_data,
     data_to_array,
@@ -31,74 +32,66 @@ def parity_1(all_data, figure_output):
     logging.info("running parity_1")
 
     tcmap = topology_labels(short="P")
-    tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
+    tcpos = {tstr: i for i, tstr in enumerate(tcmap) if tstr != "6P8"}
 
-    fig, axs = plt.subplots(
-        nrows=1,
-        ncols=3,
-        sharex=True,
-        sharey=True,
-        figsize=(16, 5),
+    vdata = all_data[all_data["vdws"] == "von"]
+
+    fig, ax = plt.subplots(
+        # nrows=1,
+        # ncols=3,
+        # sharex=True,
+        # sharey=True,
+        figsize=(8, 5),
     )
-    flat_axs = axs.flatten()
 
-    for ax, (tors, vdws) in zip(
-        flat_axs, (("ton", "voff"), ("toff", "von"), ("toff", "voff"))
-    ):
-        for tstr in tcmap:
-            if tstr in ("6P8",):
-                if tors == "ton":
-                    continue
-                elif tors == "toff" and vdws == "von":
-                    continue
+    # for ax, tors, vdws) in zip(
+    #     flat_axs, (("ton", "voff"), ("toff", "von"), ("toff", "voff"))
+    # ):
+    for tstr in tcmap:
+        if tstr in ("6P8",):
+            continue
 
-            tdata = all_data[all_data["topology"] == tstr]
-            if tstr in ("6P8",):
-                data1 = tdata[tdata["torsions"] == "toff"]
-                data1 = data1[data1["vdws"] == "von"]
-            else:
-                data1 = tdata[tdata["torsions"] == "ton"]
-                data1 = data1[data1["vdws"] == "von"]
-            data2 = tdata[tdata["torsions"] == tors]
-            data2 = data2[data2["vdws"] == vdws]
+        tdata = vdata[vdata["topology"] == tstr]
+        data1 = tdata[tdata["torsions"] == "ton"]
+        data2 = tdata[tdata["torsions"] == "toff"]
 
-            out_data = data1.merge(
-                data2,
-                on="cage_name",
-            )
-
-            ydata = list(out_data["energy_per_bb_x"])
-            xdata = list(out_data["energy_per_bb_y"])
-            diffdata = [y - x for x, y, in zip(xdata, ydata)]
-            xpos = tcpos[tstr]
-
-            parts = ax.violinplot(
-                [i for i in diffdata],
-                [xpos],
-                # points=200,
-                vert=True,
-                widths=0.8,
-                showmeans=False,
-                showextrema=False,
-                showmedians=False,
-                # bw_method=0.5,
-            )
-
-            for pc in parts["bodies"]:
-                pc.set_facecolor("#086788")
-                pc.set_edgecolor("none")
-                pc.set_alpha(1.0)
-
-        ax.plot((-1, 12), (0, 0), c="k")
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_ylabel(f"ton,von - {tors},{vdws} [kJmol-1]", fontsize=16)
-        ax.set_xlim(-0.5, 11.5)
-        # ax.set_ylim(-22, 22)
-        ax.set_xticks([tcpos[i] for i in tcpos])
-        ax.set_xticklabels(
-            [convert_topo(i) for i in tcpos],
-            rotation=45,
+        out_data = data1.merge(
+            data2,
+            on="cage_name",
         )
+
+        ydata = list(out_data["energy_per_bb_x"])
+        xdata = list(out_data["energy_per_bb_y"])
+        diffdata = [y - x for x, y, in zip(xdata, ydata)]
+        xpos = tcpos[tstr]
+
+        parts = ax.violinplot(
+            [i for i in diffdata],
+            [xpos],
+            # points=200,
+            vert=True,
+            widths=0.8,
+            showmeans=False,
+            showextrema=False,
+            showmedians=False,
+            # bw_method=0.5,
+        )
+
+        for pc in parts["bodies"]:
+            pc.set_facecolor("#086788")
+            pc.set_edgecolor("none")
+            pc.set_alpha(1.0)
+
+    ax.plot((-1, 12), (0, 0), c="k")
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_ylabel(f"ton - toff [kJmol$^{-1}$]", fontsize=16)
+    ax.set_xlim(-0.5, 10.5)
+    # ax.set_ylim(-22, 22)
+    ax.set_xticks([tcpos[i] for i in tcpos])
+    ax.set_xticklabels(
+        [convert_topo(i) for i in tcpos],
+        rotation=45,
+    )
 
     fig.tight_layout()
     fig.savefig(
@@ -114,7 +107,7 @@ def parity_2(all_data, geom_data, figure_output):
     tcmap = topology_labels(short="P")
 
     c2labels = ("Pb_Ba_Ag",)
-    vmax = max_energy()
+    vmax = 10
     for tstr in tcmap:
         if tstr in ("6P8",):
             continue
@@ -154,13 +147,14 @@ def parity_2(all_data, geom_data, figure_output):
                 vmin=0,
                 vmax=vmax,
                 alpha=1.0,
-                # edgecolor="k",
+                edgecolor="k",
+                linewidth=1,
                 s=50,
                 cmap="Blues_r",
                 rasterized=True,
             )
 
-            ax.plot((90, 180), (90, 180), c="k", lw=2, linestyle="--")
+            ax.plot((0, 200), (0, 200), c="k", lw=2, linestyle="--")
 
             ax.tick_params(axis="both", which="major", labelsize=16)
             ax.set_xlabel("target [deg]", fontsize=16)
@@ -172,6 +166,8 @@ def parity_2(all_data, geom_data, figure_output):
                 ),
                 fontsize=16,
             )
+            ax.set_xlim(70, 190)
+            ax.set_ylim(70, 190)
 
         cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
         cmap = mpl.cm.Blues_r
@@ -182,12 +178,12 @@ def parity_2(all_data, geom_data, figure_output):
             orientation="vertical",
         )
         cbar.ax.tick_params(labelsize=16)
-        cbar.set_label("energy per bond formed [kJmol-1]", fontsize=16)
+        cbar.set_label(eb_str(), fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
             os.path.join(figure_output, f"par_2_{tstr}.pdf"),
-            dpi=720,
+            dpi=320,
             bbox_inches="tight",
         )
         plt.close()
@@ -245,7 +241,6 @@ def main():
     write_out_mapping(all_data)
 
     pore_b2b_distance(low_e_data, figure_output)
-    raise SystemExit()
     parity_1(low_e_data, figure_output)
     parity_2(low_e_data, geom_data, figure_output)
 
