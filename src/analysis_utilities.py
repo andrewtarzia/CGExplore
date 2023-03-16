@@ -35,12 +35,7 @@ def eb_str():
 
 def isomer_energy():
     # kJ/mol.
-    return 1.0
-
-
-def max_energy():
-    # kJ/mol.
-    return 50.0
+    return 0.3
 
 
 def min_radius():
@@ -226,6 +221,9 @@ def cltypetopo_to_colormap():
             "mixed-2": "white",
             "mixed-3": "#8A8A8A",
             "mixed>3": "#434343",
+        },
+        "unstable": {
+            "unstable": "white",
         },
     }
 
