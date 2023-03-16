@@ -15,17 +15,22 @@ import logging
 import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.spatial import ConvexHull
+import numpy as np
 
 from env_set import cages
 
 from analysis_utilities import (
     write_out_mapping,
+    get_lowest_energy_data,
     map_cltype_to_topology,
+    pore_str,
+    rg_str,
     convert_tors,
     convert_prop,
     convert_topo,
     topology_labels,
-    max_energy,
+    stoich_map,
     data_to_array,
     isomer_energy,
 )
@@ -33,94 +38,172 @@ from analysis_utilities import (
 
 def phase_space_2(all_data, figure_output):
     logging.info("doing phase space 2")
+
+    vdata = all_data[all_data["vdws"] == "von"]
+
+    bbs = set(vdata["bbpair"])
+    bb_data = {}
+    for bb_pair in bbs:
+        bbd = vdata[vdata["bbpair"] == bb_pair]
+
+        for tor in ("ton", "toff"):
+            data = bbd[bbd["torsions"] == tor]
+            stable_energies = {
+                str(row["topology"]): float(row["energy_per_bb"])
+                for i, row in data.iterrows()
+                if float(row["energy_per_bb"]) < isomer_energy()
+            }
+            if len(stable_energies) == 0:
+                continue
+            stoichiometries = {
+                i: stoich_map(i) for i in stable_energies
+            }
+            min_stoichiometry = min(stoichiometries.values())
+            kinetic_energies = {
+                i: stable_energies[i]
+                for i in stoichiometries
+                if stoichiometries[i] == min_stoichiometry
+            }
+
+            if len(kinetic_energies) == 1:
+                # Self-sorted.
+                tstr = list(kinetic_energies.keys())[0]
+                epb = list(kinetic_energies.values())[0]
+                kinetic_data = data[data["topology"] == tstr]
+
+                node_measure = float(kinetic_data["sv_n_dist"])
+                ligand_measure = float(kinetic_data["sv_n_dist"])
+                if node_measure is None:
+                    shape_measure = ligand_measure
+                elif ligand_measure is None:
+                    shape_measure = node_measure
+                else:
+                    shape_measure = min((node_measure, ligand_measure))
+                bb_data[(bb_pair, tor)] = {
+                    "energy_per_bb": epb,
+                    "topology": tstr,
+                    "pore": float(kinetic_data["pore"]),
+                    "radius_gyration": float(
+                        kinetic_data["radius_gyration"]
+                    ),
+                    "shape_measure": shape_measure,
+                    "cltitle": str(kinetic_data["cltitle"].iloc[0]),
+                    "clangle": float(kinetic_data["clangle"]),
+                    "c3angle": float(kinetic_data["c3angle"]),
+                    "target_bite_angle": float(
+                        kinetic_data["target_bite_angle"]
+                    ),
+                }
+
     fig, axs = plt.subplots(
-        nrows=3,
-        ncols=2,
+        nrows=2,
+        ncols=3,
         figsize=(16, 10),
     )
     flat_axs = axs.flatten()
 
+    def cltitleconversion(clstr):
+        return {"4C1": 4, "3C1": 3}[clstr]
+
+    def no_conversion(value):
+        return value
+
     axmap = (
         {
             "ax": flat_axs[0],
-            "tor": "ton",
-            "vdw": "von",
-            "x": "pore",
-            "y": "energy_per_bb",
-            "ylbl": eb_str(),
+            "y": "pore",
+            "ylbl": pore_str(),
+            "x": "topology",
+            "xlbl": "cage stoichiometry",
+            "xmapfun": stoich_map,
+            "xlim": (None, None),
         },
         {
             "ax": flat_axs[1],
-            "tor": "ton",
-            "vdw": "von",
-            "x": "min_b2b_distance",
-            "y": "energy_per_bb",
-            "ylbl": eb_str(),
-        },
-        {
-            "ax": flat_axs[4],
-            "tor": "ton",
-            "vdw": "von",
-            "x": "sv_l_dist",
-            "y": "energy_per_bb",
-            "ylbl": eb_str(),
-        },
-        {
-            "ax": flat_axs[5],
-            "tor": "ton",
-            "vdw": "von",
-            "x": "sv_n_dist",
-            "y": "energy_per_bb",
-            "ylbl": eb_str(),
+            "y": "pore",
+            "ylbl": pore_str(),
+            "x": "cltitle",
+            "xlbl": "largest coordination",
+            "xmapfun": cltitleconversion,
+            "xlim": (2.8, 4.2),
         },
         {
             "ax": flat_axs[2],
-            "tor": "ton",
-            "vdw": "von",
-            "x": "radius_gyration",
-            "y": "energy_per_bb",
-            "ylbl": eb_str(),
+            "y": "pore",
+            "ylbl": pore_str(),
+            "x": "clangle",
+            "xlbl": "Cl angle [deg]",
+            "xmapfun": no_conversion,
+            "xlim": (48, 121),
         },
         {
             "ax": flat_axs[3],
-            "tor": "ton",
-            "vdw": "von",
-            "x": "flexibility_measure",
-            "y": "energy_per_bb",
-            "ylbl": eb_str(),
+            "y": "pore",
+            "ylbl": pore_str(),
+            "x": "target_bite_angle",
+            "xlbl": "target bite angle [deg]",
+            "xmapfun": no_conversion,
+            "xlim": (-1, 181),
+        },
+        {
+            "ax": flat_axs[4],
+            "y": "pore",
+            "ylbl": pore_str(),
+            "x": "shape_measure",
+            "xlbl": "min(shape measure)",
+            "xmapfun": no_conversion,
+            "xlim": (-0.1, 1.1),
+        },
+        {
+            "ax": flat_axs[5],
+            "y": "pore",
+            "ylbl": pore_str(),
+            "x": "radius_gyration",
+            "xlbl": rg_str(),
+            "xmapfun": no_conversion,
+            "xlim": (None, None),
         },
     )
     for axd in axmap:
+
         ax = axd["ax"]
-        tdata = all_data[all_data["torsions"] == axd["tor"]]
-        vdata = tdata[tdata["vdws"] == axd["vdw"]]
-        if axd["x"] == "flexibility_measure":
-            xvalues = [
-                j
-                for i, j in enumerate(vdata[axd["x"]])
-                if list(vdata[axd["x"]])[i] < 100
+
+        # Do convexhull of full data set.
+        if axd["x"] not in ("shape_measure", "cltitle"):
+            full_data_y = list(all_data[axd["y"]])
+            full_data_x = [
+                axd["xmapfun"](i) for i in all_data[axd["x"]]
             ]
-            yvalues = [
-                j
-                for i, j in enumerate(vdata[axd["y"]])
-                if list(vdata[axd["x"]])[i] < 100
-            ]
-        else:
-            xvalues = vdata[axd["x"]]
-            yvalues = vdata[axd["y"]]
-        hb = ax.hexbin(
+            points = np.column_stack((full_data_x, full_data_y))
+            points = points[~np.isnan(points).any(axis=1), :]
+            hull = ConvexHull(points)
+            for simplex in hull.simplices:
+                ax.plot(
+                    points[simplex, 0],
+                    points[simplex, 1],
+                    "r",
+                    linestyle="--",
+                )
+
+        yvalues = [bb_data[i][axd["y"]] for i in bb_data]
+        xvalues = [
+            axd["xmapfun"](bb_data[i][axd["x"]]) for i in bb_data
+        ]
+        ax.scatter(
             xvalues,
             yvalues,
-            gridsize=20,
-            cmap="inferno",
-            bins="log",
-            vmax=len(all_data),
+            c="#086788",
+            edgecolor="k",
+            s=80,
         )
-        cbar = fig.colorbar(hb, ax=ax, label="log10(N)")
-        cbar.ax.tick_params(labelsize=16)
+
+        if axd["x"] == "cltitle":
+            ax.set_xticks((3, 4))
+
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(f"{axd['x']}", fontsize=16)
+        ax.set_xlabel(f"{axd['xlbl']}", fontsize=16)
         ax.set_ylabel(f"{axd['ylbl']}", fontsize=16)
+        ax.set_xlim(axd["xlim"])
 
     fig.tight_layout()
     fig.savefig(
@@ -174,7 +257,7 @@ def phase_space_3(all_data, figure_output):
             )
 
             min_energy = min(energies.values())
-            if min_energy > max_energy():
+            if min_energy > isomer_energy():
                 topo_str = "unstable"
             elif num_mixed > 1:
                 topo_str = "mixed"
@@ -209,10 +292,7 @@ def phase_space_3(all_data, figure_output):
 
         ax.bar_label(bars, padding=3, fontsize=16)
 
-        title = (
-            f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
-            f"{max_energy()}eV"
-        )
+        title = f"{bbtitle}, {torsion}: {isomer_energy()}eV"
         ax.set_title(title, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel("count", fontsize=16)
@@ -278,10 +358,7 @@ def phase_space_11(all_data, figure_output):
 
         ax.bar_label(bars, padding=3, fontsize=16)
 
-        title = (
-            f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
-            f"{max_energy()}eV"
-        )
+        title = f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
         ax.set_title(title, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel("num. persistent", fontsize=16)
@@ -345,10 +422,7 @@ def phase_space_12(all_data, figure_output):
 
         ax.bar_label(bars, padding=3, fontsize=16)
 
-        title = (
-            f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
-            f"{max_energy()}eV"
-        )
+        title = f"{bbtitle}, {torsion}: {isomer_energy()}eV: "
         ax.set_title(title, fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel("num. persistent and sorted", fontsize=16)
@@ -477,14 +551,19 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=calculation_output,
     )
+    low_e_data = get_lowest_energy_data(
+        all_data=all_data,
+        output_dir=calculation_output,
+    )
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
-    phase_space_2(all_data, figure_output)
-    phase_space_3(all_data, figure_output)
-    phase_space_11(all_data, figure_output)
-    phase_space_12(all_data, figure_output)
-    phase_space_5(all_data, figure_output)
+    phase_space_2(low_e_data, figure_output)
+    raise SystemExit()
+    phase_space_3(low_e_data, figure_output)
+    phase_space_11(low_e_data, figure_output)
+    phase_space_12(low_e_data, figure_output)
+    phase_space_5(low_e_data, figure_output)
 
 
 if __name__ == "__main__":

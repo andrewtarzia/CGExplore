@@ -33,6 +33,16 @@ def eb_str():
     return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
 
 
+def pore_str():
+    # return r"min(centroid-bead) [$\mathrm{\AA}$]"
+    return r"pore size [$\mathrm{\AA}$]"
+
+
+def rg_str():
+    # return r"min(centroid-bead) [$\mathrm{\AA}$]"
+    return r"$R_{\mathrm{g}}$ [$\mathrm{\AA}$]"
+
+
 def isomer_energy():
     # kJ/mol.
     return 0.3
