@@ -567,7 +567,7 @@ def selfsort_map(all_data, figure_output):
             ax.tick_params(axis="both", which="major", labelsize=16)
 
         for i in cltypetopo_to_colormap():
-            if i not in (cltitle,):
+            if i not in (cltitle, "unstable"):
                 continue
             for j in cltypetopo_to_colormap()[i]:
                 # if i == "mixed":
