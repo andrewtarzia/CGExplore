@@ -16,7 +16,6 @@ import stko
 import json
 import numpy as np
 import logging
-import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -29,12 +28,13 @@ from utilities import convert_pyramid_angle
 from analysis_utilities import (
     write_out_mapping,
     eb_str,
+    pore_str,
+    rg_str,
     data_to_array,
     isomer_energy,
     get_lowest_energy_data,
     convert_topo,
     convert_tors,
-    convert_vdws,
     topology_labels,
     target_shapes,
     mapshape_to_topology,
@@ -82,18 +82,17 @@ def identity_distributions(all_data, figure_output):
 
 def geom_distributions(all_data, geom_data, figure_output):
     logging.info("running geom_distributions")
-    # vmax = max_energy()
 
     comparisons = {
         "torsions": {
             "measure": "dihedrals",
-            "xlabel": "torsion [deg]",
+            "xlabel": "torsion [deg.]",
             "column": None,
             "label_options": ("Pb_Ba_Ba_Pb",),
         },
         "clangle": {
             "measure": "angles",
-            "xlabel": "CL angle [deg]",
+            "xlabel": "CL angle [deg.]",
             "column": "clangle",
             "label_options": (
                 "Pb_Pd_Pb",
@@ -104,31 +103,31 @@ def geom_distributions(all_data, geom_data, figure_output):
         },
         "clr0": {
             "measure": "bonds",
-            "xlabel": "CL bond length [A]",
+            "xlabel": r"CL bond length [$\mathrm{\AA}$]",
             "column": "clr0",
             "label_options": ("Pd_Pb", "C_Pb"),
         },
         "c2angle": {
             "measure": "angles",
-            "xlabel": "bonder angle [deg]",
+            "xlabel": "bonder angle [deg.]",
             "column": "c2angle",
             "label_options": ("Pb_Ba_Ag",),
         },
         "c2backbone": {
             "measure": "angles",
-            "xlabel": "backbone angle [deg]",
+            "xlabel": "backbone angle [deg.]",
             "column": None,
             "label_options": ("Ba_Ag_Ba",),
         },
         "c2r0": {
             "measure": "bonds",
-            "xlabel": "C2 backbone length [A]",
+            "xlabel": r"C2 backbone length [$\mathrm{\AA}$]",
             "column": "c2r0",
             "label_options": ("Ba_Ag",),
         },
         "c2bonder": {
             "measure": "bonds",
-            "xlabel": "C2 bonder length [A]",
+            "xlabel": r"C2 bonder length [$\mathrm{\AA}$]",
             "column": None,
             "label_options": ("Pb_Ba",),
         },
@@ -138,26 +137,27 @@ def geom_distributions(all_data, geom_data, figure_output):
     tcpos = {
         tstr: i for i, tstr in enumerate(tcmap) if tstr not in ("6P8",)
     }
+    vdw_frame = all_data[all_data["vdws"] == "von"]
 
     for comp in comparisons:
         cdict = comparisons[comp]
         column = cdict["column"]
 
         fig, axs = plt.subplots(
-            ncols=2, nrows=2, sharey=True, figsize=(16, 10)
+            ncols=2,
+            nrows=1,
+            sharey=True,
+            figsize=(16, 5),
         )
         flat_axs = axs.flatten()
-        for ax, (tors, vdws) in zip(
-            flat_axs,
-            itertools.product(("ton", "toff"), ("von", "voff")),
-        ):
-            tor_frame = all_data[all_data["torsions"] == tors]
-            vdw_frame = tor_frame[tor_frame["vdws"] == vdws]
+        for ax, tors in zip(flat_axs, ("ton", "toff")):
+            tor_frame = vdw_frame[vdw_frame["torsions"] == tors]
+
             for i, tstr in enumerate(tcmap):
                 if tstr in ("6P8",):
                     continue
 
-                topo_frame = vdw_frame[vdw_frame["topology"] == tstr]
+                topo_frame = tor_frame[tor_frame["topology"] == tstr]
 
                 values = []
                 # energies = []
@@ -233,8 +233,8 @@ def geom_distributions(all_data, geom_data, figure_output):
             ax.set_title(
                 (
                     f'{cdict["xlabel"]}: '
-                    f"{convert_tors(tors,num=False)}, "
-                    f"{convert_vdws(vdws)}"
+                    f"{convert_tors(tors,num=False)} "
+                    # f"{convert_vdws(vdws)}"
                 ),
                 fontsize=16,
             )
@@ -401,66 +401,52 @@ def single_value_distributions(all_data, figure_output):
     to_plot = {
         "energy_per_bb": {
             "xtitle": eb_str(),
-            "xlim": (0, 200),
+            "xlim": (0, 50),
         },
-        "pore": {"xtitle": "min. distance [A]", "xlim": (0, 15)},
+        "pore": {"xtitle": pore_str(), "xlim": (0, 10)},
         "min_b2b_distance": {
             "xtitle": "min. b2b distance [A]",
             "xlim": (0, 1.2),
         },
         "HarmonicBondForce_kjmol": {
             "xtitle": r"$E_{\mathrm{bond}}$ [kJmol$^{-1}$]",
-            "xlim": (0, 40),
+            "xlim": (0, 3),
         },
         "HarmonicAngleForce_kjmol": {
             "xtitle": r"$E_{\mathrm{angle}}$ [kJmol$^{-1}$]",
-            "xlim": (0, 1000),
+            "xlim": (0, 400),
         },
         "CustomNonbondedForce_kjmol": {
             "xtitle": r"$E_{\mathrm{excl. vol.}}$ [kJmol$^{-1}$]",
-            "xlim": (0, 400),
+            "xlim": (0, 20),
         },
         "PeriodicTorsionForce_kjmol": {
             "xtitle": r"$E_{\mathrm{dihedral}}$ [kJmol$^{-1}$]",
-            "xlim": (0, 400),
-        },
-        "radius_gyration": {
-            "xtitle": "R_g [A]",
             "xlim": (0, 20),
         },
+        "radius_gyration": {
+            "xtitle": rg_str(),
+            "xlim": (0, 10),
+        },
         "max_diameter": {
-            "xtitle": "$D$ [A]",
-            "xlim": (0, 50),
+            "xtitle": r"$D$ [$\mathrm{\AA}$]",
+            "xlim": (0, 30),
         },
-        "rg_md": {"xtitle": "R_g / $D$", "xlim": (0, 0.6)},
-        "pore_md": {"xtitle": "min. distance / $D$", "xlim": (0, 0.5)},
-        "pore_rg": {"xtitle": "min. distance / R_g", "xlim": (0, 1.2)},
-        "structure_dynamics": {
-            "xtitle": r"$\sigma$($R_g$)/average [unitless]",
-            "xlim": (0, 1),
+        "rg_md": {
+            "xtitle": r"$R_{\mathrm{g}}$ / $D$",
+            "xlim": (0, 0.6),
         },
-        "pore_dynamics": {
-            "xtitle": r"$\sigma$(pore measure)/average [unitless]",
-            "xlim": (0, 5),
-        },
-        "node_shape_dynamics": {
-            "xtitle": r"$\sigma$(node shape cos.sim.) [unitless]",
-            "xlim": (0, 0.5),
-        },
-        "lig_shape_dynamics": {
-            "xtitle": r"$\sigma$(lig shape cos.sim.) [unitless]",
-            "xlim": (0, 0.5),
-        },
+        "pore_md": {"xtitle": "pore size / $D$", "xlim": (0, 0.5)},
+        "pore_rg": {"xtitle": "pore size / R_g", "xlim": (0, 1.2)},
     }
 
     topologies = topology_labels(short="P")
     color_map = {
         ("ton", "von"): "#086788",
         # ("ton", "voff"): "#F9A03F",
-        # ("toff", "von"): "#0B2027",
+        ("toff", "von"): "#0B2027",
         # ("toff", "voff"): "#7A8B99",
     }
-    tor = "ton"
     vdw = "von"
 
     for tp in to_plot:
@@ -470,13 +456,13 @@ def single_value_distributions(all_data, figure_output):
         count = 0
         toptions = {}
         for tstr in topologies:
-            # for tor in ("toff", "ton"):
-            #     for vdw in ("voff", "von"):
-            color = color_map[(tor, vdw)]
-            if tstr == "6P8":
-                continue
-            toptions[(tstr, tor, vdw)] = (count, color)
-            count += 1
+            for tor, vdw in color_map:
+                # for vdw in ("voff", "von"):
+                color = color_map[(tor, vdw)]
+                if tstr == "6P8":
+                    continue
+                toptions[(tstr, tor, vdw)] = (count, color)
+                count += 1
 
         for i, topt in enumerate(toptions):
             topo_frame = all_data[all_data["topology"] == topt[0]]
@@ -529,8 +515,8 @@ def single_value_distributions(all_data, figure_output):
                 all_counts[tstr] = []
             all_counts[tstr].append(toptions[i][0])
 
-        xticks = {i: sum(all_counts[i]) / 1 for i in all_counts}
-        ylines = [xticks[i] + 0.5 for i in xticks][:-1]
+        xticks = {i: sum(all_counts[i]) / 2 for i in all_counts}
+        ylines = [xticks[i] + 1.0 for i in xticks][:-1]
 
         for yl in ylines:
             ax.axvline(x=yl, c="gray", linestyle="--", alpha=0.4)
@@ -548,7 +534,7 @@ def single_value_distributions(all_data, figure_output):
             labels.append(
                 (
                     mpatches.Patch(color=col),
-                    f"{convert_tors(tor)}, {convert_vdws(vdw)}",
+                    f"{convert_tors(tor, num=False)}",
                 )
             )
             # ax.scatter(
@@ -560,8 +546,8 @@ def single_value_distributions(all_data, figure_output):
             #     alpha=0.2,
             #     label=,
             # )
-        # ax.legend(*zip(*labels), fontsize=16, ncols=4)
-        ax.set_xlim(-0.5, max(ylines) + 1.0)
+        ax.legend(*zip(*labels), fontsize=16, ncols=4)
+        ax.set_xlim(-0.5, max(ylines) + 2.0)
 
         fig.tight_layout()
         fig.savefig(
@@ -1016,7 +1002,7 @@ def plot_topology_flex(data, figure_output):
 
 
 def flexeffect_per_property(all_data, figure_output):
-    logging.info("running self sort vs property distributions")
+    logging.info("running effect of flexibility distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
     color_map = {
@@ -1376,12 +1362,12 @@ def main():
     correlation_matrix(low_e_data, figure_output)
     identity_distributions(all_data, figure_output)
     mixed_distributions(low_e_data, figure_output)
-    check_odd_outcomes(all_data, figure_output)
     single_value_distributions(low_e_data, figure_output)
+    geom_distributions(all_data, geom_data, figure_output)
+    check_odd_outcomes(all_data, figure_output)
     shape_vector_distributions(low_e_data, figure_output)
     shape_vectors_2(low_e_data, figure_output)
     shape_vectors_3(low_e_data, figure_output)
-    geom_distributions(all_data, geom_data, figure_output)
     rmsd_distributions(all_data, calculation_output, figure_output)
 
 
