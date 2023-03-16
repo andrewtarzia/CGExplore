@@ -303,31 +303,60 @@ def map_cltype_to_topology():
     }
 
 
-def mapshape_to_topology(mode):
-    if mode == "n":
-        return {
-            # "2P3": "TBPY-5",
-            "4P6": "T-4",
-            "4P62": "T-4",
-            "6P9": "TPR-6",
-            "8P12": "CU-8",
-            # "2P4": "OC-6b",
-            "3P6": "TP-3",
-            "4P8": "SP-4",
-            "6P12": "OC-6",
-            "8P16": "CU-8",
-            # "12P24": "",
-            "6P8": "OC-6",
-        }
+def mapshape_to_topology(mode, from_shape=False):
+    if from_shape:
+        if mode == "n":
+            return {
+                "TP-3": ("3P6",),
+                "mvOC-3": ("3P6",),
+                "T-4": ("4P6", "4P62", "4P8"),
+                "SP-4": ("4P6", "4P62", "4P8"),
+                "OC-6": ("6P9", "6P12", "6P8"),
+                "PPY-6": ("6P9", "6P12", "6P8"),
+                "HP-6": ("6P9", "6P12", "6P8"),
+                "CU-8": ("8P12", "8P16"),
+                "JETBPY-8": ("8P12", "8P16"),
+                "OP-8": ("8P12", "8P16"),
+            }
 
-    elif mode == "l":
-        return {
-            "2P3": "TP-3",
-            "4P6": "OC-6",
-            "4P62": "OC-6",
-            "2P4": "SP-4",
-            "6P8": "CU-8",
-        }
+        elif mode == "l":
+            return {
+                "TP-3": ("2P3",),
+                "mvOC-3": ("2P3",),
+                "T-4": ("2P4",),
+                "SP-4": ("2P4",),
+                "OC-6": ("4P6", "4P62"),
+                "PPY-6": ("4P6", "4P62"),
+                "HP-6": ("4P6", "4P62"),
+                "CU-8": ("6P8",),
+                "JETBPY-8": ("6P8",),
+                "OP-8": ("6P8",),
+            }
+    else:
+        if mode == "n":
+            return {
+                # "2P3": "TBPY-5",
+                "4P6": "T-4",
+                "4P62": "T-4",
+                "6P9": "TPR-6",
+                "8P12": "CU-8",
+                # "2P4": "OC-6b",
+                "3P6": "TP-3",
+                "4P8": "SP-4",
+                "6P12": "OC-6",
+                "8P16": "CU-8",
+                # "12P24": "",
+                "6P8": "OC-6",
+            }
+
+        elif mode == "l":
+            return {
+                "2P3": "TP-3",
+                "4P6": "OC-6",
+                "4P62": "OC-6",
+                "2P4": "SP-4",
+                "6P8": "CU-8",
+            }
 
 
 def collate_cage_vector_from_bb(data, test_bb):
