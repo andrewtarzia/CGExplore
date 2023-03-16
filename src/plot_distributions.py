@@ -575,7 +575,7 @@ def single_value_distributions(all_data, figure_output):
 def plot_sorted(bb_data, color_map, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    max_ = 11
+    max_ = 6
 
     # for ax, cltitle in zip(axs, ("3C1", "4C1")):
     for tor, cltitle in color_map:
@@ -587,7 +587,7 @@ def plot_sorted(bb_data, color_map, figure_output):
 
         xs = []
         ys = []
-        for x in np.linspace(0.01, max_, 100):
+        for x in np.linspace(0.01, max_, 1000):
             stable_isomers = [
                 sum(i[j] < x for j in i) for i in data if flag in i
             ]
