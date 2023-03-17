@@ -693,6 +693,7 @@ def angle_map(all_data, figure_output):
             fig, ax = plt.subplots(figsize=(8, 5))
             tor_tests = ("toff",)
             flat_axs = (ax,)
+
         else:
             fig, axs = plt.subplots(
                 ncols=2,
@@ -700,6 +701,7 @@ def angle_map(all_data, figure_output):
                 sharey=True,
                 figsize=(16, 5),
             )
+
             tor_tests = ("ton", "toff")
             flat_axs = axs.flatten()
 
@@ -709,10 +711,16 @@ def angle_map(all_data, figure_output):
             if tstr == "6P8":
                 x = pdata["c3angle"]
                 y = pdata["clangle"]
+                ax.set_xlabel("c3 angle [deg]", fontsize=16)
 
             else:
                 x = pdata["target_bite_angle"]
                 y = pdata["clangle"]
+                ax.set_xlabel("bite angle [deg]", fontsize=16)
+                ax.set_title(
+                    f"{convert_tors(tor, num=False)}",
+                    fontsize=16,
+                )
 
             ax.scatter(
                 x,
@@ -727,12 +735,8 @@ def angle_map(all_data, figure_output):
                 cmap="Blues_r",
             )
 
-            ax.set_title(
-                f"{convert_tors(tor, num=False)}",
-                fontsize=16,
-            )
             ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_xlabel("bite angle [deg]", fontsize=16)
+
             ax.set_ylabel("cl angle [deg]", fontsize=16)
 
         cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
