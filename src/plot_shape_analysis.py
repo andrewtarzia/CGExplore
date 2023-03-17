@@ -12,9 +12,10 @@ Author: Andrew Tarzia
 import sys
 import os
 import logging
-import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from matplotlib.patches import Patch
 import numpy as np
 
 from env_set import cages
@@ -22,129 +23,14 @@ from env_set import cages
 from analysis_utilities import (
     write_out_mapping,
     get_lowest_energy_data,
-    map_cltype_to_topology,
-    pore_str,
-    rg_str,
     convert_tors,
-    convert_prop,
     convert_topo,
     topology_labels,
-    stoich_map,
     data_to_array,
     isomer_energy,
-    write_out_mapping,
-    eb_str,
-    pore_str,
-    rg_str,
-    data_to_array,
-    isomer_energy,
-    get_lowest_energy_data,
-    convert_topo,
-    convert_tors,
-    topology_labels,
     target_shapes,
     mapshape_to_topology,
 )
-
-
-def phase_space_5(all_data, figure_output):
-    logging.info("doing ps5, shape vectors vs Energy")
-    raise NotImplementedError("if you want this, fix it.")
-    tstrs = topology_labels(short="P")
-    clangles = sorted(set(all_data["clangle"]))
-    for tstr, clangle in itertools.product(tstrs, clangles):
-        fig, axs = plt.subplots(
-            nrows=1,
-            ncols=2,
-            sharex=True,
-            sharey=True,
-            figsize=(16, 5),
-        )
-
-        tdata = all_data[all_data["topology"] == tstr]
-        cdata = tdata[tdata["clangle"] == clangle]
-        if len(cdata) == 0:
-            continue
-
-        for ax, tor in zip(axs, ("ton", "toff")):
-            findata = cdata[cdata["torsions"] == tor]
-            xvalues = list(findata["energy_per_bb"])
-            yvalues = list(findata["sv_n_dist"])
-            lvalues = list(findata["sv_l_dist"])
-            to_plot_x = []
-            to_plot_y = []
-            to_plot_l = []
-            for x, y, l in zip(xvalues, yvalues, lvalues):
-                if pd.isna(x) or pd.isna(y):
-                    continue
-                to_plot_x.append(x)
-                to_plot_y.append(y)
-                if pd.isna(l):
-                    continue
-                to_plot_l.append(l)
-
-            ax.scatter(
-                to_plot_x,
-                to_plot_y,
-                c="#086788",
-                edgecolor="none",
-                s=50,
-                alpha=1,
-            )
-            if len(to_plot_l) == len(to_plot_x):
-                ax.scatter(
-                    to_plot_x,
-                    to_plot_l,
-                    c="white",
-                    edgecolor="k",
-                    s=60,
-                    alpha=1,
-                    zorder=-1,
-                )
-            elif len(to_plot_l) != 0:
-                raise ValueError(
-                    f"{len(to_plot_l)} l != {len(to_plot_x)}"
-                )
-
-            ax.set_title(
-                (
-                    f"{convert_topo(tstr)}: "
-                    f"{convert_tors(tor, num=False)}: {clangle}"
-                ),
-                fontsize=16,
-            )
-            ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_xlabel(convert_prop("energy_per_bb"), fontsize=16)
-            ax.set_ylabel(convert_prop("both_sv_n_dist"), fontsize=16)
-            ax.set_ylim(0.0, 1.05)
-
-        ax.scatter(
-            None,
-            None,
-            c="#086788",
-            edgecolor="none",
-            s=50,
-            alpha=1,
-            label="node",
-        )
-        ax.scatter(
-            None,
-            None,
-            c="white",
-            edgecolor="k",
-            s=60,
-            alpha=1,
-            label="ligand",
-        )
-        ax.legend(fontsize=16)
-
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"ps_5_{tstr}_{clangle}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
 
 
 def shape_vector_distributions(all_data, figure_output):
@@ -193,7 +79,6 @@ def shape_vector_distributions(all_data, figure_output):
             ax.text(
                 x=50,
                 y=height + 0.7,
-                # s=f"{shape_type}: {convert_tors(tor, num=False)}",
                 s=f"{shape[2:]}",
                 fontsize=16,
             )
@@ -209,43 +94,18 @@ def shape_vector_distributions(all_data, figure_output):
             ax.text(
                 x=50,
                 y=height + 0.4,
-                # s=f"{shape_type}: {convert_tors(tor, num=False)}",
                 s=topology_options,
                 fontsize=16,
             )
             ax.axhline(y=height, c="k")
 
-            # if lshape in keys:
-            #     filt_data = tdata[tdata[lshape].notna()]
-            #     l_values = list(filt_data[lshape])
-            #     if len(l_values) == 0:
-            #         continue
-            #     ax.hist(
-            #         x=l_values,
-            #         bins=np.linspace(xmin, xmax, num_bins),
-            #         bottom=0.6,
-            #         density=True,
-            #         histtype="stepfilled",
-            #         color=cmap[(tor, "l")][0],
-            #         lw=cmap[(tor, "l")][1],
-            #         facecolor=cmap[(tor, "l")][0],
-            #         # linestyle=torsion_dict[tors],
-            #         # label=f"ligand: {convert_tors(tors, num=False)}",
-            #         label=f"ligand: {convert_tors(tor, num=False)}",
-            #     )
-            #     ax.axhline(y=0.6, c="k", lw=1)
-
             ax.tick_params(axis="both", which="major", labelsize=16)
             ax.set_xlabel("shape measure", fontsize=16)
             ax.set_ylabel("frequency", fontsize=16)
-            # ax.set_xlim(0, xmax)
-            # ax.set_yscale("log")
             ax.set_ylim(0, height + 1)
             ax.set_yticks([])
 
             height += 1
-
-        # ax.legend(fontsize=16)
 
         fig.tight_layout()
         fig.savefig(
@@ -258,159 +118,300 @@ def shape_vector_distributions(all_data, figure_output):
         plt.close()
 
 
-def shape_vectors_2(all_data, figure_output):
-    logging.info("running shape_vectors_2")
+def shape_similarities(all_data, figure_output):
+    logging.info("running shape_similarities")
     tstrs = topology_labels(short="P")
-    ntstrs = mapshape_to_topology(mode="n")
-    ltstrs = mapshape_to_topology(mode="l")
 
-    torsion_dict = {
-        "ton": "-",
-        "toff": "--",
+    xmin = 0
+    xmax = 1
+    num_bins = 25
+    yjump = 50
+    cmap = {
+        ("ton", "n"): ("#086788", "stepfilled"),
+        ("toff", "n"): ("#F9A03F", "stepfilled"),
+        ("ton", "l"): ("#0B2027", "stepfilled"),
+        ("toff", "l"): ("#7A8B99", "stepfilled"),
     }
 
-    fig, axs = plt.subplots(
-        nrows=4,
-        ncols=4,
-        sharex=True,
-        sharey=True,
-        figsize=(16, 10),
-    )
-    flat_axs = axs.flatten()
-
-    mtstrs = []
-    for i, tstr in enumerate(tstrs):
-        if tstr in ntstrs or tstr in ltstrs:
-            mtstrs.append(tstr)
-
-    for ax, tstr in zip(flat_axs, mtstrs):
+    fig, ax = plt.subplots(figsize=(8, 10))
+    height = 0
+    for tstr in tstrs:
         t_data = all_data[all_data["topology"] == tstr]
-        count = 0
-        for tors in torsion_dict:
-            tor_data = t_data[t_data["torsions"] == tors]
+        for tor in ("ton", "toff"):
+            tor_data = t_data[t_data["torsions"] == tor]
+            node_similarities = [
+                i for i in list(tor_data["sv_n_dist"]) if not pd.isna(i)
+            ]
+            ligand_similarities = [
+                i for i in list(tor_data["sv_l_dist"]) if not pd.isna(i)
+            ]
+            ax.hist(
+                x=node_similarities,
+                bins=np.linspace(xmin, xmax, num_bins),
+                density=True,
+                bottom=height,
+                histtype=cmap[(tor, "n")][1],
+                color=cmap[(tor, "n")][0],
+                alpha=0.7,
+            )
+            ax.hist(
+                x=ligand_similarities,
+                bins=np.linspace(xmin, xmax, num_bins),
+                density=True,
+                bottom=height,
+                histtype=cmap[(tor, "l")][1],
+                color=cmap[(tor, "l")][0],
+                alpha=0.7,
+            )
+        ax.text(
+            x=0.8,
+            y=height + 0.7 * yjump,
+            s=f"{convert_topo(tstr)}",
+            fontsize=16,
+        )
+        ax.set_ylim(0, height + yjump)
+        ax.set_yticks([])
+        ax.axhline(y=height, c="k")
+        height += yjump
 
-            filt_data = tor_data[tor_data["sv_n_dist"].notna()]
-            if len(filt_data) > 0:
-                n_values = list(filt_data["sv_n_dist"])
-                ax.hist(
-                    x=n_values,
-                    bins=50,
-                    density=False,
-                    histtype="step",
-                    color="#DD1C1A",
-                    linestyle=torsion_dict[tors],
-                    lw=3,
-                    label=f"node: {convert_tors(tors, num=False)}",
-                )
-                count += 1
+    legend_elements = []
+    for i in cmap:
+        legend_elements.append(
+            Patch(
+                facecolor=cmap[i][0],
+                label=f"{i[1]}: {convert_tors(i[0], num=False)}",
+                alpha=0.7,
+            ),
+        )
 
-            filt_data = tor_data[tor_data["sv_l_dist"].notna()]
-            if len(filt_data) > 0:
-                l_values = list(filt_data["sv_l_dist"])
-                ax.hist(
-                    x=l_values,
-                    bins=50,
-                    density=False,
-                    histtype="step",
-                    color="k",
-                    lw=2,
-                    linestyle=torsion_dict[tors],
-                    label=f"ligand: {convert_tors(tors, num=False)}",
-                )
-                count += 1
-
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("cosine similarity", fontsize=16)
-        ax.set_ylabel("count", fontsize=16)
-        ax.set_title(tstr, fontsize=16)
-        # ax.set_yscale("log")
-        if count == 4:
-            ax.legend(fontsize=16)
-
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("cosine similarity", fontsize=16)
+    ax.set_ylabel("frequency", fontsize=16)
+    ax.legend(ncol=2, handles=legend_elements, fontsize=16)
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "shape_vectors_2.pdf"),
+        os.path.join(figure_output, "shape_similarities.pdf"),
         dpi=720,
         bbox_inches="tight",
     )
     plt.close()
 
 
-def shape_vectors_3(all_data, figure_output):
-    logging.info("running shape_vectors_3")
-    tstrs = topology_labels(short="P")
-    ntstrs = mapshape_to_topology(mode="n")
-    ltstrs = mapshape_to_topology(mode="l")
+def shape_input_relationships(all_data, figure_output):
+    logging.info("running shape_input_relationships")
 
-    torsion_dict = {
-        "ton": "-",
-        "toff": "--",
-    }
+    color_map = topology_labels(short="P")
 
-    fig, axs = plt.subplots(
-        nrows=4,
-        ncols=4,
-        sharex=True,
-        sharey=True,
-        figsize=(16, 10),
-    )
-    flat_axs = axs.flatten()
+    vmax = 1
+    vmin = 0.9
 
-    mtstrs = {}
-    for i, tstr in enumerate(tstrs):
-        if tstr in ntstrs:
-            mtstrs[tstr] = [f"n_{ntstrs[tstr]}"]
-        if tstr in ltstrs:
-            if tstr not in mtstrs:
-                mtstrs[tstr] = []
-            mtstrs[tstr].append(f"l_{ltstrs[tstr]}")
+    for tstr in color_map:
+        tdata = all_data[all_data["topology"] == tstr]
+        for shape_type in ("n", "l"):
+            if tstr == "6P8":
+                fig, ax = plt.subplots(figsize=(8, 5))
+                tor_tests = ("toff",)
+                flat_axs = (ax,)
 
-    for ax, tstr in zip(flat_axs, mtstrs):
-        t_data = all_data[all_data["topology"] == tstr]
+            else:
+                fig, axs = plt.subplots(
+                    ncols=2,
+                    nrows=1,
+                    sharey=True,
+                    figsize=(16, 5),
+                )
+                tor_tests = ("ton", "toff")
+                flat_axs = axs.flatten()
 
-        ax_xlbl = set()
-        for tors in torsion_dict:
-            tor_data = t_data[t_data["torsions"] == tors]
+            if shape_type == "n":
+                c_column = "sv_n_dist"
+            elif shape_type == "l":
+                c_column = "sv_l_dist"
 
-            for scol in mtstrs[tstr]:
-                ax_xlbl.add(scol.split("_")[-1])
-                filt_data = tor_data[tor_data[scol].notna()]
-                if len(filt_data) > 0:
-                    values = list(filt_data[scol])
-                    if "n" in scol:
-                        c = "#DD1C1A"
-                        lbl = f"node: {convert_tors(tors, num=False)}"
-                        lw = 3
-                    elif "l" in scol:
-                        c = "k"
-                        lbl = f"ligand: {convert_tors(tors, num=False)}"
-                        lw = 2
-                    ax.hist(
-                        x=values,
-                        bins=50,
-                        density=False,
-                        histtype="step",
-                        color=c,
-                        linestyle=torsion_dict[tors],
-                        lw=lw,
-                        label=lbl,
+            for ax, tor in zip(flat_axs, tor_tests):
+                pdata = tdata[tdata["torsions"] == tor]
+                if tstr == "6P8":
+                    ax.set_xlabel("c3 angle [deg]", fontsize=16)
+
+                else:
+                    ax.set_xlabel("bite angle [deg]", fontsize=16)
+                    ax.set_title(
+                        f"{convert_tors(tor, num=False)}",
+                        fontsize=16,
                     )
 
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("; ".join(list(ax_xlbl)), fontsize=16)
-        ax.set_ylabel("count", fontsize=16)
-        ax.set_title(tstr, fontsize=16)
-        # ax.set_yscale("log")
-        if len(mtstrs[tstr]) == 2:
-            ax.legend(fontsize=16)
+                xdata = []
+                ydata = []
+                cdata = []
+                for i, row in pdata.iterrows():
+                    dist = float(row[c_column])
 
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "shape_vectors_3.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
+                    if pd.isna(dist):
+                        continue
+                    energy = float(row["energy_per_bb"])
+                    cdata.append(dist)
+                    if tstr == "6P8":
+                        xdata.append(float(row["c3angle"]))
+                        ydata.append(float(row["clangle"]))
+
+                    else:
+                        xdata.append(float(row["target_bite_angle"]))
+                        ydata.append(float(row["clangle"]))
+                    if energy < isomer_energy():
+                        ax.scatter(
+                            xdata[-1],
+                            ydata[-1],
+                            c="white",
+                            s=400,
+                            marker="s",
+                            lw=3,
+                            alpha=0.7,
+                            edgecolor="firebrick",
+                        )
+
+                if len(cdata) == 0:
+                    continue
+                ax.scatter(
+                    xdata,
+                    ydata,
+                    c=cdata,
+                    vmin=vmin,
+                    vmax=vmax,
+                    alpha=1.0,
+                    # edgecolor="k",
+                    s=200,
+                    marker="s",
+                    cmap="Blues",
+                )
+
+                ax.set_title(
+                    f"{convert_tors(tor, num=False)}",
+                    fontsize=16,
+                )
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_ylabel("cl angle [deg]", fontsize=16)
+
+            cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+            cmap = mpl.cm.Blues
+            norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+            cbar = fig.colorbar(
+                mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+                cax=cbar_ax,
+                orientation="vertical",
+            )
+            cbar.ax.tick_params(labelsize=16)
+            cbar.set_label("cosine similarity", fontsize=16)
+
+            fig.tight_layout()
+            filename = f"shape_{shape_type}_map_{tstr}.pdf"
+            fig.savefig(
+                os.path.join(figure_output, filename),
+                dpi=720,
+                bbox_inches="tight",
+            )
+            plt.close()
+
+
+def shape_energy_input_relationships(all_data, figure_output):
+    logging.info("running shape_input_relationships")
+
+    color_map = topology_labels(short="P")
+
+    vmax = 1
+    vmin = 0.9
+
+    for tstr in color_map:
+        tdata = all_data[all_data["topology"] == tstr]
+        for shape_type in ("n", "l"):
+            if tstr == "6P8":
+                fig, ax = plt.subplots(figsize=(8, 5))
+                tor_tests = ("toff",)
+                flat_axs = (ax,)
+
+            else:
+                fig, axs = plt.subplots(
+                    ncols=2,
+                    nrows=1,
+                    sharey=True,
+                    figsize=(16, 5),
+                )
+                tor_tests = ("ton", "toff")
+                flat_axs = axs.flatten()
+
+            if shape_type == "n":
+                c_column = "sv_n_dist"
+            elif shape_type == "l":
+                c_column = "sv_l_dist"
+
+            for ax, tor in zip(flat_axs, tor_tests):
+                pdata = tdata[tdata["torsions"] == tor]
+                if tstr == "6P8":
+                    ax.set_xlabel("c3 angle [deg]", fontsize=16)
+
+                else:
+                    ax.set_xlabel("bite angle [deg]", fontsize=16)
+                    ax.set_title(
+                        f"{convert_tors(tor, num=False)}",
+                        fontsize=16,
+                    )
+                xdata = []
+                ydata = []
+                cdata = []
+                for i, row in pdata.iterrows():
+                    dist = float(row[c_column])
+
+                    if pd.isna(dist):
+                        continue
+                    energy = float(row["energy_per_bb"])
+                    if energy < isomer_energy():
+                        cdata.append(dist)
+                        if tstr == "6P8":
+                            xdata.append(float(row["c3angle"]))
+                            ydata.append(float(row["clangle"]))
+
+                        else:
+                            xdata.append(
+                                float(row["target_bite_angle"])
+                            )
+                            ydata.append(float(row["clangle"]))
+
+                if len(cdata) == 0:
+                    continue
+                ax.scatter(
+                    xdata,
+                    ydata,
+                    c=cdata,
+                    vmin=vmin,
+                    vmax=vmax,
+                    alpha=1.0,
+                    edgecolor="k",
+                    s=200,
+                    marker="s",
+                    cmap="Blues",
+                )
+
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_ylabel("cl angle [deg]", fontsize=16)
+
+            cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+            cmap = mpl.cm.Blues
+            norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
+            cbar = fig.colorbar(
+                mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+                cax=cbar_ax,
+                orientation="vertical",
+            )
+            cbar.ax.tick_params(labelsize=16)
+            cbar.set_label("cosine similarity", fontsize=16)
+
+            fig.tight_layout()
+            filename = f"shape_energy_{shape_type}_map_{tstr}.pdf"
+            fig.savefig(
+                os.path.join(figure_output, filename),
+                dpi=720,
+                bbox_inches="tight",
+            )
+            plt.close()
 
 
 def main():
@@ -436,9 +437,9 @@ def main():
     write_out_mapping(all_data)
 
     shape_vector_distributions(low_e_data, figure_output)
-    phase_space_5(low_e_data, figure_output)
-    shape_vectors_2(low_e_data, figure_output)
-    shape_vectors_3(low_e_data, figure_output)
+    shape_similarities(low_e_data, figure_output)
+    shape_input_relationships(low_e_data, figure_output)
+    shape_energy_input_relationships(low_e_data, figure_output)
 
 
 if __name__ == "__main__":
