@@ -201,12 +201,13 @@ def shape_input_relationships(all_data, figure_output):
     logging.info("running shape_input_relationships")
 
     color_map = topology_labels(short="P")
+    trim = all_data[all_data["vdws"] == "von"]
 
     vmax = 1
     vmin = 0.9
 
     for tstr in color_map:
-        tdata = all_data[all_data["topology"] == tstr]
+        tdata = trim[trim["topology"] == tstr]
         for shape_type in ("n", "l"):
             if tstr == "6P8":
                 fig, ax = plt.subplots(figsize=(8, 5))
@@ -265,8 +266,8 @@ def shape_input_relationships(all_data, figure_output):
                             s=400,
                             marker="s",
                             lw=3,
-                            alpha=0.7,
-                            edgecolor="firebrick",
+                            alpha=0.9,
+                            edgecolor="k",
                         )
 
                 if len(cdata) == 0:
@@ -278,10 +279,10 @@ def shape_input_relationships(all_data, figure_output):
                     vmin=vmin,
                     vmax=vmax,
                     alpha=1.0,
-                    # edgecolor="k",
+                    edgecolor="none",
                     s=200,
                     marker="s",
-                    cmap="Blues",
+                    cmap="viridis",
                 )
 
                 ax.set_title(
@@ -292,7 +293,7 @@ def shape_input_relationships(all_data, figure_output):
                 ax.set_ylabel("cl angle [deg]", fontsize=16)
 
             cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-            cmap = mpl.cm.Blues
+            cmap = mpl.cm.viridis
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
             cbar = fig.colorbar(
                 mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
@@ -312,11 +313,80 @@ def shape_input_relationships(all_data, figure_output):
             plt.close()
 
 
-def shape_energy_input_relationships(all_data, figure_output):
+def shape_persistence_map(all_data, figure_output):
     logging.info("running shape_input_relationships")
 
     color_map = topology_labels(short="P")
+    trim = all_data[all_data["vdws"] == "von"]
 
+    topologies = topology_labels(short="P")
+
+    fig, axs = plt.subplots(
+        ncols=2,
+        nrows=len(topologies),
+        sharex=True,
+        sharey=True,
+        figsize=(16, 16),
+    )
+
+    xmin = 0
+    xmax = 1
+    num_bins = 40
+
+    for i, tstr in enumerate(topologies):
+        tdata = trim[trim["topology"] == tstr]
+        for j, tor in enumerate(("ton", "toff")):
+            ax = axs[i][j]
+            pdata = tdata[tdata["torsions"] == tor]
+            edata = pdata[pdata["energy_per_bb"] < isomer_energy()]
+
+            ax.hist(
+                edata["sv_n_dist"],
+                # edata["energy_per_bb"],
+                bins=np.linspace(xmin, xmax, num_bins),
+                color="#086788",
+                alpha=1.0,
+                density=True,
+                histtype="stepfilled",
+                label="node",
+            )
+            ax.hist(
+                edata["sv_l_dist"],
+                # edata["energy_per_bb"],
+                bins=np.linspace(xmin, xmax, num_bins),
+                color="#F9A03F",
+                alpha=0.8,
+                density=True,
+                histtype="stepfilled",
+                label="ligand",
+            )
+            ax.tick_params(axis="both", which="major", labelsize=16)
+            ax.set_yticks(())
+            if j == 0:
+                ax.text(
+                    x=0.05,
+                    y=2,
+                    s=f"{convert_topo(tstr)}",
+                    fontsize=16,
+                )
+            if i == 0:
+                ax.set_title(convert_tors(tor, num=False), fontsize=16)
+            if i == len(topologies) - 1:
+                if j == 0:
+                    ax.set_ylabel("frequency", fontsize=16)
+                    ax.legend(fontsize=16)
+                ax.set_xlabel("cosine similarity", fontsize=16)
+
+    fig.tight_layout()
+    filename = "shape_persistence_map.pdf"
+    fig.savefig(
+        os.path.join(figure_output, filename),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    raise SystemExit()
     vmax = 1
     vmin = 0.9
 
@@ -324,7 +394,7 @@ def shape_energy_input_relationships(all_data, figure_output):
         tdata = all_data[all_data["topology"] == tstr]
         for shape_type in ("n", "l"):
             if tstr == "6P8":
-                fig, ax = plt.subplots(figsize=(8, 5))
+
                 tor_tests = ("toff",)
                 flat_axs = (ax,)
 
@@ -354,6 +424,7 @@ def shape_energy_input_relationships(all_data, figure_output):
                         f"{convert_tors(tor, num=False)}",
                         fontsize=16,
                     )
+
                 xdata = []
                 ydata = []
                 cdata = []
@@ -363,17 +434,25 @@ def shape_energy_input_relationships(all_data, figure_output):
                     if pd.isna(dist):
                         continue
                     energy = float(row["energy_per_bb"])
-                    if energy < isomer_energy():
-                        cdata.append(dist)
-                        if tstr == "6P8":
-                            xdata.append(float(row["c3angle"]))
-                            ydata.append(float(row["clangle"]))
+                    cdata.append(dist)
+                    if tstr == "6P8":
+                        xdata.append(float(row["c3angle"]))
+                        ydata.append(float(row["clangle"]))
 
-                        else:
-                            xdata.append(
-                                float(row["target_bite_angle"])
-                            )
-                            ydata.append(float(row["clangle"]))
+                    else:
+                        xdata.append(float(row["target_bite_angle"]))
+                        ydata.append(float(row["clangle"]))
+                    if energy < isomer_energy():
+                        ax.scatter(
+                            xdata[-1],
+                            ydata[-1],
+                            c="white",
+                            s=400,
+                            marker="s",
+                            lw=3,
+                            alpha=0.9,
+                            edgecolor="k",
+                        )
 
                 if len(cdata) == 0:
                     continue
@@ -384,17 +463,21 @@ def shape_energy_input_relationships(all_data, figure_output):
                     vmin=vmin,
                     vmax=vmax,
                     alpha=1.0,
-                    edgecolor="k",
+                    edgecolor="none",
                     s=200,
                     marker="s",
-                    cmap="Blues",
+                    cmap="viridis",
                 )
 
+                ax.set_title(
+                    f"{convert_tors(tor, num=False)}",
+                    fontsize=16,
+                )
                 ax.tick_params(axis="both", which="major", labelsize=16)
                 ax.set_ylabel("cl angle [deg]", fontsize=16)
 
             cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-            cmap = mpl.cm.Blues
+            cmap = mpl.cm.viridis
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
             cbar = fig.colorbar(
                 mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
@@ -403,15 +486,6 @@ def shape_energy_input_relationships(all_data, figure_output):
             )
             cbar.ax.tick_params(labelsize=16)
             cbar.set_label("cosine similarity", fontsize=16)
-
-            fig.tight_layout()
-            filename = f"shape_energy_{shape_type}_map_{tstr}.pdf"
-            fig.savefig(
-                os.path.join(figure_output, filename),
-                dpi=720,
-                bbox_inches="tight",
-            )
-            plt.close()
 
 
 def main():
@@ -436,10 +510,10 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
+    shape_persistence_map(low_e_data, figure_output)
     shape_vector_distributions(low_e_data, figure_output)
     shape_similarities(low_e_data, figure_output)
     shape_input_relationships(low_e_data, figure_output)
-    shape_energy_input_relationships(low_e_data, figure_output)
 
 
 if __name__ == "__main__":
