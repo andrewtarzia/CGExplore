@@ -15,6 +15,7 @@ import logging
 import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from scipy.spatial import ConvexHull
 import numpy as np
 
@@ -71,6 +72,18 @@ def phase_space_2(all_data, figure_output):
                 epb = list(kinetic_energies.values())[0]
                 kinetic_data = data[data["topology"] == tstr]
 
+                if tstr == "6P8":
+                    colour_choice = "k"
+                elif "3C1" == str(bbd["cltitle"].iloc[0]):
+                    colour_choice = "#086788"
+                elif "4C1" == str(bbd["cltitle"].iloc[0]):
+                    colour_choice = "#F9A03F"
+
+                if tor == "ton":
+                    tor_colour = "gold"
+                elif tor == "toff":
+                    tor_colour = "skyblue"
+
                 node_measure = float(kinetic_data["sv_n_dist"])
                 ligand_measure = float(kinetic_data["sv_n_dist"])
                 if node_measure is None:
@@ -93,6 +106,8 @@ def phase_space_2(all_data, figure_output):
                     "target_bite_angle": float(
                         kinetic_data["target_bite_angle"]
                     ),
+                    "cmap": colour_choice,
+                    "torsionmap": tor_colour,
                 }
 
     fig, axs = plt.subplots(
@@ -117,6 +132,7 @@ def phase_space_2(all_data, figure_output):
             "xlbl": "cage stoichiometry",
             "xmapfun": stoich_map,
             "xlim": (None, None),
+            "c": "cmap",
         },
         {
             "ax": flat_axs[1],
@@ -125,7 +141,8 @@ def phase_space_2(all_data, figure_output):
             "x": "cltitle",
             "xlbl": "largest coordination",
             "xmapfun": cltitleconversion,
-            "xlim": (2.8, 4.2),
+            "xlim": (2.5, 4.5),
+            "c": "cmap",
         },
         {
             "ax": flat_axs[2],
@@ -135,36 +152,40 @@ def phase_space_2(all_data, figure_output):
             "xlbl": "Cl angle [deg]",
             "xmapfun": no_conversion,
             "xlim": (48, 121),
+            "c": "cmap",
         },
         {
-            "ax": flat_axs[3],
+            "ax": flat_axs[5],
             "y": "pore",
             "ylbl": pore_str(),
             "x": "target_bite_angle",
             "xlbl": "target bite angle [deg]",
             "xmapfun": no_conversion,
             "xlim": (-1, 181),
+            "c": "cmap",
         },
         {
             "ax": flat_axs[4],
-            "y": "pore",
-            "ylbl": pore_str(),
-            "x": "shape_measure",
-            "xlbl": "min(shape measure)",
-            "xmapfun": no_conversion,
-            "xlim": (-0.1, 1.1),
-        },
-        {
-            "ax": flat_axs[5],
             "y": "pore",
             "ylbl": pore_str(),
             "x": "radius_gyration",
             "xlbl": rg_str(),
             "xmapfun": no_conversion,
             "xlim": (None, None),
+            "c": "torsionmap",
+        },
+        {
+            "ax": flat_axs[3],
+            "y": "pore",
+            "ylbl": pore_str(),
+            "x": "radius_gyration",
+            "xlbl": rg_str(),
+            "xmapfun": no_conversion,
+            "xlim": (None, None),
+            "c": "cmap",
         },
     )
-    for axd in axmap:
+    for i, axd in enumerate(axmap):
 
         ax = axd["ax"]
 
@@ -185,25 +206,82 @@ def phase_space_2(all_data, figure_output):
                     linestyle="--",
                 )
 
-        yvalues = [bb_data[i][axd["y"]] for i in bb_data]
-        xvalues = [
-            axd["xmapfun"](bb_data[i][axd["x"]]) for i in bb_data
-        ]
-        ax.scatter(
-            xvalues,
-            yvalues,
-            c="#086788",
-            edgecolor="k",
-            s=80,
-        )
-
         if axd["x"] == "cltitle":
+
+            for x in (3, 4):
+                yvalues = [
+                    bb_data[i][axd["y"]]
+                    for i in bb_data
+                    if axd["xmapfun"](bb_data[i][axd["x"]]) == x
+                ]
+                parts = ax.violinplot(
+                    yvalues,
+                    [x],
+                    # points=200,
+                    vert=True,
+                    widths=0.6,
+                    showmeans=False,
+                    showextrema=False,
+                    showmedians=False,
+                    # bw_method=0.5,
+                )
+
+                for pc in parts["bodies"]:
+                    pc.set_facecolor("#7A8B99")
+                    pc.set_edgecolor("k")
+                    pc.set_alpha(1.0)
+
             ax.set_xticks((3, 4))
+        else:
+
+            yvalues = [bb_data[i][axd["y"]] for i in bb_data]
+            xvalues = [
+                axd["xmapfun"](bb_data[i][axd["x"]]) for i in bb_data
+            ]
+            cvalues = [bb_data[i][axd["c"]] for i in bb_data]
+            ax.scatter(
+                xvalues,
+                yvalues,
+                c=cvalues,
+                edgecolor="k",
+                s=100,
+                alpha=0.5,
+            )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(f"{axd['xlbl']}", fontsize=16)
         ax.set_ylabel(f"{axd['ylbl']}", fontsize=16)
         ax.set_xlim(axd["xlim"])
+
+        if i in (0, 4):
+            if i == 4:
+                legend_map = (
+                    (convert_tors("ton", num=False), "gold"),
+                    (convert_tors("toff", num=False), "skyblue"),
+                )
+            else:
+                legend_map = (
+                    ("3C1", "#086788"),
+                    ("4C1", "#F9A03F"),
+                    ("6P8", "k"),
+                )
+
+            legend_elements = []
+            for labl, c in legend_map:
+                legend_elements.append(
+                    Line2D(
+                        [0],
+                        [0],
+                        marker="o",
+                        color="w",
+                        label=labl,
+                        markerfacecolor=c,
+                        markersize=10,
+                        markeredgecolor="k",
+                        alpha=0.5,
+                    )
+                )
+            ax.legend(handles=legend_elements, fontsize=16, ncol=1)
 
     fig.tight_layout()
     fig.savefig(
