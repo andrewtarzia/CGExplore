@@ -888,8 +888,6 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
 
         for tor in color_map:
             tor_data = tdata[tdata["torsions"] == tor]
-            if len(data) == 0:
-                continue
 
             stable_data = tor_data[
                 tor_data["energy_per_bb"] < isomer_energy()

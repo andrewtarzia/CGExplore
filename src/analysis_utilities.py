@@ -337,14 +337,14 @@ def mapshape_to_topology(mode, from_shape=False):
             return {
                 # "2P3": "TBPY-5",
                 "4P6": "T-4",
-                "4P62": "T-4",
+                "4P62": "SP-4",
                 "6P9": "TPR-6",
                 "8P12": "CU-8",
                 # "2P4": "OC-6b",
                 "3P6": "TP-3",
                 "4P8": "SP-4",
                 "6P12": "OC-6",
-                "8P16": "CU-8",
+                "8P16": "SAPR-8",
                 # "12P24": "",
                 "6P8": "OC-6",
             }
