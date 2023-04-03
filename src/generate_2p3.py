@@ -102,6 +102,8 @@ def main():
         custom_vdw_options=custom_vdw_options,
         struct_output=struct_output,
         calculation_output=calculation_output,
+        node_element="C",
+        ligand_element="Ag",
     )
 
 

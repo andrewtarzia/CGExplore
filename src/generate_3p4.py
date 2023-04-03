@@ -100,6 +100,8 @@ def main():
         custom_vdw_options=custom_vdw_options,
         struct_output=struct_output,
         calculation_output=calculation_output,
+        node_element="Pd",
+        ligand_element="C",
     )
 
 

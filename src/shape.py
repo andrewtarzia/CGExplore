@@ -17,6 +17,7 @@ import os
 import shutil
 
 from env_set import shape_path
+from beads import periodic_table
 
 
 def test_shape_mol(topo_expected, atoms, name, topo_str):
@@ -32,13 +33,17 @@ def fill_position_matrix(
     position_matrix,
     constructed_molecule,
     target_bb,
-    target_id,
+    element,
     old_position_matrix,
     atoms,
 ):
+    target_anum = periodic_table()[element]
     for ai in constructed_molecule.get_atom_infos():
         if ai.get_building_block() == target_bb:
-            if ai.get_building_block_atom().get_id() == target_id:
+            if (
+                ai.get_building_block_atom().get_atomic_number()
+                == target_anum
+            ):
                 a = ai.get_atom()
                 new_atom = stk.Atom(
                     id=len(atoms),
@@ -50,7 +55,7 @@ def fill_position_matrix(
     return position_matrix, atoms
 
 
-def get_shape_molecule_nodes(constructed_molecule, name):
+def get_shape_molecule_nodes(constructed_molecule, name, element):
     topo_expected = {
         "4P6": 4,
         "4P62": 4,
@@ -73,12 +78,11 @@ def get_shape_molecule_nodes(constructed_molecule, name):
     large_c_bb = bbs[0]
     atoms = []
     position_matrix = []
-    target_id = 0
     position_matrix, atoms = fill_position_matrix(
         position_matrix=position_matrix,
         constructed_molecule=constructed_molecule,
         target_bb=large_c_bb,
-        target_id=target_id,
+        element=element,
         old_position_matrix=old_position_matrix,
         atoms=atoms,
     )
@@ -92,7 +96,7 @@ def get_shape_molecule_nodes(constructed_molecule, name):
     return subset_molecule
 
 
-def get_shape_molecule_ligands(constructed_molecule, name):
+def get_shape_molecule_ligands(constructed_molecule, name, element):
     topo_expected = {
         "2P3": 3,
         "4P6": 6,
@@ -112,13 +116,12 @@ def get_shape_molecule_ligands(constructed_molecule, name):
     atoms = []
     position_matrix = []
 
-    target_id = 2
     two_c_bb = bbs[1]
     position_matrix, atoms = fill_position_matrix(
         position_matrix=position_matrix,
         constructed_molecule=constructed_molecule,
         target_bb=two_c_bb,
-        target_id=target_id,
+        element=element,
         old_position_matrix=old_position_matrix,
         atoms=atoms,
     )
@@ -129,7 +132,6 @@ def get_shape_molecule_ligands(constructed_molecule, name):
         bonds=(),
         position_matrix=np.array(position_matrix),
     )
-
     return subset_molecule
 
 

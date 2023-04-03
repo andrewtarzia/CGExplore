@@ -577,6 +577,8 @@ def analyse_cage(
     bead_set,
     custom_torsion_set,
     custom_vdw_set,
+    node_element,
+    ligand_element,
 ):
 
     output_file = os.path.join(output_dir, f"{name}_res.json")
@@ -632,8 +634,16 @@ def analyse_cage(
         }
         fin_energy = energy_decomp["tot_energy_kjmol"]
 
-        n_shape_mol = get_shape_molecule_nodes(molecule, name)
-        l_shape_mol = get_shape_molecule_ligands(molecule, name)
+        n_shape_mol = get_shape_molecule_nodes(
+            molecule,
+            name,
+            node_element,
+        )
+        l_shape_mol = get_shape_molecule_ligands(
+            molecule,
+            name,
+            ligand_element,
+        )
         if n_shape_mol is None:
             node_shape_measures = None
         else:
@@ -884,6 +894,8 @@ def build_populations(
     custom_vdw_options,
     struct_output,
     calculation_output,
+    node_element,
+    ligand_element,
 ):
 
     seeds = {
@@ -968,6 +980,8 @@ def build_populations(
                     bead_set=bead_set,
                     custom_torsion_set=custom_torsion_set,
                     custom_vdw_set=custom_vdw_set,
+                    node_element=node_element,
+                    ligand_element=ligand_element,
                 )
             count += 1
 
