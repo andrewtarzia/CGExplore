@@ -760,6 +760,74 @@ def angle_map(all_data, figure_output):
         plt.close()
 
 
+def pdII_figure_bite_angle(all_data, figure_output):
+    logging.info("running pdII_figure_bite_angle")
+
+    color_map = ("2P4", "3P6", "4P8", "6P12", "12P24")
+
+    fig, ax = plt.subplots(figsize=(8, 3))
+    trim = all_data[all_data["vdws"] == "von"]
+    trim = trim[trim["torsions"] == "ton"]
+    trim = trim[trim["clangle"] == 90]
+
+    all_bas = sorted(set(trim["target_bite_angle"]))
+    all_ba_points = []
+    tstr_points = {}
+    for ba in all_bas:
+        ba_data = trim[trim["target_bite_angle"] == ba]
+
+        min_e_y = 1e24
+        min_e_tstr = None
+        for tstr in color_map:
+            tdata = ba_data[ba_data["topology"] == tstr]
+            ey = float(tdata["energy_per_bb"].iloc[0])
+            if ey < min_e_y:
+                min_e_y = ey
+                min_e_tstr = tstr
+
+        if min_e_tstr not in tstr_points:
+            tstr_points[min_e_tstr] = []
+        tstr_points[min_e_tstr].append((ba, min_e_y))
+
+        all_ba_points.append((ba, min_e_y))
+
+    ax.plot(
+        [i[0] for i in all_ba_points],
+        [i[1] for i in all_ba_points],
+        alpha=1.0,
+        lw=2,
+        color="gray",
+    )
+
+    for tstr in color_map:
+        ax.plot(
+            [i[0] for i in tstr_points[tstr]],
+            [i[1] for i in tstr_points[tstr]],
+            alpha=1.0,
+            # edgecolor="k",
+            lw=2,
+            marker="o",
+            markeredgecolor="k",
+            markersize=10,
+            label=tstr,
+        )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("bite angle [deg]", fontsize=16)
+    ax.set_ylabel(eb_str(), fontsize=16)
+    ax.set_ylim(0, 2)
+
+    ax.legend(ncol=3, fontsize=16)
+    fig.tight_layout()
+    filename = "pdII_figure_bite_angle.pdf"
+    fig.savefig(
+        os.path.join(figure_output, filename),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -782,6 +850,8 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
+    pdII_figure_bite_angle(low_e_data, figure_output)
+    raise SystemExit()
     angle_map(low_e_data, figure_output)
     kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
