@@ -895,6 +895,7 @@ def get_lowest_energy_data(all_data, output_dir):
     lowe_array = pd.DataFrame()
     grouped_data = all_data.groupby(["cage_name"])
     for system in set(all_data["cage_name"]):
+        logging.info(f"checking {system}")
         rows = grouped_data.get_group(system)
         for tors in ("ton", "toff"):
             trows = rows[rows["torsions"] == tors]
