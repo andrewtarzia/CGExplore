@@ -930,7 +930,9 @@ class ShapeMeasure:
 
 def known_shape_vectors():
     """
-    From shape_map.py
+    Printed from shape_map.py output.
+
+    May not include all of them, only included ones I deemed relevant.
 
     """
     return {
@@ -987,5 +989,20 @@ def known_shape_vectors():
             "JSD-8": 14.257,
             "TT-8": 0.953,
             "ETBPY-8": 23.162,
+        },
+        "SAPR-8": {
+            "OP-8": 26.12,
+            "HPY-8": 24.402,
+            "HBPY-8": 18.458,
+            "CU-8": 10.989,
+            "SAPR-8": 0.0,
+            "TDD-8": 2.848,
+            "JGBF-8": 17.259,
+            "JETBPY-8": 28.516,
+            "JBTPR-8": 2.593,
+            "BTPR-8": 2.095,
+            "JSD-8": 5.362,
+            "TT-8": 11.838,
+            "ETBPY-8": 24.048,
         },
     }
