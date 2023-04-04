@@ -55,6 +55,8 @@ class Pymol:
         structure_files,
         structure_colours,
         pml_file,
+        orient_atoms,
+        big_colour,
     ):
 
         if self._settings["zoom_string"] == "custom":
@@ -62,26 +64,45 @@ class Pymol:
         else:
             zoom_string = self._settings["zoom_string"]
 
+        if structure_colours is None:
+            show_colours = ["#000000" for i in structure_files]
+        else:
+            show_colours = structure_colours
+
+        if orient_atoms is None:
+            orient_string = "orient"
+        else:
+            orient_string = f"orient (name {orient_atoms}*)"
+
+        if big_colour is None:
+            big_colour_string = ""
+        else:
+            big_colour_string = f"orient (name {orient_atoms}*)"
+
         lstring = ""
         cstring = ""
         lnames = []
-        for sf, col in zip(structure_files, structure_colours):
+        for sf, col in zip(structure_files, show_colours):
             lstring += f"load {sf}\n"
             lname = str(sf.name).replace(".mol", "")
             lnames.append(lname)
             col = col.replace("#", "0x")
-            cstring += f"color {col}, {lname}\n"
+            if structure_colours is None:
+                cstring += "color orange, (name C*)\n"
+            else:
+                cstring += f"color {col}, {lname}\n"
 
         string = (
             f"{lstring}\n"
             f"{cstring}\n"
+            f"{big_colour_string}\n"
             f"set grid_mode, {self._settings['grid_mode']}\n"
             "as sticks\n"
             f"set stick_radius, {self._settings['stick_rad']}\n"
             "show spheres\n"
             f"alter all,vdw={self._settings['vdw']}\n"
             "rebuild\n"
-            "orient\n"
+            f"{orient_string}\n"
             # "zoom center, 25\n"
             f"{zoom_string}\n"
             "bg_color white\n"
@@ -94,12 +115,20 @@ class Pymol:
         with open(pml_file, "w") as f:
             f.write(string)
 
-    def visualise(self, structure_files, structure_colours):
+    def visualise(
+        self,
+        structure_files,
+        structure_colours=None,
+        orient_atoms=None,
+        big_colour=None,
+    ):
         pml_file = self._output_dir / f"{self._file_prefix}.pml"
         self._write_pymol_script(
             structure_files=structure_files,
             structure_colours=structure_colours,
             pml_file=pml_file,
+            orient_atoms=orient_atoms,
+            big_colour=big_colour,
         )
         os.system(f"{self._pymol} {pml_file}")
         return None
