@@ -20,259 +20,11 @@ from analysis_utilities import (
     isomer_energy,
     data_to_array,
     topology_labels,
-    cltypetopo_to_colormap,
     write_out_mapping,
     get_lowest_energy_data,
 )
 from visualisation import Pymol
 from utilities import check_directory
-
-
-def visualise_bite_angle(all_data, figure_output):
-    raise NotImplementedError()
-    struct_output = cages() / "structures"
-    topologies = (
-        "TwoPlusThree",
-        "FourPlusSix",
-        "FourPlusSix2",
-        "SixPlusNine",
-        "EightPlusTwelve",
-        "TwoPlusFour",
-        "ThreePlusSix",
-        "FourPlusEight",
-        "SixPlusTwelve",
-        "M12L24",
-    )
-
-    settings = {
-        "grid_mode": 0,
-        "rayx": 1000,
-        "rayy": 1000,
-        "stick_rad": 0.8,
-        "vdw": 0,
-        "zoom_string": "custom",
-    }
-
-    trim = all_data[all_data["clr0"] == 2]
-    trim = trim[trim["c2r0"] == 5]
-
-    for tstr in topologies:
-        tdata = trim[trim["topology"] == tstr]
-        clangles = set(tdata["clangle"])
-
-        for clangle in clangles:
-            fig, axs = plt.subplots(
-                ncols=19,
-                nrows=2,
-                figsize=(16, 5),
-            )
-            cdata = tdata[tdata["clangle"] == clangle]
-
-            for i, tors in enumerate(("ton", "toff")):
-                flat_axs = axs[i].flatten()
-
-                show = cdata[cdata["torsions"] == tors]
-                names_energies = [
-                    (
-                        str(row["index"]),
-                        float(row["energy"]),
-                        float(row["target_bite_angle"]),
-                    )
-                    for idx, row in show.iterrows()
-                ]
-                names_energies = sorted(
-                    names_energies, key=lambda tup: tup[2]
-                )
-
-                for cage_data, ax in zip(names_energies, flat_axs):
-                    name, energy, ba = cage_data
-                    structure_file = struct_output / f"{name}_optc.mol"
-                    structure_colour = colour_by_energy(energy)
-                    png_file = figure_output / f"{name}_f.png"
-                    if not os.path.exists(png_file):
-                        viz = Pymol(
-                            output_dir=figure_output,
-                            file_prefix=f"{name}_f",
-                            settings=settings,
-                        )
-                        viz.visualise(
-                            [structure_file], [structure_colour]
-                        )
-
-                    img = mpimg.imread(png_file)
-                    ax.imshow(img)
-                    ax.axis("off")
-                    if i == 0:
-                        ax.set_title(f"{ba}", fontsize=16)
-
-            ax.plot(
-                [None, None],
-                [None, None],
-                c=colour_by_energy(max_energy() + 1),
-                lw=3,
-                label=f"energy per bond > {max_energy()}eV",
-            )
-            ax.plot(
-                [None, None],
-                [None, None],
-                c=colour_by_energy(isomer_energy() + 0.1),
-                lw=3,
-                label=f"energy per bond <= {max_energy()}eV",
-            )
-            ax.plot(
-                [None, None],
-                [None, None],
-                c=colour_by_energy(0),
-                lw=3,
-                label=f"energy per bond <= {isomer_energy()}eV",
-            )
-
-            fig.legend(
-                bbox_to_anchor=(0, 1.02, 2, 0.2),
-                loc="lower left",
-                ncol=3,
-                fontsize=16,
-            )
-            fig.tight_layout()
-            filename = f"vba_{tstr}_{clangle}.pdf"
-            fig.savefig(
-                os.path.join(figure_output, filename),
-                dpi=360,
-                bbox_inches="tight",
-            )
-            plt.close()
-
-
-def visualise_self_sort(all_data, figure_output):
-    raise NotImplementedError()
-    struct_output = cages() / "structures"
-    topology_dict = cltypetopo_to_colormap()
-
-    settings = {
-        "grid_mode": 0,
-        "rayx": 1000,
-        "rayy": 1000,
-        "stick_rad": 0.8,
-        "vdw": 0,
-        "zoom_string": "custom",
-    }
-
-    bbpairs = set(all_data["bbpair"])
-
-    for bbpair in bbpairs:
-        ctitle = "4C1" if "4C1" in bbpair else "3C1"
-        ncols = 5 if ctitle == "3C1" else 6
-        fig, axs = plt.subplots(
-            ncols=ncols,
-            nrows=2,
-            figsize=(16, 5),
-        )
-        bdata = all_data[all_data["bbpair"] == bbpair]
-
-        for i, tors in enumerate(("ton", "toff")):
-            flat_axs = axs[i].flatten()
-
-            show = bdata[bdata["torsions"] == tors]
-            ctitle = "4C1" if "4C1" in bbpair else "3C1"
-            target_bite_angle = float(
-                list(show["target_bite_angle"])[0]
-            )
-            names_energies = []
-            for tstr in topology_dict[ctitle]:
-                rowdata = show[show["topology"] == tstr]
-                if len(rowdata) > 1:
-                    raise ValueError(f"{rowdata} too long")
-                elif len(rowdata) == 1:
-                    row = rowdata.iloc[0]
-                    names_energies.append(
-                        (str(row["index"]), float(row["energy"])),
-                    )
-                else:
-                    names_energies.append(None)
-
-            for j, cage_data in enumerate(names_energies):
-                ax = flat_axs[j]
-                ax.axis("off")
-                if i == 0 and j == 0:
-                    ax.set_title(
-                        f"ba: {target_bite_angle}", fontsize=16
-                    )
-                if cage_data is None:
-                    continue
-                name, energy = cage_data
-                structure_file = struct_output / f"{name}_optc.mol"
-                structure_colour = colour_by_energy(energy)
-                png_file = figure_output / f"{name}_f.png"
-                if not os.path.exists(png_file):
-                    viz = Pymol(
-                        output_dir=figure_output,
-                        file_prefix=f"{name}_f",
-                        settings=settings,
-                    )
-                    viz.visualise([structure_file], [structure_colour])
-
-                img = mpimg.imread(png_file)
-                ax.imshow(img)
-
-        ax.plot(
-            [None, None],
-            [None, None],
-            c=colour_by_energy(max_energy() + 1),
-            lw=3,
-            label=f"energy > {max_energy()}eV",
-        )
-        ax.plot(
-            [None, None],
-            [None, None],
-            c=colour_by_energy(isomer_energy() + 0.1),
-            lw=3,
-            label=f"energy <= {max_energy()}eV",
-        )
-        ax.plot(
-            [None, None],
-            [None, None],
-            c=colour_by_energy(0),
-            lw=3,
-            label=f"energy <= {isomer_energy()}eV",
-        )
-
-        fig.legend(
-            bbox_to_anchor=(0, 1.02, 2, 0.2),
-            loc="lower left",
-            ncol=3,
-            fontsize=16,
-        )
-        fig.tight_layout()
-        filename = f"vss_{bbpair}.pdf"
-        fig.savefig(
-            os.path.join(figure_output, filename),
-            dpi=360,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-
-def visualise_high_energy(all_data, figure_output):
-    raise NotImplementedError()
-    struct_output = cages() / "structures"
-    high_energy = all_data[all_data["energy"] > 500]
-    high_e_names = list(high_energy["index"])
-    high_e_energies = list(high_energy["energy"])
-    logging.info(
-        f"there are {len(high_e_names)} high energy structures"
-    )
-    with open(figure_output / "high_energy_names.txt", "w") as f:
-        f.write("_opted3.mol ".join(high_e_names))
-        f.write("_opted3.mol")
-
-    cage_name = high_e_names[0]
-    structure_files = []
-    structure_colours = []
-    for i, cage_name in enumerate(high_e_names):
-        structure_files.append(struct_output / f"{cage_name}_optc.mol")
-        structure_colours.append(colour_by_energy(high_e_energies[i]))
-    viz = Pymol(output_dir=figure_output, file_prefix="highe")
-    viz.visualise(structure_files, structure_colours)
 
 
 def generate_images_of_all(
@@ -892,6 +644,147 @@ def generate_image(
     return png_file
 
 
+def webapp_csv(
+    all_data,
+    figure_output,
+    struct_output,
+    struct_figure_output,
+):
+    logging.info("running webapp_csv")
+
+    settings = {
+        "grid_mode": 0,
+        "rayx": 1000,
+        "rayy": 1000,
+        "stick_rad": 0.8,
+        "vdw": 0,
+        "zoom_string": "custom",
+    }
+
+    csv_files = {"3C1_4C1": {}, "2C1_3C1": {}, "2C1_4C1": {}}
+
+    bbpairs = set(all_data["bbpair"])
+    count = 0
+    total = len(bbpairs)
+
+    for bbpair in bbpairs:
+        logging.info(f"viz self sort of {bbpair} ({count} of {total})")
+        bbdata = all_data[all_data["bbpair"] == bbpair]
+
+        bbdict = {}
+        for tors in ("ton", "toff"):
+            if "3C1" in bbpair and "4C1" in bbpair:
+                ncols = nrows = 1
+                topo_type = "3C1_4C1"
+            elif "2C1" in bbpair and "3C1" in bbpair:
+                nrows = 1
+                ncols = 5
+                topo_type = "2C1_3C1"
+            elif "2C1" in bbpair and "4C1" in bbpair:
+                nrows = 1
+                ncols = 6
+                topo_type = "2C1_4C1"
+
+            if topo_type == "3C1_4C1" and tors == "ton":
+                bbdict[tors] = {
+                    "topologies": "none",
+                }
+                continue
+
+            tdata = bbdata[bbdata["torsions"] == tors]
+            bite_angle = next(iter(set(tdata["target_bite_angle"])))
+            clangle = next(iter(set(tdata["clangle"])))
+            c3angle = next(iter(set(tdata["c3angle"])))
+
+            energies = {
+                str(row["topology"]): float(row["energy_per_bb"])
+                for i, row in tdata.iterrows()
+            }
+            index_energies = {
+                str(row["index"]): float(row["energy_per_bb"])
+                for i, row in tdata.iterrows()
+            }
+
+            mixed_energies = {
+                i: energies[i]
+                for i in energies
+                if energies[i] < isomer_energy()
+            }
+
+            min_energy = min(energies.values())
+
+            if min_energy > isomer_energy():
+                topologies = "none"
+            else:
+                topologies = "/".join(sorted(mixed_energies))
+
+            vss_output = figure_output / "vss_figures"
+            check_directory(vss_output)
+            figure_file = os.path.join(
+                vss_output, f"vss_{bbpair}_{tors}"
+            )
+            if not os.path.exists(figure_file):
+
+                if ncols == 1:
+                    fig, ax = plt.subplots(figsize=(5, 5))
+                    flat_axs = [ax]
+                else:
+                    fig, axs = plt.subplots(
+                        ncols=ncols,
+                        nrows=nrows,
+                        figsize=(16, 5),
+                    )
+                    flat_axs = axs.flatten()
+
+                for sindx, ax in zip(
+                    sorted(index_energies.keys()), flat_axs
+                ):
+                    add_structure_to_ax(
+                        ax=ax,
+                        struct_name=sindx,
+                        struct_output=struct_output,
+                        struct_figure_output=struct_figure_output,
+                        energy=index_energies[sindx],
+                        settings=settings,
+                    )
+                    ax.axis("off")
+
+                fig.tight_layout()
+                fig.savefig(
+                    figure_file,
+                    dpi=120,
+                    bbox_inches="tight",
+                )
+                plt.close()
+
+            bbdict[tors] = {
+                "topologies": topologies,
+                "clangle": clangle,
+                "bite_angle": bite_angle,
+                "c3angle": c3angle,
+            }
+
+        csv_files[topo_type][bbpair] = bbdict
+        count += 1
+
+    for csv_name in csv_files:
+        filename = figure_output / f"{csv_name}_bbdata.csv"
+        with open(filename, "w") as f:
+            f.write(
+                "name,clangle,bite_angle,c3angle,ton_topologies,"
+                "toff_topologies\n"
+            )
+            for bbpair in csv_files[csv_name]:
+                bbdict = csv_files[csv_name][bbpair]
+                f.write(
+                    f"{bbpair},{bbdict['toff']['clangle']},"
+                    f"{bbdict['toff']['bite_angle']},"
+                    f"{bbdict['toff']['c3angle']},"
+                    f"{bbdict['ton']['topologies']},"
+                    f"{bbdict['toff']['topologies']}\n"
+                )
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -922,7 +815,12 @@ def main():
         struct_output,
         struct_figure_output,
     )
-
+    webapp_csv(
+        low_e_data,
+        figure_output,
+        struct_output,
+        struct_figure_output,
+    )
     visualise_low_and_high(
         low_e_data,
         figure_output,
@@ -952,13 +850,6 @@ def main():
         "want to print out problematic structures, e.g. a-a distances "
         "of zero, or nulll angles"
     )
-    raise SystemExit(
-        "use same struct output below and struct_figure_output"
-    )
-
-    visualise_self_sort(all_data, figure_output)
-    visualise_bite_angle(all_data, figure_output)
-    visualise_high_energy(all_data, figure_output)
 
 
 if __name__ == "__main__":

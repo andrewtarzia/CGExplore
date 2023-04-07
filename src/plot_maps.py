@@ -851,7 +851,6 @@ def main():
     write_out_mapping(all_data)
 
     pdII_figure_bite_angle(low_e_data, figure_output)
-    raise SystemExit()
     angle_map(low_e_data, figure_output)
     kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
