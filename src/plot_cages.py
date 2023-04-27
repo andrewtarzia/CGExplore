@@ -652,6 +652,12 @@ def webapp_csv(
 ):
     logging.info("running webapp_csv")
 
+    github_base_url = (
+        "https://github.com/andrewtarzia/cgmodels/blob/main/"
+        "cg_model_apr2023/"
+    )
+    github_selfsort_url = github_base_url + "self_sort_outcomes/"
+
     settings = {
         "grid_mode": 0,
         "rayx": 1000,
@@ -688,6 +694,7 @@ def webapp_csv(
             if topo_type == "3C1_4C1" and tors == "ton":
                 bbdict[tors] = {
                     "topologies": "none",
+                    "selfsort_url": "none",
                 }
                 continue
 
@@ -757,11 +764,15 @@ def webapp_csv(
                 )
                 plt.close()
 
+            selfsort_url = (
+                github_selfsort_url + f"vss_{bbpair}_{tors}.png"
+            )
             bbdict[tors] = {
                 "topologies": topologies,
                 "clangle": clangle,
                 "bite_angle": bite_angle,
                 "c3angle": c3angle,
+                "selfsort_url": selfsort_url,
             }
 
         csv_files[topo_type][bbpair] = bbdict
@@ -772,7 +783,8 @@ def webapp_csv(
         with open(filename, "w") as f:
             f.write(
                 "name,clangle,bite_angle,c3angle,ton_topologies,"
-                "toff_topologies\n"
+                "toff_topologies,"
+                "ton_selfsort_url,toff_selfsort_url\n"
             )
             for bbpair in csv_files[csv_name]:
                 bbdict = csv_files[csv_name][bbpair]
@@ -781,7 +793,10 @@ def webapp_csv(
                     f"{bbdict['toff']['bite_angle']},"
                     f"{bbdict['toff']['c3angle']},"
                     f"{bbdict['ton']['topologies']},"
-                    f"{bbdict['toff']['topologies']}\n"
+                    f"{bbdict['toff']['topologies']},"
+                    f"{bbdict['ton']['selfsort_url']},"
+                    f"{bbdict['toff']['selfsort_url']}"
+                    "\n"
                 )
 
 
