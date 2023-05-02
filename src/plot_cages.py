@@ -578,6 +578,97 @@ def si_ar_fig_gen(
     )
 
 
+def si_shape_fig(
+    all_data,
+    figure_output,
+    struct_output,
+    struct_figure_output,
+):
+
+    structure_names = (
+        # ("12P24_4C1m0000b0000_2C1c0000a0200", "ton"),
+        # ("12P24_4C1m0000b0000_2C1c0000a01200", "toff"),
+        # ("12P24_4C1m0100b0000_2C1c0000a01500", "ton"),
+        # ("12P24_4C1m0100b0000_2C1c0000a0000", "toff"),
+        # ("12P24_4C1m0200b0000_2C1c0000a01600", "ton"),
+        # ("12P24_4C1m0200b0000_2C1c0000a0000", "toff"),
+        # ("12P24_4C1m0300b0000_2C1c0000a01200", "ton"),
+        # ("12P24_4C1m0300b0000_2C1c0000a0000", "toff"),
+        # ("12P24_4C1m0400b0000_2C1c0000a01200", "ton"),
+        ("4P6_3C1n0700b0000_2C1c0000a0200", "ton"),
+        ("4P6_3C1n0700b0000_2C1c0000a0200", "toff"),
+        ("4P6_3C1n0700b0000_2C1c0000a0700", "ton"),
+        ("4P6_3C1n0700b0000_2C1c0000a0700", "toff"),
+        ("4P6_3C1n0100b0000_2C1c0000a0800", "ton"),
+        ("4P6_3C1n0100b0000_2C1c0000a0800", "toff"),
+        ("4P62_3C1n0000b0000_2C1c0000a01300", "ton"),
+        ("4P62_3C1n0000b0000_2C1c0000a01300", "toff"),
+        ("4P62_3C1n0700b0000_2C1c0000a0300", "ton"),
+        ("4P62_3C1n0700b0000_2C1c0000a0300", "toff"),
+        ("4P62_3C1n0300b0000_2C1c0000a0300", "ton"),
+        ("4P62_3C1n0300b0000_2C1c0000a0300", "toff"),
+        ("6P12_4C1m0400b0000_2C1c0000a0900", "ton"),
+        ("6P12_4C1m0400b0000_2C1c0000a0900", "toff"),
+        ("6P12_4C1m0300b0000_2C1c0000a0900", "ton"),
+        ("6P12_4C1m0300b0000_2C1c0000a0900", "toff"),
+        ("6P12_4C1m0200b0000_2C1c0000a0400", "ton"),
+        ("6P12_4C1m0200b0000_2C1c0000a0400", "toff"),
+        ("6P9_3C1n0000b0000_2C1c0000a0000", "ton"),
+        ("6P9_3C1n0000b0000_2C1c0000a0000", "toff"),
+        ("6P9_3C1n0100b0000_2C1c0000a0000", "ton"),
+        ("6P9_3C1n0100b0000_2C1c0000a0000", "toff"),
+        ("6P9_3C1n0200b0000_2C1c0000a0000", "ton"),
+        ("6P9_3C1n0200b0000_2C1c0000a0000", "toff"),
+        ("4P8_4C1m0400b0000_2C1c0000a0600", "ton"),
+        ("4P8_4C1m0400b0000_2C1c0000a0600", "toff"),
+        ("4P8_4C1m0300b0000_2C1c0000a0600", "ton"),
+        ("4P8_4C1m0300b0000_2C1c0000a0600", "toff"),
+        ("4P8_4C1m0200b0000_2C1c0000a0600", "ton"),
+        ("4P8_4C1m0200b0000_2C1c0000a0600", "toff"),
+    )
+    nrows = 5
+    ncols = 6
+    filename = "shape_structure_fig.pdf"
+
+    settings = {
+        "grid_mode": 0,
+        "rayx": 1000,
+        "rayy": 1000,
+        "stick_rad": 0.8,
+        "vdw": 0,
+        "zoom_string": "custom",
+    }
+
+    fig, axs = plt.subplots(
+        ncols=ncols,
+        nrows=nrows,
+        figsize=(16, 14),
+    )
+    flat_axs = axs.flatten()
+
+    for sname, ax in zip(structure_names, flat_axs):
+        ton = all_data[all_data["torsions"] == sname[1]]
+        tdata = ton[ton["cage_name"] == sname[0]]
+        sindex = str(tdata.iloc[0]["index"])
+        add_structure_to_ax(
+            ax=ax,
+            struct_name=sindex,
+            struct_output=struct_output,
+            struct_figure_output=struct_figure_output,
+            energy=min(tdata["energy_per_bb"]),
+            settings=settings,
+        )
+        ax.axis("off")
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, filename),
+        dpi=120,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def add_energy_to_ax(ax, energy):
     if energy <= isomer_energy():
         colorcode = "#345995"
@@ -830,7 +921,8 @@ def main():
         struct_output,
         struct_figure_output,
     )
-    webapp_csv(
+
+    si_shape_fig(
         low_e_data,
         figure_output,
         struct_output,
@@ -861,6 +953,12 @@ def main():
         struct_figure_output,
     )
 
+    webapp_csv(
+        low_e_data,
+        figure_output,
+        struct_output,
+        struct_figure_output,
+    )
     raise SystemExit(
         "want to print out problematic structures, e.g. a-a distances "
         "of zero, or nulll angles"

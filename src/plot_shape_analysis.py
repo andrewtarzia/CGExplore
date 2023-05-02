@@ -211,7 +211,7 @@ def shape_topology(all_data, figure_output):
         for shape_type in ("n", "l"):
 
             if tstr == "6P8":
-                fig, ax = plt.subplots(figsize=(8, 5))
+                fig, ax = plt.subplots(figsize=(8, 4))
                 tor_tests = ("toff",)
                 flat_axs = (ax,)
 
@@ -220,7 +220,7 @@ def shape_topology(all_data, figure_output):
                     ncols=2,
                     nrows=1,
                     sharey=True,
-                    figsize=(16, 5),
+                    figsize=(16, 4),
                 )
                 tor_tests = ("ton", "toff")
                 flat_axs = axs.flatten()
@@ -275,11 +275,13 @@ def shape_topology(all_data, figure_output):
                     histtype="stepfilled",
                     label=f"{eb_str()} < {isomer_energy()}",
                 )
-                if tstr != "6P8":
-                    ax.set_title(
-                        f"{convert_tors(tor, num=False)}",
-                        fontsize=16,
-                    )
+                ax.set_title(
+                    (
+                        f"{convert_topo(tstr)} - "
+                        f"{convert_tors(tor, num=False)}"
+                    ),
+                    fontsize=16,
+                )
                 ax.set_xlabel(target_shape, fontsize=16)
                 ax.tick_params(axis="both", which="major", labelsize=16)
                 ax.set_ylabel("count", fontsize=16)
@@ -385,18 +387,21 @@ def shape_input_relationships(all_data, figure_output):
                     edgecolor="none",
                     s=200,
                     marker="s",
-                    cmap="viridis",
+                    cmap="Blues_r",
                 )
 
                 ax.set_title(
-                    f"{convert_tors(tor, num=False)}",
+                    (
+                        f"{convert_topo(tstr)} - "
+                        f"{convert_tors(tor, num=False)}"
+                    ),
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
                 ax.set_ylabel("cl angle [deg]", fontsize=16)
 
             cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-            cmap = mpl.cm.viridis
+            cmap = mpl.cm.Blues_r
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
             cbar = fig.colorbar(
                 mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
