@@ -66,6 +66,7 @@ def topology_labels(short):
             "2+4",
             "3+6",
             "4+8",
+            "4+8(2)",
             "6+12",
             "8+16",
             "12+24",
@@ -81,6 +82,7 @@ def topology_labels(short):
             "2P4",
             "3P6",
             "4P8",
+            "4P82",
             "6P12",
             "8P16",
             "12P24",
@@ -96,6 +98,7 @@ def topology_labels(short):
             "TwoPlusFour",
             "ThreePlusSix",
             "FourPlusEight",
+            "FourPlusEight2",
             "SixPlusTwelve",
             "EightPlusSixteen",
             "M12L24",
@@ -122,6 +125,7 @@ def convert_topo(topo_str):
         "TwoPlusFour": "2+4",
         "ThreePlusSix": "3+6",
         "FourPlusEight": "4+8",
+        "FourPlusEight2": "4+8(2)",
         "SixPlusTwelve": "6+12",
         "EightPlusSixteen": "8+16",
         "M12L24": "12+24",
@@ -142,6 +146,7 @@ def convert_topo(topo_str):
         "2P4": "2+4",
         "3P6": "3+6",
         "4P8": "4+8",
+        "4P82": "4+8(2)",
         "6P12": "6+12",
         "8P16": "8+16",
         "12P24": "12+24",
@@ -191,6 +196,7 @@ def stoich_map(tstr):
         "2P4": 6,
         "3P6": 9,
         "4P8": 12,
+        "4P82": 12,
         "6P12": 18,
         "8P16": 24,
         "12P24": 36,
@@ -299,7 +305,7 @@ def shapetarget_to_colormap():
 def map_cltype_to_topology():
     return {
         "3C1": ("2P3", "4P6", "4P62", "6P9", "8P12"),
-        "4C1": ("2P4", "3P6", "4P8", "6P12", "8P16", "12P24"),
+        "4C1": ("2P4", "3P6", "4P8", "4P82", "6P12", "8P16", "12P24"),
     }
 
 
@@ -309,8 +315,8 @@ def mapshape_to_topology(mode, from_shape=False):
             return {
                 "TP-3": ("3P6",),
                 "mvOC-3": ("3P6",),
-                "T-4": ("4P6", "4P62", "4P8"),
-                "SP-4": ("4P6", "4P62", "4P8"),
+                "T-4": ("4P6", "4P62", "4P8", "4P82"),
+                "SP-4": ("4P6", "4P62", "4P8", "4P82"),
                 "OC-6": ("6P9", "6P12", "6P8"),
                 "PPY-6": ("6P9", "6P12", "6P8"),
                 "HP-6": ("6P9", "6P12", "6P8"),
@@ -343,6 +349,7 @@ def mapshape_to_topology(mode, from_shape=False):
                 # "2P4": "OC-6b",
                 "3P6": "TP-3",
                 "4P8": "SP-4",
+                "4P82": "T-4",
                 "6P12": "OC-6",
                 "8P16": "SAPR-8",
                 # "12P24": "",

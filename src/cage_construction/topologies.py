@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 import stk
+import numpy as np
 
 
 def cage_topology_options(fg_set):
@@ -26,6 +27,7 @@ def cage_topology_options(fg_set):
             "2P4": stk.cage.M2L4Lantern,
             "3P6": stk.cage.M3L6,
             "4P8": CGM4L8,
+            "4P82": M4L82,
             "6P12": stk.cage.M6L12Cube,
             "8P16": stk.cage.EightPlusSixteen,
             "12P24": CGM12L24,
@@ -41,6 +43,95 @@ def cage_topology_options(fg_set):
         }
 
     return topologies
+
+
+class M4L82(stk.cage.Cage):
+
+    _non_linears = (
+        stk.cage.NonLinearVertex(0, [0, 0, np.sqrt(6) / 2]),
+        stk.cage.NonLinearVertex(
+            1, [-1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]
+        ),
+        stk.cage.NonLinearVertex(
+            2, [1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]
+        ),
+        stk.cage.NonLinearVertex(
+            3, [0, 2 * np.sqrt(3) / 3, -np.sqrt(6) / 6]
+        ),
+    )
+
+    paired_wall_1_coord = (
+        sum(
+            vertex.get_position()
+            for vertex in (_non_linears[0], _non_linears[1])
+        )
+        / 2
+    )
+    wall_1_shift = np.array((0.2, 0.2, 0))
+
+    paired_wall_2_coord = (
+        sum(
+            vertex.get_position()
+            for vertex in (_non_linears[2], _non_linears[3])
+        )
+        / 2
+    )
+    wall_2_shift = np.array((0.2, 0.2, 0))
+
+    _vertex_prototypes = (
+        *_non_linears,
+        stk.cage.LinearVertex(
+            id=4,
+            position=paired_wall_1_coord + wall_1_shift,
+        ),
+        stk.cage.LinearVertex.init_at_center(
+            id=5,
+            vertices=(_non_linears[0], _non_linears[2]),
+        ),
+        stk.cage.LinearVertex.init_at_center(
+            id=6,
+            vertices=(_non_linears[0], _non_linears[3]),
+        ),
+        stk.cage.LinearVertex.init_at_center(
+            id=7,
+            vertices=(_non_linears[1], _non_linears[2]),
+        ),
+        stk.cage.LinearVertex.init_at_center(
+            id=8,
+            vertices=(_non_linears[1], _non_linears[3]),
+        ),
+        stk.cage.LinearVertex(
+            id=9,
+            position=paired_wall_2_coord + wall_2_shift,
+        ),
+        stk.cage.LinearVertex(
+            id=10,
+            position=paired_wall_1_coord - wall_1_shift,
+        ),
+        stk.cage.LinearVertex(
+            id=11,
+            position=paired_wall_2_coord - wall_2_shift,
+        ),
+    )
+
+    _edge_prototypes = (
+        stk.Edge(0, _vertex_prototypes[0], _vertex_prototypes[4]),
+        stk.Edge(1, _vertex_prototypes[0], _vertex_prototypes[5]),
+        stk.Edge(2, _vertex_prototypes[0], _vertex_prototypes[6]),
+        stk.Edge(3, _vertex_prototypes[0], _vertex_prototypes[10]),
+        stk.Edge(4, _vertex_prototypes[1], _vertex_prototypes[4]),
+        stk.Edge(5, _vertex_prototypes[1], _vertex_prototypes[7]),
+        stk.Edge(6, _vertex_prototypes[1], _vertex_prototypes[8]),
+        stk.Edge(7, _vertex_prototypes[1], _vertex_prototypes[10]),
+        stk.Edge(8, _vertex_prototypes[2], _vertex_prototypes[5]),
+        stk.Edge(9, _vertex_prototypes[2], _vertex_prototypes[7]),
+        stk.Edge(10, _vertex_prototypes[2], _vertex_prototypes[9]),
+        stk.Edge(11, _vertex_prototypes[2], _vertex_prototypes[11]),
+        stk.Edge(12, _vertex_prototypes[3], _vertex_prototypes[6]),
+        stk.Edge(13, _vertex_prototypes[3], _vertex_prototypes[8]),
+        stk.Edge(14, _vertex_prototypes[3], _vertex_prototypes[9]),
+        stk.Edge(15, _vertex_prototypes[3], _vertex_prototypes[11]),
+    )
 
 
 class CGM4L8(stk.cage.M4L8):

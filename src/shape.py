@@ -63,6 +63,7 @@ def get_shape_molecule_nodes(constructed_molecule, name, element):
         "8P12": 8,
         "3P6": 3,
         "4P8": 4,
+        "4P82": 4,
         "6P12": 6,
         "8P16": 8,
         "6P8": 6,
