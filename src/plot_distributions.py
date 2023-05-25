@@ -30,6 +30,8 @@ from analysis_utilities import (
     eb_str,
     pore_str,
     rg_str,
+    clangle_str,
+    Xc_map,
     data_to_array,
     isomer_energy,
     get_lowest_energy_data,
@@ -414,10 +416,14 @@ def single_value_distributions(all_data, figure_output):
             "xtitle": eb_str(),
             "xlim": (0, 50),
         },
+        "energy_per_bb_zoom": {
+            "xtitle": eb_str(),
+            "xlim": (0, isomer_energy() * 3),
+        },
         "pore": {"xtitle": pore_str(), "xlim": (0, 10)},
         "min_b2b_distance": {
-            "xtitle": "min. b2b distance [A]",
-            "xlim": (0, 1.2),
+            "xtitle": r"min. bead-to-bead distance [$\mathrm{\AA}$]",
+            "xlim": (0.9, 1.1),
         },
         "HarmonicBondForce_kjmol": {
             "xtitle": r"$E_{\mathrm{bond}}$ [kJmol$^{-1}$]",
@@ -432,8 +438,8 @@ def single_value_distributions(all_data, figure_output):
             "xlim": (0, 20),
         },
         "PeriodicTorsionForce_kjmol": {
-            "xtitle": r"$E_{\mathrm{dihedral}}$ [kJmol$^{-1}$]",
-            "xlim": (0, 20),
+            "xtitle": r"$E_{\mathrm{torsion}}$ [kJmol$^{-1}$]",
+            "xlim": (0, 15),
         },
         "radius_gyration": {
             "xtitle": rg_str(),
@@ -462,6 +468,11 @@ def single_value_distributions(all_data, figure_output):
 
     for tp in to_plot:
         fig, ax = plt.subplots(figsize=(16, 5))
+        if tp == "energy_per_bb_zoom":
+            column = "energy_per_bb"
+        else:
+            column = tp
+
         xtitle = to_plot[tp]["xtitle"]
         xlim = to_plot[tp]["xlim"]
         count = 0
@@ -480,7 +491,7 @@ def single_value_distributions(all_data, figure_output):
             tor_frame = topo_frame[topo_frame["torsions"] == topt[1]]
             fin_frame = tor_frame[tor_frame["vdws"] == topt[2]]
 
-            values = [i for i in fin_frame[tp] if not np.isnan(i)]
+            values = [i for i in fin_frame[column] if not np.isnan(i)]
 
             if len(values) == 0:
                 continue
@@ -584,7 +595,7 @@ def plot_sorted(bb_data, color_map, figure_output):
 
         xs = []
         ys = []
-        for x in np.linspace(0.01, max_, 1000):
+        for x in np.linspace(0.01, max_, 100):
             stable_isomers = [
                 sum(i[j] < x for j in i) for i in data if flag in i
             ]
@@ -602,7 +613,7 @@ def plot_sorted(bb_data, color_map, figure_output):
             # marker="o",
             c=color_map[(tor, cltitle)],
             lw=4,
-            label=f"{cltitle}: {convert_tors(tor, num=False)}",
+            label=f"{cltitle[0]}C: {convert_tors(tor, num=False)}",
         )
 
     # ax.set_title(f"{cltitle}", fontsize=16)
@@ -666,10 +677,11 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
             ys_unstable,
             # marker="o",
             c=color_map[(tor, cltitle)],
-            lw=2,
+            lw=3,
             linestyle="-",
             label=(
-                f"{cltitle}: {convert_tors(tor, num=False)}, unstable"
+                f"{cltitle[0]}C: "
+                f"{convert_tors(tor, num=False)}, unstable"
             ),
         )
         ax.plot(
@@ -677,9 +689,12 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
             ys_mixed,
             # marker="o",
             c=color_map[(tor, cltitle)],
-            lw=2,
+            lw=3,
             linestyle="--",
-            label=f"{cltitle}: {convert_tors(tor, num=False)}, mixed",
+            label=(
+                f"{cltitle[0]}C: "
+                f"{convert_tors(tor, num=False)}, mixed"
+            ),
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
@@ -748,13 +763,13 @@ def plot_clangle(cl_data, color_map, figure_output):
                 c=cs,
                 vmin=0,
                 vmax=30,
-                s=30,
+                s=20,
                 marker="s",
-                cmap="Oranges",
+                cmap="Blues",
             )
 
-        cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-        cmap = mpl.cm.Oranges
+        cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
+        cmap = mpl.cm.Blues
         norm = mpl.colors.Normalize(vmin=0, vmax=30)
         cbar = fig.colorbar(
             mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
@@ -767,11 +782,11 @@ def plot_clangle(cl_data, color_map, figure_output):
             fontsize=16,
         )
 
-        ax.set_title(f"{cltitle}", fontsize=16)
+        # ax.set_title(f"{cltitle}", fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
         # ax.set_ylabel(r"% sorted", fontsize=16)
-        ax.set_ylabel("clangle [deg]", fontsize=16)
+        ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
         # ax.set_xlim(0, max_ + 0.1)
         # ax.set_ylim(0, None)
 
@@ -918,10 +933,10 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
             )
             topology_data[tstr][tor] = (len(stable_data), len(tor_data))
 
-        ax.set_title(tstr, fontsize=16)
+        ax.set_title(convert_topo(tstr), fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("target bite angle [deg]", fontsize=16)
-    ax.set_ylabel("clangle [deg]", fontsize=16)
+        ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+        ax.set_ylabel(clangle_str(num=Xc_map(tstr)), fontsize=16)
     # ax.set_xlim(0, max_ + 0.1)
     # ax.set_ylim(0, None)
 
@@ -1100,6 +1115,81 @@ def correlation_matrix(all_data, figure_output):
     plt.close()
 
 
+def col_convert(name):
+    return {
+        "target_bite_angle": "ba",
+        "clangle": "xC",
+        "energy_per_bb": "Eb",
+        "strain_energy": "Es",
+        "HarmonicBondForce_kjmol": "HB",
+        "HarmonicAngleForce_kjmol": "HA",
+        "CustomNonbondedForce_kjmol": "NB",
+        "PeriodicTorsionForce_kjmol": "PT",
+    }[name]
+
+
+def energy_correlation_matrix(all_data, figure_output):
+    target_cols = [
+        "energy_per_bb",
+        "HarmonicBondForce_kjmol",
+        "HarmonicAngleForce_kjmol",
+        "CustomNonbondedForce_kjmol",
+        "PeriodicTorsionForce_kjmol",
+    ]
+    trim = all_data[all_data["torsions"] == "ton"]
+    topologies = [i for i in topology_labels(short="P") if i != "6P8"]
+
+    fig, axs = plt.subplots(
+        ncols=4,
+        nrows=3,
+        sharex=True,
+        sharey=True,
+        figsize=(16, 10),
+    )
+    flat_axs = axs.flatten()
+
+    for ax, tstr in zip(flat_axs, topologies):
+        tdata = trim[trim["topology"] == tstr]
+        targ_data = tdata[target_cols].copy()
+
+        corr = targ_data.corr()
+        ax.matshow(corr, vmin=-1, vmax=1, cmap="Spectral")
+
+        ax.tick_params(axis="both", which="major", labelsize=6)
+        ax.set_title(convert_topo(tstr), fontsize=16)
+        ax.set_xticks(
+            range(len(corr.columns)),
+            [col_convert(i) for i in corr.columns],
+            rotation="vertical",
+        )
+        ax.set_yticks(
+            range(len(corr.columns)),
+            [col_convert(i) for i in corr.columns],
+        )
+
+    cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+    cmap = mpl.cm.Spectral
+    norm = mpl.colors.Normalize(vmin=-1, vmax=1)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label(
+        "correlation",
+        fontsize=16,
+    )
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "energy_correlation_matrix.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def check_odd_outcomes(all_data, figure_output):
 
     print("check cases where toff is higher E than ton")
@@ -1139,6 +1229,7 @@ def main():
 
     flexeffect_per_property(low_e_data, figure_output)
     correlation_matrix(low_e_data, figure_output)
+    energy_correlation_matrix(low_e_data, figure_output)
     identity_distributions(all_data, figure_output)
     mixed_distributions(low_e_data, figure_output)
     single_value_distributions(low_e_data, figure_output)

@@ -30,6 +30,8 @@ from analysis_utilities import (
     write_out_mapping,
     convert_tors,
     convert_topo,
+    clangle_str,
+    Xc_map,
 )
 
 
@@ -105,25 +107,14 @@ def clangle_relationship(all_data, figure_output):
                 # marker="o",
             )
 
-            # for x, y in zip(xs, y_medians):
-            #     if y < isomer_energy():
-            #         yx = [4.6]
-            #         ax.scatter(
-            #             [x],
-            #             yx,
-            #             marker="P",
-            #             c="#086788",
-            #             s=120,
-            #             edgecolor="k",
-            #             zorder=2,
-            #         )
-
             ax.set_ylabel(eb_str(), fontsize=16)
-            ax.set_title(t_angle, fontsize=16)
+            ax.set_title(
+                f"{clangle_str(num=4)} = {t_angle}",
+                fontsize=16,
+            )
             ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("c3 angle", fontsize=16)
-        ax.set_ylim(0, 5)
-        # ax.set_yscale("log")
+        ax.set_xlabel(clangle_str(num=3), fontsize=16)
+        ax.set_ylim(0, 10)
 
         fig.tight_layout()
         filename = f"cr_{tstr}.pdf"
@@ -217,32 +208,13 @@ def bite_angle_relationship(all_data, figure_output):
                     marker=cmap[tors][1],
                 )
 
-                # for x, y in zip(xs, y_medians):
-                #     if y < isomer_energy():
-                #         if tors == "ton":
-                #             yx = [4.6]
-                #         elif tors == "toff":
-                #             yx = [4.6]
-                #         ax.scatter(
-                #             [x],
-                #             yx,
-                #             marker="P",
-                #             c=cmap[tors][0],
-                #             s=120,
-                #             edgecolor="k",
-                #             zorder=2,
-                #         )
-                # ax.axvline(
-                #     x=xs[min(range(len(ys)), key=ys.__getitem__)],
-                #     c=cmap[(c1_opt, c2_opt)][0],
-                #     linestyle="--",
-                #     alpha=0.5,
-                # )
-
             ax.set_ylabel(r"$E_{b}$", fontsize=16)
-            ax.set_title(t_angle, fontsize=16)
+            ax.set_title(
+                f"{clangle_str(num=Xc_map(tstr))} = {t_angle}",
+                fontsize=16,
+            )
             ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("target 2c bite angle", fontsize=16)
+        ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
         ax.legend(ncol=2, fontsize=16)
         ax.set_ylim(0, 5)
         ax.set_xlim(-1, 181)
@@ -440,6 +412,45 @@ def draw_pie(colours, xpos, ypos, size, ax):
             ax.scatter(xpos, ypos, **marker)
 
 
+def selfsort_legend(all_data, figure_output):
+    logging.info("running selfsort_legend")
+
+    for cltitle in ("3C1", "4C1"):
+        fig, ax = plt.subplots(figsize=(8, 5))
+        for i in cltypetopo_to_colormap():
+            if i not in (cltitle, "unstable"):
+                continue
+            for j in cltypetopo_to_colormap()[i]:
+                if i == "unstable":
+                    label = "unstable"
+                else:
+                    label = convert_topo(j)
+                ax.scatter(
+                    None,
+                    None,
+                    c=cltypetopo_to_colormap()[i][j],
+                    edgecolor="k",
+                    s=400,
+                    marker="o",
+                    alpha=1.0,
+                    label=label,
+                )
+
+        ax.legend(
+            # ncol=5,
+            fontsize=16,
+        )
+
+        fig.tight_layout()
+        filename = f"ss_{cltitle}_legend.pdf"
+        fig.savefig(
+            os.path.join(figure_output, filename),
+            dpi=720,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
 def selfsort_map(all_data, figure_output):
     logging.info("running selfsort_map")
 
@@ -517,35 +528,35 @@ def selfsort_map(all_data, figure_output):
             # rect.set_alpha(0)
 
             ax.set_title(convert_tors(tor, num=False), fontsize=16)
-            ax.set_ylabel("CL angle [deg]", fontsize=16)
-            ax.set_xlabel("bite angle [deg]", fontsize=16)
+            ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
+            ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
             ax.tick_params(axis="both", which="major", labelsize=16)
 
-        for i in cltypetopo_to_colormap():
-            if i not in (cltitle, "unstable"):
-                continue
-            for j in cltypetopo_to_colormap()[i]:
-                # if i == "mixed":
-                #     string = f"mixed: {j}"
-                # else:
-                string = j
-                ax.scatter(
-                    None,
-                    None,
-                    c=cltypetopo_to_colormap()[i][j],
-                    edgecolor="k",
-                    s=400,
-                    marker="o",
-                    alpha=1.0,
-                    label=convert_topo(string),
-                )
+        # for i in cltypetopo_to_colormap():
+        #     if i not in (cltitle, "unstable"):
+        #         continue
+        #     for j in cltypetopo_to_colormap()[i]:
+        #         if i == "unstable":
+        #             label = "unstable"
+        #         else:
+        #             label = convert_topo(j)
+        #         ax.scatter(
+        #             None,
+        #             None,
+        #             c=cltypetopo_to_colormap()[i][j],
+        #             edgecolor="k",
+        #             s=400,
+        #             marker="o",
+        #             alpha=1.0,
+        #             label=label,
+        #         )
 
-        fig.legend(
-            bbox_to_anchor=(0, 1.02, 2, 0.2),
-            loc="lower left",
-            ncol=5,
-            fontsize=16,
-        )
+        # fig.legend(
+        #     bbox_to_anchor=(0, 1.02, 2, 0.2),
+        #     loc="lower left",
+        #     ncol=5,
+        #     fontsize=16,
+        # )
 
         fig.tight_layout()
         filename = f"ss_{cltitle}_{tor}_{vdw}.pdf"
@@ -637,39 +648,10 @@ def kinetic_selfsort_map(all_data, figure_output):
                 ax=ax,
             )
 
-            # rect = ax.patch
-            # rect.set_alpha(0)
-
             ax.set_title(convert_tors(tor, num=False), fontsize=16)
-            ax.set_ylabel("CL angle [deg]", fontsize=16)
-            ax.set_xlabel("bite angle [deg]", fontsize=16)
+            ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
+            ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
             ax.tick_params(axis="both", which="major", labelsize=16)
-
-        for i in cltypetopo_to_colormap():
-            if i not in (cltitle,):
-                continue
-            for j in cltypetopo_to_colormap()[i]:
-                # if i == "mixed":
-                #     string = f"mixed: {j}"
-                # else:
-                string = j
-                ax.scatter(
-                    None,
-                    None,
-                    c=cltypetopo_to_colormap()[i][j],
-                    edgecolor="k",
-                    s=400,
-                    marker="o",
-                    alpha=1.0,
-                    label=convert_topo(string),
-                )
-
-        fig.legend(
-            bbox_to_anchor=(0, 1.02, 2, 0.2),
-            loc="lower left",
-            ncol=5,
-            fontsize=16,
-        )
 
         fig.tight_layout()
         filename = f"kss_{cltitle}_{tor}_{vdw}.pdf"
@@ -711,12 +693,15 @@ def angle_map(all_data, figure_output):
             if tstr == "6P8":
                 x = pdata["c3angle"]
                 y = pdata["clangle"]
-                ax.set_xlabel("c3 angle [deg]", fontsize=16)
+                ax.set_xlabel(clangle_str(num=3), fontsize=16)
 
             else:
                 x = pdata["target_bite_angle"]
                 y = pdata["clangle"]
-                ax.set_xlabel("bite angle [deg]", fontsize=16)
+                ax.set_xlabel(
+                    r"target bite angle [$^\circ$]",
+                    fontsize=16,
+                )
                 ax.set_title(
                     f"{convert_tors(tor, num=False)}",
                     fontsize=16,
@@ -737,9 +722,9 @@ def angle_map(all_data, figure_output):
 
             ax.tick_params(axis="both", which="major", labelsize=16)
 
-            ax.set_ylabel("cl angle [deg]", fontsize=16)
+            ax.set_ylabel(clangle_str(num=Xc_map(tstr)), fontsize=16)
 
-        cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+        cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
         cmap = mpl.cm.Blues_r
         norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
         cbar = fig.colorbar(
@@ -758,6 +743,74 @@ def angle_map(all_data, figure_output):
             bbox_inches="tight",
         )
         plt.close()
+
+
+def pd_4p82_figure(all_data, figure_output):
+    logging.info("running angle_map")
+
+    tstr = "4P82"
+
+    vmax = 3
+
+    fig, axs = plt.subplots(
+        ncols=2,
+        nrows=1,
+        sharey=True,
+        figsize=(16, 5),
+    )
+
+    tor_tests = ("ton", "toff")
+    flat_axs = axs.flatten()
+
+    tdata = all_data[all_data["topology"] == tstr]
+    for ax, tor in zip(flat_axs, tor_tests):
+        pdata = tdata[tdata["torsions"] == tor]
+
+        x = pdata["target_bite_angle"]
+        y = pdata["clangle"]
+        energies = pdata["energy_per_bb"]
+        ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+        ax.set_title(
+            f"{convert_tors(tor, num=False)}",
+            fontsize=16,
+        )
+
+        ax.scatter(
+            x,
+            y,
+            c=[i - min(energies) for i in energies],
+            vmin=0,
+            vmax=vmax,
+            alpha=1.0,
+            edgecolor="k",
+            s=200,
+            marker="s",
+            cmap="Blues_r",
+        )
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+
+        ax.set_ylabel(clangle_str(num=4), fontsize=16)
+
+    cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
+    cmap = mpl.cm.Blues_r
+    norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
+    cbar = fig.colorbar(
+        mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+        cax=cbar_ax,
+        orientation="vertical",
+    )
+    cbar.ax.tick_params(labelsize=16)
+    cbar.set_label(eb_str(), fontsize=16)
+
+    fig.tight_layout()
+    filename = "4p82_test.pdf"
+    fig.savefig(
+        os.path.join(figure_output, filename),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 def pdII_figure_bite_angle(all_data, figure_output):
@@ -851,10 +904,12 @@ def main():
     write_out_mapping(all_data)
 
     pdII_figure_bite_angle(low_e_data, figure_output)
+    pd_4p82_figure(low_e_data, figure_output)
     angle_map(low_e_data, figure_output)
+    selfsort_legend(low_e_data, figure_output)
+    selfsort_map(low_e_data, figure_output)
     kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
-    selfsort_map(low_e_data, figure_output)
     clangle_relationship(all_data, figure_output)
     bite_angle_relationship(all_data, figure_output)
 
