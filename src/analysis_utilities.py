@@ -29,6 +29,13 @@ from shape import known_shape_vectors
 from cage_construction.topologies import cage_topology_options
 
 
+def clangle_str(num=None):
+    if num is None:
+        return r"$x$C angle [$^\circ$]"
+    else:
+        return rf"{num}C angle [$^\circ$]"
+
+
 def eb_str():
     return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
 
@@ -115,20 +122,8 @@ def convert_prop(prop_str):
     }[prop_str]
 
 
-def convert_topo(topo_str):
+def convert_outcome(topo_str):
     return {
-        "TwoPlusThree": "2+3",
-        "FourPlusSix": "4+6",
-        "FourPlusSix2": "4+6(2)",
-        "SixPlusNine": "6+9",
-        "EightPlusTwelve": "8+12",
-        "TwoPlusFour": "2+4",
-        "ThreePlusSix": "3+6",
-        "FourPlusEight": "4+8",
-        "FourPlusEight2": "4+8(2)",
-        "SixPlusTwelve": "6+12",
-        "EightPlusSixteen": "8+16",
-        "M12L24": "12+24",
         "mixed": "mixed",
         "mixed-2": "mixed (2)",
         "mixed-3": "mixed (3)",
@@ -136,21 +131,32 @@ def convert_topo(topo_str):
         "all": "all",
         "unstable": "unstable",
         "not": "not",
+    }[topo_str]
+
+
+def convert_connectivity(topo_str):
+    raise SystemExit("decide how to do this.")
+    return {
         "3C1": "3-c",
         "4C1": "4-c",
-        "2P3": "2+3",
-        "4P6": "4+6",
-        "4P62": "4+6(2)",
-        "6P9": "6+9",
-        "8P12": "8+12",
-        "2P4": "2+4",
-        "3P6": "3+6",
-        "4P8": "4+8",
-        "4P82": "4+8(2)",
-        "6P12": "6+12",
-        "8P16": "8+16",
-        "12P24": "12+24",
-        "6P8": "6+8",
+    }[topo_str]
+
+
+def convert_topo(topo_str):
+    return {
+        "2P3": r"Tri$^{2}$Di$^{3}$",
+        "4P6": r"Tri$^{4}$Di$^{6}$",
+        "4P62": r"Tri$^{4}_{2}$Di$^{6}$",
+        "6P9": r"Tri$^{6}$Di$^{9}$",
+        "8P12": r"Tri$^{8}$Di$^{12}$",
+        "2P4": r"Tet$^{2}$Di$^{4}$",
+        "3P6": r"Tet$^{3}$Di$^{6}$",
+        "4P8": r"Tet$^{4}$Di$^{8}$",
+        "4P82": r"Tet$^{4}_{2}$Di$^{8}$",
+        "6P12": r"Tet$^{6}$Di$^{12}$",
+        "8P16": r"Tet$^{8}$Di$^{16}$",
+        "12P24": r"Tet$^{12}$Di$^{24}$",
+        "6P8": r"Tet$^{6}$Tri$^{8}$",
     }[topo_str]
 
 
@@ -174,11 +180,27 @@ def convert_vdws(vstr):
     }[vstr]
 
 
-def torsion_to_colormap():
+def Xc_map(tstr):
+    """
+    Maps topology string to pyramid angle.
+
+    """
+
     return {
-        "ton": "k",
-        "toff": "r",
-    }
+        "2P3": 3,
+        "4P6": 3,
+        "4P62": 3,
+        "6P9": 3,
+        "8P12": 3,
+        "2P4": 4,
+        "3P6": 4,
+        "4P8": 4,
+        "4P82": 4,
+        "6P12": 4,
+        "8P16": 4,
+        "12P24": 4,
+        "6P8": 4,
+    }[tstr]
 
 
 def stoich_map(tstr):
@@ -191,7 +213,7 @@ def stoich_map(tstr):
         "2P3": 5,
         "4P6": 10,
         "4P62": 10,
-        "6P9": 17,
+        "6P9": 15,
         "8P12": 20,
         "2P4": 6,
         "3P6": 9,
