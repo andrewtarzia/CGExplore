@@ -32,6 +32,7 @@ from analysis_utilities import (
     convert_topo,
     topology_labels,
     stoich_map,
+    clangle_str,
     data_to_array,
     isomer_energy,
 )
@@ -80,9 +81,9 @@ def phase_space_2(all_data, figure_output):
                     colour_choice = "#F9A03F"
 
                 if tor == "ton":
-                    tor_colour = "gold"
+                    tor_colour = "#0B2027"
                 elif tor == "toff":
-                    tor_colour = "skyblue"
+                    tor_colour = "#CA1551"
 
                 node_measure = float(kinetic_data["sv_n_dist"])
                 ligand_measure = float(kinetic_data["sv_n_dist"])
@@ -129,7 +130,7 @@ def phase_space_2(all_data, figure_output):
             "y": "pore",
             "ylbl": pore_str(),
             "x": "topology",
-            "xlbl": "cage stoichiometry",
+            "xlbl": "number building blocks",
             "xmapfun": stoich_map,
             "xlim": (None, None),
             "c": "cmap",
@@ -149,7 +150,7 @@ def phase_space_2(all_data, figure_output):
             "y": "pore",
             "ylbl": pore_str(),
             "x": "clangle",
-            "xlbl": "Cl angle [deg]",
+            "xlbl": clangle_str(),
             "xmapfun": no_conversion,
             "xlim": (48, 121),
             "c": "cmap",
@@ -188,6 +189,11 @@ def phase_space_2(all_data, figure_output):
     for i, axd in enumerate(axmap):
 
         ax = axd["ax"]
+
+        # Want highlighting lines.
+        if axd["xlbl"] == "number building blocks":
+            ax.axvline(x=10, linestyle="--", c="gray", alpha=0.5)
+            ax.axvline(x=15, linestyle="--", c="gray", alpha=0.5)
 
         # Do convexhull of full data set.
         if axd["x"] not in ("shape_measure", "cltitle"):
@@ -232,6 +238,7 @@ def phase_space_2(all_data, figure_output):
                     pc.set_alpha(1.0)
 
             ax.set_xticks((3, 4))
+            ax.set_xticklabels(("3C", "4C"))
         else:
 
             yvalues = [bb_data[i][axd["y"]] for i in bb_data]
@@ -243,9 +250,9 @@ def phase_space_2(all_data, figure_output):
                 xvalues,
                 yvalues,
                 c=cvalues,
-                edgecolor="k",
+                edgecolor="white",
                 s=100,
-                alpha=0.5,
+                alpha=0.8,
             )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
@@ -256,14 +263,14 @@ def phase_space_2(all_data, figure_output):
         if i in (0, 4):
             if i == 4:
                 legend_map = (
-                    (convert_tors("ton", num=False), "gold"),
-                    (convert_tors("toff", num=False), "skyblue"),
+                    (convert_tors("ton", num=False), "#0B2027"),
+                    (convert_tors("toff", num=False), "#CA1551"),
                 )
             else:
                 legend_map = (
-                    ("3C1", "#086788"),
-                    ("4C1", "#F9A03F"),
-                    ("6P8", "k"),
+                    ("3C", "#086788"),
+                    ("4C", "#F9A03F"),
+                    (convert_topo("6P8"), "k"),
                 )
 
             legend_elements = []
@@ -278,7 +285,7 @@ def phase_space_2(all_data, figure_output):
                         markerfacecolor=c,
                         markersize=10,
                         markeredgecolor="k",
-                        alpha=0.5,
+                        alpha=0.8,
                     )
                 )
             ax.legend(handles=legend_elements, fontsize=16, ncol=1)
