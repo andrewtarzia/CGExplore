@@ -22,6 +22,7 @@ from analysis_utilities import (
     topology_labels,
     write_out_mapping,
     get_lowest_energy_data,
+    convert_topo,
 )
 from visualisation import Pymol
 from utilities import check_directory
@@ -137,6 +138,13 @@ def visualise_low_and_high(
         # )
         axs[0][i].axis("off")
         axs[1][i].axis("off")
+        axs[1][i].text(
+            x=0,
+            y=0,
+            s=convert_topo(tstr),
+            fontsize=16,
+            transform=axs[1][i].transAxes,
+        )
 
     fig.tight_layout()
     filename = "vlh.pdf"
