@@ -84,13 +84,15 @@ def geom_distributions(all_data, geom_data, figure_output):
     comparisons = {
         "torsions": {
             "measure": "dihedrals",
-            "xlabel": "torsion [deg.]",
+            "xlabel": r"$baab$ torsion [$^\circ$]",
+            "units": None,
             "column": None,
             "label_options": ("Pb_Ba_Ba_Pb",),
         },
         "clangle": {
             "measure": "angles",
-            "xlabel": "CL angle [deg.]",
+            "xlabel": r"$nbn$ or $mbm$ angle",
+            "units": r"$^\circ$",
             "column": "clangle",
             "label_options": (
                 "Pb_Pd_Pb",
@@ -101,31 +103,36 @@ def geom_distributions(all_data, geom_data, figure_output):
         },
         "clr0": {
             "measure": "bonds",
-            "xlabel": r"CL bond length [$\mathrm{\AA}$]",
+            "xlabel": r"$nb$ or $mb$ bond length",
+            "units": r"$\mathrm{\AA}$",
             "column": "clr0",
             "label_options": ("Pd_Pb", "C_Pb"),
         },
         "c2angle": {
             "measure": "angles",
-            "xlabel": "bonder angle [deg.]",
+            "xlabel": r"$bac$ angle",
+            "units": r"$^\circ$",
             "column": "c2angle",
             "label_options": ("Pb_Ba_Ag",),
         },
         "c2backbone": {
             "measure": "angles",
-            "xlabel": "backbone angle [deg.]",
+            "xlabel": r"$aca$ angle [$^\circ$]",
+            "units": None,
             "column": None,
             "label_options": ("Ba_Ag_Ba",),
         },
         "c2r0": {
             "measure": "bonds",
-            "xlabel": r"C2 backbone length [$\mathrm{\AA}$]",
+            "xlabel": r"$ac$ bond length",
+            "units": r"$\mathrm{\AA}$",
             "column": "c2r0",
             "label_options": ("Ba_Ag",),
         },
         "c2bonder": {
             "measure": "bonds",
-            "xlabel": r"C2 bonder length [$\mathrm{\AA}$]",
+            "xlabel": r"$ba$ bond length [$\mathrm{\AA}$]",
+            "units": None,
             "column": None,
             "label_options": ("Pb_Ba",),
         },
@@ -228,24 +235,30 @@ def geom_distributions(all_data, geom_data, figure_output):
                     pc.set_alpha(1.0)
 
             ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_title(
-                (
-                    f'{cdict["xlabel"]}: '
-                    f"{convert_tors(tors,num=False)} "
-                    # f"{convert_vdws(vdws)}"
-                ),
-                fontsize=16,
-            )
             if column is None:
-                ax.set_ylabel("observed", fontsize=16)
+                ax.set_title(
+                    f"{convert_tors(tors,num=False)} ",
+                    fontsize=16,
+                )
+                ax.set_ylabel(cdict["xlabel"], fontsize=16)
             else:
-                ax.set_ylabel("observed - target", fontsize=16)
+                ax.set_title(
+                    (
+                        f'{cdict["xlabel"]}: '
+                        f"{convert_tors(tors,num=False)} "
+                    ),
+                    fontsize=16,
+                )
+                ax.set_ylabel(
+                    f'observed - target [{cdict["units"]}]',
+                    fontsize=16,
+                )
             ax.set_xticks([tcpos[i] for i in tcpos])
             ax.set_xticklabels(
                 [convert_topo(i) for i in tcpos],
                 rotation=45,
             )
-            ax.set_xlim(-0.5, 10.5)
+            ax.set_xlim(-0.5, 11.5)
 
         fig.tight_layout()
         fig.savefig(
