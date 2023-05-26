@@ -14,6 +14,7 @@ import os
 import logging
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import math
 
 from env_set import cages
 from analysis_utilities import (
@@ -138,13 +139,13 @@ def visualise_low_and_high(
         # )
         axs[0][i].axis("off")
         axs[1][i].axis("off")
-        axs[1][i].text(
-            x=0,
-            y=0,
-            s=convert_topo(tstr),
-            fontsize=16,
-            transform=axs[1][i].transAxes,
-        )
+        # axs[1][i].text(
+        #     x=0,
+        #     y=0,
+        #     s=convert_topo(tstr),
+        #     fontsize=16,
+        #     transform=axs[1][i].transAxes,
+        # )
 
     fig.tight_layout()
     filename = "vlh.pdf"
@@ -275,7 +276,13 @@ def si_ar_fig(
     struct_output,
     struct_figure_output,
     figure_output,
+    figsize=None,
+    titles=None,
 ):
+
+    if figsize is None:
+        figsize = (4, 10)
+
     settings = {
         "grid_mode": 0,
         "rayx": 1000,
@@ -288,14 +295,20 @@ def si_ar_fig(
     fig, axs = plt.subplots(
         ncols=ncols,
         nrows=nrows,
-        figsize=(4, 10),
+        figsize=figsize,
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs)):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
+
+        if titles is None:
+            title = None
+        else:
+            title = titles[i]
+
         add_structure_to_ax(
             ax=ax,
             struct_name=sindex,
@@ -303,6 +316,7 @@ def si_ar_fig(
             struct_figure_output=struct_figure_output,
             energy=min(tdata["energy_per_bb"]),
             settings=settings,
+            title=title,
         )
         ax.axis("off")
 
@@ -322,6 +336,22 @@ def si_ar_fig_gen(
     struct_figure_output,
 ):
 
+    si_ar_fig(
+        all_data=all_data,
+        structure_names=(
+            ("6P8_4C1m0000b0000_3C1n0700b0000", "toff"),
+            ("6P8_4C1m0100b0000_3C1n0700b0000", "toff"),
+            ("6P8_4C1m0200b0000_3C1n0600b0000", "toff"),
+            ("6P8_4C1m0300b0000_3C1n0500b0000", "toff"),
+            ("6P8_4C1m0400b0000_3C1n0100b0000", "toff"),
+        ),
+        nrows=5,
+        ncols=1,
+        filename="6P8_cr.pdf",
+        struct_output=struct_output,
+        struct_figure_output=struct_figure_output,
+        figure_output=figure_output,
+    )
     si_ar_fig(
         all_data=all_data,
         structure_names=(
@@ -524,6 +554,27 @@ def si_ar_fig_gen(
     si_ar_fig(
         all_data=all_data,
         structure_names=(
+            ("4P82_4C1m0000b0000_2C1c0000a01500", "ton"),
+            ("4P82_4C1m0000b0000_2C1c0000a0500", "toff"),
+            ("4P82_4C1m0100b0000_2C1c0000a01400", "ton"),
+            ("4P82_4C1m0100b0000_2C1c0000a01400", "toff"),
+            ("4P82_4C1m0200b0000_2C1c0000a01300", "ton"),
+            ("4P82_4C1m0200b0000_2C1c0000a01000", "toff"),
+            ("4P82_4C1m0300b0000_2C1c0000a01100", "ton"),
+            ("4P82_4C1m0300b0000_2C1c0000a0100", "ton"),
+            ("4P82_4C1m0400b0000_2C1c0000a0600", "ton"),
+            ("4P82_4C1m0400b0000_2C1c0000a0600", "toff"),
+        ),
+        nrows=5,
+        ncols=2,
+        filename="4P82_ar.pdf",
+        struct_output=struct_output,
+        struct_figure_output=struct_figure_output,
+        figure_output=figure_output,
+    )
+    si_ar_fig(
+        all_data=all_data,
+        structure_names=(
             ("6P12_4C1m0000b0000_2C1c0000a01600", "ton"),
             ("6P12_4C1m0000b0000_2C1c0000a01600", "toff"),
             ("6P12_4C1m0100b0000_2C1c0000a0000", "ton"),
@@ -687,6 +738,12 @@ def add_energy_to_ax(ax, energy):
     ax.set_title(round(energy, 1), fontsize=16, color=colorcode)
 
 
+def add_text_to_ax(ax, text):
+    x = 0.05
+    y = 0.25
+    ax.text(x=x, y=y, s=text, fontsize=16, transform=ax.transAxes)
+
+
 def add_structure_to_ax(
     ax,
     struct_name,
@@ -694,6 +751,7 @@ def add_structure_to_ax(
     struct_figure_output,
     settings,
     energy=None,
+    title=None,
 ):
 
     if "2P3" in struct_name:
@@ -718,6 +776,11 @@ def add_structure_to_ax(
         add_energy_to_ax(
             ax=ax,
             energy=energy,
+        )
+    if title is not None:
+        add_text_to_ax(
+            ax=ax,
+            text=title,
         )
 
 
@@ -787,7 +850,7 @@ def webapp_csv(
                 topo_type = "2C1_3C1"
             elif "2C1" in bbpair and "4C1" in bbpair:
                 nrows = 1
-                ncols = 6
+                ncols = 7
                 topo_type = "2C1_4C1"
 
             if topo_type == "3C1_4C1" and tors == "ton":
@@ -899,6 +962,61 @@ def webapp_csv(
                 )
 
 
+def check_odd_outcomes(
+    all_data,
+    figure_output,
+    struct_output,
+    struct_figure_output,
+):
+
+    topologies = [i for i in topology_labels(short="P") if i != "6P8"]
+
+    for tstr in topologies:
+        tdata = all_data[all_data["topology"] == tstr]
+        outcomes = []
+
+        for cage_name in sorted(set(tdata["cage_name"])):
+            cdata = tdata[tdata["cage_name"] == cage_name]
+            ton_energy = float(
+                cdata[cdata["torsions"] == "ton"]["energy_per_bb"]
+            )
+            toff_energy = float(
+                cdata[cdata["torsions"] == "toff"]["energy_per_bb"]
+            )
+            # Ignore rounding errors in near zero cases.
+            if ton_energy < 1e-1:
+                continue
+            # Not interested in high energy states, which are just a
+            # mess.
+            if toff_energy > isomer_energy() * 5:
+                continue
+            if ton_energy < toff_energy:
+                ba = int(list(cdata["target_bite_angle"])[0])
+                clangle = int(list(cdata["clangle"])[0])
+                tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
+                tofflbl = (
+                    f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
+                )
+                print(cage_name, ton_energy, toff_energy)
+                outcomes.append((cage_name, "ton", tonlbl))
+                outcomes.append((cage_name, "toff", tofflbl))
+
+        if len(outcomes) == 0:
+            continue
+        si_ar_fig(
+            all_data=all_data,
+            structure_names=outcomes,
+            nrows=math.ceil(len(outcomes) / 4),
+            ncols=4,
+            filename=f"odd_outcomes_{tstr}.pdf",
+            struct_output=struct_output,
+            struct_figure_output=struct_figure_output,
+            figure_output=figure_output,
+            figsize=(16, 10),
+            titles=[i[2] for i in outcomes],
+        )
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -930,6 +1048,12 @@ def main():
         struct_figure_output,
     )
 
+    check_odd_outcomes(
+        low_e_data,
+        figure_output,
+        struct_output,
+        struct_figure_output,
+    )
     si_shape_fig(
         low_e_data,
         figure_output,
