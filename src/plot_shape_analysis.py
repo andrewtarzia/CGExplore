@@ -26,8 +26,11 @@ from analysis_utilities import (
     convert_tors,
     convert_topo,
     topology_labels,
+    Xc_map,
     data_to_array,
+    shape_threshold,
     eb_str,
+    clangle_str,
     isomer_energy,
     target_shapes,
     mapshape_to_topology,
@@ -204,7 +207,7 @@ def shape_topology(all_data, figure_output):
     color_map = topology_labels(short="P")
     trim = all_data[all_data["vdws"] == "von"]
 
-    xmin, xmax, width = 0, 100, 20
+    xmin, xmax, width = 0, 100, 30
 
     for tstr in color_map:
         tdata = trim[trim["topology"] == tstr]
@@ -273,11 +276,14 @@ def shape_topology(all_data, figure_output):
                     linewidth=2,
                     density=False,
                     histtype="stepfilled",
-                    label=f"{eb_str()} < {isomer_energy()}",
+                    label=(
+                        f"{eb_str(True)} < {isomer_energy()} "
+                        "kJmol$^{-1}$"
+                    ),
                 )
                 ax.set_title(
                     (
-                        f"{convert_topo(tstr)} - "
+                        f"{convert_topo(tstr)}: "
                         f"{convert_tors(tor, num=False)}"
                     ),
                     fontsize=16,
@@ -311,7 +317,7 @@ def shape_input_relationships(all_data, figure_output):
         tdata = trim[trim["topology"] == tstr]
         for shape_type in ("n", "l"):
             if tstr == "6P8":
-                fig, ax = plt.subplots(figsize=(8, 5))
+                fig, ax = plt.subplots(figsize=(8, 4))
                 tor_tests = ("toff",)
                 flat_axs = (ax,)
 
@@ -320,7 +326,7 @@ def shape_input_relationships(all_data, figure_output):
                     ncols=2,
                     nrows=1,
                     sharey=True,
-                    figsize=(16, 5),
+                    figsize=(16, 4),
                 )
                 tor_tests = ("ton", "toff")
                 flat_axs = axs.flatten()
@@ -337,10 +343,13 @@ def shape_input_relationships(all_data, figure_output):
             for ax, tor in zip(flat_axs, tor_tests):
                 pdata = tdata[tdata["torsions"] == tor]
                 if tstr == "6P8":
-                    ax.set_xlabel("c3 angle [deg]", fontsize=16)
+                    ax.set_xlabel(clangle_str(3), fontsize=16)
 
                 else:
-                    ax.set_xlabel("bite angle [deg]", fontsize=16)
+                    ax.set_xlabel(
+                        r"target bite angle [$^\circ$]",
+                        fontsize=16,
+                    )
                     ax.set_title(
                         f"{convert_tors(tor, num=False)}",
                         fontsize=16,
@@ -368,7 +377,7 @@ def shape_input_relationships(all_data, figure_output):
                             xdata[-1],
                             ydata[-1],
                             c="white",
-                            s=400,
+                            s=360,
                             marker="s",
                             lw=3,
                             alpha=0.9,
@@ -385,22 +394,22 @@ def shape_input_relationships(all_data, figure_output):
                     vmax=vmax,
                     alpha=1.0,
                     edgecolor="none",
-                    s=200,
+                    s=180,
                     marker="s",
                     cmap="Blues_r",
                 )
 
                 ax.set_title(
                     (
-                        f"{convert_topo(tstr)} - "
+                        f"{convert_topo(tstr)}: "
                         f"{convert_tors(tor, num=False)}"
                     ),
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
-                ax.set_ylabel("cl angle [deg]", fontsize=16)
+                ax.set_ylabel(clangle_str(Xc_map(tstr)), fontsize=16)
 
-            cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
+            cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
             cmap = mpl.cm.Blues_r
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
             cbar = fig.colorbar(
@@ -443,6 +452,7 @@ def plot_topology_flex(data, comparison, mode, figure_output):
             "3P6",
             "4P62",
             "4P8",
+            "4P82",
             "6P12",
             "8P16",
             "12P24",
@@ -552,6 +562,10 @@ def plot_topology_flex(data, comparison, mode, figure_output):
 
 
 def flexshapeeffect_per_property(all_data, figure_output):
+    raise NotImplementedError(
+        "there is a bug here in handling no stable cases and I do not "
+        "use this"
+    )
     logging.info("running effect of flexibility distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -586,9 +600,11 @@ def flexshapeeffect_per_property(all_data, figure_output):
 
                 c_column = f"{shape_type}_{target_shape}"
 
-                shaped_data = tor_data[tor_data[c_column] < 5]
+                shaped_data = tor_data[
+                    tor_data[c_column] < shape_threshold()
+                ]
                 stable_shaped_data = stable_data[
-                    stable_data[c_column] < 5
+                    stable_data[c_column] < shape_threshold()
                 ]
                 topology_data[tstr][tor][shape_type] = (
                     len(stable_data),
@@ -609,16 +625,25 @@ def flexshapeeffect_per_property(all_data, figure_output):
 
 def plot_shape_flex(data, mode, figure_output):
 
-    ylabl = "shaped / total"
-    if mode == "l":
-        title = "ditopic shape"
-
-    elif mode == "n":
-        title = "tri/tetratopic shape"
+    ylabl = r"% ($s$ < 2)"
 
     for tstr in data:
         fig, ax = plt.subplots(figsize=(8, 5))
-        ax.set_title(f"{tstr}: {title}", fontsize=16)
+        if tstr == "6P8":
+            if mode == "l":
+                title = "tritopic shape"
+            elif mode == "n":
+                title = "tetratopic shape"
+        else:
+            if mode == "l":
+                title = "ditopic shape"
+            elif mode == "n":
+                if Xc_map(tstr) == 3:
+                    title = "tritopic shape"
+                elif Xc_map(tstr) == 4:
+                    title = "tetratopic shape"
+
+        ax.set_title(f"{convert_topo(tstr)}: {title}", fontsize=16)
 
         shapes = data[tstr]["toff"][mode].keys()
         if len(shapes) == 0:
@@ -639,17 +664,18 @@ def plot_shape_flex(data, mode, figure_output):
                 / data[tstr]["toff"][mode][shape][0]
             ) * 100
 
-        ax.bar(
-            categories_ton.keys(),
-            categories_ton.values(),
-            # color="#06AED5",
-            color="#086788",
-            # color="#DD1C1A",
-            # color="#320E3B",
-            edgecolor="none",
-            lw=2,
-            label=convert_tors("ton", num=False),
-        )
+        if tstr != "6P8":
+            ax.bar(
+                categories_ton.keys(),
+                categories_ton.values(),
+                # color="#06AED5",
+                color="#086788",
+                # color="#DD1C1A",
+                # color="#320E3B",
+                edgecolor="none",
+                lw=2,
+                label=convert_tors("ton", num=False),
+            )
 
         ax.bar(
             categories_toff.keys(),
@@ -684,7 +710,7 @@ def plot_shape_flex(data, mode, figure_output):
 
 
 def flexshapeeffect_per_shape(all_data, figure_output):
-    logging.info("running effect of flexibility distributions")
+    logging.info("running shaped percent per topologies")
 
     trim = all_data[all_data["vdws"] == "von"]
     color_map = {
@@ -715,7 +741,11 @@ def flexshapeeffect_per_shape(all_data, figure_output):
                         i for i in tor_data[column] if not pd.isna(i)
                     ]
                     if len(col_values) > 0:
-                        shaped_values = [i for i in col_values if i < 5]
+                        shaped_values = [
+                            i
+                            for i in col_values
+                            if i < shape_threshold()
+                        ]
                         topology_data[tstr][tor][shape_type][column] = (
                             len(col_values),
                             len(shaped_values),
@@ -821,10 +851,10 @@ def main():
     write_out_mapping(all_data)
 
     flexshapeeffect_per_shape(low_e_data, figure_output)
-    flexshapeeffect_per_property(low_e_data, figure_output)
     shape_topology(low_e_data, figure_output)
     shape_input_relationships(low_e_data, figure_output)
     raise SystemExit()
+    flexshapeeffect_per_property(low_e_data, figure_output)
     shape_vector_distributions(low_e_data, figure_output)
     shape_persistence_map(low_e_data, figure_output)
     shape_similarities(low_e_data, figure_output)

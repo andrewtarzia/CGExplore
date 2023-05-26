@@ -36,8 +36,11 @@ def clangle_str(num=None):
         return rf"{num}C angle [$^\circ$]"
 
 
-def eb_str():
-    return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
+def eb_str(no_unit=False):
+    if no_unit:
+        return r"$E_{\mathrm{b}}$"
+    else:
+        return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
 
 
 def pore_str():
@@ -47,6 +50,10 @@ def pore_str():
 
 def rg_str():
     return r"$R_{\mathrm{g}}$ [$\mathrm{\AA}$]"
+
+
+def shape_threshold():
+    return 2
 
 
 def isomer_energy():
