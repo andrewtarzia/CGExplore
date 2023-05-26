@@ -582,7 +582,7 @@ def single_value_distributions(all_data, figure_output):
 
 def plot_sorted(bb_data, color_map, figure_output):
 
-    fig, ax = plt.subplots(figsize=(8, 5))
+    fig, ax = plt.subplots(figsize=(8, 3))
     max_ = 6
 
     # for ax, cltitle in zip(axs, ("3C1", "4C1")):
@@ -1190,12 +1190,6 @@ def energy_correlation_matrix(all_data, figure_output):
     plt.close()
 
 
-def check_odd_outcomes(all_data, figure_output):
-
-    print("check cases where toff is higher E than ton")
-    raise SystemExit()
-
-
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -1234,7 +1228,6 @@ def main():
     mixed_distributions(low_e_data, figure_output)
     single_value_distributions(low_e_data, figure_output)
     geom_distributions(all_data, geom_data, figure_output)
-    check_odd_outcomes(all_data, figure_output)
     rmsd_distributions(all_data, calculation_output, figure_output)
 
 
