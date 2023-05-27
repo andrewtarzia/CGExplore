@@ -818,7 +818,7 @@ def pdII_figure_bite_angle(all_data, figure_output):
 
     color_map = ("2P4", "3P6", "4P8", "6P12", "12P24")
 
-    fig, ax = plt.subplots(figsize=(8, 3))
+    fig, ax = plt.subplots(figsize=(8, 2.5))
     trim = all_data[all_data["vdws"] == "von"]
     trim = trim[trim["torsions"] == "ton"]
     trim = trim[trim["clangle"] == 90]
@@ -848,7 +848,7 @@ def pdII_figure_bite_angle(all_data, figure_output):
         [i[0] for i in all_ba_points],
         [i[1] for i in all_ba_points],
         alpha=1.0,
-        lw=2,
+        lw=3,
         color="gray",
     )
 
@@ -858,15 +858,15 @@ def pdII_figure_bite_angle(all_data, figure_output):
             [i[1] for i in tstr_points[tstr]],
             alpha=1.0,
             # edgecolor="k",
-            lw=2,
+            lw=3,
             marker="o",
             markeredgecolor="k",
-            markersize=10,
-            label=tstr,
+            markersize=13,
+            label=convert_topo(tstr),
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("bite angle [deg]", fontsize=16)
+    ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
     ax.set_ylabel(eb_str(), fontsize=16)
     ax.set_ylim(0, 2)
 

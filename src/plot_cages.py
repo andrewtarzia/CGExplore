@@ -228,18 +228,24 @@ def fig2_cd(
     }
 
     structure_names = (
-        "4P6_3C1n0100b0000_2C1c0000a01800",
+        "4P6_3C1n0400b0000_2C1c0000a0000",
+        "4P6_3C1n0500b0000_2C1c0000a0100",
+        "4P6_3C1n0600b0000_2C1c0000a0300",
         "4P6_3C1n0700b0000_2C1c0000a0700",
-        "4P6_3C1n0500b0000_2C1c0000a0200",
+        "4P6_3C1n0600b0000_2C1c0000a01100",
         "4P6_3C1n0500b0000_2C1c0000a01300",
+        "4P6_3C1n0400b0000_2C1c0000a01400",
+        "4P6_3C1n0300b0000_2C1c0000a01500",
+        "4P6_3C1n0200b0000_2C1c0000a01700",
+        "4P6_3C1n0100b0000_2C1c0000a01800",
     )
     tor_opt = "ton"
     ton = all_data[all_data["torsions"] == tor_opt]
 
     fig, axs = plt.subplots(
-        ncols=2,
+        ncols=5,
         nrows=2,
-        figsize=(10, 10),
+        figsize=(16, 8),
     )
     flat_axs = axs.flatten()
 
