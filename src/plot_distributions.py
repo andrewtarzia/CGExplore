@@ -1010,7 +1010,7 @@ def plot_topology_flex(data, figure_output):
 
     ax.tick_params(axis="both", which="major", labelsize=16)
     # ax.set_xlabel("topology", fontsize=16)
-    ax.set_ylabel("stable / total ", fontsize=16)
+    ax.set_ylabel(r"% stable", fontsize=16)
     ax.set_ylim(0, 100)
     ax.legend(fontsize=16)
     ax.set_xticks(range(len(categories_toff)))
@@ -1023,6 +1023,123 @@ def plot_topology_flex(data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
+
+
+def plot_topology_pore_flex(data, figure_output):
+
+    color_map = {
+        "stable": "#086788",
+        "all": "#0B2027",
+    }
+
+    topologies = [i for i in topology_labels(short="P") if i != "6P8"]
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+
+    xticks = {}
+    for i, tstr in enumerate(topologies):
+        tdata = data[data["topology"] == tstr]
+
+        cage_names = set(tdata["cage_name"])
+
+        differences = []
+        stable_differences = []
+        for cage_name in cage_names:
+            cdata = tdata[tdata["cage_name"] == cage_name]
+            ton_energy = float(
+                cdata[cdata["torsions"] == "ton"]["energy_per_bb"]
+            )
+            toff_energy = float(
+                cdata[cdata["torsions"] == "toff"]["energy_per_bb"]
+            )
+            ton_pore = float(cdata[cdata["torsions"] == "ton"]["pore"])
+            toff_pore = float(
+                cdata[cdata["torsions"] == "toff"]["pore"]
+            )
+            rel_difference = (ton_pore - toff_pore) / toff_pore
+
+            differences.append(rel_difference)
+            if (
+                ton_energy > isomer_energy()
+                or toff_energy > isomer_energy()
+            ):
+                continue
+
+            stable_differences.append(rel_difference)
+
+        xpos_ = i + 1
+        xticks[tstr] = xpos_
+
+        parts = ax.violinplot(
+            differences,
+            [xpos_ - 0.2],
+            # points=200,
+            vert=True,
+            widths=0.3,
+            showmeans=False,
+            showextrema=False,
+            showmedians=False,
+            # bw_method=0.5,
+        )
+        for pc in parts["bodies"]:
+            pc.set_facecolor(color_map["all"])
+            pc.set_edgecolor("none")
+            pc.set_alpha(1.0)
+
+        if len(stable_differences) > 0:
+            parts = ax.violinplot(
+                stable_differences,
+                [xpos_ + 0.2],
+                # points=200,
+                vert=True,
+                widths=0.3,
+                showmeans=False,
+                showextrema=False,
+                showmedians=False,
+                # bw_method=0.5,
+            )
+            for pc in parts["bodies"]:
+                pc.set_facecolor(color_map["stable"])
+                pc.set_edgecolor("none")
+                pc.set_alpha(1.0)
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_ylabel("rel. difference in pore size", fontsize=16)
+    ax.set_ylim(-2, 2)
+
+    ax.axhline(y=0, c="gray", linestyle="--", alpha=0.4)
+
+    # xticks = {i: sum(all_counts[i]) / 2 for i in all_counts}
+    ylines = [xticks[i] + 0.5 for i in xticks][:-1]
+    for yl in ylines:
+        ax.axvline(x=yl, c="gray", linestyle="--", alpha=0.4)
+
+    ax.set_xticks([xticks[i] for i in xticks])
+    ax.set_xticklabels(
+        [convert_topo(i) for i in xticks],
+        rotation=45,
+    )
+
+    labels = []
+    for lblkey in color_map:
+        col = color_map[lblkey]
+        labels.append(
+            (
+                mpatches.Patch(color=col),
+                lblkey,
+            )
+        )
+    ax.legend(*zip(*labels), fontsize=16, ncols=4)
+    ax.set_xlim(0.5, len(topologies) + 0.5)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "flexeffect_porosites.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+    raise SystemExit()
 
 
 def flexeffect_per_property(all_data, figure_output):
@@ -1042,6 +1159,10 @@ def flexeffect_per_property(all_data, figure_output):
         figure_output=figure_output,
     )
     plot_topology_flex(topology_data, figure_output)
+    plot_topology_pore_flex(
+        data=trim,
+        figure_output=figure_output,
+    )
 
 
 def correlation_matrix(all_data, figure_output):
