@@ -19,19 +19,19 @@ import itertools
 from dataclasses import replace
 from openmm import openmm, OpenMMException
 
-from shape import (
+from .shape import (
     ShapeMeasure,
     get_shape_molecule_ligands,
     get_shape_molecule_nodes,
 )
-from geom import GeomMeasure
-from pore import PoreMeasure
-from utilities import check_long_distances
-from openmm_optimizer import (
+from .geom import GeomMeasure
+from .pore import PoreMeasure
+from .utilities import check_long_distances
+from .openmm_optimizer import (
     CGOMMOptimizer,
     CGOMMDynamics,
 )
-from beads import produce_bead_library
+from .beads import produce_bead_library
 
 
 def custom_torsion_definitions(population):

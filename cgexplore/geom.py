@@ -14,8 +14,7 @@ from rdkit.Chem import AllChem as rdkit
 from collections import defaultdict
 from scipy.spatial.distance import pdist
 
-
-from utilities import get_atom_distance, angle_between, get_dihedral
+from .utilities import get_atom_distance, angle_between, get_dihedral
 
 
 class GeomMeasure:

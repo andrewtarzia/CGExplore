@@ -16,8 +16,8 @@ import logging
 import os
 import shutil
 
-from env_set import shape_path
-from beads import periodic_table
+from .env_set import shape_path
+from .beads import periodic_table
 
 
 def test_shape_mol(topo_expected, atoms, name, topo_str):

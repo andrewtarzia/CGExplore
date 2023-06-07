@@ -15,7 +15,7 @@ import logging
 from heapq import nsmallest
 from rdkit.Chem import AllChem as rdkit
 
-from utilities import (
+from .utilities import (
     get_all_angles,
     angle_between,
     get_all_torsions,

@@ -12,14 +12,18 @@ Author: Andrew Tarzia
 import os
 import stk
 
-from env_set import pymol_path
-
 
 class Pymol:
-    def __init__(self, output_dir, file_prefix, settings=None):
+    def __init__(
+        self,
+        output_dir,
+        file_prefix,
+        pymol_path,
+        settings=None,
+    ):
         self._output_dir = output_dir
         self._file_prefix = file_prefix
-        self._pymol = pymol_path()
+        self._pymol = pymol_path
         if settings is None:
             self._settings = self._default_settings()
         else:

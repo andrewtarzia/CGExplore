@@ -19,8 +19,8 @@ import numpy as np
 from openmm import openmm, app
 from dataclasses import dataclass
 
-from optimizer import CGOptimizer
-from utilities import get_atom_distance
+from .optimizer import CGOptimizer
+from .utilities import get_atom_distance
 
 
 @dataclass
