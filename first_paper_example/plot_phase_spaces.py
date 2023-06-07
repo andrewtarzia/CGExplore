@@ -21,7 +21,7 @@ import numpy as np
 
 from env_set import cages
 
-from cgexplore.analysis_utilities import (
+from analysis import (
     write_out_mapping,
     get_lowest_energy_data,
     map_cltype_to_topology,

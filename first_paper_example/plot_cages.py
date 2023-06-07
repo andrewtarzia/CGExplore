@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 import math
 
 from env_set import cages, pymol_path
-from analysis_utilities import (
+from analysis import (
     isomer_energy,
     data_to_array,
     topology_labels,

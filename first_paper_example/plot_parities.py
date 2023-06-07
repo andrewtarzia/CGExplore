@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 
 from env_set import cages
 
-from cgexplore.analysis_utilities import (
+from analysis import (
     topology_labels,
     write_out_mapping,
     get_lowest_energy_data,

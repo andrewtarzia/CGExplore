@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-
+from cgexplore.beads import get_CGBead_from_string
 from generation_utilities import (
     core_2c_beads,
     arm_2c_beads,
@@ -408,10 +408,6 @@ def collate_cage_vector_from_bb(data, test_bb):
                     svb = sv
                 tbb_dict[svb] = cage_dict["shape_vector"][sv]
     return tbb_dict
-
-
-def get_CGBead_from_string(string, bead_library):
-    return bead_library[string]
 
 
 def get_shape_vector(shape_dictionary):

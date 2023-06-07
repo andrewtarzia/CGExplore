@@ -24,7 +24,7 @@ import matplotlib.patches as mpatches
 from env_set import cages
 
 from cgexplore.utilities import convert_pyramid_angle
-from cgexplore.analysis_utilities import (
+from analysis import (
     write_out_mapping,
     eb_str,
     pore_str,

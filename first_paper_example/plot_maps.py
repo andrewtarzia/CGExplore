@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 
 from env_set import cages
 
-from cgexplore.analysis_utilities import (
+from analysis import (
     data_to_array,
     stoich_map,
     eb_str,

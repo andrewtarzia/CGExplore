@@ -15,6 +15,10 @@ import logging
 from collections import Counter
 
 
+def get_CGBead_from_string(string, bead_library):
+    return bead_library[string]
+
+
 def periodic_table():
     return {
         "H": 1,
