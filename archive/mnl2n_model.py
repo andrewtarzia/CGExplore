@@ -44,7 +44,7 @@ from mnl2n_construction.plotting import (
     ey_vs_property,
 )
 
-from precursor_db.precursors import twoc_bb, fourc_bb
+from molecule_construction.precursors import twoc_bb, fourc_bb
 
 
 def defined_bonds():

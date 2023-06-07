@@ -32,7 +32,11 @@ from utilities import (
 )
 from gulp_optimizer import CGGulpOptimizer, extract_gulp_optimisation
 from cage_construction.topologies import cage_topology_options
-from precursor_db.topologies import TwoC1Arm, ThreeC1Arm, FourC1Arm
+from molecule_construction.topologies import (
+    TwoC1Arm,
+    ThreeC1Arm,
+    FourC1Arm,
+)
 from beads import bead_library_check, produce_bead_library
 
 

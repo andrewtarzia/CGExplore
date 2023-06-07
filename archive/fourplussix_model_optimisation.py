@@ -27,7 +27,7 @@ from gulp_optimizer import CGGulpOptimizer
 
 from fourplusix_construction.topologies import cage_topology_options
 
-from precursor_db.precursors import (
+from molecule_construction.precursors import (
     three_precursor_topology_options,
     two_precursor_topology_options,
 )

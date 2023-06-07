@@ -38,7 +38,10 @@ from cage_construction.topologies import (
 
 from beads import CgBead, bead_library_check
 
-from precursor_db.topologies import UnsymmLigand, UnsymmBiteLigand
+from molecule_construction.topologies import (
+    UnsymmLigand,
+    UnsymmBiteLigand,
+)
 
 from ea_module import (
     RandomVA,

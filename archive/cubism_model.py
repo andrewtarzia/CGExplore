@@ -38,7 +38,11 @@ from cube_construction.plotting import (
     ey_vs_shape,
 )
 
-from precursor_db.precursors import delta_bb, lambda_bb, plane_bb
+from molecule_construction.precursors import (
+    delta_bb,
+    lambda_bb,
+    plane_bb,
+)
 
 
 class CubismOptimizer(CGGulpOptimizer):
