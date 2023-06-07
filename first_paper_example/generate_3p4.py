@@ -18,15 +18,14 @@ from utilities import check_directory
 from cage_construction.topologies import cage_topology_options
 from beads import bead_library_check
 
-from precursor_db.topologies import TwoC1Arm, FourC1Arm
+from molecule_construction.topologies import ThreeC1Arm, FourC1Arm
 from generation_utilities import (
     custom_torsion_definitions,
     custom_vdw_definitions,
     build_building_block,
     build_populations,
+    beads_3c,
     beads_4c,
-    arm_2c_beads,
-    core_2c_beads,
     binder_beads,
 )
 
@@ -49,23 +48,21 @@ def main():
     check_directory(ligand_output)
 
     # Define bead libraries.
-    beads_core_2c_lib = core_2c_beads()
     beads_4c_lib = beads_4c()
-    beads_arm_2c_lib = arm_2c_beads()
+    beads_3c_lib = beads_3c()
     beads_binder_lib = binder_beads()
     full_bead_library = (
-        list(beads_4c_lib.values())
-        + list(beads_arm_2c_lib.values())
-        + list(beads_core_2c_lib.values())
+        list(beads_3c_lib.values())
+        + list(beads_4c_lib.values())
         + list(beads_binder_lib.values())
     )
     bead_library_check(full_bead_library)
 
     logging.info("building building blocks")
-    c2_blocks = build_building_block(
-        topology=TwoC1Arm,
-        option1_lib=beads_core_2c_lib,
-        option2_lib=beads_arm_2c_lib,
+    c3_blocks = build_building_block(
+        topology=ThreeC1Arm,
+        option1_lib=beads_3c_lib,
+        option2_lib=beads_binder_lib,
         full_bead_library=full_bead_library,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
@@ -80,22 +77,23 @@ def main():
     )
 
     logging.info(
-        f"there are {len(c2_blocks)} 2-C and "
+        f"there are {len(c3_blocks)} 3-C and "
         f"{len(c4_blocks)} 4-C building blocks."
     )
 
     # Define list of topology functions.
-    cage_4p2_topologies = cage_topology_options("2p4")
+    cage_3p4_topologies = cage_topology_options("3p4")
 
+    # Non-ditopic populations.
     populations = {
-        "2p4": {
-            "t": cage_4p2_topologies,
-            "c2": c2_blocks,
+        "3p4": {
+            "t": cage_3p4_topologies,
+            "c2": c3_blocks,
             "cl": c4_blocks,
         },
     }
-    custom_torsion_options = custom_torsion_definitions("2p4")
-    custom_vdw_options = custom_vdw_definitions("2p4")
+    custom_torsion_options = custom_torsion_definitions("3p4")
+    custom_vdw_options = custom_vdw_definitions("3p4")
     build_populations(
         populations=populations,
         custom_torsion_options=custom_torsion_options,
@@ -103,7 +101,7 @@ def main():
         struct_output=struct_output,
         calculation_output=calculation_output,
         node_element="Pd",
-        ligand_element="Ag",
+        ligand_element="C",
     )
 
 

@@ -18,7 +18,7 @@ from utilities import check_directory
 from cage_construction.topologies import cage_topology_options
 from beads import bead_library_check
 
-from precursor_db.topologies import TwoC1Arm, ThreeC1Arm
+from molecule_construction.topologies import TwoC1Arm, ThreeC1Arm
 from generation_utilities import (
     custom_torsion_definitions,
     custom_vdw_definitions,
