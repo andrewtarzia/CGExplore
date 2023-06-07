@@ -1,6 +1,6 @@
 import pathlib
 
-from .utilities import check_directory
+from cgexplore.utilities import check_directory
 
 
 def project_dir():

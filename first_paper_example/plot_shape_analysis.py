@@ -20,7 +20,7 @@ import numpy as np
 
 from env_set import cages
 
-from analysis_utilities import (
+from cgexplore.analysis_utilities import (
     write_out_mapping,
     get_lowest_energy_data,
     convert_tors,

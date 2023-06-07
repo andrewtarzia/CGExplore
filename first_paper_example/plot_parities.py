@@ -13,13 +13,12 @@ import sys
 import os
 import json
 import logging
-
-# import matplotlib as mpl
 import numpy as np
 import matplotlib.pyplot as plt
+
 from env_set import cages
 
-from analysis_utilities import (
+from cgexplore.analysis_utilities import (
     topology_labels,
     write_out_mapping,
     get_lowest_energy_data,

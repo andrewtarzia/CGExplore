@@ -16,7 +16,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import math
 
-from env_set import cages
+from env_set import cages, pymol_path
 from analysis_utilities import (
     isomer_energy,
     data_to_array,
@@ -910,12 +910,14 @@ def generate_image(
     orient_atoms,
     settings,
 ):
+
     png_file = struct_figure_output / f"{struct_name}_f.png"
     if not os.path.exists(png_file):
         viz = Pymol(
             output_dir=struct_figure_output,
             file_prefix=f"{struct_name}_f",
             settings=settings,
+            pymol_path=pymol_path(),
         )
         viz.visualise(
             [struct_file],

@@ -20,9 +20,10 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
+from cgexplore.utilities import check_directory
+from cgexplore.shape import ShapeMeasure
+
 from env_set import project_dir
-import utilities
-from shape import ShapeMeasure
 
 
 def get_all_templates(dir):
@@ -76,11 +77,11 @@ def main():
         pass
 
     struct_output = project_dir() / "shape_structures"
-    utilities.check_directory(struct_output)
+    check_directory(struct_output)
     figure_output = project_dir() / "figures"
-    utilities.check_directory(figure_output)
+    check_directory(figure_output)
     test_templates = struct_output / "tests"
-    utilities.check_directory(test_templates)
+    check_directory(test_templates)
 
     all_templates = get_all_templates(test_templates)
 

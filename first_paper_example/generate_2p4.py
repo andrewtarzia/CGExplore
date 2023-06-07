@@ -13,13 +13,14 @@ import sys
 import logging
 from rdkit import RDLogger
 
-from env_set import cages
-from utilities import check_directory
-from cage_construction.topologies import cage_topology_options
-from beads import bead_library_check
-
-from molecule_construction.topologies import TwoC1Arm, FourC1Arm
-from generation_utilities import (
+from cgexplore.utilities import check_directory
+from cgexplore.cage_construction.topologies import cage_topology_options
+from cgexplore.beads import bead_library_check
+from cgexplore.molecule_construction.topologies import (
+    TwoC1Arm,
+    FourC1Arm,
+)
+from cgexplore.generation_utilities import (
     custom_torsion_definitions,
     custom_vdw_definitions,
     build_building_block,
@@ -29,6 +30,8 @@ from generation_utilities import (
     core_2c_beads,
     binder_beads,
 )
+
+from env_set import cages
 
 
 def main():
