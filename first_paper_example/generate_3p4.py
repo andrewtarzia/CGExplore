@@ -20,16 +20,16 @@ from cgexplore.molecule_construction.topologies import (
     ThreeC1Arm,
     FourC1Arm,
 )
-from cgexplore.generation_utilities import (
+from cgexplore.generation_utilities import build_building_block
+
+from generation import (
     custom_torsion_definitions,
     custom_vdw_definitions,
-    build_building_block,
     build_populations,
     beads_3c,
     beads_4c,
     binder_beads,
 )
-
 from env_set import cages
 
 

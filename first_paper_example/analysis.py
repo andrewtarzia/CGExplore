@@ -19,14 +19,15 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
 from cgexplore.beads import get_CGBead_from_string
-from generation_utilities import (
+from cgexplore.shape import known_shape_vectors
+from cgexplore.cage_construction.topologies import cage_topology_options
+
+from generation import (
     core_2c_beads,
     arm_2c_beads,
     beads_3c,
     beads_4c,
 )
-from shape import known_shape_vectors
-from cage_construction.topologies import cage_topology_options
 
 
 def clangle_str(num=None):
