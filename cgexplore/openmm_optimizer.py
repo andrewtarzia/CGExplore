@@ -13,11 +13,9 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 
 import logging
 import time
-import stk
-import pandas as pd
 import numpy as np
 from openmm import openmm, app
-from dataclasses import dataclass
+from openmmtools import integrators
 
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
@@ -74,7 +72,7 @@ class OMMTrajectory(Trajectory):
                             f"({len(new_pos_mat)})."
                         )
 
-                    yield Conformer(
+                    yield Timestep(
                         molecule=(
                             self._base_molecule.with_position_matrix(
                                 np.array(new_pos_mat)
@@ -566,6 +564,22 @@ class CGOMMOptimizer(CGOptimizer):
         simulation, system = self._setup_simulation(molecule)
         return self._run_energy_decomp(simulation, system)
 
+    def read_final_energy_decomposition(self):
+        decomp_data = (
+            self._output_string.split("energy decomposition:")[-1]
+            .split("end time:")[0]
+            .split("\n")
+        )
+        decomposition = {}
+        for i in decomp_data:
+            if i == "":
+                continue
+            force, value_unit = i.split(":")
+            value, unit = value_unit.split()
+            value = float(value)
+            decomposition[force] = (value, unit)
+        return decomposition
+
     def optimize(self, molecule):
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
@@ -776,6 +790,171 @@ class CGOMMDynamics(CGOMMOptimizer):
         simulation, system = self._setup_simulation(molecule)
         simulation = self._minimize_energy(simulation, system)
         simulation = self._run_molecular_dynamics(simulation, system)
+
+        end_time = time.time()
+        self._output_string += f"end time: {end_time}\n"
+        total_time = end_time - start_time
+        self._output_string += f"total time: {total_time} [s]\n"
+        with open(self._output_path, "w") as f:
+            f.write(self._output_string)
+
+        return self._get_trajectory(molecule)
+
+
+class CGOMMMonteCarlo(CGOMMDynamics):
+    def __init__(
+        self,
+        fileprefix,
+        output_dir,
+        param_pool,
+        custom_torsion_set,
+        bonds,
+        angles,
+        torsions,
+        vdw,
+        temperature,
+        num_steps,
+        sigma,
+        random_seed=None,
+        max_iterations=None,
+        vdw_bond_cutoff=None,
+        atom_constraints=None,
+    ):
+
+        super(CGOMMOptimizer, self).__init__(
+            fileprefix,
+            output_dir,
+            param_pool,
+            bonds,
+            angles,
+            torsions,
+            vdw,
+        )
+        self._custom_torsion_set = custom_torsion_set
+        self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
+        self._output_path = output_dir / f"{fileprefix}_omc.out"
+        self._trajectory_data = output_dir / f"{fileprefix}_traj.dat"
+        self._trajectory_file = output_dir / f"{fileprefix}_traj.pdb"
+
+        self._output_string = ""
+        if max_iterations is None:
+            self._max_iterations = 0
+        else:
+            self._max_iterations = max_iterations
+        self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
+        if self._vdw and vdw_bond_cutoff is None:
+            raise ValueError(
+                "if `vdw` is on, `vdw_bond_cutoff` should be set"
+            )
+        elif vdw_bond_cutoff is None:
+            self._vdw_bond_cutoff = 0
+        else:
+            self._vdw_bond_cutoff = vdw_bond_cutoff
+
+        self._atom_constraints = atom_constraints
+
+        self._temperature = temperature
+
+        if random_seed is None:
+            logging.info("a random random seed is used")
+            self._random_seed = np.random.randint(1000)
+        else:
+            self._random_seed = random_seed
+
+        self._num_steps = num_steps
+        self._sigma = sigma * openmm.unit.angstroms
+
+        # Artificial.
+        self._time_step = 1.0 * openmm.unit.femtoseconds
+        self._reporting_freq = 1
+        self._traj_freq = 1
+
+    def _setup_simulation(self, molecule):
+
+        # Load force field.
+        self._write_ff_file(molecule)
+        forcefield = app.ForceField(self._forcefield_path)
+
+        # Create system.
+        topology = self._stk_to_topology(molecule)
+        system = forcefield.createSystem(topology)
+        system = self._add_forces(system, molecule)
+
+        integrator = integrators.MetropolisMonteCarloIntegrator(
+            self._temperature,
+            self._sigma,
+            # Artificial.
+            self._time_step,
+        )
+        self._output_string += "simulation parameters:\n"
+        self._output_string += f"T={self._temperature}\n"
+        self._output_string += f"kT={integrator.kT}\n"
+
+        integrator.setRandomNumberSeed(self._random_seed)
+
+        # Define simulation.
+        simulation = app.Simulation(topology, system, integrator)
+
+        # Set positions from structure.
+        simulation.context.setPositions(
+            molecule.get_position_matrix() / 10
+        )
+        return simulation, system
+
+    def _run_monte_carlo(self, simulation, system):
+        total_time = self._num_steps * self._time_step
+        tt_in_ns = total_time.in_units_of(openmm.unit.nanoseconds)
+        tf_in_ns = self._traj_freq * self._time_step
+        self._output_string += (
+            f"steps: {self._num_steps}\n"
+            f"time step: {self._time_step}\n"
+            f"total time: {tt_in_ns}\n"
+            f"report frequency: {self._reporting_freq}\n"
+            f"trajectory frequency per step: {self._traj_freq}\n"
+            f"trajectory frequency per ns: {tf_in_ns}\n"
+            f"seed: {self._random_seed}\n"
+        )
+
+        self._output_string += "running simulation\n"
+        simulation = self._add_reporter(simulation)
+        simulation = self._add_trajectory_reporter(simulation)
+
+        start = time.time()
+        simulation.step(self._num_steps)
+        end = time.time()
+        speed = self._num_steps / (end - start)
+        self._output_string += (
+            f"done in {end-start} s ({round(speed, 2)} steps/s)\n\n"
+        )
+
+        self._output_energy_decomp(simulation, system)
+
+        return simulation
+
+    def _get_trajectory(self, molecule):
+
+        return OMMTrajectory(
+            base_molecule=molecule,
+            data_path=self._trajectory_data,
+            traj_path=self._trajectory_file,
+            forcefield_path=self._forcefield_path,
+            output_path=self._output_path,
+            temperature=self._temperature,
+            random_seed=self._random_seed,
+            num_steps=self._num_steps,
+            time_step=self._time_step,
+            friction=None,
+            reporting_freq=self._reporting_freq,
+            traj_freq=self._traj_freq,
+        )
+
+    def run_dynamics(self, molecule):
+        start_time = time.time()
+        self._output_string += f"start time: {start_time}\n"
+        self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
+
+        simulation, system = self._setup_simulation(molecule)
+        simulation = self._run_monte_carlo(simulation, system)
 
         end_time = time.time()
         self._output_string += f"end time: {end_time}\n"
