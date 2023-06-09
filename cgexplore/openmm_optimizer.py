@@ -21,58 +21,7 @@ from dataclasses import dataclass
 
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
-
-
-@dataclass
-class Conformer:
-    molecule: stk.Molecule
-    timestep: int
-
-
-class Trajectory:
-    def __init__(
-        self,
-        base_molecule,
-        data_path,
-        traj_path,
-        forcefield_path,
-        output_path,
-        temperature,
-        random_seed,
-        num_steps,
-        time_step,
-        friction,
-        reporting_freq,
-        traj_freq,
-    ):
-        self._base_molecule = base_molecule
-        self._data_path = data_path
-        self._traj_path = traj_path
-        self._output_path = output_path
-        self._temperature = temperature
-        self._num_steps = num_steps
-        self._time_step = time_step
-        self._reporting_freq = reporting_freq
-        self._traj_freq = traj_freq
-        self._num_confs = int(self._num_steps / self._traj_freq)
-
-    def get_data(self):
-        return pd.read_csv(self._data_path)
-
-    def yield_conformers(self):
-        raise NotImplementedError()
-
-    def get_base_molecule(self):
-        return self._base_molecule
-
-    def __str__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(steps={self._num_steps}, "
-            f"conformers={self._num_confs})"
-        )
-
-    def __repr__(self) -> str:
-        return str(self)
+from .ensembles import Trajectory, Timestep
 
 
 class OMMTrajectory(Trajectory):
