@@ -23,7 +23,7 @@ import pandas as pd
 from cgexplore.utilities import check_directory
 from cgexplore.shape import ShapeMeasure
 
-from env_set import project_dir
+from env_set import project_dir, shape_path
 
 
 def get_all_templates(dir):
@@ -58,6 +58,7 @@ def get_shape(coords, num_vertices, name):
     )
     shape_measures = ShapeMeasure(
         output_dir=(struct_output / f"{name}_shape"),
+        shape_path=shape_path(),
         target_atmnums=None,
         shape_string=None,
     ).calculate(molecule)
