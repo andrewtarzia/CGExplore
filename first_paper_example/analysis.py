@@ -22,7 +22,7 @@ from cgexplore.beads import get_CGBead_from_string
 from cgexplore.shape import known_shape_vectors
 from cgexplore.cage_construction.topologies import cage_topology_options
 
-from generation import (
+from bead_libraries import (
     core_2c_beads,
     arm_2c_beads,
     beads_3c,
@@ -435,6 +435,31 @@ def get_present_beads(c2_bbname):
     bead2name = break_strs[1] + bead2name
     present_beads_names = (bead1name, bead2name)
     return present_beads_names
+
+
+def node_expected_topologies():
+    return {
+        "4P6": 4,
+        "4P62": 4,
+        "6P9": 6,
+        "8P12": 8,
+        "3P6": 3,
+        "4P8": 4,
+        "4P82": 4,
+        "6P12": 6,
+        "8P16": 8,
+        "6P8": 6,
+    }
+
+
+def ligand_expected_topologies():
+    return {
+        "2P3": 3,
+        "4P6": 6,
+        "4P62": 6,
+        "2P4": 4,
+        "6P8": 8,
+    }
 
 
 def get_sv_dist(row, mode):

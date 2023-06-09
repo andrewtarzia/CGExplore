@@ -29,10 +29,15 @@ from cgexplore.openmm_optimizer import (
     CGOMMOptimizer,
     CGOMMDynamics,
 )
-from cgexplore.beads import produce_bead_library
 from cgexplore.generation_utilities import (
     deform_and_optimisations,
     run_md_cycle,
+)
+
+from env_set import shape_path
+from analysis import (
+    node_expected_topologies,
+    ligand_expected_topologies,
 )
 
 
@@ -67,85 +72,6 @@ def custom_vdw_definitions(population):
     }[population]
 
 
-def bond_k():
-    return 1e5
-
-
-def angle_k():
-    return 1e2
-
-
-def core_2c_beads():
-    return produce_bead_library(
-        type_prefix="c",
-        element_string="Ag",
-        angles=(180,),
-        bond_rs=(2,),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
-        coordination=2,
-    )
-
-
-def arm_2c_beads():
-    return produce_bead_library(
-        type_prefix="a",
-        element_string="Ba",
-        bond_rs=(1,),
-        angles=range(90, 181, 5),
-        # angles=(90, 100, 120, 140, 160, 180),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
-        coordination=2,
-    )
-
-
-def binder_beads():
-    return produce_bead_library(
-        type_prefix="b",
-        element_string="Pb",
-        bond_rs=(1,),
-        angles=(180,),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
-        coordination=2,
-    )
-
-
-def beads_3c():
-    return produce_bead_library(
-        type_prefix="n",
-        element_string="C",
-        bond_rs=(2,),
-        angles=(50, 60, 70, 80, 90, 100, 110, 120),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
-        coordination=3,
-    )
-
-
-def beads_4c():
-    return produce_bead_library(
-        type_prefix="m",
-        element_string="Pd",
-        bond_rs=(2,),
-        angles=(50, 60, 70, 80, 90),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
-        coordination=4,
-    )
-
-
 def optimise_cage(
     molecule,
     name,
@@ -172,17 +98,6 @@ def optimise_cage(
         new_bead.bond_k = bead_set[i].bond_k / 10
         new_bead.angle_k = bead_set[i].angle_k / 10
         soft_bead_set[i] = new_bead
-
-    # if custom_torsion_set is None:
-    #     new_custom_torsion_set = None
-    # else:
-    #     new_custom_torsion_set = {
-    #         i: (
-    #             custom_torsion_set[i][0],
-    #             custom_torsion_set[i][1] / 10,
-    #         )
-    #         for i in custom_torsion_set
-    #     }
 
     intra_bb_bonds = []
     for bond_info in molecule.get_bond_infos():
@@ -452,14 +367,16 @@ def analyse_cage(
         fin_energy = energy_decomp["tot_energy_kjmol"]
 
         n_shape_mol = get_shape_molecule_nodes(
-            molecule,
-            name,
-            node_element,
+            constructed_molecule=molecule,
+            name=name,
+            element=node_element,
+            topo_expected=node_expected_topologies(),
         )
         l_shape_mol = get_shape_molecule_ligands(
-            molecule,
-            name,
-            ligand_element,
+            constructed_molecule=molecule,
+            name=name,
+            element=ligand_element,
+            topo_expected=ligand_expected_topologies(),
         )
         if n_shape_mol is None:
             node_shape_measures = None
@@ -467,6 +384,7 @@ def analyse_cage(
             n_shape_mol.write(shape_molfile1)
             node_shape_measures = ShapeMeasure(
                 output_dir=(output_dir / f"{name}_nshape"),
+                shape_path=shape_path(),
                 target_atmnums=None,
                 shape_string=None,
             ).calculate(n_shape_mol)
@@ -476,6 +394,7 @@ def analyse_cage(
         else:
             lig_shape_measures = ShapeMeasure(
                 output_dir=(output_dir / f"{name}_lshape"),
+                shape_path=shape_path(),
                 target_atmnums=None,
                 shape_string=None,
             ).calculate(l_shape_mol)
@@ -554,6 +473,7 @@ def analyse_cage(
         #                 output_dir=(
         #                     output_dir / f"{name}_{timestep}_nshape"
         #                 ),
+        #                 shape_path=shape_path(),
         #                 target_atmnums=None,
         #                 shape_string=None,
         #             ).calculate(c_n_shape_mol)
@@ -565,6 +485,7 @@ def analyse_cage(
         #                 output_dir=(
         #                     output_dir / f"{name}_{timestep}_lshape"
         #                 ),
+        #                 shape_path=shape_path(),
         #                 target_atmnums=None,
         #                 shape_string=None,
         #             ).calculate(c_l_shape_mol)

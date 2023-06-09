@@ -16,7 +16,6 @@ import logging
 import os
 import shutil
 
-from .env_set import shape_path
 from .beads import periodic_table
 
 
@@ -55,19 +54,12 @@ def fill_position_matrix(
     return position_matrix, atoms
 
 
-def get_shape_molecule_nodes(constructed_molecule, name, element):
-    topo_expected = {
-        "4P6": 4,
-        "4P62": 4,
-        "6P9": 6,
-        "8P12": 8,
-        "3P6": 3,
-        "4P8": 4,
-        "4P82": 4,
-        "6P12": 6,
-        "8P16": 8,
-        "6P8": 6,
-    }
+def get_shape_molecule_nodes(
+    constructed_molecule,
+    name,
+    element,
+    topo_expected,
+):
 
     splits = name.split("_")
     topo_str = splits[0]
@@ -97,14 +89,12 @@ def get_shape_molecule_nodes(constructed_molecule, name, element):
     return subset_molecule
 
 
-def get_shape_molecule_ligands(constructed_molecule, name, element):
-    topo_expected = {
-        "2P3": 3,
-        "4P6": 6,
-        "4P62": 6,
-        "2P4": 4,
-        "6P8": 8,
-    }
+def get_shape_molecule_ligands(
+    constructed_molecule,
+    name,
+    element,
+    topo_expected,
+):
 
     splits = name.split("_")
     topo_str = splits[0]
@@ -149,10 +139,12 @@ class ShapeMeasure:
     def __init__(
         self,
         output_dir,
+        shape_path,
         target_atmnums=None,
         shape_string=None,
     ):
         self._output_dir = output_dir
+        self._shape_path = shape_path
         self._target_atmnums = target_atmnums
         if shape_string is None:
             self._shape_dict = self.reference_shape_dict()
@@ -812,7 +804,7 @@ class ShapeMeasure:
             structure_string=structure_string,
         )
 
-        cmd = f"{shape_path()} {input_file}"
+        cmd = f"{self._shape_path} {input_file}"
         with open(std_out, "w") as f:
             # Note that sp.call will hold the program until completion
             # of the calculation.

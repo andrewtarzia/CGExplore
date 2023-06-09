@@ -26,6 +26,8 @@ from generation import (
     custom_torsion_definitions,
     custom_vdw_definitions,
     build_populations,
+)
+from bead_libraries import (
     beads_4c,
     arm_2c_beads,
     core_2c_beads,
