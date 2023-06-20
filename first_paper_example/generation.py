@@ -330,7 +330,15 @@ def analyse_cage(
 
         mdexploded = False
         mdfailed = False
-
+        raise NotImplementedError(
+            "WARNING: If you are using this example, there is an issue "
+            "that was not solved for the existing data but should be."
+            "Basically, using the new `opt` variable to get the energy "
+            "decomposition can cause issues for the large bite-angle "
+            "torsion restricted cases. I recommend getting the energy "
+            "from the output in the optimisation sequence "
+            "(e.g. the o3_omm.out or o1d_omm.out)."
+        )
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_ey",
             output_dir=output_dir,
