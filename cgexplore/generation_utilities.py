@@ -13,9 +13,11 @@ import os
 import logging
 import numpy as np
 import itertools
+from dataclasses import replace
 from openmm import openmm, OpenMMException
 
-from .openmm_optimizer import CGOMMOptimizer
+from .openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
+from .ensembles import Conformer
 
 
 def optimise_ligand(molecule, name, output_dir, bead_set):
@@ -78,6 +80,11 @@ def deform_and_optimisations(
 
     """
 
+    raise SystemExit(
+        "I have kept this here for backwards compatability, but this "
+        "approach is outdated. Try use run_mc_cycle function."
+    )
+
     # Ensure same stream of random numbers.
     generator = np.random.default_rng(seed=seed)
     beta = 10
@@ -136,6 +143,112 @@ def deform_and_optimisations(
             f"no lower energy conformers found in {num_iterations}"
         )
 
+    return molecule
+
+
+def random_deform_molecule(molecule, generator, sigma):
+    old_pos_mat = molecule.get_position_matrix()
+
+    new_pos_mat = []
+    for atom, pos in zip(molecule.get_atoms(), old_pos_mat):
+        move = generator.random((3,)) * sigma
+        new_pos = pos - move
+        new_pos_mat.append(new_pos)
+
+    return molecule.with_position_matrix(np.array((new_pos_mat)))
+
+
+def run_mc_cycle(
+    name,
+    molecule,
+    bead_set,
+    ensemble,
+    output_dir,
+    custom_vdw_set,
+    custom_torsion_set,
+    bonds,
+    angles,
+    torsions,
+    vdw_bond_cutoff,
+    sigma,
+    num_steps,
+    seed,
+    beta,
+    suffix,
+):
+    """
+    Run metropolis MC scheme.
+
+    """
+
+    generator = np.random.default_rng(seed=seed)
+
+    # Run an initial step.
+    opt = CGOMMOptimizer(
+        fileprefix=f"{name}_{suffix}",
+        output_dir=output_dir,
+        param_pool=bead_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=bonds,
+        angles=angles,
+        torsions=torsions,
+        vdw=custom_vdw_set,
+        max_iterations=200,
+        vdw_bond_cutoff=vdw_bond_cutoff,
+    )
+    molecule = opt.optimize(molecule)
+    energy_decomp = opt.read_final_energy_decomposition()
+    current_energy = energy_decomp["total energy"][0]
+
+    num_passed = 0
+    num_run = 0
+    for step in range(num_steps + 1):
+        # Perform deformation.
+        test_molecule = random_deform_molecule(
+            molecule=molecule,
+            generator=generator,
+            sigma=sigma,
+        )
+        test_molecule = opt.optimize(test_molecule)
+        test_energy = opt.read_final_energy_decomposition()[
+            "total energy"
+        ][0]
+
+        passed = False
+        if test_energy < current_energy:
+            passed = True
+        elif (
+            np.exp(-beta * (test_energy - current_energy))
+            > generator.random()
+        ):
+            passed = True
+
+        # Pass or fail.
+        if passed:
+            num_passed += 1
+            conformer = Conformer(
+                molecule=test_molecule.clone().with_centroid((0, 0, 0)),
+                conformer_id=None,
+                energy_decomposition=(
+                    opt.read_final_energy_decomposition()
+                ),
+            )
+
+            ensemble.add_conformer(
+                conformer=conformer,
+                source=suffix,
+            )
+            molecule = conformer.molecule
+            current_energy = conformer.energy_decomposition[
+                "total energy"
+            ][0]
+
+        num_run += 1
+
+    logging.info(
+        f"{num_passed} passed of {num_run} ({num_passed/num_run})"
+    )
+    ensemble.write_conformers_to_file()
     return molecule
 
 
