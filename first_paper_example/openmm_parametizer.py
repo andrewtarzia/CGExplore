@@ -28,7 +28,7 @@ from cgexplore.utilities import (
 from cgexplore.openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
 from cgexplore.beads import produce_bead_library, bead_library_check
 
-from env_set import cages
+from env_set import cages, figures
 
 
 def bond_function(x, k, r0):
@@ -876,8 +876,7 @@ def main():
 
     struct_output = cages() / "ommtest"
     check_directory(struct_output)
-    figure_output = cages() / "ommfigures"
-    check_directory(figure_output)
+    figure_output = figures()
     calculation_output = cages() / "ommtestcalculations"
     check_directory(calculation_output)
 
