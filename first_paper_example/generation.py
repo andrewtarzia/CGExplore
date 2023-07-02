@@ -303,7 +303,7 @@ def optimise_cage(
 
 
 def analyse_cage(
-    molecule,
+    conformer,
     name,
     output_dir,
     bead_set,
@@ -312,45 +312,13 @@ def analyse_cage(
     node_element,
     ligand_element,
 ):
-
     output_file = os.path.join(output_dir, f"{name}_res.json")
     shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
     shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
 
-    if molecule is None:
-        res_dict = {"optimised": False}
-        with open(output_file, "w") as f:
-            json.dump(res_dict, f, indent=4)
-
-    if os.path.exists(output_file):
-        with open(output_file, "r") as f:
-            res_dict = json.load(f)
-    else:
+    if not os.path.exists(output_file):
         logging.info(f"analysing {name}")
 
-        mdexploded = False
-        mdfailed = False
-        raise NotImplementedError(
-            "WARNING: If you are using this example, there is an issue "
-            "that was not solved for the existing data but should be."
-            "Basically, using the new `opt` variable to get the energy "
-            "decomposition can cause issues for the large bite-angle "
-            "torsion restricted cases. I recommend getting the energy "
-            "from the output in the optimisation sequence "
-            "(e.g. the o3_omm.out or o1d_omm.out)."
-        )
-        opt = CGOMMOptimizer(
-            fileprefix=f"{name}_ey",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=custom_vdw_set,
-            # max_iterations=1000,
-            vdw_bond_cutoff=2,
-        )
         # Always want to extract target torions.
         temp_custom_torsion_set = target_torsions(
             bead_set=bead_set,
@@ -365,23 +333,22 @@ def analyse_cage(
                 for j in i
             ]
 
-        energy_decomp = opt.calculate_energy_decomposed(molecule)
         energy_decomp = {
-            f"{i}_kjmol": energy_decomp[i].value_in_unit(
-                openmm.unit.kilojoules_per_mole
+            f"{i}_{conformer.energy_decomposition[i][1]}": float(
+                conformer.energy_decomposition[i][0]
             )
-            for i in energy_decomp
+            for i in conformer.energy_decomposition
         }
-        fin_energy = energy_decomp["tot_energy_kjmol"]
+        fin_energy = energy_decomp["total energy_kJ/mol"]
 
         n_shape_mol = get_shape_molecule_nodes(
-            constructed_molecule=molecule,
+            constructed_molecule=conformer.molecule,
             name=name,
             element=node_element,
             topo_expected=node_expected_topologies(),
         )
         l_shape_mol = get_shape_molecule_ligands(
-            constructed_molecule=molecule,
+            constructed_molecule=conformer.molecule,
             name=name,
             element=ligand_element,
             topo_expected=ligand_expected_topologies(),
@@ -408,147 +375,30 @@ def analyse_cage(
             ).calculate(l_shape_mol)
             l_shape_mol.write(shape_molfile2)
 
-        opt_pore_data = PoreMeasure().calculate_min_distance(molecule)
+        opt_pore_data = PoreMeasure().calculate_min_distance(
+            conformer.molecule
+        )
 
         g_measure = GeomMeasure(custom_torsion_atoms)
-        bond_data = g_measure.calculate_bonds(molecule)
-        angle_data = g_measure.calculate_angles(molecule)
-        dihedral_data = g_measure.calculate_torsions(molecule)
-        min_b2b_distance = g_measure.calculate_minb2b(molecule)
-        radius_gyration = g_measure.calculate_radius_gyration(molecule)
-        max_diameter = g_measure.calculate_max_diameter(molecule)
+        bond_data = g_measure.calculate_bonds(conformer.molecule)
+        angle_data = g_measure.calculate_angles(conformer.molecule)
+        dihedral_data = g_measure.calculate_torsions(conformer.molecule)
+        min_b2b_distance = g_measure.calculate_minb2b(
+            conformer.molecule
+        )
+        radius_gyration = g_measure.calculate_radius_gyration(
+            conformer.molecule
+        )
+        max_diameter = g_measure.calculate_max_diameter(
+            conformer.molecule
+        )
         if radius_gyration > max_diameter:
             raise ValueError(
                 f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
             )
 
-        failed_file = output_dir / f"{name}_mdfailed.txt"
-        exploded_file = output_dir / f"{name}_mdexploded.txt"
-        if os.path.exists(failed_file):
-            mdfailed = True
-        if os.path.exists(exploded_file):
-            mdexploded = True
-        # if mdfailed or mdexploded:
-        #     trajectory_data = None
-        # else:
-        #     fileprefix = f"{name}_o2"
-        #     trajectory = OMMTrajectory(
-        #         base_molecule=molecule,
-        #         data_path=output_dir / f"{fileprefix}_traj.dat",
-        #         traj_path=output_dir / f"{fileprefix}_traj.pdb",
-        #         forcefield_path=output_dir / f"{fileprefix}_ff.xml",
-        #         output_path=output_dir / f"{fileprefix}_omm.out",
-        #         temperature=300 * openmm.unit.kelvin,
-        #         random_seed=1000,
-        #         num_steps=10000,
-        #         time_step=1 * openmm.unit.femtoseconds,
-        #         friction=1.0 / openmm.unit.picosecond,
-        #         reporting_freq=100,
-        #         traj_freq=100,
-        #     )
-        #     traj_log = trajectory.get_data()
-        #     trajectory_data = {}
-        #     for conformer in trajectory.yield_conformers():
-        #         timestep = conformer.timestep
-        #         time_ps = timestep / 1e3
-        #         row = traj_log[traj_log['#"Step"'] == timestep].iloc[0]
-        #         pot_energy = float(row["Potential Energy (kJ/mole)"])
-        #         kin_energy = float(row["Kinetic Energy (kJ/mole)"])
-        #         conf_temp = float(row["Temperature (K)"])
-
-        #         conf_energy_decomp = opt.calculate_energy_decomposed(
-        #             conformer.molecule
-        #         )
-        #         conf_energy_decomp = {
-        #             f"{i}_kjmol": conf_energy_decomp[i].value_in_unit(
-        #                 openmm.unit.kilojoules_per_mole
-        #             )
-        #             for i in conf_energy_decomp
-        #         }
-
-        #         c_n_shape_mol = get_shape_molecule_nodes(
-        #             conformer.molecule,
-        #             name,
-        #         )
-        #         c_l_shape_mol = get_shape_molecule_ligands(
-        #             conformer.molecule,
-        #             name,
-        #         )
-        #         if c_n_shape_mol is None:
-        #             conf_node_shape_measures = None
-        #         else:
-        #             conf_node_shape_measures = ShapeMeasure(
-        #                 output_dir=(
-        #                     output_dir / f"{name}_{timestep}_nshape"
-        #                 ),
-        #                 shape_path=shape_path(),
-        #                 target_atmnums=None,
-        #                 shape_string=None,
-        #             ).calculate(c_n_shape_mol)
-
-        #         if l_shape_mol is None:
-        #             conf_lig_shape_measures = None
-        #         else:
-        #             conf_lig_shape_measures = ShapeMeasure(
-        #                 output_dir=(
-        #                     output_dir / f"{name}_{timestep}_lshape"
-        #                 ),
-        #                 shape_path=shape_path(),
-        #                 target_atmnums=None,
-        #                 shape_string=None,
-        #             ).calculate(c_l_shape_mol)
-
-        #         conf_pore_data = PoreMeasure().calculate_min_distance(
-        #             conformer.molecule,
-        #         )
-
-        #         g_measure = GeomMeasure(custom_torsion_atoms)
-        #         conf_bond_data = g_measure.calculate_bonds(
-        #             conformer.molecule
-        #         )
-        #         conf_angle_data = g_measure.calculate_angles(
-        #             conformer.molecule
-        #         )
-        #         conf_dihedral_data = g_measure.calculate_torsions(
-        #             conformer.molecule
-        #         )
-        #         conf_min_b2b_distance = g_measure.calculate_minb2b(
-        #             conformer.molecule
-        #         )
-        #         conf_radius_gyration = (
-        #             g_measure.calculate_radius_gyration(
-        #                 conformer.molecule
-        #             )
-        #         )
-        #         conf_max_diameter = g_measure.calculate_max_diameter(
-        #             conformer.molecule
-        #         )
-        #         if radius_gyration > max_diameter:
-        #             raise ValueError(
-        #                 f"{name} Rg ({radius_gyration}) > "
-        #                 f"max D ({max_diameter})"
-        #             )
-        #         trajectory_data[timestep] = {
-        #             "time_ps": time_ps,
-        #             "pot_energy_kjmol": pot_energy,
-        #             "kin_energy_kjmol": kin_energy,
-        #             "temperature_K": conf_temp,
-        #             "energy_decomp": conf_energy_decomp,
-        #             "pore_data": conf_pore_data,
-        #             "lig_shape_measures": conf_lig_shape_measures,
-        #             "node_shape_measures": conf_node_shape_measures,
-        #             "bond_data": conf_bond_data,
-        #             "angle_data": conf_angle_data,
-        #             "dihedral_data": conf_dihedral_data,
-        #             "min_b2b_distance": conf_min_b2b_distance,
-        #             "radius_gyration": conf_radius_gyration,
-        #             "max_diameter": conf_max_diameter,
-        #         }
-
         res_dict = {
             "optimised": True,
-            "mdexploded": mdexploded,
-            "mdfailed": mdfailed,
             "fin_energy_kjmol": fin_energy,
             "fin_energy_decomp": energy_decomp,
             "opt_pore_data": opt_pore_data,
@@ -564,8 +414,6 @@ def analyse_cage(
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
-
-    return res_dict
 
 
 def target_torsions(bead_set, custom_torsion_option):
@@ -619,18 +467,7 @@ def build_populations(
     ligand_element,
 ):
 
-    seeds = {
-        0: 1000,
-        1: 2973,
-        2: 87,
-        3: 5552,
-        4: 9741244,
-        5: 6425,
-        6: 123,
-        7: 26533,
-        8: 782,
-        9: 10000,
-    }
+    num_runs = 1
     for popn in populations:
         logging.info(f"building {popn} population")
         popn_iterator = itertools.product(
@@ -665,12 +502,11 @@ def build_populations(
 
             custom_vdw_set = custom_vdw_options[custom_vdw]
 
-            for run in seeds:
+            for run in range(num_runs):
                 name = (
                     f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
                     f"{custom_torsion}_{custom_vdw}_{run}"
                 )
-                run_seed = seeds[run]
 
                 logging.info(f"building {name}")
                 cage = stk.ConstructedMolecule(
@@ -681,21 +517,22 @@ def build_populations(
                     ),
                 )
 
-                cage = optimise_cage(
+                conformer = optimise_cage(
                     molecule=cage,
                     name=name,
                     output_dir=calculation_output,
                     bead_set=bead_set,
                     custom_torsion_set=custom_torsion_set,
                     custom_vdw_set=custom_vdw_set,
-                    run_seed=run_seed,
                 )
 
-                if cage is not None:
-                    cage.write(str(struct_output / f"{name}_optc.mol"))
+                if conformer is not None:
+                    conformer.molecule.write(
+                        str(struct_output / f"{name}_optc.mol")
+                    )
 
                 analyse_cage(
-                    molecule=cage,
+                    conformer=conformer,
                     name=name,
                     output_dir=calculation_output,
                     bead_set=bead_set,
