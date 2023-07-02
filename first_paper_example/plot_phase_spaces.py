@@ -19,7 +19,7 @@ from matplotlib.lines import Line2D
 from scipy.spatial import ConvexHull
 import numpy as np
 
-from env_set import cages
+from env_set import figures, calculations
 
 from analysis import (
     write_out_mapping,
@@ -488,8 +488,8 @@ def main():
     else:
         pass
 
-    figure_output = cages() / "ommfigures"
-    calculation_output = cages() / "ommcalculations"
+    figure_output = figures()
+    calculation_output = calculations()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),

@@ -18,7 +18,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from env_set import cages
+from env_set import figures, calculations
 
 from analysis import (
     data_to_array,
@@ -36,9 +36,18 @@ from analysis import (
 )
 
 
-def clangle_relationship(all_data, figure_output):
+def nobiteangle_relationship(all_data, figure_output):
     logging.info("running clangle_relationship")
-
+    # ensemble = Ensemble(
+    #     base_molecule=molecule,
+    #     base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
+    #     conformer_xyz=os.path.join(
+    #         output_dir, f"{name}_ensemble.xyz"
+    #     ),
+    #     data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
+    #     overwrite=False,
+    # )
+    raise SystemExit("I want a plot with all energies on it.")
     trim = all_data[all_data["vdws"] == "von"]
 
     for tstr in topology_labels(short="P"):
@@ -48,27 +57,22 @@ def clangle_relationship(all_data, figure_output):
         clangles = sorted(set(filt_data["clangle"]))
         if len(clangles) == 0:
             continue
+
         fig, axs = plt.subplots(
             nrows=len(clangles),
             sharex=True,
             sharey=True,
             figsize=(8, 12),
         )
-
         for ax, t_angle in zip(axs, clangles):
             clan_data = filt_data[filt_data["clangle"] == t_angle]
             clan_output = {}
-            # for c1_opt in sorted(set(clan_data["c2r0"])):
             for run_number in clan_data["run_number"]:
                 plot_data = clan_data[
                     clan_data["run_number"] == run_number
                 ]
                 if len(plot_data) == 0:
                     continue
-                # for c1_opt in sorted(set(clan_data["c3r0"])):
-                #     test_data = clan_data[clan_data["c3r0"] == c1_opt]
-                #     for c2_opt in sorted(set(test_data["clr0"])):
-                #         plot_data = test_data[test_data["clr0"] == c2_opt]
                 xs = list(plot_data["c3angle"])
                 ys = list(plot_data["energy_per_bb"])
                 xs, ys = zip(*sorted(zip(xs, ys)))
@@ -890,8 +894,8 @@ def main():
     else:
         pass
 
-    figure_output = cages() / "ommfigures"
-    calculation_output = cages() / "ommcalculations"
+    figure_output = figures()
+    calculation_output = calculations()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
@@ -904,15 +908,15 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
+    angle_map(low_e_data, figure_output)
+    bite_angle_relationship(all_data, figure_output)
+    nobiteangle_relationship(all_data, figure_output)
     pdII_figure_bite_angle(low_e_data, figure_output)
     pd_4p82_figure(low_e_data, figure_output)
-    angle_map(low_e_data, figure_output)
     selfsort_legend(low_e_data, figure_output)
     selfsort_map(low_e_data, figure_output)
     kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
-    clangle_relationship(all_data, figure_output)
-    bite_angle_relationship(all_data, figure_output)
 
 
 if __name__ == "__main__":

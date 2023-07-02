@@ -16,7 +16,7 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import math
 
-from env_set import cages, pymol_path
+from env_set import structures, figures, calculations, pymol_path
 from analysis import (
     isomer_energy,
     data_to_array,
@@ -1146,11 +1146,11 @@ def main():
     else:
         pass
 
-    figure_output = cages() / "ommfigures"
-    struct_output = cages() / "ommstructures"
-    struct_figure_output = cages() / "ommfigures" / "structures"
+    struct_output = structures()
+    figure_output = figures()
+    calculation_output = calculations()
+    struct_figure_output = figures() / "structures"
     check_directory(struct_figure_output)
-    calculation_output = cages() / "ommcalculations"
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),

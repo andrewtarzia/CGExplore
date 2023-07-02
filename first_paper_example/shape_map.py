@@ -48,6 +48,7 @@ def get_all_templates(dir):
 
 def get_shape(coords, num_vertices, name):
     struct_output = project_dir() / "shape_structures"
+    check_directory(struct_output)
     molecule = stk.BuildingBlock.init(
         atoms=tuple(stk.H(i) for i in range(num_vertices)),
         bonds=(),

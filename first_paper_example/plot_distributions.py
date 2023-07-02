@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.patches as mpatches
 
-from env_set import cages
+from env_set import figures, calculations
 
 from cgexplore.utilities import convert_pyramid_angle
 from analysis import (
@@ -1318,8 +1318,8 @@ def main():
     else:
         pass
 
-    figure_output = cages() / "ommfigures"
-    calculation_output = cages() / "ommcalculations"
+    figure_output = figures()
+    calculation_output = calculations()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
