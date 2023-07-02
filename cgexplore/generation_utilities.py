@@ -139,6 +139,65 @@ def deform_and_optimisations(
     return molecule
 
 
+def run_soft_md_cycle(
+    name,
+    molecule,
+    bead_set,
+    ensemble,
+    output_dir,
+    custom_vdw_set,
+    custom_torsion_set,
+    bonds,
+    angles,
+    torsions,
+    vdw_bond_cutoff,
+    num_steps,
+    suffix,
+    bond_ff_scale,
+    angle_ff_scale,
+    temperature,
+    time_step,
+    friction,
+    reporting_freq,
+    traj_freq,
+):
+    """
+    Run MD exploration with soft potentials.
+
+    """
+    soft_bead_set = {}
+    for i in bead_set:
+        new_bead = replace(bead_set[i])
+        new_bead.bond_k = bead_set[i].bond_k / bond_ff_scale
+        new_bead.angle_k = bead_set[i].angle_k / angle_ff_scale
+        soft_bead_set[i] = new_bead
+
+    md = CGOMMDynamics(
+        fileprefix=f"{name}_{suffix}",
+        output_dir=output_dir,
+        param_pool=soft_bead_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=True,
+        angles=True,
+        torsions=False,
+        vdw=custom_vdw_set,
+        vdw_bond_cutoff=2,
+        temperature=temperature,
+        random_seed=1000,
+        num_steps=num_steps,
+        time_step=time_step,
+        friction=friction,
+        reporting_freq=reporting_freq,
+        traj_freq=traj_freq,
+    )
+
+    try:
+        return md.run_dynamics(molecule)
+
+    except OpenMMException:
+        return None
+
+
 def run_md_cycle(
     name,
     molecule,
