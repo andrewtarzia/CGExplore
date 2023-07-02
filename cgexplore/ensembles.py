@@ -22,6 +22,7 @@ class Conformer:
     molecule: stk.Molecule
     conformer_id: int = None
     energy_decomposition: dict = None
+    source: str = None
 
 
 @dataclass
@@ -96,35 +97,59 @@ class Ensemble:
                 os.remove(self._conformer_xyz)
             if os.path.exists(self._data_json):
                 os.remove(self._data_json)
+            self._data = {}
+            self._trajectory = {}
+        else:
+            self._data = self.load_data()
+            self._trajectory = self.load_trajectory()
 
     def get_num_conformers(self):
-        if not os.path.exists(self._data_json):
-            return 0
-        else:
-            data = self.get_data()
-            return len(data)
+        return len(self._data)
 
-    def add_conformer(self, structure, energy_decomposition, source):
-        conf_id = self.get_num_conformers()
+    def write_conformers_to_file(self):
+        with open(self._conformer_xyz, "w") as f:
+            for conf in self._trajectory:
+                xyz_string = self._trajectory[conf]
+                f.write("\n".join(xyz_string))
+        with open(self._data_json, "w") as f:
+            json.dump(self._data, f, indent=4)
+
+    def add_conformer(self, conformer, source):
+        if conformer.conformer_id is None:
+            conf_id = self.get_num_conformers()
+        else:
+            conf_id = conformer.conformer_id
+
+        assert conf_id not in self._trajectory
         conformer_label = f"conf {conf_id}"
 
         # Add structure to XYZ file.
-        xyz_string = stk.XyzWriter().to_string(structure)
+        xyz_string = stk.XyzWriter().to_string(conformer.molecule)
         # Add label to xyz string.
         xyz_string = xyz_string.split("\n")
         xyz_string[1] = conformer_label
-        with open(self._conformer_xyz, "a") as f:
-            f.write("\n".join(xyz_string))
-
+        self._trajectory[conf_id] = xyz_string
         # Add data to JSON dictionary.
         conf_data = {
-            i: energy_decomposition[i] for i in energy_decomposition
+            i: conformer.energy_decomposition[i]
+            for i in conformer.energy_decomposition
         }
         conf_data["source"] = source
-        data = self.get_data()
-        data[conf_id] = conf_data
-        with open(self._data_json, "w") as f:
-            json.dump(data, f, indent=4)
+        self._data[conf_id] = conf_data
+
+    def load_trajectory(self):
+        num_atoms = self._molecule_num_atoms
+        trajectory = {}
+        with open(self._conformer_xyz, "r") as f:
+            lines = f.readlines()
+            conformer_starts = range(0, len(lines), num_atoms + 2)
+            for cs in conformer_starts:
+                conf_lines = [
+                    i.strip() for i in lines[cs : cs + num_atoms + 2]
+                ]
+                conf_id = conf_lines[1].rstrip().split()[1]
+                trajectory[conf_id] = conf_lines
+        return trajectory
 
     def _yield_from_xyz(self):
         num_atoms = self._molecule_num_atoms
@@ -136,7 +161,7 @@ class Ensemble:
 
             for cs in conformer_starts:
                 conf_lines = lines[cs : cs + num_atoms + 2]
-                conf_id = conf_lines[1].rstrip().split()[1]
+                conf_id = int(conf_lines[1].rstrip().split()[1])
                 new_pos_mat = []
                 for exyz in conf_lines[2:]:
                     x = float(exyz.rstrip().split()[1])
@@ -160,6 +185,9 @@ class Ensemble:
                 )
 
     def yield_conformers(self):
+        for conf_id in self._trajectory:
+            yield self.get_conformer(conf_id)
+
     def get_lowest_e_conformer(self):
         try:
             min_energy_conformerid = 0
@@ -181,15 +209,39 @@ class Ensemble:
         return self.get_conformer(min_energy_conformerid)
 
     def get_conformer(self, conf_id):
-        count = 0
-        for conformer in self._yield_from_xyz():
-            count += 1
-            if conformer.conformer_id == conf_id:
-                return conformer
 
-        raise ValueError(
-            f"conformer {conf_id} not found in ensemble with "
-            f"{count} conformers"
+        if conf_id not in self._data:
+            raise ValueError(
+                f"conformer {conf_id} not found in ensemble."
+            )
+        conf_lines = self._trajectory[conf_id]
+        extracted_id = int(conf_lines[1].strip().split()[1])
+        if extracted_id != int(conf_id):
+            raise ValueError(f"Asked for {conf_id}, got {extracted_id}")
+        new_pos_mat = [
+            [float(j) for j in i.strip().split()[1:]]
+            for i in conf_lines[2:]
+            if i != ""
+        ]
+        if len(new_pos_mat) != self._molecule_num_atoms:
+            raise ValueError(
+                f"Num atoms ({len(new_pos_mat)}) in xyz does not match "
+                f"base molecule ({self._molecule_num_atoms})"
+            )
+        conf_data = self._data[conf_id]
+        source = conf_data["source"]
+        energy_decomp = {
+            i: conf_data[i] for i in conf_data if i != "source"
+        }
+        return Conformer(
+            molecule=(
+                self._base_molecule.with_position_matrix(
+                    np.array(new_pos_mat)
+                )
+            ),
+            conformer_id=conf_id,
+            energy_decomposition=energy_decomp,
+            source=source,
         )
 
     def get_base_molecule(self):
@@ -198,7 +250,7 @@ class Ensemble:
     def get_molecule_num_atoms(self):
         return self._molecule_num_atoms
 
-    def get_data(self):
+    def load_data(self):
         try:
             with open(self._data_json, "r") as f:
                 return json.load(f)
@@ -206,7 +258,10 @@ class Ensemble:
             return {}
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}()"
+        return (
+            f"{self.__class__.__name__}("
+            f"num_confs={self.get_num_conformers()})"
+        )
 
     def __repr__(self) -> str:
         return str(self)
