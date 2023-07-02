@@ -79,9 +79,135 @@ def optimise_cage(
     bead_set,
     custom_torsion_set,
     custom_vdw_set,
-    run_seed,
 ):
 
+    fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
+    if os.path.exists(fina_mol_file):
+        ensemble = Ensemble(
+            base_molecule=molecule,
+            base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
+            conformer_xyz=os.path.join(
+                output_dir, f"{name}_ensemble.xyz"
+            ),
+            data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
+            overwrite=False,
+        )
+        return ensemble.get_lowest_e_conformer()
+
+    ensemble = Ensemble(
+        base_molecule=molecule,
+        base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
+        conformer_xyz=os.path.join(output_dir, f"{name}_ensemble.xyz"),
+        data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
+        overwrite=True,
+    )
+    molecule.write("t1.mol")
+
+    molecule = run_constrained_optimisation(
+        molecule=molecule,
+        bead_set=bead_set,
+        name=name,
+        output_dir=output_dir,
+        custom_vdw_set=custom_vdw_set,
+        bond_ff_scale=10,
+        angle_ff_scale=10,
+        max_iterations=20,
+    )
+    molecule.write("t2.mol")
+
+    logging.info(f"optimisation of {name}")
+    conformer = run_optimisation(
+        molecule=molecule,
+        bead_set=bead_set,
+        name=name,
+        file_suffix="opt1",
+        output_dir=output_dir,
+        custom_vdw_set=custom_vdw_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=True,
+        angles=True,
+        torsions=False,
+        vdw_bond_cutoff=2,
+        # max_iterations=50,
+    )
+    ensemble.add_conformer(conformer=conformer, source="opt1")
+
+    logging.info(f"soft MD run of {name}")
+    num_steps = 20000
+    traj_freq = 1000
+    soft_md_trajectory = run_soft_md_cycle(
+        name=name,
+        molecule=conformer.molecule,
+        bead_set=bead_set,
+        ensemble=ensemble,
+        output_dir=output_dir,
+        custom_vdw_set=custom_vdw_set,
+        custom_torsion_set=None,
+        bonds=True,
+        angles=True,
+        torsions=False,
+        vdw_bond_cutoff=2,
+        suffix="smd",
+        bond_ff_scale=10,
+        angle_ff_scale=10,
+        temperature=300 * openmm.unit.kelvin,
+        num_steps=num_steps,
+        time_step=0.5 * openmm.unit.femtoseconds,
+        friction=1.0 / openmm.unit.picosecond,
+        reporting_freq=traj_freq,
+        traj_freq=traj_freq,
+    )
+    if soft_md_trajectory is None:
+        logging.info(f"!!!!! {name} MD exploded !!!!!")
+        # md_exploded = True
+        raise ValueError("OpenMM Exception")
+
+    soft_md_data = soft_md_trajectory.get_data()
+    logging.info(f"collected trajectory {len(soft_md_data)} confs long")
+    # Check that the trajectory is as long as it should be.
+    if len(soft_md_data) != num_steps / traj_freq:
+        logging.info(f"!!!!! {name} MD failed !!!!!")
+        # md_failed = True
+        raise ValueError()
+
+    # Go through each conformer from soft MD.
+    # Optimise them all.
+    for md_conformer in soft_md_trajectory.yield_conformers():
+        conformer = run_optimisation(
+            molecule=md_conformer.molecule,
+            bead_set=bead_set,
+            name=name,
+            file_suffix="smd_mdc",
+            output_dir=output_dir,
+            custom_vdw_set=custom_vdw_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw_bond_cutoff=2,
+            # max_iterations=50,
+        )
+        ensemble.add_conformer(conformer=conformer, source="smd")
+    ensemble.write_conformers_to_file()
+
+    min_energy_conformer = ensemble.get_lowest_e_conformer()
+    min_energy_conformerid = min_energy_conformer.conformer_id
+    min_energy = min_energy_conformer.energy_decomposition[
+        "total energy"
+    ][0]
+    logging.info(
+        f"Min. energy conformer: {min_energy_conformerid} from "
+        f"{min_energy_conformer.source}"
+        f" with energy: {min_energy} kJ.mol-1"
+    )
+    print(
+        f"Min. energy conformer: {min_energy_conformerid} from "
+        f"{min_energy_conformer.source}"
+        f" with energy: {min_energy} kJ.mol-1"
+    )
+
+    min_energy_conformer.molecule.write(fina_mol_file)
+    return min_energy_conformer
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
     opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
     opt2_fai_file = os.path.join(output_dir, f"{name}_mdfailed.txt")
