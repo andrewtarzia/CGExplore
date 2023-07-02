@@ -13,7 +13,6 @@ import sys
 import logging
 from rdkit import RDLogger
 
-from cgexplore.utilities import check_directory
 from cgexplore.cage_construction.topologies import cage_topology_options
 from cgexplore.beads import bead_library_check
 from cgexplore.molecule_construction.topologies import (
@@ -33,7 +32,7 @@ from bead_libraries import (
     core_2c_beads,
     binder_beads,
 )
-from env_set import cages
+from env_set import structures, calculations, ligands
 
 
 def main():
@@ -44,14 +43,9 @@ def main():
     else:
         pass
 
-    struct_output = cages() / "ommstructures"
-    check_directory(struct_output)
-    figure_output = cages() / "ommfigures"
-    check_directory(figure_output)
-    calculation_output = cages() / "ommcalculations"
-    check_directory(calculation_output)
-    ligand_output = cages() / "ommligands"
-    check_directory(ligand_output)
+    struct_output = structures()
+    calculation_output = calculations()
+    ligand_output = ligands()
 
     # Define bead libraries.
     beads_core_2c_lib = core_2c_beads()
