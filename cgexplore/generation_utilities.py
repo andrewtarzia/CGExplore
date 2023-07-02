@@ -226,3 +226,116 @@ def build_building_block(
         opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
         blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
     return blocks
+
+
+def run_constrained_optimisation(
+    molecule,
+    bead_set,
+    name,
+    output_dir,
+    custom_vdw_set,
+    bond_ff_scale,
+    angle_ff_scale,
+    max_iterations,
+):
+    """
+    Run optimisation with constraints and softened potentials.
+
+    Keywords
+    ========
+
+    molecule: stk.Molecule
+    bead_set: dict
+    name: str
+    output_dir: str or Path
+    custom_vdw_set: ??
+    bond_ff_scale: float
+        Scale (divide) the bond terms in the model by this value.
+    angle_ff_scale: float
+        Scale (divide) the angle terms in the model by this value.
+    max_iterations: int
+        Num steps to take.
+
+    """
+
+    soft_bead_set = {}
+    for i in bead_set:
+        new_bead = replace(bead_set[i])
+        new_bead.bond_k = bead_set[i].bond_k / bond_ff_scale
+        new_bead.angle_k = bead_set[i].angle_k / angle_ff_scale
+        soft_bead_set[i] = new_bead
+
+    intra_bb_bonds = []
+    for bond_info in molecule.get_bond_infos():
+        if bond_info.get_building_block_id() is not None:
+            bond = bond_info.get_bond()
+            intra_bb_bonds.append(
+                (bond.get_atom1().get_id(), bond.get_atom2().get_id())
+            )
+
+    constrained_opt = CGOMMOptimizer(
+        fileprefix=f"{name}_constrained",
+        output_dir=output_dir,
+        param_pool=soft_bead_set,
+        custom_torsion_set=None,
+        bonds=True,
+        angles=True,
+        torsions=False,
+        vdw=custom_vdw_set,
+        max_iterations=max_iterations,
+        vdw_bond_cutoff=2,
+        atom_constraints=intra_bb_bonds,
+    )
+    logging.info(
+        f"optimising {name} with {len(intra_bb_bonds)} constraints"
+    )
+    return constrained_opt.optimize(molecule)
+
+
+def run_optimisation(
+    molecule,
+    bead_set,
+    name,
+    file_suffix,
+    output_dir,
+    custom_vdw_set,
+    custom_torsion_set,
+    bonds,
+    angles,
+    torsions,
+    vdw_bond_cutoff,
+    max_iterations=None,
+    ensemble=None,
+):
+    """
+    Run optimisation and save outcome to Ensemble.
+
+    Keywords
+    ========
+
+    """
+
+    opt = CGOMMOptimizer(
+        fileprefix=f"{name}_{file_suffix}",
+        output_dir=output_dir,
+        param_pool=bead_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=bonds,
+        angles=angles,
+        torsions=torsions,
+        vdw=custom_vdw_set,
+        max_iterations=max_iterations,
+        vdw_bond_cutoff=vdw_bond_cutoff,
+    )
+    molecule = opt.optimize(molecule)
+    energy_decomp = opt.read_final_energy_decomposition()
+    if ensemble is None:
+        confid = None
+    else:
+        confid = ensemble.get_num_conformers()
+
+    return Conformer(
+        molecule=molecule,
+        conformer_id=confid,
+        energy_decomposition=energy_decomp,
+    )
