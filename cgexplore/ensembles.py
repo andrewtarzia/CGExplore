@@ -160,7 +160,25 @@ class Ensemble:
                 )
 
     def yield_conformers(self):
-        yield from self._yield_from_xyz()
+    def get_lowest_e_conformer(self):
+        try:
+            min_energy_conformerid = 0
+            min_energy = self._data[min_energy_conformerid][
+                "total energy"
+            ][0]
+        except KeyError:
+            min_energy_conformerid = "0"
+            min_energy = self._data[min_energy_conformerid][
+                "total energy"
+            ][0]
+
+        for confid in self._data:
+            conf_energy = self._data[confid]["total energy"][0]
+            if conf_energy < min_energy:
+                min_energy = conf_energy
+                min_energy_conformerid = confid
+
+        return self.get_conformer(min_energy_conformerid)
 
     def get_conformer(self, conf_id):
         count = 0
