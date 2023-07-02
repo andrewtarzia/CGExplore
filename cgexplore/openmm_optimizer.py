@@ -471,25 +471,37 @@ class CGOMMOptimizer(CGOptimizer):
     def _setup_simulation(self, molecule):
 
         # Load force field.
+        # st = time.time()
         self._write_ff_file(molecule)
         forcefield = app.ForceField(self._forcefield_path)
+        # print("ss1", time.time() - st)
 
         # Create system.
+        # st = time.time()
         topology = self._stk_to_topology(molecule)
+        # print("ss2", time.time() - st)
+        # st = time.time()
         system = forcefield.createSystem(topology)
+        # print("ss3", time.time() - st)
+        # st = time.time()
         system = self._add_forces(system, molecule)
+        # print("ss4", time.time() - st)
 
         # Default integrator.
         time_step = 0.1 * openmm.unit.femtoseconds
         integrator = openmm.VerletIntegrator(time_step)
 
         # Define simulation.
+        # st = time.time()
         simulation = app.Simulation(topology, system, integrator)
+        # print("ss5", time.time() - st)
 
         # Set positions from structure.
+        # st = time.time()
         simulation.context.setPositions(
             molecule.get_position_matrix() / 10
         )
+        # print("ss6", time.time() - st)
         return simulation, system
 
     def _run_energy_decomp(self, simulation, system):
@@ -585,9 +597,15 @@ class CGOMMOptimizer(CGOptimizer):
         self._output_string += f"start time: {start_time}\n"
         self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
 
+        # st = time.time()
         simulation, system = self._setup_simulation(molecule)
+        # print("s", st - time.time())
+        # st = time.time()
         simulation = self._minimize_energy(simulation, system)
+        # print("m", st - time.time())
+        # st = time.time()
         molecule = self._update_stk_molecule(molecule, simulation)
+        # print("u", st - time.time())
 
         end_time = time.time()
         self._output_string += f"end time: {end_time}\n"
