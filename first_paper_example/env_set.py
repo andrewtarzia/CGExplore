@@ -15,6 +15,30 @@ def cages():
     return path
 
 
+def structures():
+    path = cages() / pathlib.Path("structures/")
+    check_directory(path)
+    return path
+
+
+def figures():
+    path = cages() / pathlib.Path("figures/")
+    check_directory(path)
+    return path
+
+
+def ligands():
+    path = cages() / pathlib.Path("ligands/")
+    check_directory(path)
+    return path
+
+
+def calculations():
+    path = cages() / pathlib.Path("calculations/")
+    check_directory(path)
+    return path
+
+
 def pymol_path():
     return pathlib.Path(
         "/home/atarzia/pymol-open-source-build/bin/pymol"
