@@ -11,10 +11,10 @@ Author: Andrew Tarzia
 
 import stk
 import os
+import numpy as np
 import json
 import logging
 import itertools
-from dataclasses import replace
 from openmm import openmm
 
 from cgexplore.shape import (
@@ -24,15 +24,13 @@ from cgexplore.shape import (
 )
 from cgexplore.geom import GeomMeasure
 from cgexplore.pore import PoreMeasure
-from cgexplore.utilities import check_long_distances
-from cgexplore.openmm_optimizer import (
-    CGOMMOptimizer,
-    CGOMMDynamics,
-)
 from cgexplore.generation_utilities import (
-    deform_and_optimisations,
-    run_md_cycle,
+    run_constrained_optimisation,
+    run_optimisation,
+    run_soft_md_cycle,
 )
+from cgexplore.ensembles import Ensemble
+from cgexplore.beads import periodic_table
 
 from env_set import shape_path
 from analysis import (
@@ -70,6 +68,74 @@ def custom_vdw_definitions(population):
             # "voff": False,
         },
     }[population]
+
+
+def modify_bead(bead_name):
+    for i, s in enumerate(bead_name):
+        temp_bead_name = list(bead_name)
+        if not s.isnumeric():
+            continue
+        temp_bead_name[i] = str(int(s) - 1)
+        yield "".join(temp_bead_name)
+        temp_bead_name[i] = str(int(s) + 1)
+        yield "".join(temp_bead_name)
+
+
+def yield_near_models(molecule, name, bead_set, output_dir):
+    (
+        t_str,
+        clbb_name,
+        c2bb_name,
+        torsions,
+        vdws,
+        run_number,
+    ) = name.split("_")
+
+    for bead_name in bead_set:
+        for modification in modify_bead(bead_name):
+            if bead_name not in clbb_name:
+                new_bbl_str = clbb_name
+                new_bb2_str = c2bb_name.replace(bead_name, modification)
+            elif bead_name not in c2bb_name:
+                new_bbl_str = clbb_name.replace(bead_name, modification)
+                new_bb2_str = c2bb_name
+            new_name = (
+                f"{t_str}_{new_bbl_str}_{new_bb2_str}_"
+                f"{torsions}_{vdws}_{run_number}"
+            )
+            new_fina_mol_file = os.path.join(
+                output_dir, f"{new_name}_final.mol"
+            )
+            if os.path.exists(new_fina_mol_file):
+                logging.info(f"found neigh: {new_fina_mol_file}")
+                yield molecule.with_structure_from_file(
+                    new_fina_mol_file
+                )
+
+
+def shift_beads(molecule, atomic_number, kick):
+    old_pos_mat = molecule.get_position_matrix()
+    centroid = molecule.get_centroid()
+
+    new_pos_mat = []
+    for atom, pos in zip(molecule.get_atoms(), old_pos_mat):
+        if atom.get_atomic_number() == atomic_number:
+            c_v = centroid - pos
+            c_v = c_v / np.linalg.norm(c_v)
+            move = c_v * kick
+            new_pos = pos - move
+        else:
+            new_pos = pos
+        new_pos_mat.append(new_pos)
+
+    return molecule.with_position_matrix(np.array((new_pos_mat)))
+
+
+def yield_shifted_models(molecule, bead_set):
+    for bead in bead_set:
+        atom_number = periodic_table()[bead_set[bead].element_string]
+        for kick in (1, 2, 3, 4):
+            yield shift_beads(molecule, atom_number, kick)
 
 
 def optimise_cage(
@@ -131,6 +197,50 @@ def optimise_cage(
         # max_iterations=50,
     )
     ensemble.add_conformer(conformer=conformer, source="opt1")
+
+    # Run optimisations of series of conformers with shifted out
+    # building blocks.
+    logging.info(f"optimisation of shifted structures of {name}")
+    for test_molecule in yield_shifted_models(molecule, bead_set):
+        conformer = run_optimisation(
+            molecule=test_molecule,
+            bead_set=bead_set,
+            name=name,
+            file_suffix="sopt",
+            output_dir=output_dir,
+            custom_vdw_set=custom_vdw_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw_bond_cutoff=2,
+            # max_iterations=50,
+        )
+        ensemble.add_conformer(conformer=conformer, source="shifted")
+
+    # Collect and optimise structures nearby in phase space.
+    logging.info(f"optimisation of nearby structures of {name}")
+    for test_molecule in yield_near_models(
+        molecule=molecule,
+        name=name,
+        bead_set=bead_set,
+        output_dir=output_dir,
+    ):
+        conformer = run_optimisation(
+            molecule=test_molecule,
+            bead_set=bead_set,
+            name=name,
+            file_suffix="nopt",
+            output_dir=output_dir,
+            custom_vdw_set=custom_vdw_set,
+            custom_torsion_set=custom_torsion_set,
+            bonds=True,
+            angles=True,
+            torsions=False,
+            vdw_bond_cutoff=2,
+            # max_iterations=50,
+        )
+        ensemble.add_conformer(conformer=conformer, source="nearby_opt")
 
     logging.info(f"soft MD run of {name}")
     num_steps = 20000
