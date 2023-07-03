@@ -167,7 +167,6 @@ def optimise_cage(
         data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
         overwrite=True,
     )
-    molecule.write("t1.mol")
 
     molecule = run_constrained_optimisation(
         molecule=molecule,
@@ -179,7 +178,6 @@ def optimise_cage(
         angle_ff_scale=10,
         max_iterations=20,
     )
-    molecule.write("t2.mol")
 
     logging.info(f"optimisation of {name}")
     conformer = run_optimisation(
@@ -244,10 +242,10 @@ def optimise_cage(
 
     logging.info(f"soft MD run of {name}")
     num_steps = 20000
-    traj_freq = 1000
+    traj_freq = 500
     soft_md_trajectory = run_soft_md_cycle(
         name=name,
-        molecule=conformer.molecule,
+        molecule=ensemble.get_lowest_e_conformer().molecule,
         bead_set=bead_set,
         ensemble=ensemble,
         output_dir=output_dir,
@@ -310,232 +308,9 @@ def optimise_cage(
         f"{min_energy_conformer.source}"
         f" with energy: {min_energy} kJ.mol-1"
     )
-    print(
-        f"Min. energy conformer: {min_energy_conformerid} from "
-        f"{min_energy_conformer.source}"
-        f" with energy: {min_energy} kJ.mol-1"
-    )
 
     min_energy_conformer.molecule.write(fina_mol_file)
     return min_energy_conformer
-    opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
-    opt2_mol_file = os.path.join(output_dir, f"{name}_opted2.mol")
-    opt2_fai_file = os.path.join(output_dir, f"{name}_mdfailed.txt")
-    opt2_exp_file = os.path.join(output_dir, f"{name}_mdexploded.txt")
-    opt3_mol_file = os.path.join(output_dir, f"{name}_opted3.mol")
-    fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
-
-    if os.path.exists(fina_mol_file):
-        return molecule.with_structure_from_file(fina_mol_file)
-
-    soft_bead_set = {}
-    for i in bead_set:
-        new_bead = replace(bead_set[i])
-        new_bead.bond_k = bead_set[i].bond_k / 10
-        new_bead.angle_k = bead_set[i].angle_k / 10
-        soft_bead_set[i] = new_bead
-
-    intra_bb_bonds = []
-    for bond_info in molecule.get_bond_infos():
-        if bond_info.get_building_block_id() is not None:
-            bond = bond_info.get_bond()
-            intra_bb_bonds.append(
-                (bond.get_atom1().get_id(), bond.get_atom2().get_id())
-            )
-
-    constrained_opt = CGOMMOptimizer(
-        fileprefix=f"{name}_o1",
-        output_dir=output_dir,
-        param_pool=soft_bead_set,
-        custom_torsion_set=None,
-        bonds=True,
-        angles=False,
-        torsions=False,
-        vdw=custom_vdw_set,
-        max_iterations=10,
-        vdw_bond_cutoff=2,
-        atom_constraints=intra_bb_bonds,
-    )
-    opt = CGOMMOptimizer(
-        fileprefix=f"{name}_o1d",
-        output_dir=output_dir,
-        param_pool=bead_set,
-        custom_torsion_set=custom_torsion_set,
-        bonds=True,
-        angles=True,
-        torsions=False,
-        vdw=custom_vdw_set,
-        max_iterations=50,
-        vdw_bond_cutoff=2,
-    )
-    if os.path.exists(opt1_mol_file):
-        molecule = molecule.with_structure_from_file(opt1_mol_file)
-    else:
-        logging.info(
-            f"optimising {name} with {len(intra_bb_bonds)} constraints"
-        )
-        molecule = constrained_opt.optimize(molecule)
-        molecule = opt.optimize(molecule)
-        # Run an optimisation on deformed structures and use that if
-        # lower in energy.
-        molecule = deform_and_optimisations(
-            name=name,
-            molecule=molecule,
-            opt=opt,
-            kick=3,
-            num_deformations=50,
-            seed=run_seed,
-        )
-        molecule = molecule.with_centroid((0, 0, 0))
-        molecule.write(opt1_mol_file)
-
-    opt_energy = opt.calculate_energy(molecule)
-
-    if os.path.exists(opt2_mol_file):
-        molecule = molecule.with_structure_from_file(opt2_mol_file)
-    else:
-        mdopt = CGOMMOptimizer(
-            fileprefix=f"{name}_o2opt",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=custom_vdw_set,
-            # max_iterations=50,
-            vdw_bond_cutoff=2,
-        )
-
-        soft_num_steps = 100
-        soft_traj_freq = 10
-        softmd = CGOMMDynamics(
-            fileprefix=f"{name}_o2soft",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=custom_vdw_set,
-            # max_iterations=1000,
-            vdw_bond_cutoff=2,
-            temperature=10 * openmm.unit.kelvin,
-            random_seed=run_seed,
-            num_steps=soft_num_steps,
-            time_step=0.1 * openmm.unit.femtoseconds,
-            friction=1.0 / openmm.unit.picosecond,
-            reporting_freq=10,
-            traj_freq=soft_traj_freq,
-        )
-        logging.info(f"running soft MD {name}")
-        molecule, failed, exploded = run_md_cycle(
-            name=name,
-            molecule=molecule,
-            md_class=softmd,
-            expected_num_steps=soft_num_steps / soft_traj_freq,
-            opt_class=None,
-        )
-
-        num_steps = 1000
-        traj_freq = 100
-        md = CGOMMDynamics(
-            fileprefix=f"{name}_o2",
-            output_dir=output_dir,
-            param_pool=bead_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=custom_vdw_set,
-            # max_iterations=1000,
-            vdw_bond_cutoff=2,
-            temperature=300 * openmm.unit.kelvin,
-            random_seed=run_seed,
-            num_steps=num_steps,
-            time_step=2 * openmm.unit.femtoseconds,
-            friction=10.0 / openmm.unit.picosecond,
-            reporting_freq=traj_freq,
-            traj_freq=traj_freq,
-        )
-        logging.info(f"running MD {name}")
-        molecule, failed, exploded = run_md_cycle(
-            name=name,
-            molecule=molecule,
-            md_class=md,
-            expected_num_steps=num_steps / traj_freq,
-            opt_class=mdopt,
-        )
-
-        if failed or exploded:
-            # Do a run of deformations and try again.
-            molecule = deform_and_optimisations(
-                name=name,
-                molecule=molecule,
-                opt=mdopt,
-                kick=4,
-                num_deformations=50,
-                seed=run_seed,
-            )
-            molecule, failed, exploded = run_md_cycle(
-                name=name,
-                molecule=molecule,
-                md_class=md,
-                expected_num_steps=num_steps / traj_freq,
-                opt_class=mdopt,
-            )
-
-        # Only try once, then accept defeat.
-        if failed:
-            with open(opt2_exp_file, "w") as f:
-                f.write("exploded.")
-        if exploded:
-            with open(opt2_fai_file, "w") as f:
-                f.write("failed.")
-
-        molecule = molecule.with_centroid((0, 0, 0))
-        molecule.write(opt2_mol_file)
-
-    opt = CGOMMOptimizer(
-        fileprefix=f"{name}_o3",
-        output_dir=output_dir,
-        param_pool=bead_set,
-        custom_torsion_set=custom_torsion_set,
-        bonds=True,
-        angles=True,
-        torsions=False,
-        vdw=custom_vdw_set,
-        # max_iterations=1000,
-        vdw_bond_cutoff=2,
-    )
-    if os.path.exists(opt3_mol_file):
-        molecule = molecule.with_structure_from_file(opt3_mol_file)
-    else:
-        molecule = opt.optimize(molecule)
-        molecule = molecule.with_centroid((0, 0, 0))
-        molecule.write(opt3_mol_file)
-    md_opt_energy = opt.calculate_energy(molecule)
-
-    try:
-        check_long_distances(
-            molecule,
-            name=name,
-            max_distance=15,
-            step=1,
-        )
-    except ValueError:
-        logging.info(f"{name} opt failed in step 1. Should be ignored.")
-        raise SystemExit()
-        return None
-
-    if opt_energy < md_opt_energy:
-        logging.info(
-            "energy after first optimisation < energy after MD "
-            " and optimisation."
-        )
-        molecule = molecule.with_structure_from_file(opt1_mol_file)
-    molecule.write(fina_mol_file)
-    return molecule
 
 
 def analyse_cage(
