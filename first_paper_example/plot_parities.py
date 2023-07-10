@@ -12,7 +12,6 @@ Author: Andrew Tarzia
 import sys
 import os
 import json
-import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -25,6 +24,13 @@ from analysis import (
     data_to_array,
     convert_topo,
     convert_tors,
+)
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 
@@ -301,8 +307,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
     main()

@@ -11,8 +11,14 @@ Author: Andrew Tarzia
 
 from dataclasses import dataclass
 import itertools
-import logging
 from collections import Counter
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
 
 def get_CGBead_from_string(string, bead_library):

@@ -11,7 +11,6 @@ Author: Andrew Tarzia
 
 import sys
 import os
-import logging
 import itertools
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -35,6 +34,13 @@ from analysis import (
     clangle_str,
     data_to_array,
     isomer_energy,
+)
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 
@@ -509,8 +515,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
     main()

@@ -11,10 +11,16 @@ Author: Andrew Tarzia
 
 import numpy as np
 import json
-import logging
 from rdkit.Chem import AllChem as rdkit
 from scipy.spatial.distance import euclidean
 import os
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
 
 def check_long_distances(molecule, name, max_distance, step):

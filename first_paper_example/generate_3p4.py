@@ -10,8 +10,6 @@ Author: Andrew Tarzia
 """
 
 import sys
-import logging
-from rdkit import RDLogger
 
 from cgexplore.cage_construction.topologies import cage_topology_options
 from cgexplore.beads import bead_library_check
@@ -32,6 +30,15 @@ from bead_libraries import (
     binder_beads,
 )
 from env_set import structures, calculations, ligands
+
+import logging
+from rdkit import RDLogger
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
+RDLogger.DisableLog("rdApp.*")
 
 
 def main():
@@ -105,9 +112,4 @@ def main():
 
 
 if __name__ == "__main__":
-    RDLogger.DisableLog("rdApp.*")
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
     main()

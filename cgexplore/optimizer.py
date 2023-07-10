@@ -11,7 +11,6 @@ Author: Andrew Tarzia
 
 import numpy as np
 from itertools import combinations
-import logging
 from heapq import nsmallest
 from rdkit.Chem import AllChem as rdkit
 
@@ -20,6 +19,13 @@ from .utilities import (
     angle_between,
     get_all_torsions,
     convert_pyramid_angle,
+)
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 

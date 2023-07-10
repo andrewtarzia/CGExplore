@@ -11,7 +11,6 @@ Author: Andrew Tarzia
 
 import sys
 import os
-import logging
 import itertools
 import math
 import numpy as np
@@ -33,6 +32,13 @@ from analysis import (
     convert_topo,
     clangle_str,
     Xc_map,
+)
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 
@@ -920,8 +926,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
     main()

@@ -11,7 +11,6 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 
 """
 
-import logging
 import time
 import numpy as np
 from openmm import openmm, app
@@ -20,6 +19,13 @@ from openmmtools import integrators
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
 from .ensembles import Trajectory, Timestep
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
 
 class OMMTrajectory(Trajectory):

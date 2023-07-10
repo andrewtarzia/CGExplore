@@ -13,7 +13,6 @@ import stk
 import os
 import numpy as np
 import json
-import logging
 import itertools
 from openmm import openmm
 
@@ -36,6 +35,13 @@ from env_set import shape_path
 from analysis import (
     node_expected_topologies,
     ligand_expected_topologies,
+)
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 

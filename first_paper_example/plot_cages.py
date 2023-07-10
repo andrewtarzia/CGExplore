@@ -11,7 +11,6 @@ Author: Andrew Tarzia
 
 import sys
 import os
-import logging
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import math
@@ -27,6 +26,13 @@ from analysis import (
 )
 from visualisation import Pymol
 from utilities import check_directory
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
 
 def generate_images_of_all(
@@ -1231,8 +1237,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
     main()

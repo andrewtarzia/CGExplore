@@ -12,7 +12,6 @@ Author: Andrew Tarzia
 import os
 import json
 import numpy as np
-import logging
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
@@ -27,6 +26,13 @@ from bead_libraries import (
     arm_2c_beads,
     beads_3c,
     beads_4c,
+)
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 

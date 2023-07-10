@@ -12,11 +12,17 @@ Author: Andrew Tarzia
 import subprocess as sp
 import stk
 import numpy as np
-import logging
 import os
 import shutil
 
 from .beads import periodic_table
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
 
 def test_shape_mol(topo_expected, atoms, name, topo_str):

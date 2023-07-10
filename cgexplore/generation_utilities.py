@@ -10,7 +10,6 @@ Author: Andrew Tarzia
 """
 
 import os
-import logging
 import numpy as np
 import itertools
 from dataclasses import replace
@@ -18,6 +17,13 @@ from openmm import openmm, OpenMMException
 
 from .openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
 from .ensembles import Conformer
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 
 
 def optimise_ligand(molecule, name, output_dir, bead_set):

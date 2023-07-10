@@ -16,9 +16,7 @@ from openmm import openmm
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import logging
 import itertools
-from rdkit import RDLogger
 
 from cgexplore.utilities import (
     check_directory,
@@ -29,6 +27,15 @@ from cgexplore.openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
 from cgexplore.beads import produce_bead_library, bead_library_check
 
 from env_set import cages, figures
+
+import logging
+from rdkit import RDLogger
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
+RDLogger.DisableLog("rdApp.*")
 
 
 def bond_function(x, k, r0):
@@ -898,9 +905,4 @@ def main():
 
 
 if __name__ == "__main__":
-    RDLogger.DisableLog("rdApp.*")
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
     main()

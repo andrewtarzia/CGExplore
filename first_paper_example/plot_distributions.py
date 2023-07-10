@@ -15,7 +15,6 @@ import stk
 import stko
 import json
 import numpy as np
-import logging
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib as mpl
@@ -37,6 +36,13 @@ from analysis import (
     convert_topo,
     convert_tors,
     topology_labels,
+)
+
+import logging
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
 
@@ -1352,8 +1358,4 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
     main()
