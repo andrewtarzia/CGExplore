@@ -39,6 +39,12 @@ def calculations():
     return path
 
 
+def outputdata():
+    path = cages() / pathlib.Path("outputdata/")
+    check_directory(path)
+    return path
+
+
 def pymol_path():
     return pathlib.Path(
         "/home/atarzia/pymol-open-source-build/bin/pymol"

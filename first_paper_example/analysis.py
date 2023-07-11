@@ -567,8 +567,8 @@ def data_to_array(json_files, output_dir):
 
         row["bbpair"] = clbb_name + c2bb_name
         row["optimised"] = res_dict["optimised"]
-        row["mdexploded"] = res_dict["mdexploded"]
-        row["mdfailed"] = res_dict["mdfailed"]
+        # row["mdexploded"] = res_dict["mdexploded"]
+        # row["mdfailed"] = res_dict["mdfailed"]
 
         if t_str in cage_topology_options(
             "2p3"
@@ -615,8 +615,9 @@ def data_to_array(json_files, output_dir):
             ] / stoich_map(t_str)
             for force_title in res_dict["fin_energy_decomp"]:
                 if force_title in (
-                    "CMMotionRemover_kjmol",
+                    "CMMotionRemover_kJ/mol",
                     "tot_energy_kjmol",
+                    "total energy_kJ/mol",
                 ):
                     continue
                 row[force_title] = res_dict["fin_energy_decomp"][
@@ -928,10 +929,10 @@ def write_out_mapping(all_data):
         "rg_md",
         "pore_md",
         "pore_rg",
-        "HarmonicBondForce_kjmol",
-        "HarmonicAngleForce_kjmol",
-        "CustomNonbondedForce_kjmol",
-        "PeriodicTorsionForce_kjmol",
+        "HarmonicBondForce_kJ/mol",
+        "HarmonicAngleForce_kJ/mol",
+        "CustomNonbondedForce_kJ/mol",
+        "PeriodicTorsionForce_kJ/mol",
         # "structure_dynamics",
         # "pore_dynamics",
         # "node_shape_dynamics",

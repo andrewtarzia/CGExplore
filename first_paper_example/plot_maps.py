@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from env_set import figures, calculations
+from env_set import figures, calculations, outputdata
 
 from analysis import (
     data_to_array,
@@ -177,7 +177,7 @@ def bite_angle_relationship(all_data, figure_output):
                     # plot_data = test_data[
                     #     test_data["clr0"] == c2_opt
                     # ]
-                    xs = list(plot_data["target_bite_angle"])
+                    xs = list(plot_data["c2angle"])
                     ys = list(plot_data["energy_per_bb"])
                     xs, ys = zip(*sorted(zip(xs, ys)))
                     tors_output[run_number] = {
@@ -219,16 +219,16 @@ def bite_angle_relationship(all_data, figure_output):
                     marker=cmap[tors][1],
                 )
 
-            ax.set_ylabel(r"$E_{b}$", fontsize=16)
             ax.set_title(
                 f"{clangle_str(num=Xc_map(tstr))} = {t_angle}",
                 fontsize=16,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+            ax.set_ylabel(eb_str(), fontsize=16)
+        ax.set_xlabel(r"target internal angle [$^\circ$]", fontsize=16)
         ax.legend(ncol=2, fontsize=16)
         ax.set_ylim(0, 5)
-        ax.set_xlim(-1, 181)
+        ax.set_xlim(89, 181)
         # ax.set_yscale("log")
 
         fig.tight_layout()
@@ -465,7 +465,7 @@ def selfsort_legend(all_data, figure_output):
 def selfsort_map(all_data, figure_output):
     logging.info("running selfsort_map")
 
-    cols_to_map = ["clangle", "target_bite_angle"]
+    cols_to_map = ["clangle", "c2angle"]
     cols_to_iter = [
         "torsions",
         "vdws",
@@ -540,7 +540,9 @@ def selfsort_map(all_data, figure_output):
 
             ax.set_title(convert_tors(tor, num=False), fontsize=16)
             ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
-            ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+            ax.set_xlabel(
+                r"target internal angle [$^\circ$]", fontsize=16
+            )
             ax.tick_params(axis="both", which="major", labelsize=16)
 
         # for i in cltypetopo_to_colormap():
@@ -582,7 +584,7 @@ def selfsort_map(all_data, figure_output):
 def kinetic_selfsort_map(all_data, figure_output):
     logging.info("running kinetic_selfsort_map")
 
-    cols_to_map = ["clangle", "target_bite_angle"]
+    cols_to_map = ["clangle", "c2angle"]
     cols_to_iter = [
         "torsions",
         "vdws",
@@ -661,7 +663,10 @@ def kinetic_selfsort_map(all_data, figure_output):
 
             ax.set_title(convert_tors(tor, num=False), fontsize=16)
             ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
-            ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+            ax.set_xlabel(
+                r"target internal angle [$^\circ$]",
+                fontsize=16,
+            )
             ax.tick_params(axis="both", which="major", labelsize=16)
 
         fig.tight_layout()
@@ -707,10 +712,10 @@ def angle_map(all_data, figure_output):
                 ax.set_xlabel(clangle_str(num=3), fontsize=16)
 
             else:
-                x = pdata["target_bite_angle"]
+                x = pdata["c2angle"]
                 y = pdata["clangle"]
                 ax.set_xlabel(
-                    r"target bite angle [$^\circ$]",
+                    r"target internal angle [$^\circ$]",
                     fontsize=16,
                 )
                 ax.set_title(
@@ -777,10 +782,10 @@ def pd_4p82_figure(all_data, figure_output):
     for ax, tor in zip(flat_axs, tor_tests):
         pdata = tdata[tdata["torsions"] == tor]
 
-        x = pdata["target_bite_angle"]
+        x = pdata["c2angle"]
         y = pdata["clangle"]
         energies = pdata["energy_per_bb"]
-        ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+        ax.set_xlabel(r"target internal angle [$^\circ$]", fontsize=16)
         ax.set_title(
             f"{convert_tors(tor, num=False)}",
             fontsize=16,
@@ -902,27 +907,28 @@ def main():
 
     figure_output = figures()
     calculation_output = calculations()
+    data_output = outputdata()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     low_e_data = get_lowest_energy_data(
         all_data=all_data,
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
-    angle_map(low_e_data, figure_output)
     bite_angle_relationship(all_data, figure_output)
-    nobiteangle_relationship(all_data, figure_output)
+    angle_map(low_e_data, figure_output)
     pdII_figure_bite_angle(low_e_data, figure_output)
     pd_4p82_figure(low_e_data, figure_output)
     selfsort_legend(low_e_data, figure_output)
     selfsort_map(low_e_data, figure_output)
     kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
+    nobiteangle_relationship(all_data, figure_output)
 
 
 if __name__ == "__main__":

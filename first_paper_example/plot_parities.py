@@ -15,7 +15,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 
-from env_set import figures, calculations
+from env_set import figures, calculations, outputdata
 
 from analysis import (
     topology_labels,
@@ -287,17 +287,18 @@ def main():
 
     figure_output = figures()
     calculation_output = calculations()
+    data_output = outputdata()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
-    with open(calculation_output / "all_geom.json", "r") as f:
+    with open(data_output / "all_geom.json", "r") as f:
         geom_data = json.load(f)
     logging.info(f"there are {len(all_data)} collected data")
     low_e_data = get_lowest_energy_data(
         all_data=all_data,
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     write_out_mapping(all_data)
 

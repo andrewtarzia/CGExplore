@@ -18,7 +18,7 @@ from matplotlib.lines import Line2D
 from scipy.spatial import ConvexHull
 import numpy as np
 
-from env_set import figures, calculations
+from env_set import figures, calculations, outputdata
 
 from analysis import (
     write_out_mapping,
@@ -109,10 +109,8 @@ def phase_space_2(all_data, figure_output):
                     "shape_measure": shape_measure,
                     "cltitle": str(kinetic_data["cltitle"].iloc[0]),
                     "clangle": float(kinetic_data["clangle"]),
+                    "c2angle": float(kinetic_data["c2angle"]),
                     "c3angle": float(kinetic_data["c3angle"]),
-                    "target_bite_angle": float(
-                        kinetic_data["target_bite_angle"]
-                    ),
                     "cmap": colour_choice,
                     "torsionmap": tor_colour,
                 }
@@ -165,10 +163,10 @@ def phase_space_2(all_data, figure_output):
             "ax": flat_axs[5],
             "y": "pore",
             "ylbl": pore_str(),
-            "x": "target_bite_angle",
-            "xlbl": "target bite angle [deg]",
+            "x": "c2angle",
+            "xlbl": "target internal angle [deg]",
             "xmapfun": no_conversion,
-            "xlim": (-1, 181),
+            "xlim": (89, 181),
             "c": "cmap",
         },
         {
@@ -496,14 +494,15 @@ def main():
 
     figure_output = figures()
     calculation_output = calculations()
+    data_output = outputdata()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     low_e_data = get_lowest_energy_data(
         all_data=all_data,
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)

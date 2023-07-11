@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 import matplotlib.patches as mpatches
 
-from env_set import figures, calculations
+from env_set import figures, calculations, outputdata
 
 from cgexplore.utilities import convert_pyramid_angle
 from analysis import (
@@ -430,19 +430,19 @@ def single_value_distributions(all_data, figure_output):
             "xtitle": r"min. bead-to-bead distance [$\mathrm{\AA}$]",
             "xlim": (0.9, 1.1),
         },
-        "HarmonicBondForce_kjmol": {
+        "HarmonicBondForce_kJ/mol": {
             "xtitle": r"$E_{\mathrm{bond}}$ [kJmol$^{-1}$]",
             "xlim": (0, 3),
         },
-        "HarmonicAngleForce_kjmol": {
+        "HarmonicAngleForce_kJ/mol": {
             "xtitle": r"$E_{\mathrm{angle}}$ [kJmol$^{-1}$]",
             "xlim": (0, 400),
         },
-        "CustomNonbondedForce_kjmol": {
+        "CustomNonbondedForce_kJ/mol": {
             "xtitle": r"$E_{\mathrm{excl. vol.}}$ [kJmol$^{-1}$]",
             "xlim": (0, 20),
         },
-        "PeriodicTorsionForce_kjmol": {
+        "PeriodicTorsionForce_kJ/mol": {
             "xtitle": r"$E_{\mathrm{torsion}}$ [kJmol$^{-1}$]",
             "xlim": (0, 15),
         },
@@ -577,8 +577,9 @@ def single_value_distributions(all_data, figure_output):
         ax.set_xlim(-0.5, max(ylines) + 2.0)
 
         fig.tight_layout()
+        tpname = tp.replace("/", "")
         fig.savefig(
-            os.path.join(figure_output, f"sing_{tp}.pdf"),
+            os.path.join(figure_output, f"sing_{tpname}.pdf"),
             dpi=720,
             bbox_inches="tight",
         )
@@ -925,7 +926,7 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
             stable_data = tor_data[
                 tor_data["energy_per_bb"] < isomer_energy()
             ]
-            bas = stable_data["target_bite_angle"]
+            bas = stable_data["c2angle"]
             clangles = stable_data["clangle"]
             ax.scatter(
                 bas,
@@ -940,7 +941,7 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
 
         ax.set_title(convert_topo(tstr), fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+        ax.set_xlabel(r"target internal angle [$^\circ$]", fontsize=16)
         ax.set_ylabel(clangle_str(num=Xc_map(tstr)), fontsize=16)
     # ax.set_xlim(0, max_ + 0.1)
     # ax.set_ylim(0, None)
@@ -1144,7 +1145,6 @@ def plot_topology_pore_flex(data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
-    raise SystemExit()
 
 
 def flexeffect_per_property(all_data, figure_output):
@@ -1247,20 +1247,20 @@ def col_convert(name):
         "clangle": "xC",
         "energy_per_bb": "Eb",
         "strain_energy": "Es",
-        "HarmonicBondForce_kjmol": "HB",
-        "HarmonicAngleForce_kjmol": "HA",
-        "CustomNonbondedForce_kjmol": "NB",
-        "PeriodicTorsionForce_kjmol": "PT",
+        "HarmonicBondForce_kJ/mol": "HB",
+        "HarmonicAngleForce_kJ/mol": "HA",
+        "CustomNonbondedForce_kJ/mol": "NB",
+        "PeriodicTorsionForce_kJ/mol": "PT",
     }[name]
 
 
 def energy_correlation_matrix(all_data, figure_output):
     target_cols = [
         "energy_per_bb",
-        "HarmonicBondForce_kjmol",
-        "HarmonicAngleForce_kjmol",
-        "CustomNonbondedForce_kjmol",
-        "PeriodicTorsionForce_kjmol",
+        "HarmonicBondForce_kJ/mol",
+        "HarmonicAngleForce_kJ/mol",
+        "CustomNonbondedForce_kJ/mol",
+        "PeriodicTorsionForce_kJ/mol",
     ]
     trim = all_data[all_data["torsions"] == "ton"]
     topologies = [i for i in topology_labels(short="P") if i != "6P8"]
@@ -1316,6 +1316,249 @@ def energy_correlation_matrix(all_data, figure_output):
     plt.close()
 
 
+def get_min_energy_from_omm_out(outfile):
+    try:
+        with open(outfile, "r") as f:
+            min_energy = 1e24
+            lines = f.readlines()
+            for line in lines:
+                if "total energy:" in line:
+                    new_energy = float(line.rstrip().split()[2])
+                    if new_energy < min_energy:
+                        min_energy = new_energy
+    except FileNotFoundError:
+        min_energy = None
+
+    return min_energy
+
+
+def check_same_energy(e1, e2):
+    if e1 is None or e2 is None:
+        return False
+    return np.isclose(e1, e2, atol=1e-1, rtol=0)
+
+
+def opt_outcome_distributions(
+    all_data,
+    calculation_output,
+    figure_output,
+):
+    raise NotImplementedError()
+    logging.info("running opt_outcome_distributions")
+
+    energies_file = calculation_output / "step_energies.json"
+
+    if os.path.exists(energies_file):
+        with open(energies_file, "r") as f:
+            output = json.load(f)
+    else:
+        # out_files = calculation_output.glob("*o3_omm.out")
+        output = {}
+        for i, row in all_data.iterrows():
+            cage_idx = str(row["index"])
+            o1d_file = calculation_output / f"{cage_idx}_o1d_omm.out"
+            o2_file = calculation_output / f"{cage_idx}_o2_omm.out"
+            o2opt_file = (
+                calculation_output / f"{cage_idx}_o2opt_omm.out"
+            )
+            o3_file = calculation_output / f"{cage_idx}_o3_omm.out"
+            res_file = calculation_output / f"{cage_idx}_res.json"
+
+            min_o1d_energy = get_min_energy_from_omm_out(o1d_file)
+            min_o2_energy = get_min_energy_from_omm_out(o2_file)
+            min_o2opt_energy = get_min_energy_from_omm_out(o2opt_file)
+            min_o3_energy = get_min_energy_from_omm_out(o3_file)
+
+            with open(res_file, "r") as f:
+                res_data = json.load(f)
+
+            output[cage_idx] = {
+                "optimised": res_data["optimised"],
+                "mdexploded": res_data["mdexploded"],
+                "mdfailed": res_data["mdfailed"],
+                "min_o1d_energy": min_o1d_energy,
+                "min_o2_energy": min_o2_energy,
+                "min_o2opt_energy": min_o2opt_energy,
+                "min_o3_energy": min_o3_energy,
+                "final_energy": res_data["fin_energy_kjmol"],
+            }
+
+        with open(energies_file, "w") as f:
+            json.dump(output, f, indent=4)
+
+    num_run = 0
+    num_optimised = 0
+    num_mdexploded = 0
+    num_mdfailed = 0
+    num_mdexploded_and_low_e = 0
+    num_mdfailed_and_low_e = 0
+    num_mdfailed_and_opt = 0
+    num_mdexploded_and_opt = 0
+    num_mdfailed_and_mdexploded = 0
+    exploded_idxs = []
+    failed_idxs = []
+    o1_same_o3 = 0
+    o2opt_same_o3 = 0
+    o2_same_o2opt = 0
+    o1_is_min = 0
+    o2_is_min = 0
+    o2opt_is_min = 0
+    o3_is_min = 0
+    o3_lt_final = 0
+    for cageidx in output:
+        num_run += 1
+        if output[cageidx]["optimised"]:
+            num_optimised += 1
+            if output[cageidx]["mdexploded"]:
+                num_mdexploded_and_opt += 1
+            if output[cageidx]["mdfailed"]:
+                num_mdfailed_and_opt += 1
+
+        if output[cageidx]["mdexploded"]:
+            num_mdexploded += 1
+            exploded_idxs.append(cageidx)
+            if output[cageidx]["final_energy"] < isomer_energy():
+                num_mdexploded_and_low_e += 1
+
+        if output[cageidx]["mdfailed"]:
+            num_mdfailed += 1
+            failed_idxs.append(cageidx)
+            if output[cageidx]["final_energy"] < isomer_energy():
+                num_mdfailed_and_low_e += 1
+
+        if (
+            output[cageidx]["mdexploded"]
+            and output[cageidx]["mdfailed"]
+        ):
+            num_mdfailed_and_mdexploded += 1
+
+        if check_same_energy(
+            output[cageidx]["min_o1d_energy"],
+            output[cageidx]["min_o3_energy"],
+        ):
+            o1_same_o3 += 1
+        if check_same_energy(
+            output[cageidx]["min_o2opt_energy"],
+            output[cageidx]["min_o3_energy"],
+        ):
+            o2opt_same_o3 += 1
+        if check_same_energy(
+            output[cageidx]["min_o2opt_energy"],
+            output[cageidx]["min_o2_energy"],
+        ):
+            o2_same_o2opt += 1
+
+        if output[cageidx]["min_o2_energy"] is None:
+            min_energy = min(
+                [
+                    output[cageidx]["min_o1d_energy"],
+                    output[cageidx]["min_o2opt_energy"],
+                    output[cageidx]["min_o3_energy"],
+                ]
+            )
+        else:
+            min_energy = min(
+                [
+                    output[cageidx]["min_o1d_energy"],
+                    output[cageidx]["min_o2_energy"],
+                    output[cageidx]["min_o2opt_energy"],
+                    output[cageidx]["min_o3_energy"],
+                ]
+            )
+
+        if check_same_energy(
+            output[cageidx]["min_o1d_energy"], min_energy
+        ):
+            o1_is_min += 1
+        if check_same_energy(
+            output[cageidx]["min_o2_energy"], min_energy
+        ):
+            o2_is_min += 1
+        if check_same_energy(
+            output[cageidx]["min_o2opt_energy"], min_energy
+        ):
+            o2opt_is_min += 1
+        if check_same_energy(
+            output[cageidx]["min_o3_energy"], min_energy
+        ):
+            o3_is_min += 1
+
+        try:
+            if (
+                output[cageidx]["min_o2_energy"]
+                < output[cageidx]["min_o2opt_energy"]
+            ) and not np.isclose(
+                output[cageidx]["min_o2opt_energy"],
+                output[cageidx]["min_o2_energy"],
+                atol=1e-1,
+                rtol=0,
+            ):
+                if (
+                    output[cageidx]["final_energy"]
+                    < isomer_energy() * 10
+                ):
+                    print(
+                        cageidx,
+                        output[cageidx]["min_o2opt_energy"],
+                        output[cageidx]["min_o2_energy"],
+                        output[cageidx]["min_o3_energy"],
+                        output[cageidx]["final_energy"],
+                        output[cageidx]["mdexploded"],
+                        output[cageidx]["mdfailed"],
+                    )
+        except TypeError:
+            pass
+
+        if output[cageidx]["min_o3_energy"] < output[cageidx][
+            "final_energy"
+        ] and not np.isclose(
+            output[cageidx]["min_o3_energy"],
+            output[cageidx]["final_energy"],
+            atol=1e-1,
+            rtol=0,
+        ):
+            # print(
+            #     cageidx,
+            #     output[cageidx]["min_o1d_energy"],
+            #     output[cageidx]["min_o2_energy"],
+            #     output[cageidx]["min_o2opt_energy"],
+            #     output[cageidx]["min_o3_energy"],
+            #     output[cageidx]["final_energy"],
+            #     np.isclose(
+            #         output[cageidx]["min_o3_energy"],
+            #         output[cageidx]["final_energy"],
+            #         atol=1e-1,
+            #         rtol=0,
+            #     ),
+            # )
+            o3_lt_final += 1
+
+    logging.info(f"sequences run: {num_run}")
+    logging.info(f"optimised: {num_optimised}")
+    logging.info(f"MD exploded: {num_mdexploded}")
+    logging.info(f"MD failed: {num_mdfailed}")
+    logging.info(f"MD exploded + low E: {num_mdexploded_and_low_e}")
+    logging.info(f"MD failed + low E: {num_mdfailed_and_low_e}")
+    logging.info(f"MD exploded and optimised: {num_mdexploded_and_opt}")
+    logging.info(f"MD failed and optimised: {num_mdfailed_and_opt}")
+    logging.info(
+        f"MD exploded and MD failed: {num_mdfailed_and_mdexploded}"
+    )
+    logging.info(f"failed cages: {failed_idxs}")
+    logging.info(f"exploded cages: {exploded_idxs}")
+
+    print(
+        o1_same_o3,
+        o1_is_min,
+        o2opt_is_min,
+        o2_is_min,
+        o3_is_min,
+        o3_lt_final,
+    )
+
+    raise SystemExit("Use the new step energies file.")
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -1326,34 +1569,38 @@ def main():
 
     figure_output = figures()
     calculation_output = calculations()
+    data_output = outputdata()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     low_e_data = get_lowest_energy_data(
         all_data=all_data,
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
     opt_data = all_data[all_data["optimised"]]
     logging.info(f"there are {len(opt_data)} successfully opted")
-    _data = all_data[all_data["mdfailed"]]
-    logging.info(f"there are {len(_data)} with failed MD")
-    _data = all_data[all_data["mdexploded"]]
-    logging.info(f"there are {len(_data)} with exploded MD")
     write_out_mapping(all_data)
 
-    with open(calculation_output / "all_geom.json", "r") as f:
+    with open(data_output / "all_geom.json", "r") as f:
         geom_data = json.load(f)
 
+    geom_distributions(all_data, geom_data, figure_output)
     flexeffect_per_property(low_e_data, figure_output)
     correlation_matrix(low_e_data, figure_output)
     energy_correlation_matrix(low_e_data, figure_output)
     identity_distributions(all_data, figure_output)
     mixed_distributions(low_e_data, figure_output)
     single_value_distributions(low_e_data, figure_output)
-    geom_distributions(all_data, geom_data, figure_output)
+    opt_outcome_distributions(
+        all_data,
+        calculation_output,
+        figure_output,
+    )
+    raise SystemExit()
+
     rmsd_distributions(all_data, calculation_output, figure_output)
 
 

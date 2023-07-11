@@ -15,7 +15,16 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import math
 
-from env_set import structures, figures, calculations, pymol_path
+from cgexplore.visualisation import Pymol
+from cgexplore.utilities import check_directory
+
+from env_set import (
+    structures,
+    figures,
+    calculations,
+    pymol_path,
+    outputdata,
+)
 from analysis import (
     isomer_energy,
     data_to_array,
@@ -23,9 +32,8 @@ from analysis import (
     write_out_mapping,
     get_lowest_energy_data,
     convert_topo,
+    mapshape_to_topology,
 )
-from visualisation import Pymol
-from utilities import check_directory
 
 import logging
 
@@ -389,7 +397,6 @@ def expt_fig_CC_cases(
         bbox_inches="tight",
     )
     plt.close()
-    raise SystemExit()
 
 
 def si_ar_fig(
@@ -834,6 +841,18 @@ def si_shape_fig(
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
+        tstr = str(tdata.iloc[0]["topology"])
+
+        for shape_type in ("n", "l"):
+            try:
+                shape = mapshape_to_topology(shape_type, False)[tstr]
+            except KeyError:
+                continue
+
+            c_column = f"{shape_type}_{shape}"
+            svalue = tdata.iloc[0][c_column]
+            logging.info(f"{sindex}: {shape_type}: {shape}, {svalue}")
+
         add_structure_to_ax(
             ax=ax,
             struct_name=sindex,
@@ -943,7 +962,7 @@ def webapp_csv(
 
     github_base_url = (
         "https://github.com/andrewtarzia/cgmodels/blob/main/"
-        "cg_model_apr2023/"
+        "cg_model_jul2023/"
     )
     github_selfsort_url = github_base_url + "self_sort_outcomes/"
 
@@ -990,6 +1009,7 @@ def webapp_csv(
             tdata = bbdata[bbdata["torsions"] == tors]
             bite_angle = next(iter(set(tdata["target_bite_angle"])))
             clangle = next(iter(set(tdata["clangle"])))
+            c2angle = next(iter(set(tdata["c2angle"])))
             c3angle = next(iter(set(tdata["c3angle"])))
 
             energies = {
@@ -1061,6 +1081,7 @@ def webapp_csv(
                 "clangle": clangle,
                 "bite_angle": bite_angle,
                 "c3angle": c3angle,
+                "c2angle": c2angle,
                 "selfsort_url": selfsort_url,
             }
 
@@ -1071,15 +1092,16 @@ def webapp_csv(
         filename = figure_output / f"{csv_name}_bbdata.csv"
         with open(filename, "w") as f:
             f.write(
-                "name,clangle,bite_angle,c3angle,ton_topologies,"
-                "toff_topologies,"
-                "ton_selfsort_url,toff_selfsort_url\n"
+                "name,clangle,bite_angle,c2angle,c3angle,"
+                "restricted topologies,unrestricted topologies,"
+                "restricted URL,unrestricted URL\n"
             )
             for bbpair in csv_files[csv_name]:
                 bbdict = csv_files[csv_name][bbpair]
                 f.write(
                     f"{bbpair},{bbdict['toff']['clangle']},"
                     f"{bbdict['toff']['bite_angle']},"
+                    f"{bbdict['toff']['c2angle']},"
                     f"{bbdict['toff']['c3angle']},"
                     f"{bbdict['ton']['topologies']},"
                     f"{bbdict['toff']['topologies']},"
@@ -1117,14 +1139,17 @@ def check_odd_outcomes(
             # mess.
             if toff_energy > isomer_energy() * 5:
                 continue
-            if ton_energy < toff_energy:
+            if toff_energy - ton_energy > 0.02:
                 ba = int(list(cdata["target_bite_angle"])[0])
                 clangle = int(list(cdata["clangle"])[0])
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
                 tofflbl = (
                     f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
                 )
-                print(cage_name, ton_energy, toff_energy)
+                logging.info(
+                    f"for {cage_name}: ton: {ton_energy}, "
+                    f"toff: {toff_energy}"
+                )
                 outcomes.append((cage_name, "ton", tonlbl))
                 outcomes.append((cage_name, "toff", tofflbl))
 
@@ -1155,16 +1180,17 @@ def main():
     struct_output = structures()
     figure_output = figures()
     calculation_output = calculations()
+    data_output = outputdata()
     struct_figure_output = figures() / "structures"
     check_directory(struct_figure_output)
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     low_e_data = get_lowest_energy_data(
         all_data=all_data,
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)

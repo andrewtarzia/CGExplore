@@ -17,7 +17,7 @@ import matplotlib as mpl
 from matplotlib.patches import Patch
 import numpy as np
 
-from env_set import figures, calculations
+from env_set import figures, calculations, outputdata
 from analysis import (
     write_out_mapping,
     get_lowest_energy_data,
@@ -352,7 +352,7 @@ def shape_input_relationships(all_data, figure_output):
 
                 else:
                     ax.set_xlabel(
-                        r"target bite angle [$^\circ$]",
+                        r"target internal angle [$^\circ$]",
                         fontsize=16,
                     )
                     ax.set_title(
@@ -375,7 +375,7 @@ def shape_input_relationships(all_data, figure_output):
                         ydata.append(float(row["clangle"]))
 
                     else:
-                        xdata.append(float(row["target_bite_angle"]))
+                        xdata.append(float(row["c2angle"]))
                         ydata.append(float(row["clangle"]))
                     if energy < isomer_energy():
                         ax.scatter(
@@ -843,14 +843,15 @@ def main():
 
     figure_output = figures()
     calculation_output = calculations()
+    data_output = outputdata()
 
     all_data = data_to_array(
         json_files=calculation_output.glob("*_res.json"),
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     low_e_data = get_lowest_energy_data(
         all_data=all_data,
-        output_dir=calculation_output,
+        output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
