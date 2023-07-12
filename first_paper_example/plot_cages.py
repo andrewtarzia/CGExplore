@@ -1139,7 +1139,7 @@ def check_odd_outcomes(
             # mess.
             if toff_energy > isomer_energy() * 5:
                 continue
-            if toff_energy - ton_energy > 0.02:
+            if toff_energy - ton_energy > 0.001:
                 ba = int(list(cdata["target_bite_angle"])[0])
                 clangle = int(list(cdata["clangle"])[0])
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
@@ -1153,6 +1153,7 @@ def check_odd_outcomes(
                 outcomes.append((cage_name, "ton", tonlbl))
                 outcomes.append((cage_name, "toff", tofflbl))
 
+        logging.info(f"{tstr}: {len(outcomes)} odd outcomes")
         if len(outcomes) == 0:
             continue
         si_ar_fig(
@@ -1167,6 +1168,7 @@ def check_odd_outcomes(
             figsize=(16, 10),
             titles=[i[2] for i in outcomes],
         )
+    raise SystemExit()
 
 
 def main():
