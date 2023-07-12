@@ -341,7 +341,6 @@ def phase_space_6p8(all_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
-    raise SystemExit()
 
 
 def phase_space_3(all_data, figure_output):
