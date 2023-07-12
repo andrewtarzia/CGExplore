@@ -303,6 +303,47 @@ def phase_space_2(all_data, figure_output):
     plt.close()
 
 
+def phase_space_6p8(all_data, figure_output):
+    logging.info("doing 6p8 phase space")
+
+    vdata = all_data[all_data["vdws"] == "von"]
+    fig, ax = plt.subplots(figsize=(8, 2))
+    bbs = (
+        ("4C1m0400b00003C1n0100b0000", 1),
+        ("4C1m0300b00003C1n0500b0000", 2),
+        ("4C1m0200b00003C1n0600b0000", 3),
+        ("4C1m0100b00003C1n0700b0000", 4),
+        ("4C1m0000b00003C1n0700b0000", 5),
+    )
+    for bb_pair, idex in bbs:
+        bbd = vdata[vdata["bbpair"] == bb_pair]
+        data = bbd[bbd["torsions"] == "toff"]
+        pore_size = float(data["pore"])
+        ax.scatter(
+            idex,
+            pore_size,
+            c="#F9A03F",
+            edgecolor="k",
+            s=120,
+            alpha=1.0,
+        )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    # ax.set_xlabel(clangle_str(4), fontsize=16)
+    ax.set_ylabel(pore_str(), fontsize=16)
+    ax.set_xticks(range(1, 6))
+    ax.set_xticklabels([])
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "ps_6p8.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+    raise SystemExit()
+
+
 def phase_space_3(all_data, figure_output):
     logging.info("doing phase space 3")
 
@@ -508,6 +549,7 @@ def main():
     write_out_mapping(all_data)
 
     phase_space_2(low_e_data, figure_output)
+    phase_space_6p8(low_e_data, figure_output)
     phase_space_3(low_e_data, figure_output)
     raise SystemExit()
     phase_space_5(low_e_data, figure_output)
