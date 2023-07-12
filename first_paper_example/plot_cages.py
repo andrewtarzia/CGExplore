@@ -1037,7 +1037,7 @@ def webapp_csv(
             vss_output = figure_output / "vss_figures"
             check_directory(vss_output)
             figure_file = os.path.join(
-                vss_output, f"vss_{bbpair}_{tors}"
+                vss_output, f"vss_{bbpair}_{tors}.png"
             )
             if not os.path.exists(figure_file):
 
@@ -1168,7 +1168,58 @@ def check_odd_outcomes(
             figsize=(16, 10),
             titles=[i[2] for i in outcomes],
         )
-    raise SystemExit()
+
+
+def generate_movies(
+    all_data,
+    figure_output,
+    struct_output,
+    struct_figure_output,
+):
+    logging.info("running generate_movies")
+    vss_output = figure_output / "vss_figures"
+    # astr = "a0{0..18}00"
+    astr = [f"a0{i}00" for i in range(0, 19)]
+
+    for cltopo in ("3C1", "4C1"):
+        if cltopo == "3C1":
+            sequence = [f"n0{i}00" for i in range(0, 8)]
+        elif cltopo == "4C1":
+            sequence = [f"m0{i}00" for i in range(0, 5)]
+
+        for clseq in sequence:
+            for tors in ("ton", "toff"):
+                files = [
+                    vss_output
+                    / f"vss_{cltopo}{clseq}b00002C1c0000{i}_{tors}.png"
+                    for i in astr
+                ]
+                output_file = (
+                    f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.mkv"
+                )
+                logging.info(f"gen movie to {output_file}")
+                output_file = figure_output / output_file
+                concat_file = (
+                    figure_output
+                    / f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.txt"
+                )
+                with open(concat_file, "w") as f:
+                    for fi in files:
+                        f.write(f"file {fi}\n")
+
+                if os.path.exists(output_file):
+                    # Delete previous video.
+                    os.remove(output_file)
+
+                # Make video.
+                ffmpeg_cmd = (
+                    # f"ls -v {wildcard} "
+                    "ffmpeg -safe 0 -f concat "
+                    f"-i {concat_file} "
+                    '-vf "settb=AVTB,setpts=N/2/TB,fps=2"'
+                    f" {output_file}"
+                )
+                os.system(ffmpeg_cmd)
 
 
 def main():
@@ -1253,6 +1304,13 @@ def main():
     )
 
     webapp_csv(
+        low_e_data,
+        figure_output,
+        struct_output,
+        struct_figure_output,
+    )
+
+    generate_movies(
         low_e_data,
         figure_output,
         struct_output,
