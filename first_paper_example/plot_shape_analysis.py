@@ -32,7 +32,6 @@ from analysis import (
     isomer_energy,
     target_shapes,
     mapshape_to_topology,
-    stoich_map,
 )
 
 import logging
@@ -839,11 +838,11 @@ def shape_summary(all_data, figure_output):
     color_map = topology_labels(short="P")
     trim = all_data[all_data["vdws"] == "von"]
 
-    fig, ax = plt.subplots(
-        # ncols=2,
-        # sharex=True,
-        # sharey=True,
-        figsize=(8, 5),
+    fig, axs = plt.subplots(
+        nrows=2,
+        sharex=True,
+        sharey=True,
+        figsize=(8, 6),
     )
     count = 0
     xpos = []
@@ -853,7 +852,6 @@ def shape_summary(all_data, figure_output):
         xpos.append(count)
         xlabls.append(convert_topo(tstr))
         tdata = trim[trim["topology"] == tstr]
-        stoich = stoich_map(tstr)
         for shape_type in ("n", "l"):
             if tstr == "6P8":
                 tor_tests = ("toff",)
@@ -870,15 +868,19 @@ def shape_summary(all_data, figure_output):
             c_column = f"{shape_type}_{target_shape}"
 
             if shape_type == "n":
-                marker = "o"
+                # marker = "o"
+                ax = axs[0]
             elif shape_type == "l":
-                marker = "*"
+                # marker = "o"
+                ax = axs[1]
 
             for tor in tor_tests:
                 if tor == "ton":
                     color = "#086788"
+                    shift = 0.2
                 elif tor == "toff":
                     color = "#F9A03F"
+                    shift = -0.2
 
                 pdata = tdata[tdata["torsions"] == tor]
 
@@ -903,62 +905,50 @@ def shape_summary(all_data, figure_output):
                         c_column,
                         tp,
                     )
-                    ax.scatter(
-                        # xpos[-1] - shift,
-                        stoich,
-                        # tp,
-                        max(lowevalues) - min(lowevalues),
-                        color=color,
-                        marker=marker,
-                        alpha=1.0,
-                        edgecolor="k",
-                        s=120,
+                    # ax.scatter(
+                    #     # xpos[-1] - shift,
+                    #     [xpos[-1] for i in lowevalues],
+                    #     # tp,
+                    #     [i for i in lowevalues],
+                    #     color="gray",
+                    #     marker=marker,
+                    #     alpha=0.1,
+                    #     edgecolor="none",
+                    #     s=20,
+                    # )
+                    parts = ax.violinplot(
+                        lowevalues,
+                        [xpos[-1] - shift],
+                        # points=200,
+                        vert=True,
+                        widths=0.18,
+                        showmeans=True,
+                        showextrema=True,
+                        showmedians=True,
+                        # bw_method=0.5,
                     )
 
-                    # marker = "o"
-                    # if tor == "ton":
-                    #     color = "#086788"
-                    # elif tor == "toff":
-                    #     color = "#F9A03F"
-                    # axs[1].scatter(
-                    #     # xpos[-1] - shift,
-                    #     stoich,
-                    #     tp,
-                    #     # max(lowevalues) - min(lowevalues),
-                    #     color=color,
-                    #     marker=marker,
-                    #     alpha=1.0,
-                    #     edgecolor="k",
-                    #     s=120,
-                    # )
-
-                    # marker = "o"
-                    # if xc == 4:
-                    #     color = "#0B2027"
-                    # elif xc == 3:
-                    #     color = "#CA1551"
-                    # # "#0B2027"
-                    # # "#CA1551"
-                    # axs[2].scatter(
-                    #     # xpos[-1] - shift,
-                    #     stoich,
-                    #     tp,
-                    #     # max(lowevalues) - min(lowevalues),
-                    #     color=color,
-                    #     marker=marker,
-                    #     alpha=1.0,
-                    #     edgecolor="k",
-                    #     s=120,
-                    # )
+                    for pc in parts["bodies"]:
+                        pc.set_facecolor(color)
+                        pc.set_edgecolor("none")
+                        pc.set_alpha(1.0)
 
         count += 1
 
-    # ax.set_xticks(xpos)
-    # ax.set_xticklabels(xlabls, rotation=45)
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("num. building blocks", fontsize=16)
-    ax.set_ylabel("width of $s$ distribution", fontsize=16)
-    ax.legend(fontsize=16)
+    for ax in axs:
+        ax.set_xticks(xpos)
+        ax.set_xticklabels(xlabls, rotation=45)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        # ax.set_xlabel("num. building blocks", fontsize=16)
+        ax.set_ylabel(
+            (
+                f"$s$ ({eb_str(True)} < {isomer_energy()}"
+                " kJmol$^{-1}$)"
+            ),
+            fontsize=16,
+        )
+        ax.legend(fontsize=16)
+
     fig.tight_layout()
     fig.savefig(
         os.path.join(figure_output, "shape_summary.pdf"),
@@ -966,6 +956,7 @@ def shape_summary(all_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
+    raise SystemExit()
 
 
 def main():
