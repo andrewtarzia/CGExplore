@@ -32,6 +32,7 @@ from analysis import (
     isomer_energy,
     target_shapes,
     mapshape_to_topology,
+    stoich_map,
 )
 
 import logging
@@ -833,6 +834,140 @@ def shape_persistence_map(all_data, figure_output):
     plt.close()
 
 
+def shape_summary(all_data, figure_output):
+    logging.info("running shape_summary")
+    color_map = topology_labels(short="P")
+    trim = all_data[all_data["vdws"] == "von"]
+
+    fig, ax = plt.subplots(
+        # ncols=2,
+        # sharex=True,
+        # sharey=True,
+        figsize=(8, 5),
+    )
+    count = 0
+    xpos = []
+    xlabls = []
+    for tstr in color_map:
+
+        xpos.append(count)
+        xlabls.append(convert_topo(tstr))
+        tdata = trim[trim["topology"] == tstr]
+        stoich = stoich_map(tstr)
+        for shape_type in ("n", "l"):
+            if tstr == "6P8":
+                tor_tests = ("toff",)
+            else:
+                tor_tests = ("ton", "toff")
+
+            try:
+                target_shape = mapshape_to_topology(shape_type, False)[
+                    tstr
+                ]
+            except KeyError:
+                continue
+
+            c_column = f"{shape_type}_{target_shape}"
+
+            if shape_type == "n":
+                marker = "o"
+            elif shape_type == "l":
+                marker = "*"
+
+            for tor in tor_tests:
+                if tor == "ton":
+                    color = "#086788"
+                elif tor == "toff":
+                    color = "#F9A03F"
+
+                pdata = tdata[tdata["torsions"] == tor]
+
+                lowevalues = []
+                values = []
+                for i, row in pdata.iterrows():
+                    dist = float(row[c_column])
+
+                    if pd.isna(dist):
+                        continue
+                    energy = float(row["energy_per_bb"])
+                    values.append(dist)
+                    if energy < isomer_energy():
+                        lowevalues.append(dist)
+                if len(lowevalues) != 0:
+                    tp = np.std(lowevalues)
+                    print(
+                        len(values),
+                        len(lowevalues),
+                        tor,
+                        tstr,
+                        c_column,
+                        tp,
+                    )
+                    ax.scatter(
+                        # xpos[-1] - shift,
+                        stoich,
+                        # tp,
+                        max(lowevalues) - min(lowevalues),
+                        color=color,
+                        marker=marker,
+                        alpha=1.0,
+                        edgecolor="k",
+                        s=120,
+                    )
+
+                    # marker = "o"
+                    # if tor == "ton":
+                    #     color = "#086788"
+                    # elif tor == "toff":
+                    #     color = "#F9A03F"
+                    # axs[1].scatter(
+                    #     # xpos[-1] - shift,
+                    #     stoich,
+                    #     tp,
+                    #     # max(lowevalues) - min(lowevalues),
+                    #     color=color,
+                    #     marker=marker,
+                    #     alpha=1.0,
+                    #     edgecolor="k",
+                    #     s=120,
+                    # )
+
+                    # marker = "o"
+                    # if xc == 4:
+                    #     color = "#0B2027"
+                    # elif xc == 3:
+                    #     color = "#CA1551"
+                    # # "#0B2027"
+                    # # "#CA1551"
+                    # axs[2].scatter(
+                    #     # xpos[-1] - shift,
+                    #     stoich,
+                    #     tp,
+                    #     # max(lowevalues) - min(lowevalues),
+                    #     color=color,
+                    #     marker=marker,
+                    #     alpha=1.0,
+                    #     edgecolor="k",
+                    #     s=120,
+                    # )
+
+        count += 1
+
+    # ax.set_xticks(xpos)
+    # ax.set_xticklabels(xlabls, rotation=45)
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("num. building blocks", fontsize=16)
+    ax.set_ylabel("width of $s$ distribution", fontsize=16)
+    ax.legend(fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "shape_summary.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if not len(sys.argv) == 1:
@@ -856,6 +991,7 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
+    shape_summary(low_e_data, figure_output)
     flexshapeeffect_per_shape(low_e_data, figure_output)
     shape_topology(low_e_data, figure_output)
     shape_input_relationships(low_e_data, figure_output)
