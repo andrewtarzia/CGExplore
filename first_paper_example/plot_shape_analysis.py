@@ -309,6 +309,101 @@ def shape_topology(all_data, figure_output):
             plt.close()
 
 
+def shape_topology_main(all_data, figure_output):
+    logging.info("running shape_topology_main")
+
+    color_map = topology_labels(short="P")
+    trim = all_data[all_data["vdws"] == "von"]
+
+    xmin, xmax, width = 0, 40, 30
+
+    for tstr in color_map:
+        tdata = trim[trim["topology"] == tstr]
+        for shape_type in ("n", "l"):
+
+            if tstr not in ("6P9", "6P12", "8P12", "8P16"):
+                continue
+
+            else:
+                fig, ax = plt.subplots(figsize=(5, 4))
+                tor_tests = ("ton",)
+
+            try:
+                target_shape = mapshape_to_topology(shape_type, False)[
+                    tstr
+                ]
+            except KeyError:
+                continue
+
+            c_column = f"{shape_type}_{target_shape}"
+
+            for tor in tor_tests:
+                pdata = tdata[tdata["torsions"] == tor]
+
+                lowevalues = []
+                values = []
+                for i, row in pdata.iterrows():
+                    dist = float(row[c_column])
+
+                    if pd.isna(dist):
+                        continue
+                    energy = float(row["energy_per_bb"])
+                    values.append(dist)
+                    if energy < isomer_energy():
+                        lowevalues.append(dist)
+
+                if len(values) == 0:
+                    continue
+                ax.hist(
+                    values,
+                    # edata["energy_per_bb"],
+                    bins=np.linspace(xmin, xmax, width),
+                    color="#086788",
+                    alpha=1.0,
+                    edgecolor="k",
+                    linewidth=1,
+                    density=False,
+                    histtype="stepfilled",
+                    label="all",
+                )
+                ax.hist(
+                    lowevalues,
+                    # edata["energy_per_bb"],
+                    bins=np.linspace(xmin, xmax, width),
+                    color="#F9A03F",
+                    alpha=1.0,
+                    edgecolor="k",
+                    linewidth=1,
+                    density=False,
+                    histtype="stepfilled",
+                    label=(
+                        f"{eb_str(True)} < {isomer_energy()} "
+                        "kJmol$^{-1}$"
+                    ),
+                )
+                ax.set_title(
+                    (
+                        f"{convert_topo(tstr)}: "
+                        f"{convert_tors(tor, num=False)}"
+                    ),
+                    fontsize=16,
+                )
+                ax.set_xlabel(target_shape, fontsize=16)
+                ax.tick_params(axis="both", which="major", labelsize=16)
+                ax.set_ylabel("count", fontsize=16)
+                ax.set_yscale("log")
+
+            ax.legend(fontsize=16)
+            fig.tight_layout()
+            filename = f"shape_topology_{shape_type}_{tstr}_main.pdf"
+            fig.savefig(
+                os.path.join(figure_output, filename),
+                dpi=720,
+                bbox_inches="tight",
+            )
+            plt.close()
+
+
 def shape_input_relationships(all_data, figure_output):
     logging.info("running shape_input_relationships")
 
@@ -956,7 +1051,6 @@ def shape_summary(all_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
-    raise SystemExit()
 
 
 def main():
@@ -982,10 +1076,11 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     write_out_mapping(all_data)
 
-    shape_summary(low_e_data, figure_output)
     flexshapeeffect_per_shape(low_e_data, figure_output)
     shape_topology(low_e_data, figure_output)
+    shape_topology_main(low_e_data, figure_output)
     shape_input_relationships(low_e_data, figure_output)
+    shape_summary(low_e_data, figure_output)
     raise SystemExit()
     flexshapeeffect_per_property(low_e_data, figure_output)
     shape_vector_distributions(low_e_data, figure_output)
