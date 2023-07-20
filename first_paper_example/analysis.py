@@ -36,11 +36,21 @@ logging.basicConfig(
 )
 
 
-def clangle_str(num=None):
-    if num is None:
-        return r"$x$C angle [$^\circ$]"
+def angle_str(num=None, unit=True):
+    if unit is True:
+        un = r" [$^\circ$]"
     else:
-        return rf"{num}C angle [$^\circ$]"
+        un = ""
+
+    if num is None:
+        return f"$x$-topic angle{un}"
+    else:
+        if num == 3:
+            return f"tritopic angle{un}"
+        elif num == 4:
+            return f"tetratopic angle{un}"
+        elif num == 2:
+            return f"ditopic angle{un}"
 
 
 def eb_str(no_unit=False):

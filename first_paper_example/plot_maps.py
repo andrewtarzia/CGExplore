@@ -30,7 +30,7 @@ from analysis import (
     write_out_mapping,
     convert_tors,
     convert_topo,
-    clangle_str,
+    angle_str,
     Xc_map,
 )
 
@@ -44,16 +44,6 @@ logging.basicConfig(
 
 def nobiteangle_relationship(all_data, figure_output):
     logging.info("running clangle_relationship")
-    # ensemble = Ensemble(
-    #     base_molecule=molecule,
-    #     base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
-    #     conformer_xyz=os.path.join(
-    #         output_dir, f"{name}_ensemble.xyz"
-    #     ),
-    #     data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
-    #     overwrite=False,
-    # )
-    raise SystemExit("I want a plot with all energies on it.")
     trim = all_data[all_data["vdws"] == "von"]
 
     for tstr in topology_labels(short="P"):
@@ -120,11 +110,11 @@ def nobiteangle_relationship(all_data, figure_output):
 
             ax.set_ylabel(eb_str(), fontsize=16)
             ax.set_title(
-                f"{clangle_str(num=4)} = {t_angle}",
+                rf"{angle_str(num=4, unit=False)} = {t_angle}$^\circ$",
                 fontsize=16,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(clangle_str(num=3), fontsize=16)
+        ax.set_xlabel(angle_str(num=3), fontsize=16)
         ax.set_ylim(0, 10)
 
         fig.tight_layout()
@@ -220,12 +210,15 @@ def bite_angle_relationship(all_data, figure_output):
                 )
 
             ax.set_title(
-                f"{clangle_str(num=Xc_map(tstr))} = {t_angle}",
+                (
+                    f"{angle_str(num=Xc_map(tstr), unit=False)} = "
+                    rf"{t_angle}$^\circ$"
+                ),
                 fontsize=16,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
             ax.set_ylabel(eb_str(), fontsize=16)
-        ax.set_xlabel(r"target internal angle [$^\circ$]", fontsize=16)
+        ax.set_xlabel(f"{angle_str(num=2)}", fontsize=16)
         ax.legend(ncol=2, fontsize=16)
         ax.set_ylim(0, 5)
         ax.set_xlim(89, 181)
@@ -538,38 +531,11 @@ def selfsort_map(all_data, figure_output):
             # rect = ax.patch
             # rect.set_alpha(0)
 
-            ax.set_title(convert_tors(tor, num=False), fontsize=16)
-            ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
-            ax.set_xlabel(
-                r"target internal angle [$^\circ$]", fontsize=16
-            )
-            ax.tick_params(axis="both", which="major", labelsize=16)
-
-        # for i in cltypetopo_to_colormap():
-        #     if i not in (cltitle, "unstable"):
-        #         continue
-        #     for j in cltypetopo_to_colormap()[i]:
-        #         if i == "unstable":
-        #             label = "unstable"
-        #         else:
-        #             label = convert_topo(j)
-        #         ax.scatter(
-        #             None,
-        #             None,
-        #             c=cltypetopo_to_colormap()[i][j],
-        #             edgecolor="k",
-        #             s=400,
-        #             marker="o",
-        #             alpha=1.0,
-        #             label=label,
-        #         )
-
-        # fig.legend(
-        #     bbox_to_anchor=(0, 1.02, 2, 0.2),
-        #     loc="lower left",
-        #     ncol=5,
-        #     fontsize=16,
-        # )
+        ax.set_title(convert_tors(tor, num=False), fontsize=16)
+        ax.set_ylabel(angle_str(num=int(cltitle[0])), fontsize=16)
+        ax.set_xlabel(angle_str(num=2), fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_ylim(45, 125)
 
         fig.tight_layout()
         filename = f"ss_{cltitle}_{tor}_{vdw}.pdf"
@@ -661,13 +627,11 @@ def kinetic_selfsort_map(all_data, figure_output):
                 ax=ax,
             )
 
-            ax.set_title(convert_tors(tor, num=False), fontsize=16)
-            ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
-            ax.set_xlabel(
-                r"target internal angle [$^\circ$]",
-                fontsize=16,
-            )
-            ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_title(convert_tors(tor, num=False), fontsize=16)
+        ax.set_ylabel(angle_str(num=int(cltitle[0])), fontsize=16)
+        ax.set_xlabel(angle_str(num=2), fontsize=16)
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_ylim(45, 125)
 
         fig.tight_layout()
         filename = f"kss_{cltitle}_{tor}_{vdw}.pdf"
@@ -709,15 +673,12 @@ def angle_map(all_data, figure_output):
             if tstr == "6P8":
                 x = pdata["c3angle"]
                 y = pdata["clangle"]
-                ax.set_xlabel(clangle_str(num=3), fontsize=16)
+                ax.set_xlabel(angle_str(num=3), fontsize=16)
 
             else:
                 x = pdata["c2angle"]
                 y = pdata["clangle"]
-                ax.set_xlabel(
-                    r"target internal angle [$^\circ$]",
-                    fontsize=16,
-                )
+                ax.set_xlabel(angle_str(num=2), fontsize=16)
                 ax.set_title(
                     f"{convert_tors(tor, num=False)}",
                     fontsize=16,
@@ -738,7 +699,7 @@ def angle_map(all_data, figure_output):
 
             ax.tick_params(axis="both", which="major", labelsize=16)
 
-            ax.set_ylabel(clangle_str(num=Xc_map(tstr)), fontsize=16)
+            ax.set_ylabel(angle_str(num=Xc_map(tstr)), fontsize=16)
 
         cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
         cmap = mpl.cm.Blues_r
@@ -752,7 +713,66 @@ def angle_map(all_data, figure_output):
         cbar.set_label(eb_str(), fontsize=16)
 
         fig.tight_layout()
-        filename = f"am_{tstr}.pdf"
+        filename = f"am_{tstr}.png"
+        fig.savefig(
+            os.path.join(figure_output, filename),
+            dpi=360,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+
+def angle_map_4p6(all_data, figure_output):
+    logging.info("running angle_map")
+
+    color_map = topology_labels(short="P")
+
+    vmax = isomer_energy() * 2
+
+    for tstr in color_map:
+        if tstr != "4P6":
+            continue
+        fig, ax = plt.subplots(figsize=(8, 4))
+        tor_tests = ("ton",)
+        flat_axs = (ax,)
+
+        tdata = all_data[all_data["topology"] == tstr]
+        for ax, tor in zip(flat_axs, tor_tests):
+            pdata = tdata[tdata["torsions"] == tor]
+            x = pdata["c2angle"]
+            y = pdata["clangle"]
+            ax.set_xlabel(angle_str(num=2), fontsize=16)
+
+            ax.scatter(
+                x,
+                y,
+                c=pdata["energy_per_bb"],
+                vmin=0,
+                vmax=vmax,
+                alpha=1.0,
+                edgecolor="k",
+                s=200,
+                marker="s",
+                cmap="Blues_r",
+            )
+
+            ax.tick_params(axis="both", which="major", labelsize=16)
+
+            ax.set_ylabel(angle_str(num=Xc_map(tstr)), fontsize=16)
+
+        cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
+        cmap = mpl.cm.Blues_r
+        norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
+        cbar = fig.colorbar(
+            mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=cbar_ax,
+            orientation="vertical",
+        )
+        cbar.ax.tick_params(labelsize=16)
+        cbar.set_label(eb_str(), fontsize=16)
+
+        fig.tight_layout()
+        filename = f"am_{tstr}_fig2_4p6.pdf"
         fig.savefig(
             os.path.join(figure_output, filename),
             dpi=720,
@@ -785,7 +805,7 @@ def pd_4p82_figure(all_data, figure_output):
         x = pdata["c2angle"]
         y = pdata["clangle"]
         energies = pdata["energy_per_bb"]
-        ax.set_xlabel(r"target internal angle [$^\circ$]", fontsize=16)
+        ax.set_xlabel(angle_str(num=2), fontsize=16)
         ax.set_title(
             f"{convert_tors(tor, num=False)}",
             fontsize=16,
@@ -806,7 +826,7 @@ def pd_4p82_figure(all_data, figure_output):
 
         ax.tick_params(axis="both", which="major", labelsize=16)
 
-        ax.set_ylabel(clangle_str(num=4), fontsize=16)
+        ax.set_ylabel(angle_str(num=4), fontsize=16)
 
     cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
     cmap = mpl.cm.Blues_r
@@ -820,10 +840,10 @@ def pd_4p82_figure(all_data, figure_output):
     cbar.set_label(eb_str(), fontsize=16)
 
     fig.tight_layout()
-    filename = "4p82_test.pdf"
+    filename = "4p82_test.png"
     fig.savefig(
         os.path.join(figure_output, filename),
-        dpi=720,
+        dpi=360,
         bbox_inches="tight",
     )
     plt.close()
@@ -922,10 +942,11 @@ def main():
 
     bite_angle_relationship(all_data, figure_output)
     angle_map(low_e_data, figure_output)
-    pdII_figure_bite_angle(low_e_data, figure_output)
-    pd_4p82_figure(low_e_data, figure_output)
     selfsort_legend(low_e_data, figure_output)
     selfsort_map(low_e_data, figure_output)
+    pdII_figure_bite_angle(low_e_data, figure_output)
+    pd_4p82_figure(low_e_data, figure_output)
+    angle_map_4p6(low_e_data, figure_output)
     kinetic_selfsort_map(low_e_data, figure_output)
     selectivity_map(low_e_data, figure_output)
     nobiteangle_relationship(all_data, figure_output)

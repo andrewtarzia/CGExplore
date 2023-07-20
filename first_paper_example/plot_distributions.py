@@ -28,7 +28,7 @@ from analysis import (
     eb_str,
     pore_str,
     rg_str,
-    clangle_str,
+    angle_str,
     Xc_map,
     data_to_array,
     isomer_energy,
@@ -625,7 +625,7 @@ def plot_sorted(bb_data, color_map, figure_output):
     # ax.set_title(f"{cltitle}", fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
-    ax.set_ylabel(r"% sorted", fontsize=16)
+    ax.set_ylabel(r"% selected", fontsize=16)
     ax.set_xlim(0, max_ + 0.1)
     ax.set_ylim(0, None)
 
@@ -769,7 +769,7 @@ def plot_clangle(cl_data, color_map, figure_output):
                 c=cs,
                 vmin=0,
                 vmax=30,
-                s=20,
+                s=40,
                 marker="s",
                 cmap="Blues",
             )
@@ -784,7 +784,7 @@ def plot_clangle(cl_data, color_map, figure_output):
         )
         cbar.ax.tick_params(labelsize=16)
         cbar.set_label(
-            r"% sorted",
+            r"% selected",
             fontsize=16,
         )
 
@@ -792,7 +792,7 @@ def plot_clangle(cl_data, color_map, figure_output):
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
         # ax.set_ylabel(r"% sorted", fontsize=16)
-        ax.set_ylabel(clangle_str(num=int(cltitle[0])), fontsize=16)
+        ax.set_ylabel(angle_str(num=int(cltitle[0])), fontsize=16)
         # ax.set_xlim(0, max_ + 0.1)
         # ax.set_ylim(0, None)
 
@@ -941,8 +941,8 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
 
         ax.set_title(convert_topo(tstr), fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel(r"target internal angle [$^\circ$]", fontsize=16)
-        ax.set_ylabel(clangle_str(num=Xc_map(tstr)), fontsize=16)
+        ax.set_xlabel(angle_str(num=2), fontsize=16)
+        ax.set_ylabel(angle_str(num=Xc_map(tstr)), fontsize=16)
     # ax.set_xlim(0, max_ + 0.1)
     # ax.set_ylim(0, None)
 
@@ -950,8 +950,8 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "flexeffect_biteangle.pdf"),
-        dpi=720,
+        os.path.join(figure_output, "flexeffect_biteangle.png"),
+        dpi=360,
         bbox_inches="tight",
     )
     plt.close()
@@ -979,6 +979,7 @@ def plot_topology_flex(data, figure_output):
             - categories_ton[convert_topo(tstr)]
         ) / categories_toff[convert_topo(tstr)]
 
+    # color = "tab:blue"
     ax.bar(
         categories_ton.keys(),
         categories_ton.values(),
@@ -1002,25 +1003,34 @@ def plot_topology_flex(data, figure_output):
         lw=2,
         label=convert_tors("toff", num=False),
     )
-
-    for x, tstr in enumerate(categories_toff):
-        ax.text(
-            x=x - 0.3,
-            y=3,
-            s=round(categories_subtracted[tstr], 1),
-            c="white",
-            fontsize=16,
-        )
-
     ax.axvline(x=4.5, linestyle="--", c="gray", lw=2)
 
     ax.tick_params(axis="both", which="major", labelsize=16)
+    # ax.tick_params(axis="y")  # , labelcolor=color)
     # ax.set_xlabel("topology", fontsize=16)
-    ax.set_ylabel(r"% stable", fontsize=16)
+    ax.set_ylabel(r"% accessible cages", fontsize=16)  # , color=color)
     ax.set_ylim(0, 100)
     ax.legend(fontsize=16)
     ax.set_xticks(range(len(categories_toff)))
     ax.set_xticklabels(categories_ton.keys(), rotation=45)
+
+    # ax2 = ax.twinx()
+    # color = "tab:red"
+    # for x, tstr in enumerate(categories_toff):
+    #     ax2.scatter(
+    #         x,
+    #         categories_subtracted[tstr] * 100,
+    #         s=120,
+    #         c=color,
+    #     )
+    # ax2.tick_params(axis="both", which="major", labelsize=16)
+    # ax2.tick_params(axis="y", labelcolor=color)
+    # ax2.set_ylabel(
+    #     r"% change in accessible cages",
+    #     fontsize=16,
+    #     color=color,
+    # )
+    # ax2.set_ylim(0, 100)
 
     fig.tight_layout()
     fig.savefig(

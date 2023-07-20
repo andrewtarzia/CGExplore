@@ -31,7 +31,7 @@ from analysis import (
     convert_topo,
     topology_labels,
     stoich_map,
-    clangle_str,
+    angle_str,
     data_to_array,
     isomer_energy,
 )
@@ -134,7 +134,7 @@ def phase_space_2(all_data, figure_output):
             "y": "pore",
             "ylbl": pore_str(),
             "x": "topology",
-            "xlbl": "number building blocks",
+            "xlbl": "num. building blocks",
             "xmapfun": stoich_map,
             "xlim": (None, None),
             "c": "cmap",
@@ -154,7 +154,7 @@ def phase_space_2(all_data, figure_output):
             "y": "pore",
             "ylbl": pore_str(),
             "x": "clangle",
-            "xlbl": clangle_str(),
+            "xlbl": angle_str(),
             "xmapfun": no_conversion,
             "xlim": (48, 121),
             "c": "cmap",
@@ -164,7 +164,7 @@ def phase_space_2(all_data, figure_output):
             "y": "pore",
             "ylbl": pore_str(),
             "x": "c2angle",
-            "xlbl": "target internal angle [deg]",
+            "xlbl": angle_str(2),
             "xmapfun": no_conversion,
             "xlim": (89, 181),
             "c": "cmap",
@@ -217,7 +217,6 @@ def phase_space_2(all_data, figure_output):
                 )
 
         if axd["x"] == "cltitle":
-
             for x in (3, 4):
                 yvalues = [
                     bb_data[i][axd["y"]]
@@ -242,9 +241,9 @@ def phase_space_2(all_data, figure_output):
                     pc.set_alpha(1.0)
 
             ax.set_xticks((3, 4))
-            ax.set_xticklabels(("3C", "4C"))
-        else:
+            ax.set_xticklabels(("3", "4"))
 
+        else:
             yvalues = [bb_data[i][axd["y"]] for i in bb_data]
             xvalues = [
                 axd["xmapfun"](bb_data[i][axd["x"]]) for i in bb_data

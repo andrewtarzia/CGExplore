@@ -28,7 +28,7 @@ from analysis import (
     data_to_array,
     shape_threshold,
     eb_str,
-    clangle_str,
+    angle_str,
     isomer_energy,
     target_shapes,
     mapshape_to_topology,
@@ -443,11 +443,11 @@ def shape_input_relationships(all_data, figure_output):
             for ax, tor in zip(flat_axs, tor_tests):
                 pdata = tdata[tdata["torsions"] == tor]
                 if tstr == "6P8":
-                    ax.set_xlabel(clangle_str(3), fontsize=16)
+                    ax.set_xlabel(angle_str(3), fontsize=16)
 
                 else:
                     ax.set_xlabel(
-                        r"target internal angle [$^\circ$]",
+                        angle_str(2),
                         fontsize=16,
                     )
                     ax.set_title(
@@ -507,7 +507,7 @@ def shape_input_relationships(all_data, figure_output):
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
-                ax.set_ylabel(clangle_str(Xc_map(tstr)), fontsize=16)
+                ax.set_ylabel(angle_str(Xc_map(tstr)), fontsize=16)
 
             cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
             cmap = mpl.cm.Blues_r
