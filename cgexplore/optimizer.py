@@ -125,7 +125,8 @@ class CGOptimizer:
         angles = get_all_angles(molecule)
         pos_mat = molecule.get_position_matrix()
 
-        saved_angles = {}
+        pyramid_angles = {}
+        octahedral_angles = {}
         for angle in angles:
             outer_atom1, centre_atom, outer_atom2 = angle
             outer_name1 = (
@@ -153,9 +154,26 @@ class CGOptimizer:
                 angle_theta = centre_cgbead.angle_centered
                 angle_k = centre_cgbead.angle_k
                 if centre_cgbead.coordination == 4:
-                    if centre_name not in saved_angles:
-                        saved_angles[centre_name] = []
-                    saved_angles[centre_name].append(
+                    if centre_name not in pyramid_angles:
+                        pyramid_angles[centre_name] = []
+                    pyramid_angles[centre_name].append(
+                        (
+                            angle_theta,
+                            angle_k,
+                            outer_atom1,
+                            outer_atom2,
+                            centre_atom,
+                            centre_id,
+                            outer_id1,
+                            outer_id2,
+                        )
+                    )
+                    continue
+
+                elif centre_cgbead.coordination == 6:
+                    if centre_name not in octahedral_angles:
+                        octahedral_angles[centre_name] = []
+                    octahedral_angles[centre_name].append(
                         (
                             angle_theta,
                             angle_k,
@@ -187,10 +205,11 @@ class CGOptimizer:
                 )
                 continue
 
-        # For four coordinate systems, only apply angles between
-        # neighbouring atoms.
-        for centre_name in saved_angles:
-            sa_d = saved_angles[centre_name]
+        # For four coordinate systems, apply standard angle theta to
+        # neighbouring atoms, then compute pyramid angle for opposing
+        # interaction.
+        for centre_name in pyramid_angles:
+            sa_d = pyramid_angles[centre_name]
 
             all_angles = {
                 i: np.degrees(
@@ -251,6 +270,55 @@ class CGOptimizer:
                     outer_id2,
                 ) = used_ang
                 angle_theta = convert_pyramid_angle(angle_theta)
+                outer_name1 = (
+                    f"{outer_atom1.__class__.__name__}"
+                    f"{outer_atom1.get_id()+1}"
+                )
+                outer_name2 = (
+                    f"{outer_atom2.__class__.__name__}"
+                    f"{outer_atom2.get_id()+1}"
+                )
+                yield (
+                    centre_name,
+                    outer_name1,
+                    outer_name2,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
+                    angle_k,
+                    angle_theta,
+                )
+
+        # For six coordinate systems, assume octahedral geometry.
+        # Only keep closest angles.
+        for centre_name in octahedral_angles:
+            sa_d = octahedral_angles[centre_name]
+
+            all_angles = {
+                i: np.degrees(
+                    angle_between(
+                        v1=pos_mat[X[4].get_id()]
+                        - pos_mat[X[2].get_id()],
+                        v2=pos_mat[X[4].get_id()]
+                        - pos_mat[X[3].get_id()],
+                    )
+                )
+                for i, X in enumerate(sa_d)
+            }
+            six_smallest = nsmallest(6, all_angles, key=all_angles.get)
+            for used_ang_id in six_smallest:
+                used_ang = sa_d[used_ang_id]
+                (
+                    angle_theta,
+                    angle_k,
+                    outer_atom1,
+                    outer_atom2,
+                    centre_atom,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
+                ) = used_ang
+
                 outer_name1 = (
                     f"{outer_atom1.__class__.__name__}"
                     f"{outer_atom1.get_id()+1}"
