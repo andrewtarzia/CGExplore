@@ -11,8 +11,10 @@ setuptools.setup(
     install_requires=(
         'numpy',
         'scipy',
-        'sklearn',
+        'scikit-learn',
         'stk',
+        'poremapper',
+        'pywindowx',
     ),
     classifiers=[
         "Programming Language :: Python :: 3",
