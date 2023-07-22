@@ -491,6 +491,8 @@ class CGOMMOptimizer(CGOptimizer):
         # print("ss3", time.time() - st)
         # st = time.time()
         system = self._add_forces(system, molecule)
+        for i, f in enumerate(system.getForces()):
+            f.setForceGroup(i)
         # print("ss4", time.time() - st)
 
         # Default integrator.
