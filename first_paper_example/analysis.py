@@ -19,8 +19,8 @@ from sklearn.preprocessing import StandardScaler
 
 from cgexplore.beads import get_CGBead_from_string
 from cgexplore.shape import known_shape_vectors
-from cgexplore.cage_construction.topologies import cage_topology_options
 
+from topologies import cage_topology_options
 from bead_libraries import (
     core_2c_beads,
     arm_2c_beads,

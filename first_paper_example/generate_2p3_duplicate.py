@@ -75,7 +75,6 @@ def main():
         topology=TwoC1Arm,
         option1_lib=beads_core_2c_lib,
         option2_lib=beads_arm_2c_lib,
-        full_bead_library=full_bead_library,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
     )
@@ -83,7 +82,6 @@ def main():
         topology=ThreeC1Arm,
         option1_lib=beads_3c_lib,
         option2_lib=beads_binder_lib,
-        full_bead_library=full_bead_library,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
     )

@@ -11,7 +11,6 @@ Author: Andrew Tarzia
 
 import sys
 
-from cgexplore.cage_construction.topologies import cage_topology_options
 from cgexplore.beads import bead_library_check
 from cgexplore.molecule_construction.topologies import (
     ThreeC1Arm,
@@ -19,6 +18,7 @@ from cgexplore.molecule_construction.topologies import (
 )
 from cgexplore.generation_utilities import build_building_block
 
+from topologies import cage_topology_options
 from generation import (
     custom_torsion_definitions,
     custom_vdw_definitions,
@@ -69,7 +69,6 @@ def main():
         topology=ThreeC1Arm,
         option1_lib=beads_3c_lib,
         option2_lib=beads_binder_lib,
-        full_bead_library=full_bead_library,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
     )
@@ -77,7 +76,6 @@ def main():
         topology=FourC1Arm,
         option1_lib=beads_4c_lib,
         option2_lib=beads_binder_lib,
-        full_bead_library=full_bead_library,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
     )

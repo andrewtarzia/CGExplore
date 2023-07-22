@@ -385,7 +385,6 @@ def build_building_block(
     topology,
     option1_lib,
     option2_lib,
-    full_bead_library,
     calculation_output,
     ligand_output,
 ):
