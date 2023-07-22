@@ -27,7 +27,6 @@ logging.basicConfig(
 
 
 def optimise_ligand(molecule, name, output_dir, bead_set):
-
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
 
     if os.path.exists(opt1_mol_file):
@@ -43,7 +42,6 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
             angles=True,
             torsions=False,
             vdw=False,
-            # max_iterations=1000,
         )
         molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
@@ -122,8 +120,7 @@ def deform_and_optimisations(
         if test_energy < current_energy:
             passed = True
         elif (
-            np.exp(-beta * (test_energy - current_energy))
-            > generator.random()
+            np.exp(-beta * (test_energy - current_energy)) > generator.random()
         ):
             passed = True
 
@@ -216,16 +213,13 @@ def run_mc_cycle(
             sigma=sigma,
         )
         test_molecule = opt.optimize(test_molecule)
-        test_energy = opt.read_final_energy_decomposition()[
-            "total energy"
-        ][0]
+        test_energy = opt.read_final_energy_decomposition()["total energy"][0]
 
         passed = False
         if test_energy < current_energy:
             passed = True
         elif (
-            np.exp(-beta * (test_energy - current_energy))
-            > generator.random()
+            np.exp(-beta * (test_energy - current_energy)) > generator.random()
         ):
             passed = True
 
@@ -235,9 +229,7 @@ def run_mc_cycle(
             conformer = Conformer(
                 molecule=test_molecule.clone().with_centroid((0, 0, 0)),
                 conformer_id=None,
-                energy_decomposition=(
-                    opt.read_final_energy_decomposition()
-                ),
+                energy_decomposition=(opt.read_final_energy_decomposition()),
             )
 
             ensemble.add_conformer(
@@ -245,15 +237,11 @@ def run_mc_cycle(
                 source=suffix,
             )
             molecule = conformer.molecule
-            current_energy = conformer.energy_decomposition[
-                "total energy"
-            ][0]
+            current_energy = conformer.energy_decomposition["total energy"][0]
 
         num_run += 1
 
-    logging.info(
-        f"{num_passed} passed of {num_run} ({num_passed/num_run})"
-    )
+    logging.info(f"{num_passed} passed of {num_run} ({num_passed/num_run})")
     ensemble.write_conformers_to_file()
     return molecule
 
@@ -337,9 +325,9 @@ def run_md_cycle(
             raise ValueError()
 
         if min_energy is None:
-            min_energy = md_class.calculate_energy(
-                molecule
-            ).value_in_unit(openmm.unit.kilojoules_per_mole)
+            min_energy = md_class.calculate_energy(molecule).value_in_unit(
+                openmm.unit.kilojoules_per_mole
+            )
 
         for conformer in trajectory.yield_conformers():
             if opt_class is None:
@@ -463,9 +451,7 @@ def run_constrained_optimisation(
         vdw_bond_cutoff=2,
         atom_constraints=intra_bb_bonds,
     )
-    logging.info(
-        f"optimising {name} with {len(intra_bb_bonds)} constraints"
-    )
+    logging.info(f"optimising {name} with {len(intra_bb_bonds)} constraints")
     return constrained_opt.optimize(molecule)
 
 
