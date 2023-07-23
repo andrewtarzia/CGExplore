@@ -139,9 +139,7 @@ class CGOMMOptimizer(CGOptimizer):
             self._max_iterations = max_iterations
         self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
         if self._vdw and vdw_bond_cutoff is None:
-            raise ValueError(
-                "if `vdw` is on, `vdw_bond_cutoff` should be set"
-            )
+            raise ValueError("if `vdw` is on, `vdw_bond_cutoff` should be set")
         elif vdw_bond_cutoff is None:
             self._vdw_bond_cutoff = 0
         else:
@@ -414,13 +412,10 @@ class CGOMMOptimizer(CGOptimizer):
             re_str += f'   <Atom name="{aid}" type="{atype}"/>\n'
 
         for bond in molecule.get_bonds():
-
             a1id = bond.get_atom1().get_id()
             a2id = bond.get_atom2().get_id()
 
-            re_str += (
-                f'   <Bond atomName1="{a1id}" atomName2="{a2id}"/>\n'
-            )
+            re_str += f'   <Bond atomName1="{a1id}" atomName2="{a2id}"/>\n'
 
         at_str += " </AtomTypes>\n\n"
         re_str += "  </Residue>\n"
@@ -475,7 +470,6 @@ class CGOMMOptimizer(CGOptimizer):
         return topology
 
     def _setup_simulation(self, molecule):
-
         # Load force field.
         # st = time.time()
         self._write_ff_file(molecule)
@@ -506,9 +500,7 @@ class CGOMMOptimizer(CGOptimizer):
 
         # Set positions from structure.
         # st = time.time()
-        simulation.context.setPositions(
-            molecule.get_position_matrix() / 10
-        )
+        simulation.context.setPositions(molecule.get_position_matrix() / 10)
         # print("ss6", time.time() - st)
         return simulation, system
 
@@ -539,9 +531,7 @@ class CGOMMOptimizer(CGOptimizer):
             if idd == "tot_energy":
                 continue
             self._output_string += f"{idd}: {energy_decomp[idd]}\n"
-        self._output_string += (
-            f"total energy: {energy_decomp['tot_energy']}\n"
-        )
+        self._output_string += f"total energy: {energy_decomp['tot_energy']}\n"
         self._output_string += "\n"
 
     def _get_energy(self, simulation, system):
@@ -555,7 +545,6 @@ class CGOMMOptimizer(CGOptimizer):
         )
 
     def _minimize_energy(self, simulation, system):
-
         self._output_energy_decomp(simulation, system)
 
         self._output_string += "minimizing energy\n\n"
@@ -668,9 +657,7 @@ class CGOMMDynamics(CGOMMOptimizer):
             self._max_iterations = max_iterations
         self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
         if self._vdw and vdw_bond_cutoff is None:
-            raise ValueError(
-                "if `vdw` is on, `vdw_bond_cutoff` should be set"
-            )
+            raise ValueError("if `vdw` is on, `vdw_bond_cutoff` should be set")
         elif vdw_bond_cutoff is None:
             self._vdw_bond_cutoff = 0
         else:
@@ -723,7 +710,6 @@ class CGOMMDynamics(CGOMMOptimizer):
         return simulation
 
     def _setup_simulation(self, molecule):
-
         # Load force field.
         self._write_ff_file(molecule)
         forcefield = app.ForceField(self._forcefield_path)
@@ -746,13 +732,10 @@ class CGOMMDynamics(CGOMMOptimizer):
         simulation = app.Simulation(topology, system, integrator)
 
         # Set positions from structure.
-        simulation.context.setPositions(
-            molecule.get_position_matrix() / 10
-        )
+        simulation.context.setPositions(molecule.get_position_matrix() / 10)
         return simulation, system
 
     def _run_molecular_dynamics(self, simulation, system):
-
         self._output_string += "simulation parameters:\n"
         self._output_string += (
             f"initalise velocities at T={self._temperature}\n"
@@ -792,7 +775,6 @@ class CGOMMDynamics(CGOMMOptimizer):
         return simulation
 
     def _get_trajectory(self, molecule):
-
         return OMMTrajectory(
             base_molecule=molecule,
             data_path=self._trajectory_data,
@@ -846,7 +828,6 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         vdw_bond_cutoff=None,
         atom_constraints=None,
     ):
-
         super(CGOMMOptimizer, self).__init__(
             fileprefix,
             output_dir,
@@ -869,9 +850,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
             self._max_iterations = max_iterations
         self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
         if self._vdw and vdw_bond_cutoff is None:
-            raise ValueError(
-                "if `vdw` is on, `vdw_bond_cutoff` should be set"
-            )
+            raise ValueError("if `vdw` is on, `vdw_bond_cutoff` should be set")
         elif vdw_bond_cutoff is None:
             self._vdw_bond_cutoff = 0
         else:
@@ -896,7 +875,6 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         self._traj_freq = 1
 
     def _setup_simulation(self, molecule):
-
         # Load force field.
         self._write_ff_file(molecule)
         forcefield = app.ForceField(self._forcefield_path)
@@ -922,9 +900,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         simulation = app.Simulation(topology, system, integrator)
 
         # Set positions from structure.
-        simulation.context.setPositions(
-            molecule.get_position_matrix() / 10
-        )
+        simulation.context.setPositions(molecule.get_position_matrix() / 10)
         return simulation, system
 
     def _run_monte_carlo(self, simulation, system):
@@ -958,7 +934,6 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         return simulation
 
     def _get_trajectory(self, molecule):
-
         return OMMTrajectory(
             base_molecule=molecule,
             data_path=self._trajectory_data,

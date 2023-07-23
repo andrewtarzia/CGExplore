@@ -44,7 +44,6 @@ class CGOptimizer:
         torsions,
         vdw,
     ):
-
         self._fileprefix = fileprefix
         self._output_dir = output_dir
         self._param_pool = param_pool
@@ -73,9 +72,7 @@ class CGOptimizer:
         )
         torsions = []
         for atom_ids in paths:
-            atoms = list(
-                molecule.get_atoms(atom_ids=[i for i in atom_ids])
-            )
+            atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
             atom1 = atoms[0]
             atom2 = atoms[1]
             atom3 = atoms[2]
@@ -113,9 +110,7 @@ class CGOptimizer:
                 )
                 yield (name1, name2, id1, id2, bond_k, bond_r)
             except KeyError:
-                logging.info(
-                    f"OPT: {(name1, name2)} bond not assigned."
-                )
+                logging.info(f"OPT: {(name1, name2)} bond not assigned.")
                 continue
 
     def _yield_angles(self, molecule):
@@ -130,16 +125,13 @@ class CGOptimizer:
         for angle in angles:
             outer_atom1, centre_atom, outer_atom2 = angle
             outer_name1 = (
-                f"{outer_atom1.__class__.__name__}"
-                f"{outer_atom1.get_id()+1}"
+                f"{outer_atom1.__class__.__name__}" f"{outer_atom1.get_id()+1}"
             )
             centre_name = (
-                f"{centre_atom.__class__.__name__}"
-                f"{centre_atom.get_id()+1}"
+                f"{centre_atom.__class__.__name__}" f"{centre_atom.get_id()+1}"
             )
             outer_name2 = (
-                f"{outer_atom2.__class__.__name__}"
-                f"{outer_atom2.get_id()+1}"
+                f"{outer_atom2.__class__.__name__}" f"{outer_atom2.get_id()+1}"
             )
             outer_id1 = outer_atom1.get_id()
             centre_id = centre_atom.get_id()
@@ -214,10 +206,8 @@ class CGOptimizer:
             all_angles = {
                 i: np.degrees(
                     angle_between(
-                        v1=pos_mat[X[4].get_id()]
-                        - pos_mat[X[2].get_id()],
-                        v2=pos_mat[X[4].get_id()]
-                        - pos_mat[X[3].get_id()],
+                        v1=pos_mat[X[4].get_id()] - pos_mat[X[2].get_id()],
+                        v2=pos_mat[X[4].get_id()] - pos_mat[X[3].get_id()],
                     )
                 )
                 for i, X in enumerate(sa_d)
@@ -297,10 +287,8 @@ class CGOptimizer:
             all_angles = {
                 i: np.degrees(
                     angle_between(
-                        v1=pos_mat[X[4].get_id()]
-                        - pos_mat[X[2].get_id()],
-                        v2=pos_mat[X[4].get_id()]
-                        - pos_mat[X[3].get_id()],
+                        v1=pos_mat[X[4].get_id()] - pos_mat[X[2].get_id()],
+                        v2=pos_mat[X[4].get_id()] - pos_mat[X[3].get_id()],
                     )
                 )
                 for i, X in enumerate(sa_d)
@@ -380,9 +368,7 @@ class CGOptimizer:
         raise NotImplementedError()
         if self._vdw is False:
             return ""
-        logging.info(
-            "OPT: only vdw interactions between host and guest."
-        )
+        logging.info("OPT: only vdw interactions between host and guest.")
 
         pairs = combinations(molecule.get_atoms(), 2)
         for pair in pairs:
@@ -392,9 +378,7 @@ class CGOptimizer:
             estring1 = atom1.__class__.__name__
             estring2 = atom2.__class__.__name__
             guest_estrings = tuple(
-                i
-                for i in (estring1, estring2)
-                if i in self._vdw_on_types
+                i for i in (estring1, estring2) if i in self._vdw_on_types
             )
             if len(guest_estrings) != 1:
                 continue
