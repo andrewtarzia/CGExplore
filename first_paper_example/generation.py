@@ -11,7 +11,6 @@ Author: Andrew Tarzia
 
 import stk
 import os
-import numpy as np
 import json
 import itertools
 from openmm import openmm
@@ -27,9 +26,11 @@ from cgexplore.generation_utilities import (
     run_constrained_optimisation,
     run_optimisation,
     run_soft_md_cycle,
+    yield_near_models,
+    yield_shifted_models,
 )
 from cgexplore.ensembles import Ensemble
-from cgexplore.beads import periodic_table
+
 
 from env_set import shape_path
 from analysis import (
@@ -76,74 +77,6 @@ def custom_vdw_definitions(population):
     }[population]
 
 
-def modify_bead(bead_name):
-    for i, s in enumerate(bead_name):
-        temp_bead_name = list(bead_name)
-        if not s.isnumeric():
-            continue
-        temp_bead_name[i] = str(int(s) - 1)
-        yield "".join(temp_bead_name)
-        temp_bead_name[i] = str(int(s) + 1)
-        yield "".join(temp_bead_name)
-
-
-def yield_near_models(molecule, name, bead_set, output_dir):
-    (
-        t_str,
-        clbb_name,
-        c2bb_name,
-        torsions,
-        vdws,
-        run_number,
-    ) = name.split("_")
-
-    for bead_name in bead_set:
-        for modification in modify_bead(bead_name):
-            if bead_name not in clbb_name:
-                new_bbl_str = clbb_name
-                new_bb2_str = c2bb_name.replace(bead_name, modification)
-            elif bead_name not in c2bb_name:
-                new_bbl_str = clbb_name.replace(bead_name, modification)
-                new_bb2_str = c2bb_name
-            new_name = (
-                f"{t_str}_{new_bbl_str}_{new_bb2_str}_"
-                f"{torsions}_{vdws}_{run_number}"
-            )
-            new_fina_mol_file = os.path.join(
-                output_dir, f"{new_name}_final.mol"
-            )
-            if os.path.exists(new_fina_mol_file):
-                logging.info(f"found neigh: {new_fina_mol_file}")
-                yield molecule.with_structure_from_file(
-                    new_fina_mol_file
-                )
-
-
-def shift_beads(molecule, atomic_number, kick):
-    old_pos_mat = molecule.get_position_matrix()
-    centroid = molecule.get_centroid()
-
-    new_pos_mat = []
-    for atom, pos in zip(molecule.get_atoms(), old_pos_mat):
-        if atom.get_atomic_number() == atomic_number:
-            c_v = centroid - pos
-            c_v = c_v / np.linalg.norm(c_v)
-            move = c_v * kick
-            new_pos = pos - move
-        else:
-            new_pos = pos
-        new_pos_mat.append(new_pos)
-
-    return molecule.with_position_matrix(np.array((new_pos_mat)))
-
-
-def yield_shifted_models(molecule, bead_set):
-    for bead in bead_set:
-        atom_number = periodic_table()[bead_set[bead].element_string]
-        for kick in (1, 2, 3, 4):
-            yield shift_beads(molecule, atom_number, kick)
-
-
 def optimise_cage(
     molecule,
     name,
@@ -152,15 +85,12 @@ def optimise_cage(
     custom_torsion_set,
     custom_vdw_set,
 ):
-
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
     if os.path.exists(fina_mol_file):
         ensemble = Ensemble(
             base_molecule=molecule,
             base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
-            conformer_xyz=os.path.join(
-                output_dir, f"{name}_ensemble.xyz"
-            ),
+            conformer_xyz=os.path.join(output_dir, f"{name}_ensemble.xyz"),
             data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
             overwrite=False,
         )
@@ -306,9 +236,7 @@ def optimise_cage(
 
     min_energy_conformer = ensemble.get_lowest_e_conformer()
     min_energy_conformerid = min_energy_conformer.conformer_id
-    min_energy = min_energy_conformer.energy_decomposition[
-        "total energy"
-    ][0]
+    min_energy = min_energy_conformer.energy_decomposition["total energy"][0]
     logging.info(
         f"Min. energy conformer: {min_energy_conformerid} from "
         f"{min_energy_conformer.source}"
@@ -400,15 +328,11 @@ def analyse_cage(
         bond_data = g_measure.calculate_bonds(conformer.molecule)
         angle_data = g_measure.calculate_angles(conformer.molecule)
         dihedral_data = g_measure.calculate_torsions(conformer.molecule)
-        min_b2b_distance = g_measure.calculate_minb2b(
-            conformer.molecule
-        )
+        min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
             conformer.molecule
         )
-        max_diameter = g_measure.calculate_max_diameter(
-            conformer.molecule
-        )
+        max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
         if radius_gyration > max_diameter:
             raise ValueError(
                 f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
@@ -461,7 +385,6 @@ def collect_custom_torsion(
     custom_torsion,
     bead_set,
 ):
-
     if custom_torsion_options[custom_torsion] is None:
         custom_torsion_set = None
     else:
@@ -483,7 +406,6 @@ def build_populations(
     node_element,
     ligand_element,
 ):
-
     num_runs = 1
     for popn in populations:
         logging.info(f"building {popn} population")
@@ -527,9 +449,7 @@ def build_populations(
 
                 logging.info(f"building {name}")
                 cage = stk.ConstructedMolecule(
-                    topology_graph=populations[popn]["t"][
-                        cage_topo_str
-                    ](
+                    topology_graph=populations[popn]["t"][cage_topo_str](
                         building_blocks=(bb2, bbl),
                     ),
                 )
