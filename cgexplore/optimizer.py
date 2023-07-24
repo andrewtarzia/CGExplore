@@ -280,7 +280,7 @@ class CGOptimizer:
                 )
 
         # For six coordinate systems, assume octahedral geometry.
-        # Only keep closest angles.
+        # So 90 degrees with 12 smallest angles, 180 degrees for the rest.
         for centre_name in octahedral_angles:
             sa_d = octahedral_angles[centre_name]
 
@@ -293,8 +293,9 @@ class CGOptimizer:
                 )
                 for i, X in enumerate(sa_d)
             }
-            six_smallest = nsmallest(6, all_angles, key=all_angles.get)
-            for used_ang_id in six_smallest:
+
+            smallest = nsmallest(12, all_angles, key=all_angles.get)
+            for used_ang_id in smallest:
                 used_ang = sa_d[used_ang_id]
                 (
                     angle_theta,
@@ -326,7 +327,42 @@ class CGOptimizer:
                     angle_theta,
                 )
 
+            for used_ang_id in all_angles:
+                if used_ang_id in smallest:
+                    continue
+                used_ang = sa_d[used_ang_id]
+                (
+                    angle_theta,
+                    angle_k,
+                    outer_atom1,
+                    outer_atom2,
+                    centre_atom,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
+                ) = used_ang
+                angle_theta = 180
+                outer_name1 = (
+                    f"{outer_atom1.__class__.__name__}"
+                    f"{outer_atom1.get_id()+1}"
+                )
+                outer_name2 = (
+                    f"{outer_atom2.__class__.__name__}"
+                    f"{outer_atom2.get_id()+1}"
+                )
+                yield (
+                    centre_name,
+                    outer_name1,
+                    outer_name2,
+                    centre_id,
+                    outer_id1,
+                    outer_id2,
+                    angle_k,
+                    angle_theta,
+                )
+
     def _yield_torsions(self, molecule):
+        logging.info("warning: this interface will change in the near future")
         if self._torsions is False:
             return ""
         logging.info("OPT, WARNING: torsions are hardcoded!.")

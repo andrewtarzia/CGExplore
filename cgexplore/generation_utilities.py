@@ -452,7 +452,7 @@ def run_constrained_optimisation(
         vdw_bond_cutoff=2,
         atom_constraints=intra_bb_bonds,
     )
-    logging.info(f"optimising {name} with {len(intra_bb_bonds)} constraints")
+    logging.info(f"optimising with {len(intra_bb_bonds)} constraints")
     return constrained_opt.optimize(molecule)
 
 

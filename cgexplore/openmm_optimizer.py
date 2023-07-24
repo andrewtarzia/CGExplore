@@ -263,6 +263,8 @@ class CGOMMOptimizer(CGOptimizer):
         return system
 
     def _yield_custom_torsions(self, molecule, chain_length=5):
+        logging.info("warning: this interface will change in the near future")
+        logging.info("todo: want to use the TargetTorsion class")
         if self._custom_torsion_set is None:
             return ""
 
@@ -299,6 +301,7 @@ class CGOMMOptimizer(CGOptimizer):
             continue
 
     def _add_torsions(self, system, molecule):
+        logging.info("warning: this interface will change in the near future")
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
 
@@ -330,6 +333,7 @@ class CGOMMOptimizer(CGOptimizer):
         return system
 
     def _add_custom_torsions(self, system, molecule):
+        logging.info("warning: this interface will change in the near future")
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
 
