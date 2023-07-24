@@ -39,9 +39,7 @@ def reorient_linker(molecule):
     )
 
     fg_bonder_centroid = molecule.get_centroid(
-        atom_ids=next(
-            molecule.get_functional_groups()
-        ).get_placer_ids(),
+        atom_ids=next(molecule.get_functional_groups()).get_placer_ids(),
     )
     edge_position = target_coords[0]
     molecule = molecule.with_rotation_to_minimize_angle(
