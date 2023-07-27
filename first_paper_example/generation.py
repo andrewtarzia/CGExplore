@@ -325,10 +325,13 @@ def analyse_cage(
         g_measure = GeomMeasure(custom_torsion_atoms)
         bond_data = g_measure.calculate_bonds(conformer.molecule)
         angle_data = g_measure.calculate_angles(conformer.molecule)
-        dihedral_data = g_measure.calculate_torsions(conformer.molecule)
+        dihedral_data = g_measure.calculate_torsions(
+            molecule=conformer.molecule,
+            absolute=True,
+        )
         min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
-            conformer.molecule
+            molecule=conformer.molecule,
         )
         max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
         if radius_gyration > max_diameter:
