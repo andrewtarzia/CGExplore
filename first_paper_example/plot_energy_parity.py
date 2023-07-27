@@ -9,24 +9,23 @@ Author: Andrew Tarzia
 
 """
 
-import sys
+import logging
 import os
-from matplotlib.lines import Line2D
+import sys
+
 import matplotlib.pyplot as plt
-
-from cgexplore.utilities import check_directory
-
-from env_set import figures, calculations, outputdata, cages
 from analysis import (
-    topology_labels,
+    convert_topo,
+    data_to_array,
     eb_str,
     get_lowest_energy_data,
-    data_to_array,
-    convert_topo,
     isomer_energy,
+    topology_labels,
 )
+from env_set import cages, calculations, figures, outputdata
+from matplotlib.lines import Line2D
 
-import logging
+from cgexplore.utilities import check_directory
 
 logging.basicConfig(
     level=logging.INFO,

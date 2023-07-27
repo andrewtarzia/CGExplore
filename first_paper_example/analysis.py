@@ -9,26 +9,25 @@ Author: Andrew Tarzia
 
 """
 
-import os
 import json
+import logging
+import os
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-
-from cgexplore.beads import get_CGBead_from_string
-from cgexplore.shape import known_shape_vectors
-
-from topologies import cage_topology_options
 from bead_libraries import (
-    core_2c_beads,
     arm_2c_beads,
     beads_3c,
     beads_4c,
+    core_2c_beads,
 )
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+from topologies import cage_topology_options
 
-import logging
+from cgexplore.beads import get_CGBead_from_string
+from cgexplore.shape import known_shape_vectors
 
 logging.basicConfig(
     level=logging.INFO,
@@ -492,9 +491,7 @@ def get_sv_dist(row, mode):
     current_sv = {i: float(row[f"{mode}_{i}"]) for i in known_sv}
     a = np.array([known_sv[i] for i in known_sv])
     b = np.array([current_sv[i] for i in known_sv])
-    cosine_similarity = np.dot(a, b) / (
-        np.linalg.norm(a) * np.linalg.norm(b)
-    )
+    cosine_similarity = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
     return cosine_similarity
 
@@ -620,9 +617,9 @@ def data_to_array(json_files, output_dir):
 
         if row["optimised"]:
             row["strain_energy"] = res_dict["fin_energy_kjmol"]
-            row["energy_per_bb"] = res_dict[
-                "fin_energy_kjmol"
-            ] / stoich_map(t_str)
+            row["energy_per_bb"] = res_dict["fin_energy_kjmol"] / stoich_map(
+                t_str
+            )
             for force_title in res_dict["fin_energy_decomp"]:
                 if force_title in (
                     "CMMotionRemover_kJ/mol",
@@ -630,9 +627,7 @@ def data_to_array(json_files, output_dir):
                     "total energy_kJ/mol",
                 ):
                     continue
-                row[force_title] = res_dict["fin_energy_decomp"][
-                    force_title
-                ]
+                row[force_title] = res_dict["fin_energy_decomp"][force_title]
 
             row["pore"] = res_dict["opt_pore_data"]["min_distance"]
             row["min_b2b_distance"] = res_dict["min_b2b_distance"]
@@ -763,16 +758,12 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
         raise ValueError("atleast one c2bb, or c3bb should be not None")
     elif c3bb is None:
         bb_data = {
-            i: all_data[i]
-            for i in all_data
-            if all_data[i]["c2bb"] == c2bb
+            i: all_data[i] for i in all_data if all_data[i]["c2bb"] == c2bb
         }
         list_of_test_bbs = set([i["c3bb"] for i in bb_data.values()])
     elif c2bb is None:
         bb_data = {
-            i: all_data[i]
-            for i in all_data
-            if all_data[i]["c3bb"] == c3bb
+            i: all_data[i] for i in all_data if all_data[i]["c3bb"] == c3bb
         }
         list_of_test_bbs = set([i["c2bb"] for i in bb_data.values()])
     logging.info(f"trimmed to {len(bb_data)} points")
@@ -875,9 +866,7 @@ def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
             f"for {shape}, A(!) min bb pair: {c2bb}/{min_c3bb} "
             f"with value {sv}"
         )
-        data_index = data_array.index[
-            data_array["index"] == min_c3bb
-        ].tolist()
+        data_index = data_array.index[data_array["index"] == min_c3bb].tolist()
         ax.scatter(
             pcs[data_index[0], 0],
             pcs[data_index[0], 1],

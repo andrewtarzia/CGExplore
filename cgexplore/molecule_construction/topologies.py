@@ -10,7 +10,6 @@ Author: Andrew Tarzia
 """
 
 import stk
-
 from stk.molecular.topology_graphs.cage.vertices import _CageVertex
 
 
@@ -28,9 +27,7 @@ class TerminalVertex(_CageVertex):
         core_centroid = building_block.get_centroid(
             atom_ids=building_block.get_core_atom_ids(),
         )
-        edge_centroid = sum(
-            edge.get_position() for edge in edges
-        ) / len(edges)
+        edge_centroid = sum(edge.get_position() for edge in edges) / len(edges)
         return building_block.with_rotation_between_vectors(
             start=(fg_centroid - core_centroid),
             # _cap_direction is defined by a subclass.
@@ -39,10 +36,7 @@ class TerminalVertex(_CageVertex):
         ).get_position_matrix()
 
     def map_functional_groups_to_edges(self, building_block, edges):
-
-        return {
-            fg_id: edge.get_id() for fg_id, edge in enumerate(edges)
-        }
+        return {fg_id: edge.get_id() for fg_id, edge in enumerate(edges)}
 
 
 class Core3Arm1(stk.cage.Cage):
@@ -288,14 +282,10 @@ class FourC1Arm(Precursor):
                 position_matrix=[[-3, 0, 0], [0, 0, 0]],
             ),
         )
-        const_mol = stk.ConstructedMolecule(
-            topology_graph=Core4Arm1(bb_tuple)
-        )
+        const_mol = stk.ConstructedMolecule(topology_graph=Core4Arm1(bb_tuple))
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{bead.element_string}]" f"[{abead1.element_string}]"
-            ),
+            smarts=(f"[{bead.element_string}]" f"[{abead1.element_string}]"),
             bonders=(1,),
             deleters=(),
         )
@@ -362,14 +352,10 @@ class ThreeC1Arm(Precursor):
                 position_matrix=[[-3, 0, 0], [0, 0, 0]],
             ),
         )
-        const_mol = stk.ConstructedMolecule(
-            topology_graph=Core3Arm1(bb_tuple)
-        )
+        const_mol = stk.ConstructedMolecule(topology_graph=Core3Arm1(bb_tuple))
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{bead.element_string}][{abead1.element_string}]"
-            ),
+            smarts=(f"[{bead.element_string}][{abead1.element_string}]"),
             bonders=(1,),
             deleters=(),
         )
@@ -384,9 +370,7 @@ class ThreeC2Arm(Precursor):
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
-        self._name = (
-            f"3C2{bead.bead_type}{abead1.bead_type}{abead2.bead_type}"
-        )
+        self._name = f"3C2{bead.bead_type}{abead1.bead_type}{abead2.bead_type}"
         self._bead_set = {
             bead.bead_type: bead,
             abead1.bead_type: abead1,
@@ -416,14 +400,9 @@ class ThreeC2Arm(Precursor):
                 position_matrix=[[-3, 0, 0], [0, 0, 0]],
             ),
         )
-        const_mol = stk.ConstructedMolecule(
-            topology_graph=Core3Arm2(bb_tuple)
-        )
+        const_mol = stk.ConstructedMolecule(topology_graph=Core3Arm2(bb_tuple))
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{abead1.element_string}]"
-                f"[{abead2.element_string}]"
-            ),
+            smarts=(f"[{abead1.element_string}]" f"[{abead2.element_string}]"),
             bonders=(1,),
             deleters=(),
         )
@@ -478,9 +457,7 @@ class TwoC1Arm(Precursor):
             core_c_bb,
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{abead1.element_string}][{bead.element_string}]"
-            ),
+            smarts=(f"[{abead1.element_string}][{bead.element_string}]"),
             bonders=(0,),
             deleters=(),
             placers=(0, 1),
@@ -503,9 +480,7 @@ class TwoC2Arm(Precursor):
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
-        self._name = (
-            f"2C2{bead.bead_type}{abead1.bead_type}{abead2.bead_type}"
-        )
+        self._name = f"2C2{bead.bead_type}{abead1.bead_type}{abead2.bead_type}"
         self._bead_set = {
             bead.bead_type: bead,
             abead1.bead_type: abead1,
@@ -532,8 +507,7 @@ class TwoC2Arm(Precursor):
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
             smarts=(
-                f"[{abead2.element_string}X1]"
-                f"[{abead1.element_string}]"
+                f"[{abead2.element_string}X1]" f"[{abead1.element_string}]"
             ),
             bonders=(0,),
             deleters=(),
@@ -594,8 +568,7 @@ class TwoC3Arm(Precursor):
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
             smarts=(
-                f"[{abead3.element_string}X1]"
-                f"[{abead2.element_string}]"
+                f"[{abead3.element_string}X1]" f"[{abead2.element_string}]"
             ),
             bonders=(0,),
             deleters=(),

@@ -9,32 +9,31 @@ Author: Andrew Tarzia
 
 """
 
-import sys
-import os
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib as mpl
-from matplotlib.patches import Patch
-import numpy as np
-
-from env_set import figures, calculations, outputdata
-from analysis import (
-    write_out_mapping,
-    get_lowest_energy_data,
-    convert_tors,
-    convert_topo,
-    topology_labels,
-    Xc_map,
-    data_to_array,
-    shape_threshold,
-    eb_str,
-    angle_str,
-    isomer_energy,
-    target_shapes,
-    mapshape_to_topology,
-)
-
 import logging
+import os
+import sys
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from analysis import (
+    Xc_map,
+    angle_str,
+    convert_topo,
+    convert_tors,
+    data_to_array,
+    eb_str,
+    get_lowest_energy_data,
+    isomer_energy,
+    mapshape_to_topology,
+    shape_threshold,
+    target_shapes,
+    topology_labels,
+    write_out_mapping,
+)
+from env_set import calculations, figures, outputdata
+from matplotlib.patches import Patch
 
 logging.basicConfig(
     level=logging.INFO,
@@ -61,7 +60,6 @@ def shape_vector_distributions(all_data, figure_output):
         "toff": ("#F9A03F", "stepfilled"),
     }
     for shape_type in ("n", "l"):
-
         fig, ax = plt.subplots(figsize=(8, 10))
         height = 0
         for i, shape in enumerate(present_shape_values):
@@ -72,9 +70,7 @@ def shape_vector_distributions(all_data, figure_output):
 
             for tor in ("toff", "ton"):
                 tdata = trim[trim["torsions"] == tor]
-                values = [
-                    i for i in list(tdata[shape]) if not pd.isna(i)
-                ]
+                values = [i for i in list(tdata[shape]) if not pd.isna(i)]
 
                 ax.hist(
                     x=values,
@@ -118,9 +114,7 @@ def shape_vector_distributions(all_data, figure_output):
 
         fig.tight_layout()
         fig.savefig(
-            os.path.join(
-                figure_output, f"shape_vectors_{shape_type}.pdf"
-            ),
+            os.path.join(figure_output, f"shape_vectors_{shape_type}.pdf"),
             dpi=720,
             bbox_inches="tight",
         )
@@ -217,7 +211,6 @@ def shape_topology(all_data, figure_output):
     for tstr in color_map:
         tdata = trim[trim["topology"] == tstr]
         for shape_type in ("n", "l"):
-
             if tstr == "6P8":
                 fig, ax = plt.subplots(figsize=(8, 4))
                 tor_tests = ("toff",)
@@ -234,9 +227,7 @@ def shape_topology(all_data, figure_output):
                 flat_axs = axs.flatten()
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[
-                    tstr
-                ]
+                target_shape = mapshape_to_topology(shape_type, False)[tstr]
             except KeyError:
                 continue
 
@@ -282,8 +273,7 @@ def shape_topology(all_data, figure_output):
                     density=False,
                     histtype="stepfilled",
                     label=(
-                        f"{eb_str(True)} < {isomer_energy()} "
-                        "kJmol$^{-1}$"
+                        f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"
                     ),
                 )
                 ax.set_title(
@@ -320,7 +310,6 @@ def shape_topology_main(all_data, figure_output):
     for tstr in color_map:
         tdata = trim[trim["topology"] == tstr]
         for shape_type in ("n", "l"):
-
             if tstr not in ("6P9", "6P12", "8P12", "8P16"):
                 continue
 
@@ -329,9 +318,7 @@ def shape_topology_main(all_data, figure_output):
                 tor_tests = ("ton",)
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[
-                    tstr
-                ]
+                target_shape = mapshape_to_topology(shape_type, False)[tstr]
             except KeyError:
                 continue
 
@@ -377,8 +364,7 @@ def shape_topology_main(all_data, figure_output):
                     density=False,
                     histtype="stepfilled",
                     label=(
-                        f"{eb_str(True)} < {isomer_energy()} "
-                        "kJmol$^{-1}$"
+                        f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"
                     ),
                 )
                 ax.set_title(
@@ -432,9 +418,7 @@ def shape_input_relationships(all_data, figure_output):
                 flat_axs = axs.flatten()
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[
-                    tstr
-                ]
+                target_shape = mapshape_to_topology(shape_type, False)[tstr]
             except KeyError:
                 continue
 
@@ -531,7 +515,6 @@ def shape_input_relationships(all_data, figure_output):
 
 
 def plot_topology_flex(data, comparison, mode, figure_output):
-
     if comparison == "shaped":
         id1 = 2
         id2 = 1
@@ -571,9 +554,7 @@ def plot_topology_flex(data, comparison, mode, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    categories_ton = {
-        convert_topo(i): 0 for i in data if i not in tstr_ignore
-    }
+    categories_ton = {convert_topo(i): 0 for i in data if i not in tstr_ignore}
     categories_toff = {
         convert_topo(i): 0 for i in data if i not in tstr_ignore
     }
@@ -587,12 +568,10 @@ def plot_topology_flex(data, comparison, mode, figure_output):
 
         try:
             categories_ton[convert_topo(tstr)] = (
-                data[tstr]["ton"][mode][id1]
-                / data[tstr]["ton"][mode][id2]
+                data[tstr]["ton"][mode][id1] / data[tstr]["ton"][mode][id2]
             ) * 100
             categories_toff[convert_topo(tstr)] = (
-                data[tstr]["toff"][mode][id1]
-                / data[tstr]["toff"][mode][id2]
+                data[tstr]["toff"][mode][id1] / data[tstr]["toff"][mode][id2]
             ) * 100
             if categories_toff[convert_topo(tstr)] == 0:
                 categories_subtracted[convert_topo(tstr)] = 0
@@ -686,23 +665,19 @@ def flexshapeeffect_per_property(all_data, figure_output):
         for tor in color_map:
             tor_data = tdata[tdata["torsions"] == tor]
 
-            stable_data = tor_data[
-                tor_data["energy_per_bb"] < isomer_energy()
-            ]
+            stable_data = tor_data[tor_data["energy_per_bb"] < isomer_energy()]
             topology_data[tstr][tor] = {}
             for shape_type in ("n", "l"):
                 try:
-                    target_shape = mapshape_to_topology(
-                        shape_type, False
-                    )[tstr]
+                    target_shape = mapshape_to_topology(shape_type, False)[
+                        tstr
+                    ]
                 except KeyError:
                     continue
 
                 c_column = f"{shape_type}_{target_shape}"
 
-                shaped_data = tor_data[
-                    tor_data[c_column] < shape_threshold()
-                ]
+                shaped_data = tor_data[tor_data[c_column] < shape_threshold()]
                 stable_shaped_data = stable_data[
                     stable_data[c_column] < shape_threshold()
                 ]
@@ -715,16 +690,11 @@ def flexshapeeffect_per_property(all_data, figure_output):
 
     plot_topology_flex(topology_data, "shaped", "l", figure_output)
     plot_topology_flex(topology_data, "shaped", "n", figure_output)
-    plot_topology_flex(
-        topology_data, "stableshaped", "l", figure_output
-    )
-    plot_topology_flex(
-        topology_data, "stableshaped", "n", figure_output
-    )
+    plot_topology_flex(topology_data, "stableshaped", "l", figure_output)
+    plot_topology_flex(topology_data, "stableshaped", "n", figure_output)
 
 
 def plot_shape_flex(data, mode, figure_output):
-
     ylabl = r"% ($s$ < 2)"
 
     for tstr in data:
@@ -842,9 +812,7 @@ def flexshapeeffect_per_shape(all_data, figure_output):
                     ]
                     if len(col_values) > 0:
                         shaped_values = [
-                            i
-                            for i in col_values
-                            if i < shape_threshold()
+                            i for i in col_values if i < shape_threshold()
                         ]
                         topology_data[tstr][tor][shape_type][column] = (
                             len(col_values),
@@ -943,7 +911,6 @@ def shape_summary(all_data, figure_output):
     xpos = []
     xlabls = []
     for tstr in color_map:
-
         xpos.append(count)
         xlabls.append(convert_topo(tstr))
         tdata = trim[trim["topology"] == tstr]
@@ -954,9 +921,7 @@ def shape_summary(all_data, figure_output):
                 tor_tests = ("ton", "toff")
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[
-                    tstr
-                ]
+                target_shape = mapshape_to_topology(shape_type, False)[tstr]
             except KeyError:
                 continue
 
@@ -1036,10 +1001,7 @@ def shape_summary(all_data, figure_output):
         ax.tick_params(axis="both", which="major", labelsize=16)
         # ax.set_xlabel("num. building blocks", fontsize=16)
         ax.set_ylabel(
-            (
-                f"$s$ ({eb_str(True)} < {isomer_energy()}"
-                " kJmol$^{-1}$)"
-            ),
+            (f"$s$ ({eb_str(True)} < {isomer_energy()}" " kJmol$^{-1}$)"),
             fontsize=16,
         )
         ax.legend(fontsize=16)

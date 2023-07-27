@@ -9,24 +9,22 @@ Author: Andrew Tarzia
 
 """
 
-import sys
-import os
 import json
-import numpy as np
+import logging
+import os
+import sys
+
 import matplotlib.pyplot as plt
-
-from env_set import figures, calculations, outputdata
-
+import numpy as np
 from analysis import (
-    topology_labels,
-    write_out_mapping,
-    get_lowest_energy_data,
-    data_to_array,
     convert_topo,
     convert_tors,
+    data_to_array,
+    get_lowest_energy_data,
+    topology_labels,
+    write_out_mapping,
 )
-
-import logging
+from env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,

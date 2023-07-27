@@ -11,16 +11,16 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 
 """
 
+import logging
 import time
+
 import numpy as np
-from openmm import openmm, app
+from openmm import app, openmm
 from openmmtools import integrators
 
+from .ensembles import Timestep, Trajectory
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
-from .ensembles import Trajectory, Timestep
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,

@@ -9,12 +9,13 @@ Author: Andrew Tarzia
 
 """
 
-import stk
-import os
 import json
+import os
+from dataclasses import dataclass
+
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass
+import stk
 
 
 @dataclass
@@ -191,14 +192,10 @@ class Ensemble:
     def get_lowest_e_conformer(self):
         try:
             min_energy_conformerid = 0
-            min_energy = self._data[min_energy_conformerid][
-                "total energy"
-            ][0]
+            min_energy = self._data[min_energy_conformerid]["total energy"][0]
         except KeyError:
             min_energy_conformerid = "0"
-            min_energy = self._data[min_energy_conformerid][
-                "total energy"
-            ][0]
+            min_energy = self._data[min_energy_conformerid]["total energy"][0]
 
         for confid in self._data:
             conf_energy = self._data[confid]["total energy"][0]
@@ -209,11 +206,8 @@ class Ensemble:
         return self.get_conformer(min_energy_conformerid)
 
     def get_conformer(self, conf_id):
-
         if conf_id not in self._data:
-            raise ValueError(
-                f"conformer {conf_id} not found in ensemble."
-            )
+            raise ValueError(f"conformer {conf_id} not found in ensemble.")
         conf_lines = self._trajectory[conf_id]
         extracted_id = int(conf_lines[1].strip().split()[1])
         if extracted_id != int(conf_id):
@@ -230,14 +224,10 @@ class Ensemble:
             )
         conf_data = self._data[conf_id]
         source = conf_data["source"]
-        energy_decomp = {
-            i: conf_data[i] for i in conf_data if i != "source"
-        }
+        energy_decomp = {i: conf_data[i] for i in conf_data if i != "source"}
         return Conformer(
             molecule=(
-                self._base_molecule.with_position_matrix(
-                    np.array(new_pos_mat)
-                )
+                self._base_molecule.with_position_matrix(np.array(new_pos_mat))
             ),
             conformer_id=conf_id,
             energy_decomposition=energy_decomp,

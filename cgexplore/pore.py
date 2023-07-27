@@ -9,8 +9,9 @@ Author: Andrew Tarzia
 
 """
 
-import os
 import json
+import os
+
 import numpy as np
 from scipy.spatial.distance import cdist
 

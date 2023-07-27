@@ -46,9 +46,7 @@ def outputdata():
 
 
 def pymol_path():
-    return pathlib.Path(
-        "/home/atarzia/pymol-open-source-build/bin/pymol"
-    )
+    return pathlib.Path("/home/atarzia/pymol-open-source-build/bin/pymol")
 
 
 def shape_path():

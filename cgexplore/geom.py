@@ -9,12 +9,13 @@ Author: Andrew Tarzia
 
 """
 
+from collections import defaultdict
+
 import numpy as np
 from rdkit.Chem import AllChem as rdkit
-from collections import defaultdict
 from scipy.spatial.distance import pdist
 
-from .utilities import get_atom_distance, angle_between, get_dihedral
+from .utilities import angle_between, get_atom_distance, get_dihedral
 
 
 class GeomMeasure:
@@ -57,9 +58,7 @@ class GeomMeasure:
         pos_mat = molecule.get_position_matrix()
         angles = defaultdict(list)
         for a_ids in self._get_paths(molecule, 3):
-            atoms = list(
-                molecule.get_atoms(atom_ids=[i for i in a_ids])
-            )
+            atoms = list(molecule.get_atoms(atom_ids=[i for i in a_ids]))
             atom1 = atoms[0]
             atom2 = atoms[1]
             atom3 = atoms[2]
@@ -84,9 +83,7 @@ class GeomMeasure:
 
         torsions = defaultdict(list)
         for a_ids in self._get_paths(molecule, 5):
-            atoms = list(
-                molecule.get_atoms(atom_ids=[i for i in a_ids])
-            )
+            atoms = list(molecule.get_atoms(atom_ids=[i for i in a_ids]))
             estrings = tuple([i.__class__.__name__ for i in atoms])
             if estrings != self._torsion_set:
                 continue

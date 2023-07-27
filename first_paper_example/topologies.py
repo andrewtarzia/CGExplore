@@ -9,8 +9,8 @@ Author: Andrew Tarzia
 
 """
 
-import stk
 import numpy as np
+import stk
 
 
 def cage_topology_options(fg_set):
@@ -46,18 +46,11 @@ def cage_topology_options(fg_set):
 
 
 class M4L82(stk.cage.Cage):
-
     _non_linears = (
         stk.cage.NonLinearVertex(0, [0, 0, np.sqrt(6) / 2]),
-        stk.cage.NonLinearVertex(
-            1, [-1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]
-        ),
-        stk.cage.NonLinearVertex(
-            2, [1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]
-        ),
-        stk.cage.NonLinearVertex(
-            3, [0, 2 * np.sqrt(3) / 3, -np.sqrt(6) / 6]
-        ),
+        stk.cage.NonLinearVertex(1, [-1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]),
+        stk.cage.NonLinearVertex(2, [1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]),
+        stk.cage.NonLinearVertex(3, [0, 2 * np.sqrt(3) / 3, -np.sqrt(6) / 6]),
     )
 
     paired_wall_1_coord = (
@@ -135,7 +128,6 @@ class M4L82(stk.cage.Cage):
 
 
 class CGM4L8(stk.cage.M4L8):
-
     _vertex_prototypes = (
         stk.cage.NonLinearVertex(0, [2, 0, 0]),
         stk.cage.NonLinearVertex(1, [0, 2, 0]),

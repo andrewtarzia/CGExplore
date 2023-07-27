@@ -9,27 +9,26 @@ Author: Andrew Tarzia
 
 """
 
-import sys
-import stk
+import itertools
+import logging
 import os
-from openmm import openmm
+import sys
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import itertools
+import stk
+from env_set import cages, figures
+from openmm import openmm
+from rdkit import RDLogger
 
+from cgexplore.beads import bead_library_check, produce_bead_library
+from cgexplore.openmm_optimizer import CGOMMDynamics, CGOMMOptimizer
 from cgexplore.utilities import (
-    check_directory,
     angle_between,
+    check_directory,
     get_dihedral,
 )
-from cgexplore.openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
-from cgexplore.beads import produce_bead_library, bead_library_check
-
-from env_set import cages, figures
-
-import logging
-from rdkit import RDLogger
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,10 +50,7 @@ def torsion_function(x, k, theta0, n):
 
 
 def nonbond_function(x, epsilon1, sigma1, epsilon2, sigma2):
-    return (
-        np.sqrt(epsilon1 * epsilon2)
-        * ((sigma1 + sigma2) / (2 * x)) ** 12
-    )
+    return np.sqrt(epsilon1 * epsilon2) * ((sigma1 + sigma2) / (2 * x)) ** 12
 
 
 def c_beads():
@@ -82,7 +78,6 @@ def points_in_circum(r, n=100):
 
 
 def random_test(beads, calculation_output, figure_output):
-
     bead = beads["c0000"]
     linear_bb = stk.BuildingBlock(
         smiles=(
@@ -157,9 +152,7 @@ def random_test(beads, calculation_output, figure_output):
             m_posmat = data[timestep][2]
             z_posmat = zero_data[timestep][2]
             rdata.append(
-                np.sqrt(
-                    np.sum((m_posmat - z_posmat) ** 2) / len(m_posmat)
-                )
+                np.sqrt(np.sum((m_posmat - z_posmat) ** 2) / len(m_posmat))
             )
 
         axs[0].plot(
@@ -220,7 +213,6 @@ def random_test(beads, calculation_output, figure_output):
 
 
 def test1(beads, calculation_output, figure_output):
-
     bead = beads["c0000"]
     linear_bb = stk.BuildingBlock(
         smiles=f"[{bead.element_string}][{bead.element_string}]",
@@ -348,7 +340,6 @@ def test1(beads, calculation_output, figure_output):
 
 
 def test2(beads, calculation_output, figure_output):
-
     bead = beads["c0000"]
     linear_bb = stk.BuildingBlock(
         smiles=(
@@ -407,9 +398,7 @@ def test2(beads, calculation_output, figure_output):
     coords1 = np.linspace(0.6, 2, 25)
     coords2 = np.linspace(0.6, 2, 25)
     xys = []
-    for i, (coord1, coord2) in enumerate(
-        itertools.product(coords1, coords2)
-    ):
+    for i, (coord1, coord2) in enumerate(itertools.product(coords1, coords2)):
         name = f"l2_{i}"
         new_posmat = linear_bb.get_position_matrix()
         new_posmat[1] = new_posmat[1] * coord1
@@ -511,7 +500,6 @@ def test2(beads, calculation_output, figure_output):
 
 
 def test3(beads, calculation_output, figure_output):
-
     bead = beads["c0000"]
     linear_bb = stk.BuildingBlock(
         smiles=(
@@ -652,7 +640,6 @@ def test3(beads, calculation_output, figure_output):
 
 
 def test4(beads, calculation_output, figure_output):
-
     bead = beads["c0000"]
     linear_bb = stk.BuildingBlock(
         smiles=(
@@ -790,7 +777,6 @@ def test4(beads, calculation_output, figure_output):
 
 
 def test5(beads, calculation_output, figure_output):
-
     bead = beads["c0000"]
     linear_bb = stk.BuildingBlock(
         smiles=f"[{bead.element_string}][{bead.element_string}]",
@@ -899,9 +885,7 @@ def main():
     test4(beads, calculation_output, figure_output)
     test5(beads, calculation_output, figure_output)
 
-    raise SystemExit(
-        "want to use this to define the flexibility widths?"
-    )
+    raise SystemExit("want to use this to define the flexibility widths?")
 
 
 if __name__ == "__main__":

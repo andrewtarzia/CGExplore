@@ -10,7 +10,6 @@ Author: Andrew Tarzia
 """
 
 import numpy as np
-
 from stk import (
     get_acute_vector,
     get_plane_normal,

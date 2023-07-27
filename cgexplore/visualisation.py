@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 import os
+
 import stk
 
 
@@ -44,7 +45,6 @@ class Pymol:
         }
 
     def _get_zoom_string(self, structure_files):
-
         max_max_diam = 0
         for fi in structure_files:
             max_diam = stk.BuildingBlock.init_from_file(
@@ -62,7 +62,6 @@ class Pymol:
         orient_atoms,
         big_colour,
     ):
-
         if self._settings["zoom_string"] == "custom":
             zoom_string = self._get_zoom_string(structure_files)
         else:

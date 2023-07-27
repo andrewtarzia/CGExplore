@@ -9,36 +9,35 @@ Author: Andrew Tarzia
 
 """
 
-import sys
-import os
-import stk
-import stko
 import json
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
+import logging
+import os
+import sys
+
 import matplotlib as mpl
 import matplotlib.patches as mpatches
-
-from env_set import figures, calculations, outputdata
-
-from cgexplore.utilities import convert_pyramid_angle
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import stk
+import stko
 from analysis import (
-    write_out_mapping,
-    eb_str,
-    pore_str,
-    rg_str,
-    angle_str,
     Xc_map,
-    data_to_array,
-    isomer_energy,
-    get_lowest_energy_data,
+    angle_str,
     convert_topo,
     convert_tors,
+    data_to_array,
+    eb_str,
+    get_lowest_energy_data,
+    isomer_energy,
+    pore_str,
+    rg_str,
     topology_labels,
+    write_out_mapping,
 )
+from env_set import calculations, figures, outputdata
 
-import logging
+from cgexplore.utilities import convert_pyramid_angle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -146,9 +145,7 @@ def geom_distributions(all_data, geom_data, figure_output):
     }
 
     tcmap = topology_labels(short="P")
-    tcpos = {
-        tstr: i for i, tstr in enumerate(tcmap) if tstr not in ("6P8",)
-    }
+    tcpos = {tstr: i for i, tstr in enumerate(tcmap) if tstr not in ("6P8",)}
     vdw_frame = all_data[all_data["vdws"] == "von"]
 
     for comp in comparisons:
@@ -210,9 +207,7 @@ def geom_distributions(all_data, geom_data, figure_output):
                                 # square-pyramid instead.
                                 if target_oppos is not None:
                                     ovalue = observed - target_oppos
-                                    value = min(
-                                        (abs(ovalue), abs(value))
-                                    )
+                                    value = min((abs(ovalue), abs(value)))
 
                                 values.append(value)
                                 # energies.append(energy)
@@ -309,9 +304,7 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
 
                 if tstr in ("6P8",):
                     otoff_voff = o1.replace("von", "voff")
-                    mtoffvoff = stk.BuildingBlock.init_from_file(
-                        otoff_voff
-                    )
+                    mtoffvoff = stk.BuildingBlock.init_from_file(otoff_voff)
                     tdata[o1] = {
                         "r2": rmsd_calc.get_results(m2).get_rmsd(),
                         "r3": rmsd_calc.get_results(m3).get_rmsd(),
@@ -326,25 +319,15 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
                     otoff_von = o1.replace("ton", "toff")
                     oton_voff = o1.replace("von", "voff")
                     otoff_voff = otoff_von.replace("von", "voff")
-                    mtoffvon = stk.BuildingBlock.init_from_file(
-                        otoff_von
-                    )
-                    mtonvoff = stk.BuildingBlock.init_from_file(
-                        oton_voff
-                    )
-                    mtoffvoff = stk.BuildingBlock.init_from_file(
-                        otoff_voff
-                    )
+                    mtoffvon = stk.BuildingBlock.init_from_file(otoff_von)
+                    mtonvoff = stk.BuildingBlock.init_from_file(oton_voff)
+                    mtoffvoff = stk.BuildingBlock.init_from_file(otoff_voff)
                     tdata[o1] = {
                         "r2": rmsd_calc.get_results(m2).get_rmsd(),
                         "r3": rmsd_calc.get_results(m3).get_rmsd(),
                         "r4": rmsd_calc.get_results(m4).get_rmsd(),
-                        "rtoffvon": rmsd_calc.get_results(
-                            mtoffvon
-                        ).get_rmsd(),
-                        "rtonvoff": rmsd_calc.get_results(
-                            mtonvoff
-                        ).get_rmsd(),
+                        "rtoffvon": rmsd_calc.get_results(mtoffvon).get_rmsd(),
+                        "rtonvoff": rmsd_calc.get_results(mtonvoff).get_rmsd(),
                         "rtoffvoff": rmsd_calc.get_results(
                             mtoffvoff
                         ).get_rmsd(),
@@ -369,7 +352,6 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
         flat_axs,
         ("rtoffvon", "rtonvoff", "rtoffvoff"),
     ):
-
         for tstr in tcmap:
             if tstr in ("6P8",) and col in ("rtoffvon", "rtonvoff"):
                 continue
@@ -587,7 +569,6 @@ def single_value_distributions(all_data, figure_output):
 
 
 def plot_sorted(bb_data, color_map, figure_output):
-
     fig, ax = plt.subplots(figsize=(8, 3))
     max_ = 6
 
@@ -643,7 +624,6 @@ def plot_sorted(bb_data, color_map, figure_output):
 
 
 def plot_mixed_unstable(bb_data, color_map, figure_output):
-
     fig, ax = plt.subplots(figsize=(8, 5))
     max_ = 3
 
@@ -666,8 +646,7 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
             ]
 
             percent_mixed = (
-                len([i for i in stable_isomers if i > 1])
-                / len(stable_isomers)
+                len([i for i in stable_isomers if i > 1]) / len(stable_isomers)
             ) * 100
             percent_unstable = (
                 len([i for i in stable_isomers if i == 0])
@@ -686,8 +665,7 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
             lw=3,
             linestyle="-",
             label=(
-                f"{cltitle[0]}C: "
-                f"{convert_tors(tor, num=False)}, unstable"
+                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, unstable"
             ),
         )
         ax.plot(
@@ -698,8 +676,7 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
             lw=3,
             linestyle="--",
             label=(
-                f"{cltitle[0]}C: "
-                f"{convert_tors(tor, num=False)}, mixed"
+                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, mixed"
             ),
         )
 
@@ -721,7 +698,6 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
 
 
 def plot_clangle(cl_data, color_map, figure_output):
-
     max_ = 6
 
     clangles = sorted([int(i) for i in cl_data.keys()])
@@ -808,7 +784,6 @@ def plot_clangle(cl_data, color_map, figure_output):
 
 
 def plot_average(bb_data, color_map, figure_output):
-
     fig, ax = plt.subplots(figsize=(8, 5))
     max_ = 11
 
@@ -903,7 +878,6 @@ def mixed_distributions(all_data, figure_output):
 
 
 def plot_vs_2d_distributions(data, color_map, figure_output):
-
     topologies = [i for i in topology_labels(short="P") if i != "6P8"]
 
     topology_data = {}
@@ -923,9 +897,7 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
         for tor in color_map:
             tor_data = tdata[tdata["torsions"] == tor]
 
-            stable_data = tor_data[
-                tor_data["energy_per_bb"] < isomer_energy()
-            ]
+            stable_data = tor_data[tor_data["energy_per_bb"] < isomer_energy()]
             bas = stable_data["c2angle"]
             clangles = stable_data["clangle"]
             ax.scatter(
@@ -960,7 +932,6 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
 
 
 def plot_topology_flex(data, figure_output):
-
     fig, ax = plt.subplots(figsize=(8, 5))
 
     categories_ton = {convert_topo(i): 0 for i in data}
@@ -1042,7 +1013,6 @@ def plot_topology_flex(data, figure_output):
 
 
 def plot_topology_pore_flex(data, figure_output):
-
     color_map = {
         "stable": "#086788",
         "all": "#0B2027",
@@ -1069,16 +1039,11 @@ def plot_topology_pore_flex(data, figure_output):
                 cdata[cdata["torsions"] == "toff"]["energy_per_bb"]
             )
             ton_pore = float(cdata[cdata["torsions"] == "ton"]["pore"])
-            toff_pore = float(
-                cdata[cdata["torsions"] == "toff"]["pore"]
-            )
+            toff_pore = float(cdata[cdata["torsions"] == "toff"]["pore"])
             rel_difference = (ton_pore - toff_pore) / toff_pore
 
             differences.append(rel_difference)
-            if (
-                ton_energy > isomer_energy()
-                or toff_energy > isomer_energy()
-            ):
+            if ton_energy > isomer_energy() or toff_energy > isomer_energy():
                 continue
 
             stable_differences.append(rel_difference)
@@ -1368,9 +1333,7 @@ def opt_outcome_distributions(
             cage_idx = str(row["index"])
             o1d_file = calculation_output / f"{cage_idx}_o1d_omm.out"
             o2_file = calculation_output / f"{cage_idx}_o2_omm.out"
-            o2opt_file = (
-                calculation_output / f"{cage_idx}_o2opt_omm.out"
-            )
+            o2opt_file = calculation_output / f"{cage_idx}_o2opt_omm.out"
             o3_file = calculation_output / f"{cage_idx}_o3_omm.out"
             res_file = calculation_output / f"{cage_idx}_res.json"
 
@@ -1436,10 +1399,7 @@ def opt_outcome_distributions(
             if output[cageidx]["final_energy"] < isomer_energy():
                 num_mdfailed_and_low_e += 1
 
-        if (
-            output[cageidx]["mdexploded"]
-            and output[cageidx]["mdfailed"]
-        ):
+        if output[cageidx]["mdexploded"] and output[cageidx]["mdfailed"]:
             num_mdfailed_and_mdexploded += 1
 
         if check_same_energy(
@@ -1476,21 +1436,13 @@ def opt_outcome_distributions(
                 ]
             )
 
-        if check_same_energy(
-            output[cageidx]["min_o1d_energy"], min_energy
-        ):
+        if check_same_energy(output[cageidx]["min_o1d_energy"], min_energy):
             o1_is_min += 1
-        if check_same_energy(
-            output[cageidx]["min_o2_energy"], min_energy
-        ):
+        if check_same_energy(output[cageidx]["min_o2_energy"], min_energy):
             o2_is_min += 1
-        if check_same_energy(
-            output[cageidx]["min_o2opt_energy"], min_energy
-        ):
+        if check_same_energy(output[cageidx]["min_o2opt_energy"], min_energy):
             o2opt_is_min += 1
-        if check_same_energy(
-            output[cageidx]["min_o3_energy"], min_energy
-        ):
+        if check_same_energy(output[cageidx]["min_o3_energy"], min_energy):
             o3_is_min += 1
 
         try:
@@ -1503,10 +1455,7 @@ def opt_outcome_distributions(
                 atol=1e-1,
                 rtol=0,
             ):
-                if (
-                    output[cageidx]["final_energy"]
-                    < isomer_energy() * 10
-                ):
+                if output[cageidx]["final_energy"] < isomer_energy() * 10:
                     print(
                         cageidx,
                         output[cageidx]["min_o2opt_energy"],
@@ -1551,9 +1500,7 @@ def opt_outcome_distributions(
     logging.info(f"MD failed + low E: {num_mdfailed_and_low_e}")
     logging.info(f"MD exploded and optimised: {num_mdexploded_and_opt}")
     logging.info(f"MD failed and optimised: {num_mdfailed_and_opt}")
-    logging.info(
-        f"MD exploded and MD failed: {num_mdfailed_and_mdexploded}"
-    )
+    logging.info(f"MD exploded and MD failed: {num_mdfailed_and_mdexploded}")
     logging.info(f"failed cages: {failed_idxs}")
     logging.info(f"exploded cages: {exploded_idxs}")
 

@@ -9,17 +9,17 @@ Author: Andrew Tarzia
 
 """
 
-import os
-import numpy as np
 import itertools
-from dataclasses import replace
-from openmm import openmm, OpenMMException
-
-from .openmm_optimizer import CGOMMOptimizer, CGOMMDynamics
-from .ensembles import Conformer
-from .beads import periodic_table
-
 import logging
+import os
+from dataclasses import replace
+
+import numpy as np
+from openmm import OpenMMException, openmm
+
+from .beads import periodic_table
+from .ensembles import Conformer
+from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer
 
 logging.basicConfig(
     level=logging.INFO,
