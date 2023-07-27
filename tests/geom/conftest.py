@@ -1,10 +1,10 @@
+import numpy as np
 import pytest
 import stk
+
 import cgexplore
-import numpy as np
 
 from .case_data import CaseData
-
 
 # Three tests cases with four atoms with known bond lengths,
 # angles and torsions.
