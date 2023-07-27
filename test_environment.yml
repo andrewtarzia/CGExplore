@@ -39,7 +39,7 @@ dependencies:
   - keyutils=1.6.1=h166bdaf_0
   - krb5=1.21.1=h659d440_0
   - ld_impl_linux-64=2.40=h41732ed_0
-  - libabseil=20230125.3=cxx17_h59595ed_0
+  - libabseil=20220623.0 cxx17*
   - libaec=1.0.6=hcb278e6_1
   - libblas=3.9.0=17_linux64_openblas
   - libcblas=3.9.0=17_linux64_openblas

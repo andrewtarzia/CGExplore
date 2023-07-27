@@ -45,7 +45,6 @@ jobs:
         with:
           auto-update-conda: true
           python-version: "3.11"
-          cache: "pip"
           mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
