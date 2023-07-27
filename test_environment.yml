@@ -26,17 +26,15 @@ dependencies:
   - ca-certificates=2023.7.22=hbcca054_0
   - cftime=1.6.2=py311h4c7f6c3_1
   - charset-normalizer=3.2.0=pyhd8ed1ab_0
-  - cuda-version=11.8=h70ddcb2_2
   - cudatoolkit=11.8.0=h37601d7_11
-  - cudnn=8.8.0.121=h0800d71_1
   - hdf4=4.2.15=h501b40f_6
   - hdf5=1.14.1=nompi_h4f84152_100
   - icu=72.1=hcb278e6_0
   - idna=3.4=pyhd8ed1ab_0
   - importlib-metadata=6.8.0=pyha770c72_0
   - importlib_metadata=6.8.0=hd8ed1ab_0
-  - jax=0.4.13=pyhd8ed1ab_0
-  - jaxlib=0.4.12=cuda112py311h8308670_201
+  - jax=0.4.1=pyhd8ed1ab_0
+  - jaxlib=0.3.22=cpu_py39h7e0d102_0
   - just=1.14.0=he8a937b_0
   - keyutils=1.6.1=h166bdaf_0
   - krb5=1.21.1=h659d440_0
@@ -134,7 +132,6 @@ dependencies:
       - build==0.10.0
       - certifi==2023.7.22
       - cffi==1.15.1
-      - cgexplore==0.1.dev397+ga15c458.d20230727
       - ciso8601==2.3.0
       - click==8.1.6
       - contourpy==1.1.0
