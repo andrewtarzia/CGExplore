@@ -92,45 +92,81 @@ class GeomMeasure:
 
         return angles
 
-    def calculate_torsions(self, molecule, absolute):
+    def calculate_torsions(self, molecule, absolute, path_length):
         if self._torsion_set is None:
             return []
 
+        if path_length not in (4, 5):
+            raise NotImplementedError(
+                "Cannot handle torions other than paths 4, 5"
+            )
+
         torsions = defaultdict(list)
-        for a_ids in self._get_paths(molecule, 5):
+
+        for a_ids in self._get_paths(molecule, path_length):
             atoms = list(molecule.get_atoms(atom_ids=[i for i in a_ids]))
             estrings = tuple([i.__class__.__name__ for i in atoms])
             if estrings != self._torsion_set:
                 continue
-            torsion_type_option1 = "_".join(
-                (
-                    atoms[0].__class__.__name__,
-                    atoms[1].__class__.__name__,
-                    atoms[3].__class__.__name__,
-                    atoms[4].__class__.__name__,
+
+            if path_length == 5:
+                torsion_type_option1 = "_".join(
+                    (
+                        atoms[0].__class__.__name__,
+                        atoms[1].__class__.__name__,
+                        atoms[3].__class__.__name__,
+                        atoms[4].__class__.__name__,
+                    )
                 )
-            )
-            torsion_type_option2 = "_".join(
-                (
-                    atoms[4].__class__.__name__,
-                    atoms[3].__class__.__name__,
-                    atoms[1].__class__.__name__,
-                    atoms[0].__class__.__name__,
+                torsion_type_option2 = "_".join(
+                    (
+                        atoms[4].__class__.__name__,
+                        atoms[3].__class__.__name__,
+                        atoms[1].__class__.__name__,
+                        atoms[0].__class__.__name__,
+                    )
                 )
-            )
+            elif path_length == 4:
+                torsion_type_option1 = "_".join(
+                    (
+                        atoms[0].__class__.__name__,
+                        atoms[1].__class__.__name__,
+                        atoms[2].__class__.__name__,
+                        atoms[3].__class__.__name__,
+                    )
+                )
+                torsion_type_option2 = "_".join(
+                    (
+                        atoms[3].__class__.__name__,
+                        atoms[2].__class__.__name__,
+                        atoms[1].__class__.__name__,
+                        atoms[0].__class__.__name__,
+                    )
+                )
+
+            if torsion_type_option1 not in torsions:
+                if torsion_type_option2 in torsions:
+                    key_string = torsion_type_option2
+                    if path_length == 5:
+                        new_ids = (a_ids[0], a_ids[1], a_ids[3], a_ids[4])
+                    elif path_length == 4:
+                        new_ids = (a_ids[0], a_ids[1], a_ids[2], a_ids[3])
+                else:
+                    key_string = torsion_type_option1
+                    if path_length == 5:
+                        new_ids = (a_ids[4], a_ids[3], a_ids[1], a_ids[0])
+                    elif path_length == 4:
+                        new_ids = (a_ids[3], a_ids[2], a_ids[1], a_ids[0])
+
             torsion = get_dihedral(
-                pt1=tuple(molecule.get_atomic_positions(a_ids[0]))[0],
-                pt2=tuple(molecule.get_atomic_positions(a_ids[1]))[0],
-                pt3=tuple(molecule.get_atomic_positions(a_ids[3]))[0],
-                pt4=tuple(molecule.get_atomic_positions(a_ids[4]))[0],
+                pt1=tuple(molecule.get_atomic_positions(new_ids[0]))[0],
+                pt2=tuple(molecule.get_atomic_positions(new_ids[1]))[0],
+                pt3=tuple(molecule.get_atomic_positions(new_ids[2]))[0],
+                pt4=tuple(molecule.get_atomic_positions(new_ids[3]))[0],
             )
             if absolute:
                 torsion = abs(torsion)
-            if torsion_type_option1 not in torsions:
-                if torsion_type_option2 in torsions:
-                    torsions[torsion_type_option2].append(torsion)
-                else:
-                    torsions[torsion_type_option1].append(torsion)
+            torsions[key_string].append(torsion)
 
         return torsions
 

@@ -328,6 +328,7 @@ def analyse_cage(
         dihedral_data = g_measure.calculate_torsions(
             molecule=conformer.molecule,
             absolute=True,
+            path_length=5,
         )
         min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
