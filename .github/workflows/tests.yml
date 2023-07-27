@@ -41,14 +41,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
-      - uses: actions/setup-python@v4
         with:
+          auto-update-conda: true
           python-version: "3.11"
           cache: "pip"
           mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
-          activate-environment: anaconda-client-env
       - shell: bash -el {0}
         run: |
           conda info
