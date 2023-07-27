@@ -42,8 +42,10 @@ github = "https://github.com/andrewtarzia/CGExplore"
 write_to = "cgexplore/_version.py"
 
 [tool.setuptools.packages.find]
-where = ["cgexplore"]  # list of folders that contain the packages (["."] by default)
-
+where = [
+  # list of folders that contain the packages (["."] by default)
+  "cgexplore",
+]
 
 [tool.black]
 line-length = 79

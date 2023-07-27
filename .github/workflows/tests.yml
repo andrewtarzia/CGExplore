@@ -57,5 +57,5 @@ jobs:
           printenv | sort
       - shell: bash -el {0}
         run: mamba install openmm openmmtools
-      - run: "pip install '.[dev]'"
+      - run: "pip install -e '.[dev]'"
       - run: pytest
