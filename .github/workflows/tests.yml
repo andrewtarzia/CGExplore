@@ -38,15 +38,26 @@ jobs:
       - run: black --check .
   pytest:
     runs-on: ubuntu-22.04
-    services:
-      MongoDB:
-        image: mongo
-        ports: ["27017:27017"]
     steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
         with:
           python-version: "3.11"
           cache: "pip"
+          mamba-version: "*"
+          channels: conda-forge,defaults
+          channel-priority: true
+          activate-environment: anaconda-client-env
+      - shell: bash -el {0}
+        run: |
+          conda info
+          conda list
+          conda config --show-sources
+          conda config --show
+          printenv | sort
+      - shell: bash -el {0}
+        run: mamba install openmm openmmtools
       - run: "pip install '.[dev]'"
       - run: pytest
