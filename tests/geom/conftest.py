@@ -17,7 +17,7 @@ from .case_data import CaseData
                 smiles="[C][N][C][C]",
                 position_matrix=np.array(
                     (
-                        [0, 0, 0],
+                        [1, 1, 0],
                         [1, 0, 0],
                         [2, 0, 0],
                         [4, 0, 0],
@@ -29,6 +29,9 @@ from .case_data import CaseData
                 "C_C": [2.0],
                 "C_N": [1.0, 1.0],
             },
+            angle_dict={
+                "C_N_C": [90.0],
+            },
             name=name,
         ),
         lambda name: CaseData(
@@ -37,7 +40,7 @@ from .case_data import CaseData
                 position_matrix=np.array(
                     (
                         [0, 0, 0],
-                        [2, 0, 0],
+                        [1.5, 0, 0],
                         [2, 0, 0],
                         [4, 0, 0],
                     )
@@ -46,7 +49,10 @@ from .case_data import CaseData
             geommeasure=cgexplore.GeomMeasure(),
             length_dict={
                 "C_C": [2.0],
-                "C_N": [2.0, 0.0],
+                "C_N": [1.5, 0.5],
+            },
+            angle_dict={
+                "C_N_C": [180.0],
             },
             name=name,
         ),
@@ -66,6 +72,9 @@ from .case_data import CaseData
             length_dict={
                 "C_C": [2.0],
                 "C_O": [1.0, 1.0],
+            },
+            angle_dict={
+                "C_O_C": [180.0],
             },
             name=name,
         ),
