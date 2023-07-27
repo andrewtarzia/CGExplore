@@ -13,8 +13,6 @@ import os
 import json
 import numpy as np
 from scipy.spatial.distance import cdist
-import pore_mapper as pm
-import pywindow as pw
 
 
 class PoreMeasure:
@@ -40,6 +38,12 @@ class PoreMeasure:
         }
 
     def calculate_pore(self, molecule, output_file):
+        try:
+            import pore_mapper as pm
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                "PoreMapper should be installed to use this."
+            )
         xyz_file = output_file.replace(".json", "_h.xyz")
         por_file = output_file.replace(".json", "_p.xyz")
         molecule.write(xyz_file)
@@ -77,6 +81,13 @@ class PoreMeasure:
         return pore_data
 
     def calculate_pw(self, molecule, output_file):
+        try:
+            import pywindow as pw
+        except ModuleNotFoundError:
+            raise ModuleNotFoundError(
+                "pyWindow should be installed to use this "
+                "(pip install pywindowx)."
+            )
         xyz_file = output_file.replace(".json", ".xyz")
 
         # Check if output file exists.
