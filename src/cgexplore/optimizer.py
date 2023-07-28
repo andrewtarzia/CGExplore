@@ -14,9 +14,9 @@ from heapq import nsmallest
 from itertools import combinations
 
 import numpy as np
-from rdkit.Chem import AllChem as rdkit
 
 from .beads import get_cgbead_from_element
+from .torsions import Torsion, find_torsions
 from .utilities import (
     angle_between,
     convert_pyramid_angle,
@@ -37,14 +37,14 @@ def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
 class CGOptimizer:
     def __init__(
         self,
-        param_pool,
+        bead_set,
         custom_torsion_set,
         bonds,
         angles,
         torsions,
         vdw,
     ):
-        self._param_pool = param_pool
+        self._bead_set = bead_set
         self._custom_torsion_set = custom_torsion_set
         self._bonds = bonds
         self._angles = angles
@@ -119,8 +119,9 @@ class CGOptimizer:
             centre_estring = centre_atom.__class__.__name__
 
             try:
-                centre_cgbead = self._get_cgbead_from_element(
+                centre_cgbead = get_cgbead_from_element(
                     estring=centre_estring,
+                    bead_set=self._bead_set,
                 )
 
                 angle_theta = centre_cgbead.angle_centered
@@ -342,13 +343,9 @@ class CGOptimizer:
                 )
 
     def _yield_torsions(self, molecule):
-        logging.info("warning: this interface will change in the near future")
         if self._torsions is False:
             return ""
-        logging.info("OPT, WARNING: torsions are hardcoded!.")
-        phi0 = 180
-        torsion_n = 1
-        torsion_k = 50
+        raise NotImplementedError()
 
         torsions = get_all_torsions(molecule)
         for torsion in torsions:
@@ -361,6 +358,12 @@ class CGOptimizer:
             id2 = atom2.get_id()
             id3 = atom3.get_id()
             id4 = atom4.get_id()
+
+            # Here would be where you capture the torsions in some
+            # provided forcefield.
+            phi0 = None
+            torsion_n = None
+            torsion_k = None
 
             try:
                 yield (
@@ -380,43 +383,39 @@ class CGOptimizer:
             except KeyError:
                 continue
 
-    def _yield_custom_torsions(self, molecule, chain_length=5):
-        logging.info("warning: this interface will change in the near future")
-        logging.info("todo: want to use the TargetTorsion class")
-        logging.info("remove need for custom chain length")
-        if self._custom_torsion_set is None:
-            return ""
-
-        torsions = self._get_new_torsions(molecule, chain_length)
-        for torsion in torsions:
-            names = list(
-                f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
-            )
-            ids = list(i.get_id() for i in torsion)
-
-            atom_estrings = list(i.__class__.__name__ for i in torsion)
-            cgbeads = list(
-                self._get_cgbead_from_element(i) for i in atom_estrings
-            )
-            cgbead_types = tuple(i.bead_type for i in cgbeads)
-            if cgbead_types in self._custom_torsion_set:
-                phi0 = self._custom_torsion_set[cgbead_types][0]
-                torsion_k = self._custom_torsion_set[cgbead_types][1]
-                torsion_n = 1
-                yield (
-                    names[0],
-                    names[1],
-                    names[3],
-                    names[4],
-                    ids[0],
-                    ids[1],
-                    ids[3],
-                    ids[4],
-                    torsion_k,
-                    torsion_n,
-                    phi0,
+    def _yield_custom_torsions(self, molecule):
+        # Iterate over the different path lengths, and find all torsions
+        # for that lengths.
+        path_lengths = set(
+            len(i.search_string) for i in self._custom_torsion_set
+        )
+        for pl in path_lengths:
+            for found_torsion in find_torsions(molecule, pl):
+                atom_estrings = list(
+                    i.__class__.__name__ for i in found_torsion.atoms
                 )
-            continue
+                cgbeads = list(
+                    get_cgbead_from_element(i, self._bead_set)
+                    for i in atom_estrings
+                )
+                cgbead_string = "".join(i.bead_type for i in cgbeads)
+                for target_torsion in self._custom_torsion_set:
+                    if target_torsion.search_string != cgbead_string:
+                        continue
+                    yield Torsion(
+                        atom_names=tuple(
+                            f"{found_torsion.atoms[i].__class__.__name__}"
+                            f"{found_torsion.atoms[i].get_id()+1}"
+                            for i in target_torsion.measured_atom_ids
+                        ),
+                        atom_ids=tuple(
+                            found_torsion.atoms[i].get_id()
+                            for i in target_torsion.measured_atom_ids
+                        ),
+                        phi0=target_torsion.phi0,
+                        torsion_n=target_torsion.torsion_n,
+                        torsion_k=target_torsion.torsion_k,
+                    )
 
     def _yield_nonbondeds(self, molecule):
         raise NotImplementedError()

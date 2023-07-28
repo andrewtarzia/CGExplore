@@ -127,7 +127,7 @@ class CGOMMOptimizer(CGOptimizer):
         self,
         fileprefix,
         output_dir,
-        param_pool,
+        bead_set,
         custom_torsion_set,
         bonds,
         angles,
@@ -139,7 +139,7 @@ class CGOMMOptimizer(CGOptimizer):
         platform=None,
     ):
         super().__init__(
-            param_pool,
+            bead_set,
             bonds,
             angles,
             torsions,
@@ -291,6 +291,7 @@ class CGOMMOptimizer(CGOptimizer):
         return system
 
     def _add_torsions(self, system, molecule):
+        raise NotImplementedError("Use custom torsions at this stage.")
         logging.info("warning: this interface will change in the near future")
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
@@ -323,33 +324,18 @@ class CGOMMOptimizer(CGOptimizer):
         return system
 
     def _add_custom_torsions(self, system, molecule):
-        logging.info("warning: this interface will change in the near future")
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
 
-        for torsion_info in self._yield_custom_torsions(molecule):
-            (
-                name1,
-                name2,
-                name3,
-                name4,
-                id1,
-                id2,
-                id3,
-                id4,
-                torsion_k,
-                torsion_n,
-                phi0,
-            ) = torsion_info
-
+        for torsion in self._yield_custom_torsions(molecule):
             force.addTorsion(
-                particle1=id1,
-                particle2=id2,
-                particle3=id3,
-                particle4=id4,
-                periodicity=torsion_n,
-                phase=np.radians(phi0),
-                k=torsion_k,
+                particle1=torsion.atom_ids[0],
+                particle2=torsion.atom_ids[1],
+                particle3=torsion.atom_ids[2],
+                particle4=torsion.atom_ids[3],
+                periodicity=torsion.torsion_n,
+                phase=np.radians(torsion.phi0),
+                k=torsion.torsion_k,
             )
 
         return system
@@ -624,7 +610,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         self,
         fileprefix,
         output_dir,
-        param_pool,
+        bead_set,
         custom_torsion_set,
         bonds,
         angles,
@@ -642,18 +628,15 @@ class CGOMMDynamics(CGOMMOptimizer):
         atom_constraints=None,
         platform=None,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = param_pool
-        self._bonds = bonds
-        self._angles = angles
-        self._torsions = torsions
-        self._vdw = vdw
-        self._mass = 10
-        self._bond_cutoff = 30
-        self._angle_cutoff = 30
-        self._torsion_cutoff = 30
-        self._lj_cutoff = 10
+        super(CGOMMOptimizer, self).__init__(
+            fileprefix,
+            output_dir,
+            bead_set,
+            bonds,
+            angles,
+            torsions,
+            vdw,
+        )
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -840,7 +823,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         self,
         fileprefix,
         output_dir,
-        param_pool,
+        bead_set,
         custom_torsion_set,
         bonds,
         angles,
@@ -855,18 +838,15 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         atom_constraints=None,
         platform=None,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = param_pool
-        self._bonds = bonds
-        self._angles = angles
-        self._torsions = torsions
-        self._vdw = vdw
-        self._mass = 10
-        self._bond_cutoff = 30
-        self._angle_cutoff = 30
-        self._torsion_cutoff = 30
-        self._lj_cutoff = 10
+        super(CGOMMOptimizer, self).__init__(
+            fileprefix,
+            output_dir,
+            bead_set,
+            bonds,
+            angles,
+            torsions,
+            vdw,
+        )
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omc.out"
