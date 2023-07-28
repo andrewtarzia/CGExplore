@@ -14,7 +14,7 @@ import stk
 try:
     from stk._internal.topology_graphs.cage.vertices import _CageVertex
 except ImportError:
-    from stk.molecular.topology_graphs.cage.vertices import _CageVertex
+    from stk.molecular.topology_graphs.cage.vertices import _CageVertex  # type: ignore[no-redef]
 
 
 class TerminalVertex(_CageVertex):

@@ -17,10 +17,7 @@ try:
         get_plane_normal,
     )
 except ImportError:
-    from stk import (
-        get_acute_vector,
-        get_plane_normal,
-    )
+    from stk import get_acute_vector, get_plane_normal  # type: ignore[attr-defined, no-redef]
 
 
 def reorient_linker(molecule):
