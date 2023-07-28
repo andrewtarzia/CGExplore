@@ -17,8 +17,9 @@ import time
 import numpy as np
 from openmm import app, openmm
 from openmmtools import integrators
+import pandas as pd
 
-from .ensembles import Timestep, Trajectory
+from .ensembles import Timestep
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
 
@@ -28,7 +29,7 @@ logging.basicConfig(
 )
 
 
-class OMMTrajectory(Trajectory):
+class OMMTrajectory:
     def __init__(
         self,
         base_molecule,
@@ -58,6 +59,12 @@ class OMMTrajectory(Trajectory):
         self._forcefield_path = forcefield_path
         self._random_seed = random_seed
         self._friction = friction
+
+    def get_data(self):
+        return pd.read_csv(self._data_path)
+
+    def get_base_molecule(self):
+        return self._base_molecule
 
     def yield_conformers(self):
         num_atoms = self._base_molecule.get_num_atoms()
@@ -99,6 +106,15 @@ class OMMTrajectory(Trajectory):
                         y = float(line[38:46])
                         z = float(line[46:54])
                         new_pos_mat.append([x, y, z])
+
+    def __str__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(steps={self._num_steps}, "
+            f"conformers={self._num_confs})"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
 class MDEmptyTrajcetoryError(Exception):
