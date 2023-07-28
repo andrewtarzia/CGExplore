@@ -43,8 +43,7 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
           auto-update-conda: true
-          activate-environment: test
-          python-version: "3.11"
+          python-version: 3.11
           mamba-version: "*"
           channels: conda-forge,defaults
           channel-priority: true
@@ -59,5 +58,5 @@ jobs:
         run: mamba install openmm openmmtools
       - run: "pip install --upgrade pip"
       - run: "pip install --upgrade setuptools"
-      - run: "pip install -e '.[dev]' --user"
+      - run: "pip install -e '.[dev]'"
       - run: pytest
