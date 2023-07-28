@@ -79,15 +79,12 @@ strict_optional = true
 module = [
   "rdkit.*",
   "scipy.*",
-  "pytest_lazyfixture.*",
-  "pathos.*",
   "matplotlib.*",
   "pandas.*",
-  "seaborn.*",
   "mchammer.*",
-  "spindry.*",
-  "pymongo.*",
-  "vabene.*",
-  "setuptools.*"
+  "pore_mapper.*",
+  "pywindow.*",
+  "openmmtools.*",
+  "openmm.*"
 ]
 ignore_missing_imports = true
