@@ -10,7 +10,11 @@ Author: Andrew Tarzia
 """
 
 import stk
-from stk.molecular.topology_graphs.cage.vertices import _CageVertex
+
+try:
+    from stk.molecular.topology_graphs.cage.vertices import _CageVertex
+except ImportError:
+    from stk._internal.topology_graphs.cage.vertices import _CageVertex
 
 
 class TerminalVertex(_CageVertex):

@@ -10,10 +10,17 @@ Author: Andrew Tarzia
 """
 
 import numpy as np
-from stk import (
-    get_acute_vector,
-    get_plane_normal,
-)
+
+try:
+    from stk import (
+        get_acute_vector,
+        get_plane_normal,
+    )
+except ImportError:
+    from stk._internal.utilities.utilities import (
+        get_acute_vector,
+        get_plane_normal,
+    )
 
 
 def reorient_linker(molecule):
