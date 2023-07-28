@@ -22,14 +22,14 @@ from cgexplore.molecule_construction.topologies import (
 from cgexplore.utilities import check_directory
 from rdkit import RDLogger
 
-from .bead_libraries import (
+from bead_libraries import (
     arm_2c_beads,
     beads_3c,
     binder_beads,
     core_2c_beads,
 )
-from .env_set import cages, ligands
-from .generation import (
+from env_set import cages, ligands
+from generation import (
     build_populations,
     custom_torsion_definitions,
     custom_vdw_definitions,

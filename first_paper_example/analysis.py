@@ -21,13 +21,13 @@ from cgexplore.shape import known_shape_vectors
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from .bead_libraries import (
+from bead_libraries import (
     arm_2c_beads,
     beads_3c,
     beads_4c,
     core_2c_beads,
 )
-from .topologies import cage_topology_options
+from topologies import cage_topology_options
 
 logging.basicConfig(
     level=logging.INFO,

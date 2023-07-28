@@ -22,7 +22,7 @@ from cgexplore.utilities import check_directory
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 
-from .env_set import project_dir, shape_path
+from env_set import project_dir, shape_path
 
 
 def get_all_templates(dir):

@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from cgexplore.utilities import check_directory
 from cgexplore.visualisation import Pymol
 
-from .analysis import (
+from analysis import (
     convert_topo,
     data_to_array,
     get_lowest_energy_data,
@@ -28,7 +28,7 @@ from .analysis import (
     topology_labels,
     write_out_mapping,
 )
-from .env_set import (
+from env_set import (
     calculations,
     figures,
     outputdata,

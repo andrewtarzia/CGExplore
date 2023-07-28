@@ -28,7 +28,7 @@ from cgexplore.utilities import (
 from openmm import openmm
 from rdkit import RDLogger
 
-from .env_set import cages, figures
+from env_set import cages, figures
 
 logging.basicConfig(
     level=logging.INFO,

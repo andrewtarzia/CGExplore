@@ -32,11 +32,11 @@ from cgexplore.shape import (
 )
 from openmm import openmm
 
-from .analysis import (
+from analysis import (
     ligand_expected_topologies,
     node_expected_topologies,
 )
-from .env_set import shape_path
+from env_set import shape_path
 
 logging.basicConfig(
     level=logging.INFO,

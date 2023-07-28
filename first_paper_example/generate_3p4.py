@@ -20,18 +20,18 @@ from cgexplore.molecule_construction.topologies import (
 )
 from rdkit import RDLogger
 
-from .bead_libraries import (
+from bead_libraries import (
     beads_3c,
     beads_4c,
     binder_beads,
 )
-from .env_set import calculations, ligands, structures
-from .generation import (
+from env_set import calculations, ligands, structures
+from generation import (
     build_populations,
     custom_torsion_definitions,
     custom_vdw_definitions,
 )
-from .topologies import cage_topology_options
+from topologies import cage_topology_options
 
 logging.basicConfig(
     level=logging.INFO,

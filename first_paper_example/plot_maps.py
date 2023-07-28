@@ -19,7 +19,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-from .analysis import (
+from analysis import (
     Xc_map,
     angle_str,
     cltypetopo_to_colormap,
@@ -33,7 +33,7 @@ from .analysis import (
     topology_labels,
     write_out_mapping,
 )
-from .env_set import calculations, figures, outputdata
+from env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,

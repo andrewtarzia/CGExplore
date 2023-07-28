@@ -20,7 +20,7 @@ import pandas as pd
 from matplotlib.lines import Line2D
 from scipy.spatial import ConvexHull
 
-from .analysis import (
+from analysis import (
     angle_str,
     convert_prop,
     convert_topo,
@@ -35,7 +35,7 @@ from .analysis import (
     topology_labels,
     write_out_mapping,
 )
-from .env_set import calculations, figures, outputdata
+from env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,

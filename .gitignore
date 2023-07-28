@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Version.
-cgexplore/_version.py
+src/cgexplore/_version.py
