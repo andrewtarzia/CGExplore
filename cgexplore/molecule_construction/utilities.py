@@ -12,12 +12,12 @@ Author: Andrew Tarzia
 import numpy as np
 
 try:
-    from stk import (
+    from stk._internal.utilities.utilities import (
         get_acute_vector,
         get_plane_normal,
     )
 except ImportError:
-    from stk._internal.utilities.utilities import (
+    from stk import (
         get_acute_vector,
         get_plane_normal,
     )
