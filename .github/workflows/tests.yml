@@ -53,9 +53,12 @@ jobs:
           conda config --show
           printenv | sort
       - shell: bash -el {0}
-        run: |
-          conda install -c conda-forge openmm openmmtools
-          "pip install --upgrade pip"
-          "pip install --upgrade setuptools"
-          "pip install -e '.[dev]'"
-          pytest
+        run: conda install -c conda-forge openmm openmmtools
+      - shell: bash -el {0}
+        run: "pip install --upgrade pip"
+      - shell: bash -el {0}
+        run: "pip install --upgrade setuptools"
+      - shell: bash -el {0}
+        run: "pip install -e '.[dev]'"
+      - shell: bash -el {0}
+        run: pytest
