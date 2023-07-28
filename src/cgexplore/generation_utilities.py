@@ -11,11 +11,12 @@ Author: Andrew Tarzia
 
 import itertools
 import logging
-import typing
 import os
+import typing
 from dataclasses import replace
-import stk
+
 import numpy as np
+import stk
 from openmm import OpenMMException, openmm
 
 from .beads import periodic_table
