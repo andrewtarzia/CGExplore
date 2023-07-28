@@ -62,6 +62,7 @@ class CGOptimizer:
                 return bead
 
     def _get_new_torsions(self, molecule, chain_length):
+        logging.info("remove need for custom chain length")
         paths = rdkit.FindAllPathsOfLengthN(
             mol=molecule.to_rdkit_mol(),
             length=chain_length,
@@ -75,8 +76,11 @@ class CGOptimizer:
             atom2 = atoms[1]
             atom3 = atoms[2]
             atom4 = atoms[3]
-            atom5 = atoms[4]
-            torsions.append((atom1, atom2, atom3, atom4, atom5))
+            if chain_length == 5:
+                atom5 = atoms[4]
+                torsions.append((atom1, atom2, atom3, atom4, atom5))
+            elif chain_length == 4:
+                torsions.append((atom1, atom2, atom3, atom4))
 
         return torsions
 
@@ -401,6 +405,7 @@ class CGOptimizer:
     def _yield_custom_torsions(self, molecule, chain_length=5):
         logging.info("warning: this interface will change in the near future")
         logging.info("todo: want to use the TargetTorsion class")
+        logging.info("remove need for custom chain length")
         if self._custom_torsion_set is None:
             return ""
 

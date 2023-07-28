@@ -1,9 +1,13 @@
-import numpy as np
+from cgexplore.generation_utilities import (
+    collect_custom_torsion,
+    target_torsions,
+)
+import cgexplore
 
 
 def test_present_torsions(molecule):
     """
-    Test :meth:`XXXX`.
+    Test methods toward :meth:`.Optimizer._yield_custom_torsions`.
 
     Parameters:
 
@@ -16,15 +20,34 @@ def test_present_torsions(molecule):
 
     """
 
-    assert False
+    targets = target_torsions(
+        bead_set=molecule.bead_set,
+        custom_torsion_option=molecule.custom_torsion_definition,
+    )
+    print(targets)
+    assert targets == molecule.custom_torsion_set
 
-    angles = molecule.geommeasure.calculate_angles(molecule.molecule)
-    print(angles, molecule.angle_dict)
-    for key in molecule.angle_dict:
-        print(key)
-        assert key in angles
-        for angle, test in zip(
-            sorted(molecule.angle_dict[key]),
-            sorted(angles[key]),
-        ):
-            assert np.isclose(angle, test, atol=1e-3, rtol=0)
+    custom_torsion_set = collect_custom_torsion(
+        custom_torsion_options={"ton": molecule.custom_torsion_definition},
+        custom_torsion="ton",
+        bead_set=molecule.bead_set,
+    )
+    print(custom_torsion_set)
+    assert custom_torsion_set == molecule.custom_torsion_set
+
+    optimizer = cgexplore.CGOptimizer(
+        param_pool=molecule.bead_set,
+        custom_torsion_set=custom_torsion_set,
+        bonds=False,
+        angles=False,
+        torsions=False,
+        vdw=False,
+    )
+
+    count = 0
+    for torsion_info in optimizer._yield_custom_torsions(molecule.molecule):
+        print(torsion_info)
+        assert torsion_info in molecule.present_torsions
+        count += 1
+
+    assert count == len(molecule.present_torsions)

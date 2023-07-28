@@ -26,6 +26,8 @@ from cgexplore.generation_utilities import (
     run_soft_md_cycle,
     yield_near_models,
     yield_shifted_models,
+    target_torsions,
+    collect_custom_torsion,
 )
 from cgexplore.geom import GeomMeasure
 from cgexplore.pore import PoreMeasure
@@ -360,46 +362,6 @@ def analyse_cage(
             json.dump(res_dict, f, indent=4)
 
 
-def target_torsions(bead_set, custom_torsion_option):
-    try:
-        (t_key_1,) = (i for i in bead_set if i[0] == "a")
-    except ValueError:
-        # For when 3+4 cages are being built - there are no target
-        # torsions.
-        return None
-
-    (c_key,) = (i for i in bead_set if i[0] == "c")
-    (t_key_2,) = (i for i in bead_set if i[0] == "b")
-    custom_torsion_set = {
-        (
-            t_key_2,
-            t_key_1,
-            c_key,
-            t_key_1,
-            t_key_2,
-        ): custom_torsion_option,
-    }
-    return custom_torsion_set
-
-
-def collect_custom_torsion(
-    bb2_bead_set,
-    custom_torsion_options,
-    custom_torsion,
-    bead_set,
-):
-    if custom_torsion_options[custom_torsion] is None:
-        custom_torsion_set = None
-    else:
-        tors_option = custom_torsion_options[custom_torsion]
-        custom_torsion_set = target_torsions(
-            bead_set=bead_set,
-            custom_torsion_option=tors_option,
-        )
-
-    return custom_torsion_set
-
-
 def build_populations(
     populations,
     custom_torsion_options,
@@ -436,7 +398,6 @@ def build_populations(
             bead_set.update(bbl_bead_set)
 
             custom_torsion_set = collect_custom_torsion(
-                bb2_bead_set=bb2_bead_set,
                 custom_torsion_options=(custom_torsion_options),
                 custom_torsion=custom_torsion,
                 bead_set=bead_set,

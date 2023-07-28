@@ -133,7 +133,9 @@ def run_mc_cycle(
         if passed:
             num_passed += 1
             conformer = Conformer(
-                molecule=test_molecule.clone().with_centroid((0, 0, 0)),
+                molecule=test_molecule.clone().with_centroid(
+                    np.array((0, 0, 0))
+                ),
                 conformer_id=None,
                 energy_decomposition=(opt.read_final_energy_decomposition()),
             )
@@ -278,7 +280,7 @@ def build_building_block(
     option2_lib,
     calculation_output,
     ligand_output,
-) -> dict[str : tuple[stk.Molecule, dict]]:
+) -> dict[str, tuple[stk.Molecule, dict]]:
     blocks = {}
     for options in itertools.product(option1_lib, option2_lib):
         option1 = option1_lib[options[0]]
@@ -428,8 +430,11 @@ def modify_bead(bead_name):
 
 
 def yield_near_models(
-    molecule, name, bead_set, output_dir
-) -> typing.Generator[stk.Molecule]:
+    molecule,
+    name,
+    bead_set,
+    output_dir,
+) -> typing.Iterator[stk.Molecule]:
     (
         t_str,
         clbb_name,
@@ -477,8 +482,47 @@ def shift_beads(molecule, atomic_number, kick) -> stk.Molecule:
     return molecule.with_position_matrix(np.array((new_pos_mat)))
 
 
-def yield_shifted_models(molecule, bead_set) -> typing.Generator[stk.Molecule]:
+def yield_shifted_models(molecule, bead_set) -> typing.Iterator[stk.Molecule]:
     for bead in bead_set:
         atom_number = periodic_table()[bead_set[bead].element_string]
         for kick in (1, 2, 3, 4):
             yield shift_beads(molecule, atom_number, kick)
+
+
+def target_torsions(bead_set, custom_torsion_option):
+    try:
+        (t_key_1,) = (i for i in bead_set if i[0] == "a")
+    except ValueError:
+        # For when 3+4 cages are being built - there are no target
+        # torsions.
+        return None
+
+    (c_key,) = (i for i in bead_set if i[0] == "c")
+    (t_key_2,) = (i for i in bead_set if i[0] == "b")
+    custom_torsion_set = {
+        (
+            t_key_2,
+            t_key_1,
+            c_key,
+            t_key_1,
+            t_key_2,
+        ): custom_torsion_option,
+    }
+    return custom_torsion_set
+
+
+def collect_custom_torsion(
+    custom_torsion_options,
+    custom_torsion,
+    bead_set,
+):
+    if custom_torsion_options[custom_torsion] is None:
+        custom_torsion_set = None
+    else:
+        tors_option = custom_torsion_options[custom_torsion]
+        custom_torsion_set = target_torsions(
+            bead_set=bead_set,
+            custom_torsion_option=tors_option,
+        )
+
+    return custom_torsion_set
