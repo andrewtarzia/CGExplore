@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def test_torsions(molecule):
     """
     Test :meth:`.GeomMeasure.calculate_torsions`.
@@ -16,9 +19,18 @@ def test_torsions(molecule):
     torsions = molecule.geommeasure.calculate_torsions(
         molecule=molecule.molecule,
         absolute=False,
-        path_length=4,
     )
 
     print(torsions, molecule.torsion_dict)
     if len(molecule.torsion_dict) == 0:
         assert torsions == []
+        assert len(molecule.torsion_dict) == 0
+
+    for key in molecule.torsion_dict:
+        print(key)
+        assert key in torsions
+        for torsion, test in zip(
+            sorted(molecule.torsion_dict[key]),
+            sorted(torsions[key]),
+        ):
+            assert np.isclose(torsion, test, atol=1e-3, rtol=0)
