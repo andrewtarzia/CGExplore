@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Module for CG Gulp optimizer.
+Module for CG OpenMM optimizer.
 
 Author: Andrew Tarzia
 
@@ -137,18 +137,15 @@ class CGOMMOptimizer(CGOptimizer):
         atom_constraints=None,
         platform=None,
     ):
+        super().__init__(
+            param_pool,
+            bonds,
+            angles,
+            torsions,
+            vdw,
+        )
         self._fileprefix = fileprefix
         self._output_dir = output_dir
-        self._param_pool = param_pool
-        self._bonds = bonds
-        self._angles = angles
-        self._torsions = torsions
-        self._vdw = vdw
-        self._mass = 10
-        self._bond_cutoff = 30
-        self._angle_cutoff = 30
-        self._torsion_cutoff = 30
-        self._lj_cutoff = 10
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -291,44 +288,6 @@ class CGOMMOptimizer(CGOptimizer):
 
         self._output_string += "\n"
         return system
-
-    def _yield_custom_torsions(self, molecule, chain_length=5):
-        logging.info("warning: this interface will change in the near future")
-        logging.info("todo: want to use the TargetTorsion class")
-        if self._custom_torsion_set is None:
-            return ""
-
-        torsions = self._get_new_torsions(molecule, chain_length)
-        for torsion in torsions:
-            atom1, atom2, atom3, atom4, atom5 = torsion
-            names = list(
-                f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
-            )
-            ids = list(i.get_id() for i in torsion)
-
-            atom_estrings = list(i.__class__.__name__ for i in torsion)
-            cgbeads = list(
-                self._get_cgbead_from_element(i) for i in atom_estrings
-            )
-            cgbead_types = tuple(i.bead_type for i in cgbeads)
-            if cgbead_types in self._custom_torsion_set:
-                phi0 = self._custom_torsion_set[cgbead_types][0]
-                torsion_k = self._custom_torsion_set[cgbead_types][1]
-                torsion_n = 1
-                yield (
-                    names[0],
-                    names[1],
-                    names[3],
-                    names[4],
-                    ids[0],
-                    ids[1],
-                    ids[3],
-                    ids[4],
-                    torsion_k,
-                    torsion_n,
-                    phi0,
-                )
-            continue
 
     def _add_torsions(self, system, molecule):
         logging.info("warning: this interface will change in the near future")

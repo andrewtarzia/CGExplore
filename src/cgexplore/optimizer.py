@@ -36,17 +36,15 @@ def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
 class CGOptimizer:
     def __init__(
         self,
-        fileprefix,
-        output_dir,
         param_pool,
+        custom_torsion_set,
         bonds,
         angles,
         torsions,
         vdw,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
         self._param_pool = param_pool
+        self._custom_torsion_set = custom_torsion_set
         self._bonds = bonds
         self._angles = angles
         self._torsions = torsions
@@ -399,6 +397,43 @@ class CGOptimizer:
 
             except KeyError:
                 continue
+
+    def _yield_custom_torsions(self, molecule, chain_length=5):
+        logging.info("warning: this interface will change in the near future")
+        logging.info("todo: want to use the TargetTorsion class")
+        if self._custom_torsion_set is None:
+            return ""
+
+        torsions = self._get_new_torsions(molecule, chain_length)
+        for torsion in torsions:
+            names = list(
+                f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
+            )
+            ids = list(i.get_id() for i in torsion)
+
+            atom_estrings = list(i.__class__.__name__ for i in torsion)
+            cgbeads = list(
+                self._get_cgbead_from_element(i) for i in atom_estrings
+            )
+            cgbead_types = tuple(i.bead_type for i in cgbeads)
+            if cgbead_types in self._custom_torsion_set:
+                phi0 = self._custom_torsion_set[cgbead_types][0]
+                torsion_k = self._custom_torsion_set[cgbead_types][1]
+                torsion_n = 1
+                yield (
+                    names[0],
+                    names[1],
+                    names[3],
+                    names[4],
+                    ids[0],
+                    ids[1],
+                    ids[3],
+                    ids[4],
+                    torsion_k,
+                    torsion_n,
+                    phi0,
+                )
+            continue
 
     def _yield_nonbondeds(self, molecule):
         raise NotImplementedError()
