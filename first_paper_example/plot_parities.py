@@ -16,7 +16,8 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-from analysis import (
+
+from .analysis import (
     convert_topo,
     convert_tors,
     data_to_array,
@@ -24,7 +25,7 @@ from analysis import (
     topology_labels,
     write_out_mapping,
 )
-from env_set import calculations, figures, outputdata
+from .env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,

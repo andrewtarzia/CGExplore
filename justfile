@@ -20,7 +20,7 @@ check:
   ( set -x; black --check . )
 
   echo
-  ( set -x; mypy cgexplore )
+  ( set -x; mypy src )
 
   echo
   ( set -x; pytest --cov=cgexplore --cov-report term-missing )

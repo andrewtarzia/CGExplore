@@ -17,7 +17,10 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from analysis import (
+from matplotlib.lines import Line2D
+from scipy.spatial import ConvexHull
+
+from .analysis import (
     angle_str,
     convert_prop,
     convert_topo,
@@ -32,9 +35,7 @@ from analysis import (
     topology_labels,
     write_out_mapping,
 )
-from env_set import calculations, figures, outputdata
-from matplotlib.lines import Line2D
-from scipy.spatial import ConvexHull
+from .env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,

@@ -14,7 +14,10 @@ import os
 import sys
 
 import matplotlib.pyplot as plt
-from analysis import (
+from cgexplore.utilities import check_directory
+from matplotlib.lines import Line2D
+
+from .analysis import (
     convert_topo,
     data_to_array,
     eb_str,
@@ -22,10 +25,7 @@ from analysis import (
     isomer_energy,
     topology_labels,
 )
-from env_set import cages, calculations, figures, outputdata
-from matplotlib.lines import Line2D
-
-from cgexplore.utilities import check_directory
+from .env_set import cages, calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,

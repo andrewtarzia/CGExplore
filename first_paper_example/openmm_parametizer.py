@@ -18,10 +18,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import stk
-from env_set import cages, figures
-from openmm import openmm
-from rdkit import RDLogger
-
 from cgexplore.beads import bead_library_check, produce_bead_library
 from cgexplore.openmm_optimizer import CGOMMDynamics, CGOMMOptimizer
 from cgexplore.utilities import (
@@ -29,6 +25,10 @@ from cgexplore.utilities import (
     check_directory,
     get_dihedral,
 )
+from openmm import openmm
+from rdkit import RDLogger
+
+from .env_set import cages, figures
 
 logging.basicConfig(
     level=logging.INFO,

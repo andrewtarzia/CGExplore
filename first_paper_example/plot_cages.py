@@ -16,7 +16,10 @@ import sys
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from analysis import (
+from cgexplore.utilities import check_directory
+from cgexplore.visualisation import Pymol
+
+from .analysis import (
     convert_topo,
     data_to_array,
     get_lowest_energy_data,
@@ -25,16 +28,13 @@ from analysis import (
     topology_labels,
     write_out_mapping,
 )
-from env_set import (
+from .env_set import (
     calculations,
     figures,
     outputdata,
     pymol_path,
     structures,
 )
-
-from cgexplore.utilities import check_directory
-from cgexplore.visualisation import Pymol
 
 logging.basicConfig(
     level=logging.INFO,

@@ -13,20 +13,6 @@ import logging
 import sys
 
 import stk
-from bead_libraries import (
-    arm_2c_beads,
-    beads_3c,
-    binder_beads,
-    core_2c_beads,
-)
-from env_set import cages, ligands
-from generation import (
-    build_populations,
-    custom_torsion_definitions,
-    custom_vdw_definitions,
-)
-from rdkit import RDLogger
-
 from cgexplore.beads import bead_library_check
 from cgexplore.generation_utilities import build_building_block
 from cgexplore.molecule_construction.topologies import (
@@ -34,6 +20,20 @@ from cgexplore.molecule_construction.topologies import (
     TwoC1Arm,
 )
 from cgexplore.utilities import check_directory
+from rdkit import RDLogger
+
+from .bead_libraries import (
+    arm_2c_beads,
+    beads_3c,
+    binder_beads,
+    core_2c_beads,
+)
+from .env_set import cages, ligands
+from .generation import (
+    build_populations,
+    custom_torsion_definitions,
+    custom_vdw_definitions,
+)
 
 logging.basicConfig(
     level=logging.INFO,

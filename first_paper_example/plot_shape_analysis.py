@@ -17,7 +17,9 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from analysis import (
+from matplotlib.patches import Patch
+
+from .analysis import (
     Xc_map,
     angle_str,
     convert_topo,
@@ -32,8 +34,7 @@ from analysis import (
     topology_labels,
     write_out_mapping,
 )
-from env_set import calculations, figures, outputdata
-from matplotlib.patches import Patch
+from .env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,
