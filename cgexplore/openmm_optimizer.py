@@ -15,9 +15,9 @@ import logging
 import time
 
 import numpy as np
+import pandas as pd
 from openmm import app, openmm
 from openmmtools import integrators
-import pandas as pd
 
 from .ensembles import Timestep
 from .optimizer import CGOptimizer

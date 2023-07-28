@@ -81,6 +81,7 @@ module = [
   "scipy.*",
   "matplotlib.*",
   "pandas.*",
+  "stk.*",
   "mchammer.*",
   "pore_mapper.*",
   "pywindow.*",
