@@ -17,9 +17,6 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.lines import Line2D
-from scipy.spatial import ConvexHull
-
 from analysis import (
     angle_str,
     convert_prop,
@@ -36,6 +33,8 @@ from analysis import (
     write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
+from matplotlib.lines import Line2D
+from scipy.spatial import ConvexHull
 
 logging.basicConfig(
     level=logging.INFO,

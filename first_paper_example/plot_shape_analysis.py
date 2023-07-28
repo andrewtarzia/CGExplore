@@ -17,8 +17,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.patches import Patch
-
 from analysis import (
     Xc_map,
     angle_str,
@@ -35,6 +33,7 @@ from analysis import (
     write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
+from matplotlib.patches import Patch
 
 logging.basicConfig(
     level=logging.INFO,

@@ -16,9 +16,6 @@ import sys
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-from cgexplore.utilities import check_directory
-from cgexplore.visualisation import Pymol
-
 from analysis import (
     convert_topo,
     data_to_array,
@@ -28,6 +25,8 @@ from analysis import (
     topology_labels,
     write_out_mapping,
 )
+from cgexplore.utilities import check_directory
+from cgexplore.visualisation import Pymol
 from env_set import (
     calculations,
     figures,

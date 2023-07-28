@@ -21,8 +21,6 @@ import numpy as np
 import pandas as pd
 import stk
 import stko
-from cgexplore.utilities import convert_pyramid_angle
-
 from analysis import (
     Xc_map,
     angle_str,
@@ -37,6 +35,7 @@ from analysis import (
     topology_labels,
     write_out_mapping,
 )
+from cgexplore.utilities import convert_pyramid_angle
 from env_set import calculations, figures, outputdata
 
 logging.basicConfig(

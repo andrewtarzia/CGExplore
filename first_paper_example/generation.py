@@ -15,6 +15,10 @@ import logging
 import os
 
 import stk
+from analysis import (
+    ligand_expected_topologies,
+    node_expected_topologies,
+)
 from cgexplore.ensembles import Ensemble
 from cgexplore.generation_utilities import (
     run_constrained_optimisation,
@@ -30,13 +34,8 @@ from cgexplore.shape import (
     get_shape_molecule_ligands,
     get_shape_molecule_nodes,
 )
-from openmm import openmm
-
-from analysis import (
-    ligand_expected_topologies,
-    node_expected_topologies,
-)
 from env_set import shape_path
+from openmm import openmm
 
 logging.basicConfig(
     level=logging.INFO,

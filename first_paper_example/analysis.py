@@ -16,17 +16,16 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from cgexplore.beads import get_CGBead_from_string
-from cgexplore.shape import known_shape_vectors
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
-
 from bead_libraries import (
     arm_2c_beads,
     beads_3c,
     beads_4c,
     core_2c_beads,
 )
+from cgexplore.beads import get_CGBead_from_string
+from cgexplore.shape import known_shape_vectors
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 from topologies import cage_topology_options
 
 logging.basicConfig(

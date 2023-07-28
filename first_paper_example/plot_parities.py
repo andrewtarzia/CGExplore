@@ -16,7 +16,6 @@ import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 from analysis import (
     convert_topo,
     convert_tors,

@@ -25,10 +25,9 @@ from cgexplore.utilities import (
     check_directory,
     get_dihedral,
 )
+from env_set import cages, figures
 from openmm import openmm
 from rdkit import RDLogger
-
-from env_set import cages, figures
 
 logging.basicConfig(
     level=logging.INFO,

@@ -12,19 +12,17 @@ Author: Andrew Tarzia
 import logging
 import sys
 
-from cgexplore.beads import bead_library_check
-from cgexplore.generation_utilities import build_building_block
-from cgexplore.molecule_construction.topologies import (
-    FourC1Arm,
-    TwoC1Arm,
-)
-from rdkit import RDLogger
-
 from bead_libraries import (
     arm_2c_beads,
     beads_4c,
     binder_beads,
     core_2c_beads,
+)
+from cgexplore.beads import bead_library_check
+from cgexplore.generation_utilities import build_building_block
+from cgexplore.molecule_construction.topologies import (
+    FourC1Arm,
+    TwoC1Arm,
 )
 from env_set import calculations, ligands, structures
 from generation import (
@@ -32,6 +30,7 @@ from generation import (
     custom_torsion_definitions,
     custom_vdw_definitions,
 )
+from rdkit import RDLogger
 from topologies import cage_topology_options
 
 logging.basicConfig(
