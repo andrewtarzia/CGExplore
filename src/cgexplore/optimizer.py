@@ -16,6 +16,7 @@ from itertools import combinations
 import numpy as np
 from rdkit.Chem import AllChem as rdkit
 
+from .beads import get_cgbead_from_element
 from .utilities import (
     angle_between,
     convert_pyramid_angle,
@@ -55,35 +56,6 @@ class CGOptimizer:
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
 
-    def _get_cgbead_from_element(self, estring):
-        for i in self._param_pool:
-            bead = self._param_pool[i]
-            if bead.element_string == estring:
-                return bead
-
-    def _get_new_torsions(self, molecule, chain_length):
-        logging.info("remove need for custom chain length")
-        paths = rdkit.FindAllPathsOfLengthN(
-            mol=molecule.to_rdkit_mol(),
-            length=chain_length,
-            useBonds=False,
-            useHs=True,
-        )
-        torsions = []
-        for atom_ids in paths:
-            atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
-            atom1 = atoms[0]
-            atom2 = atoms[1]
-            atom3 = atoms[2]
-            atom4 = atoms[3]
-            if chain_length == 5:
-                atom5 = atoms[4]
-                torsions.append((atom1, atom2, atom3, atom4, atom5))
-            elif chain_length == 4:
-                torsions.append((atom1, atom2, atom3, atom4))
-
-        return torsions
-
     def _yield_bonds(self, molecule):
         if self._bonds is False:
             return ""
@@ -100,8 +72,14 @@ class CGOptimizer:
             estring2 = atom2.__class__.__name__
 
             try:
-                cgbead1 = self._get_cgbead_from_element(estring1)
-                cgbead2 = self._get_cgbead_from_element(estring2)
+                cgbead1 = get_cgbead_from_element(
+                    estring=estring1,
+                    bead_set=self._bead_set,
+                )
+                cgbead2 = get_cgbead_from_element(
+                    estring=estring2,
+                    bead_set=self._bead_set,
+                )
                 bond_r = lorentz_berthelot_sigma_mixing(
                     sigma1=cgbead1.bond_r,
                     sigma2=cgbead2.bond_r,
@@ -460,13 +438,19 @@ class CGOptimizer:
                 continue
 
             try:
-                cgbead1 = self._get_cgbead_from_element(estring1)
-                cgbead2 = self._get_cgbead_from_element(estring2)
+                cgbead1 = get_cgbead_from_element(
+                    estring=estring1,
+                    bead_set=self._bead_set,
+                )
+                cgbead2 = get_cgbead_from_element(
+                    estring=estring2,
+                    bead_set=self._bead_set,
+                )
                 sigma = lorentz_berthelot_sigma_mixing(
                     sigma1=cgbead1.sigma,
                     sigma2=cgbead2.sigma,
                 )
-                epsilon = self._param_pool[guest_estrings[0]].epsilon
+                epsilon = self._bead_set[guest_estrings[0]].epsilon
                 yield (name1, name2, epsilon, sigma)
 
             except KeyError:

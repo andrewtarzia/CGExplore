@@ -28,6 +28,9 @@ from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from topologies import cage_topology_options
 
+from cgexplore.beads import get_cgbead_from_string
+from cgexplore.shape import known_shape_vectors
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
@@ -566,7 +569,7 @@ def data_to_array(json_files, output_dir):
         cl_bead_libs = beads_3c().copy()
         cl_bead_libs.update(beads_4c())
         row["cltopo"] = int(clbb_name[0])
-        clangle = get_CGBead_from_string(
+        clangle = get_cgbead_from_string(
             present_cl_beads[0],
             cl_bead_libs,
         ).angle_centered
@@ -580,16 +583,16 @@ def data_to_array(json_files, output_dir):
             "2p3"
         ) or t_str in cage_topology_options("2p4"):
             cltitle = "3C1" if row["cltopo"] == 3 else "4C1"
-            row["c2r0"] = get_CGBead_from_string(
+            row["c2r0"] = get_cgbead_from_string(
                 present_c2_beads[0],
                 core_2c_beads(),
             ).bond_r
-            row["c2angle"] = get_CGBead_from_string(
+            row["c2angle"] = get_cgbead_from_string(
                 present_c2_beads[1],
                 arm_2c_beads(),
             ).angle_centered
             row["target_bite_angle"] = (
-                get_CGBead_from_string(
+                get_cgbead_from_string(
                     present_c2_beads[1],
                     arm_2c_beads(),
                 ).angle_centered
@@ -598,17 +601,17 @@ def data_to_array(json_files, output_dir):
 
         elif t_str in cage_topology_options("3p4"):
             cltitle = "4C1"
-            row["c3r0"] = get_CGBead_from_string(
+            row["c3r0"] = get_cgbead_from_string(
                 present_c2_beads[0],
                 cl_bead_libs,
             ).bond_r
-            row["c3angle"] = get_CGBead_from_string(
+            row["c3angle"] = get_cgbead_from_string(
                 present_c2_beads[0],
                 cl_bead_libs,
             ).angle_centered
 
         row["cltitle"] = cltitle
-        row["clr0"] = get_CGBead_from_string(
+        row["clr0"] = get_cgbead_from_string(
             present_cl_beads[0],
             cl_bead_libs,
         ).bond_r

@@ -19,6 +19,7 @@ import pandas as pd
 from openmm import app, openmm
 from openmmtools import integrators
 
+from .beads import get_cgbead_from_element, get_cgbead_from_string
 from .ensembles import Timestep
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
@@ -392,7 +393,10 @@ class CGOMMOptimizer(CGOptimizer):
         for atom in molecule.get_atoms():
             aestring = atom.__class__.__name__
             aid = atom.get_id()
-            acgbead = self._get_cgbead_from_element(aestring)
+            acgbead = get_cgbead_from_string(
+                estring=aestring,
+                bead_set=self._bead_set,
+            )
             atype = acgbead.bead_type
             if atype not in present_beads:
                 present_beads[atype] = acgbead
@@ -441,7 +445,10 @@ class CGOMMOptimizer(CGOptimizer):
             a_element = app.element.Element.getByAtomicNumber(
                 atom.get_atomic_number()
             )
-            a_cgbead = self._get_cgbead_from_element(a_estring)
+            a_cgbead = get_cgbead_from_element(
+                estring=a_estring,
+                bead_set=self._bead_set,
+            )
 
             omm_atom = topology.addAtom(
                 name=a_cgbead.bead_type,
