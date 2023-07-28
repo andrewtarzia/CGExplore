@@ -9,72 +9,26 @@ Author: Andrew Tarzia
 
 """
 
-import stk
-import os
 import json
-import numpy as np
-import pandas as pd
+import os
 from dataclasses import dataclass
+
+import numpy as np
+import stk
 
 
 @dataclass
 class Conformer:
     molecule: stk.Molecule
-    conformer_id: int = None
-    energy_decomposition: dict = None
-    source: str = None
+    conformer_id: int | None = None
+    energy_decomposition: dict | None = None
+    source: str | None = None
 
 
 @dataclass
 class Timestep:
     molecule: stk.Molecule
     timestep: int
-
-
-class Trajectory:
-    def __init__(
-        self,
-        base_molecule,
-        data_path,
-        traj_path,
-        forcefield_path,
-        output_path,
-        temperature,
-        random_seed,
-        num_steps,
-        time_step,
-        friction,
-        reporting_freq,
-        traj_freq,
-    ):
-        self._base_molecule = base_molecule
-        self._data_path = data_path
-        self._traj_path = traj_path
-        self._output_path = output_path
-        self._temperature = temperature
-        self._num_steps = num_steps
-        self._time_step = time_step
-        self._reporting_freq = reporting_freq
-        self._traj_freq = traj_freq
-        self._num_confs = int(self._num_steps / self._traj_freq)
-
-    def get_data(self):
-        return pd.read_csv(self._data_path)
-
-    def yield_conformers(self):
-        raise NotImplementedError()
-
-    def get_base_molecule(self):
-        return self._base_molecule
-
-    def __str__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(steps={self._num_steps}, "
-            f"conformers={self._num_confs})"
-        )
-
-    def __repr__(self) -> str:
-        return str(self)
 
 
 class Ensemble:
@@ -191,14 +145,10 @@ class Ensemble:
     def get_lowest_e_conformer(self):
         try:
             min_energy_conformerid = 0
-            min_energy = self._data[min_energy_conformerid][
-                "total energy"
-            ][0]
+            min_energy = self._data[min_energy_conformerid]["total energy"][0]
         except KeyError:
             min_energy_conformerid = "0"
-            min_energy = self._data[min_energy_conformerid][
-                "total energy"
-            ][0]
+            min_energy = self._data[min_energy_conformerid]["total energy"][0]
 
         for confid in self._data:
             conf_energy = self._data[confid]["total energy"][0]
@@ -209,11 +159,8 @@ class Ensemble:
         return self.get_conformer(min_energy_conformerid)
 
     def get_conformer(self, conf_id):
-
         if conf_id not in self._data:
-            raise ValueError(
-                f"conformer {conf_id} not found in ensemble."
-            )
+            raise ValueError(f"conformer {conf_id} not found in ensemble.")
         conf_lines = self._trajectory[conf_id]
         extracted_id = int(conf_lines[1].strip().split()[1])
         if extracted_id != int(conf_id):
@@ -230,14 +177,10 @@ class Ensemble:
             )
         conf_data = self._data[conf_id]
         source = conf_data["source"]
-        energy_decomp = {
-            i: conf_data[i] for i in conf_data if i != "source"
-        }
+        energy_decomp = {i: conf_data[i] for i in conf_data if i != "source"}
         return Conformer(
             molecule=(
-                self._base_molecule.with_position_matrix(
-                    np.array(new_pos_mat)
-                )
+                self._base_molecule.with_position_matrix(np.array(new_pos_mat))
             ),
             conformer_id=conf_id,
             energy_decomposition=energy_decomp,

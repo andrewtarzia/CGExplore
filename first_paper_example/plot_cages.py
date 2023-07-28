@@ -9,33 +9,32 @@ Author: Andrew Tarzia
 
 """
 
-import sys
+import logging
+import math
 import os
+import sys
+
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
-import math
-
-from cgexplore.visualisation import Pymol
-from cgexplore.utilities import check_directory
-
-from env_set import (
-    structures,
-    figures,
-    calculations,
-    pymol_path,
-    outputdata,
-)
 from analysis import (
-    isomer_energy,
+    convert_topo,
     data_to_array,
+    get_lowest_energy_data,
+    isomer_energy,
+    mapshape_to_topology,
     topology_labels,
     write_out_mapping,
-    get_lowest_energy_data,
-    convert_topo,
-    mapshape_to_topology,
+)
+from env_set import (
+    calculations,
+    figures,
+    outputdata,
+    pymol_path,
+    structures,
 )
 
-import logging
+from cgexplore.utilities import check_directory
+from cgexplore.visualisation import Pymol
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,7 +47,6 @@ def generate_images_of_all(
     struct_output,
     struct_figure_output,
 ):
-
     von = all_data[all_data["vdws"] == "von"]
 
     settings = {
@@ -85,7 +83,6 @@ def visualise_low_and_high(
     struct_output,
     struct_figure_output,
 ):
-
     von = all_data[all_data["vdws"] == "von"]
     tlabels = topology_labels(short="P")
 
@@ -203,7 +200,6 @@ def fig2_a(
     )
 
     for sname, ax in zip(structure_names, axs):
-
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -264,7 +260,6 @@ def fig2_cd(
     flat_axs = axs.flatten()
 
     for sname, ax in zip(structure_names, flat_axs):
-
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -318,7 +313,6 @@ def expt_fig_cases(
     flat_axs = axs.flatten()
 
     for sname, ax in zip(structure_names, flat_axs):
-
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -373,7 +367,6 @@ def expt_fig_CC_cases(
     for fax, tor in zip(axs, ("ton", "toff")):
         tor_data = all_data[all_data["torsions"] == tor]
         for sname, ax in zip(structure_names, fax):
-
             tdata = tor_data[tor_data["cage_name"] == sname]
             sindex = str(tdata.iloc[0]["index"])
             energy = tdata["energy_per_bb"].iloc[0]
@@ -411,7 +404,6 @@ def si_ar_fig(
     figsize=None,
     titles=None,
 ):
-
     if figsize is None:
         figsize = (4, 10)
 
@@ -467,7 +459,6 @@ def si_ar_fig_gen(
     struct_output,
     struct_figure_output,
 ):
-
     si_ar_fig(
         all_data=all_data,
         structure_names=(
@@ -775,7 +766,6 @@ def si_shape_fig(
     struct_output,
     struct_figure_output,
 ):
-
     structure_names = (
         # ("12P24_4C1m0000b0000_2C1c0000a0200", "ton"),
         # ("12P24_4C1m0000b0000_2C1c0000a01200", "toff"),
@@ -897,7 +887,6 @@ def add_structure_to_ax(
     energy=None,
     title=None,
 ):
-
     if "2P3" in struct_name:
         orient_atoms = "C"
     elif "2P4" in struct_name:
@@ -935,7 +924,6 @@ def generate_image(
     orient_atoms,
     settings,
 ):
-
     png_file = struct_figure_output / f"{struct_name}_f.png"
     if not os.path.exists(png_file):
         viz = Pymol(
@@ -1036,11 +1024,8 @@ def webapp_csv(
 
             vss_output = figure_output / "vss_figures"
             check_directory(vss_output)
-            figure_file = os.path.join(
-                vss_output, f"vss_{bbpair}_{tors}.png"
-            )
+            figure_file = os.path.join(vss_output, f"vss_{bbpair}_{tors}.png")
             if not os.path.exists(figure_file):
-
                 if ncols == 1:
                     fig, ax = plt.subplots(figsize=(5, 5))
                     flat_axs = [ax]
@@ -1052,9 +1037,7 @@ def webapp_csv(
                     )
                     flat_axs = axs.flatten()
 
-                for sindx, ax in zip(
-                    sorted(index_energies.keys()), flat_axs
-                ):
+                for sindx, ax in zip(sorted(index_energies.keys()), flat_axs):
                     add_structure_to_ax(
                         ax=ax,
                         struct_name=sindx,
@@ -1073,9 +1056,7 @@ def webapp_csv(
                 )
                 plt.close()
 
-            selfsort_url = (
-                github_selfsort_url + f"vss_{bbpair}_{tors}.png"
-            )
+            selfsort_url = github_selfsort_url + f"vss_{bbpair}_{tors}.png"
             bbdict[tors] = {
                 "topologies": topologies,
                 "clangle": clangle,
@@ -1117,7 +1098,6 @@ def check_odd_outcomes(
     struct_output,
     struct_figure_output,
 ):
-
     topologies = [i for i in topology_labels(short="P") if i != "6P8"]
 
     for tstr in topologies:
@@ -1143,9 +1123,7 @@ def check_odd_outcomes(
                 ba = int(list(cdata["target_bite_angle"])[0])
                 clangle = int(list(cdata["clangle"])[0])
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
-                tofflbl = (
-                    f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
-                )
+                tofflbl = f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
                 logging.info(
                     f"for {cage_name}: ton: {ton_energy}, "
                     f"toff: {toff_energy}"
@@ -1194,9 +1172,7 @@ def generate_movies(
                     / f"vss_{cltopo}{clseq}b00002C1c0000{i}_{tors}.png"
                     for i in astr
                 ]
-                output_file = (
-                    f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.mkv"
-                )
+                output_file = f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.mkv"
                 logging.info(f"gen movie to {output_file}")
                 output_file = figure_output / output_file
                 concat_file = (

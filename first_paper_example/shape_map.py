@@ -9,20 +9,20 @@ Author: Andrew Tarzia
 
 """
 
-import sys
-import os
-import stk
 import itertools
-import numpy as np
+import os
+import sys
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import stk
+from env_set import project_dir, shape_path
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-import pandas as pd
 
-from cgexplore.utilities import check_directory
 from cgexplore.shape import ShapeMeasure
-
-from env_set import project_dir, shape_path
+from cgexplore.utilities import check_directory
 
 
 def get_all_templates(dir):
@@ -166,7 +166,6 @@ def main():
 
         count = 0
         for idx, row in pc_df.iterrows():
-
             if row["index"] not in target_row_names:
                 continue
             print(row["index"], n_shape_arrays[row["index"]])

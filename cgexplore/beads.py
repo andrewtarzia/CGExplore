@@ -9,11 +9,10 @@ Author: Andrew Tarzia
 
 """
 
-from dataclasses import dataclass
 import itertools
-from collections import Counter
-
 import logging
+from collections import Counter
+from dataclasses import dataclass
 
 logging.basicConfig(
     level=logging.INFO,
@@ -160,9 +159,7 @@ def bead_library_check(bead_libraries):
     used_names = tuple(i.bead_type for i in bead_libraries)
     counts = Counter(used_names)
     if any((i > 1 for i in counts.values())):
-        raise ValueError(
-            f"you used a bead twice in your library: {counts}"
-        )
+        raise ValueError(f"you used a bead twice in your library: {counts}")
 
     used_strings = tuple(i.element_string for i in bead_libraries)
     for string in used_strings:
@@ -198,9 +195,9 @@ def produce_bead_library(
     coordination,
 ):
     return {
-        f"{type_prefix}{i}{j}{k}{l}": CgBead(
+        f"{type_prefix}{idx1}{idx2}{idx3}{idx4}": CgBead(
             element_string=element_string,
-            bead_type=f"{type_prefix}{i}{j}{k}{l}",
+            bead_type=f"{type_prefix}{idx1}{idx2}{idx3}{idx4}",
             bond_r=bond_r,
             angle_centered=angle,
             bond_k=bond_k,
@@ -209,8 +206,8 @@ def produce_bead_library(
             epsilon=epsilon,
             coordination=coordination,
         )
-        for (i, bond_r), (j, angle), (k, bond_k), (
-            l,
+        for (idx1, bond_r), (idx2, angle), (idx3, bond_k), (
+            idx4,
             angle_k,
         ) in itertools.product(
             enumerate(bond_rs),

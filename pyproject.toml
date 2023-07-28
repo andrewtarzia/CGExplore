@@ -1,0 +1,91 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cgexplore"
+maintainers = [
+  { name = "Andrew Tarzia", email = "andrew.tarzia@gmail.com" },
+]
+dependencies = [
+  "scipy",
+  "matplotlib",
+  "pandas",
+  "numpy",
+  "scikit-learn",
+  "stk",
+  "stko",
+]
+requires-python = ">=3.11"
+dynamic = ["version"]
+readme = "README.md"
+
+[project.optional-dependencies]
+dev = [
+  "black",
+  "ruff",
+  "moldoc",
+  "mypy",
+  "pip-tools",
+  "pytest",
+  "pytest-benchmark",
+  "pytest-datadir",
+  "pytest-lazy-fixture",
+  "pytest-cov",
+  "twine",
+]
+
+[project.urls]
+github = "https://github.com/andrewtarzia/CGExplore"
+
+[tool.setuptools_scm]
+write_to = "cgexplore/_version.py"
+
+[tool.setuptools.packages.find]
+where = [
+  # list of folders that contain the packages (["."] by default)
+  "cgexplore",
+]
+
+[tool.black]
+line-length = 79
+
+[tool.ruff]
+line-length = 79
+extend-select = ["I"]
+
+[tool.pytest.ini_options]
+testpaths = [
+  "tests",
+]
+python_files = [
+    "test_*.py",
+    "*_test.py",
+    "benchmark_*.py",
+    "*_benchmark.py",
+]
+python_functions = [
+  "test_*",
+  "benchmark_*",
+]
+
+[tool.mypy]
+show_error_codes = true
+implicit_optional = false
+warn_no_return = true
+strict_optional = true
+
+[[tool.mypy.overrides]]
+module = [
+  "rdkit.*",
+  "scipy.*",
+  "matplotlib.*",
+  "pandas.*",
+  "stk.*",
+  "mchammer.*",
+  "pore_mapper.*",
+  "pywindow.*",
+  "openmmtools.*",
+  "openmm.*"
+]
+ignore_missing_imports = true

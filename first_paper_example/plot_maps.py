@@ -9,32 +9,30 @@ Author: Andrew Tarzia
 
 """
 
-import sys
-import os
 import itertools
+import logging
 import math
-import numpy as np
+import os
+import sys
+
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-
-from env_set import figures, calculations, outputdata
-
+import numpy as np
 from analysis import (
+    Xc_map,
+    angle_str,
+    cltypetopo_to_colormap,
+    convert_topo,
+    convert_tors,
     data_to_array,
-    stoich_map,
     eb_str,
     get_lowest_energy_data,
     isomer_energy,
+    stoich_map,
     topology_labels,
-    cltypetopo_to_colormap,
     write_out_mapping,
-    convert_tors,
-    convert_topo,
-    angle_str,
-    Xc_map,
 )
-
-import logging
+from env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,
@@ -64,9 +62,7 @@ def nobiteangle_relationship(all_data, figure_output):
             clan_data = filt_data[filt_data["clangle"] == t_angle]
             clan_output = {}
             for run_number in clan_data["run_number"]:
-                plot_data = clan_data[
-                    clan_data["run_number"] == run_number
-                ]
+                plot_data = clan_data[clan_data["run_number"] == run_number]
                 if len(plot_data) == 0:
                     continue
                 xs = list(plot_data["c3angle"])
@@ -158,9 +154,7 @@ def bite_angle_relationship(all_data, figure_output):
                 tors_output = {}
                 # for c1_opt in sorted(set(clan_data["c2r0"])):
                 for run_number in clan_data["run_number"]:
-                    plot_data = tor_data[
-                        tor_data["run_number"] == run_number
-                    ]
+                    plot_data = tor_data[tor_data["run_number"] == run_number]
                     if len(plot_data) == 0:
                         continue
                     # for c2_opt in sorted(set(test_data["clr0"])):
@@ -170,9 +164,7 @@ def bite_angle_relationship(all_data, figure_output):
                     xs = list(plot_data["c2angle"])
                     ys = list(plot_data["energy_per_bb"])
                     xs, ys = zip(*sorted(zip(xs, ys)))
-                    tors_output[run_number] = {
-                        x: y for x, y in zip(xs, ys)
-                    }
+                    tors_output[run_number] = {x: y for x, y in zip(xs, ys)}
 
                 if len(tors_output) == 0:
                     continue
@@ -294,24 +286,18 @@ def selectivity_map(all_data, figure_output):
                     yvalue = topology_order[tstr]
                     tdata = cdata[cdata["topology"] == tstr]
                     for ba in bite_angles:
-                        plotdata = tdata[
-                            tdata["target_bite_angle"] == ba
-                        ]
+                        plotdata = tdata[tdata["target_bite_angle"] == ba]
                         # total_count = len(plotdata)
 
                         property_list = list(plotdata[pdict["col"]])
                         if pdict["dir"] == "<":
                             under_cut = [
-                                i
-                                for i in property_list
-                                if i < pdict["cut"]
+                                i for i in property_list if i < pdict["cut"]
                             ]
                             # order_string = "<"
                         elif pdict["dir"] == ">":
                             under_cut = [
-                                i
-                                for i in property_list
-                                if i > pdict["cut"]
+                                i for i in property_list if i > pdict["cut"]
                             ]
                             # order_string = ">"
 
@@ -346,12 +332,8 @@ def selectivity_map(all_data, figure_output):
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
 
-                ax.set_yticks(
-                    [topology_order[i] for i in topology_order]
-                )
-                ax.set_yticklabels(
-                    [convert_topo(i) for i in topology_order]
-                )
+                ax.set_yticks([topology_order[i] for i in topology_order])
+                ax.set_yticklabels([convert_topo(i) for i in topology_order])
 
             ax.set_xlabel("bite angle [deg]", fontsize=16)
 
@@ -390,16 +372,8 @@ def draw_pie(colours, xpos, ypos, size, ax):
         # calculate the points of the pie pieces
         for color, ratio in zip(colours, ratios):
             this = 2 * np.pi * ratio + previous
-            x = (
-                [0]
-                + np.cos(np.linspace(previous, this, 100)).tolist()
-                + [0]
-            )
-            y = (
-                [0]
-                + np.sin(np.linspace(previous, this, 100)).tolist()
-                + [0]
-            )
+            x = [0] + np.cos(np.linspace(previous, this, 100)).tolist() + [0]
+            y = [0] + np.sin(np.linspace(previous, this, 100)).tolist() + [0]
             xy = np.column_stack([x, y])
             previous = this
             markers.append(
@@ -469,7 +443,6 @@ def selfsort_map(all_data, figure_output):
     io2 = sorted(set(all_data[cols_to_iter[1]]))
     io3 = sorted(set(all_data[cols_to_iter[2]]))
     for tor, vdw, cltitle in itertools.product(io1, io2, io3):
-
         data = all_data[all_data[cols_to_iter[0]] == tor]
         data = data[data[cols_to_iter[1]] == vdw]
         data = data[data[cols_to_iter[2]] == cltitle]
@@ -561,7 +534,6 @@ def kinetic_selfsort_map(all_data, figure_output):
     io2 = sorted(set(all_data[cols_to_iter[1]]))
     io3 = sorted(set(all_data[cols_to_iter[2]]))
     for tor, vdw, cltitle in itertools.product(io1, io2, io3):
-
         data = all_data[all_data[cols_to_iter[0]] == tor]
         data = data[data[cols_to_iter[1]] == vdw]
         data = data[data[cols_to_iter[2]] == cltitle]
@@ -595,9 +567,7 @@ def kinetic_selfsort_map(all_data, figure_output):
             if len(mixed_energies) == 0:
                 colours = ["white"]
             else:
-                stoichiometries = {
-                    i: stoich_map(i) for i in mixed_energies
-                }
+                stoichiometries = {i: stoich_map(i) for i in mixed_energies}
                 min_stoichiometry = min(stoichiometries.values())
                 kinetic_energies = {
                     i: mixed_energies[i]

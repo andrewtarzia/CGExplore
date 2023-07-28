@@ -9,34 +9,32 @@ Author: Andrew Tarzia
 
 """
 
-import sys
-import os
 import itertools
-import pandas as pd
+import logging
+import os
+import sys
+
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from scipy.spatial import ConvexHull
 import numpy as np
-
-from env_set import figures, calculations, outputdata
-
+import pandas as pd
 from analysis import (
-    write_out_mapping,
+    angle_str,
+    convert_prop,
+    convert_topo,
+    convert_tors,
+    data_to_array,
     get_lowest_energy_data,
+    isomer_energy,
     map_cltype_to_topology,
     pore_str,
     rg_str,
-    convert_tors,
-    convert_prop,
-    convert_topo,
-    topology_labels,
     stoich_map,
-    angle_str,
-    data_to_array,
-    isomer_energy,
+    topology_labels,
+    write_out_mapping,
 )
-
-import logging
+from env_set import calculations, figures, outputdata
+from matplotlib.lines import Line2D
+from scipy.spatial import ConvexHull
 
 logging.basicConfig(
     level=logging.INFO,
@@ -63,9 +61,7 @@ def phase_space_2(all_data, figure_output):
             }
             if len(stable_energies) == 0:
                 continue
-            stoichiometries = {
-                i: stoich_map(i) for i in stable_energies
-            }
+            stoichiometries = {i: stoich_map(i) for i in stable_energies}
             min_stoichiometry = min(stoichiometries.values())
             kinetic_energies = {
                 i: stable_energies[i]
@@ -103,9 +99,7 @@ def phase_space_2(all_data, figure_output):
                     "energy_per_bb": epb,
                     "topology": tstr,
                     "pore": float(kinetic_data["pore"]),
-                    "radius_gyration": float(
-                        kinetic_data["radius_gyration"]
-                    ),
+                    "radius_gyration": float(kinetic_data["radius_gyration"]),
                     "shape_measure": shape_measure,
                     "cltitle": str(kinetic_data["cltitle"].iloc[0]),
                     "clangle": float(kinetic_data["clangle"]),
@@ -191,7 +185,6 @@ def phase_space_2(all_data, figure_output):
         },
     )
     for i, axd in enumerate(axmap):
-
         ax = axd["ax"]
 
         # Want highlighting lines.
@@ -202,9 +195,7 @@ def phase_space_2(all_data, figure_output):
         # Do convexhull of full data set.
         if axd["x"] not in ("shape_measure", "cltitle"):
             full_data_y = list(all_data[axd["y"]])
-            full_data_x = [
-                axd["xmapfun"](i) for i in all_data[axd["x"]]
-            ]
+            full_data_x = [axd["xmapfun"](i) for i in all_data[axd["x"]]]
             points = np.column_stack((full_data_x, full_data_y))
             points = points[~np.isnan(points).any(axis=1), :]
             hull = ConvexHull(points)
@@ -245,9 +236,7 @@ def phase_space_2(all_data, figure_output):
 
         else:
             yvalues = [bb_data[i][axd["y"]] for i in bb_data]
-            xvalues = [
-                axd["xmapfun"](bb_data[i][axd["x"]]) for i in bb_data
-            ]
+            xvalues = [axd["xmapfun"](bb_data[i][axd["x"]]) for i in bb_data]
             cvalues = [bb_data[i][axd["c"]] for i in bb_data]
             ax.scatter(
                 xvalues,
@@ -376,7 +365,6 @@ def phase_space_3(all_data, figure_output):
             data[(bbtitle, "ton")]["unstable"] = 0
 
         for tors in ("ton", "toff"):
-
             fin_data = dfi[dfi["torsions"] == tors]
             if "6P8" in set(fin_data["topology"]):
                 continue
@@ -450,14 +438,14 @@ def phase_space_5(all_data, figure_output):
             to_plot_x = []
             to_plot_y = []
             to_plot_l = []
-            for x, y, l in zip(xvalues, yvalues, lvalues):
+            for x, y, lval in zip(xvalues, yvalues, lvalues):
                 if pd.isna(x) or pd.isna(y):
                     continue
                 to_plot_x.append(x)
                 to_plot_y.append(y)
-                if pd.isna(l):
+                if pd.isna(lval):
                     continue
-                to_plot_l.append(l)
+                to_plot_l.append(lval)
 
             ax.scatter(
                 to_plot_x,
@@ -478,9 +466,7 @@ def phase_space_5(all_data, figure_output):
                     zorder=-1,
                 )
             elif len(to_plot_l) != 0:
-                raise ValueError(
-                    f"{len(to_plot_l)} l != {len(to_plot_x)}"
-                )
+                raise ValueError(f"{len(to_plot_l)} l != {len(to_plot_x)}")
 
             ax.set_title(
                 (

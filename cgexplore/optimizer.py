@@ -9,19 +9,19 @@ Author: Andrew Tarzia
 
 """
 
-import numpy as np
-from itertools import combinations
+import logging
 from heapq import nsmallest
+from itertools import combinations
+
+import numpy as np
 from rdkit.Chem import AllChem as rdkit
 
 from .utilities import (
-    get_all_angles,
     angle_between,
-    get_all_torsions,
     convert_pyramid_angle,
+    get_all_angles,
+    get_all_torsions,
 )
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,

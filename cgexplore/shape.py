@@ -9,15 +9,15 @@ Author: Andrew Tarzia
 
 """
 
-import subprocess as sp
-import stk
-import numpy as np
+import logging
 import os
 import shutil
+import subprocess as sp
+
+import numpy as np
+import stk
 
 from .beads import periodic_table
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -45,10 +45,7 @@ def fill_position_matrix(
     target_anum = periodic_table()[element]
     for ai in constructed_molecule.get_atom_infos():
         if ai.get_building_block() == target_bb:
-            if (
-                ai.get_building_block_atom().get_atomic_number()
-                == target_anum
-            ):
+            if ai.get_building_block_atom().get_atomic_number() == target_anum:
                 a = ai.get_atom()
                 new_atom = stk.Atom(
                     id=len(atoms),
@@ -66,7 +63,6 @@ def get_shape_molecule_nodes(
     element,
     topo_expected,
 ):
-
     splits = name.split("_")
     topo_str = splits[0]
     if topo_str not in topo_expected:
@@ -101,7 +97,6 @@ def get_shape_molecule_ligands(
     element,
     topo_expected,
 ):
-
     splits = name.split("_")
     topo_str = splits[0]
     bbs = list(constructed_molecule.get_building_blocks())
@@ -159,10 +154,7 @@ class ShapeMeasure:
                 shape_string: self.reference_shape_dict()[shape_string]
             }
         self._num_vertex_options = tuple(
-            set(
-                int(self._shape_dict[i]["vertices"])
-                for i in self._shape_dict
-            )
+            set(int(self._shape_dict[i]["vertices"]) for i in self._shape_dict)
         )
 
     def reference_shape_dict(self):
@@ -436,17 +428,14 @@ class ShapeMeasure:
                 "vertices": "9",
                 "label": "JTC-9",
                 "shape": (
-                    "Triangular cupola (J3) = trivacant cuboctahedron "
-                    "C3v"
+                    "Triangular cupola (J3) = trivacant cuboctahedron " "C3v"
                 ),
             },
             "JCCU-9": {
                 "code": "5",
                 "vertices": "9",
                 "label": "JCCU-9",
-                "shape": (
-                    "Capped cube (Elongated square pyramid, J8) C4v"
-                ),
+                "shape": ("Capped cube (Elongated square pyramid, J8) C4v"),
             },
             "CCU-9": {
                 "code": "6",
@@ -677,8 +666,7 @@ class ShapeMeasure:
                 "vertices": "12",
                 "label": "ACOC-12",
                 "shape": (
-                    "Anticuboctahedron (Triangular orthobicupola J27) "
-                    "D3h"
+                    "Anticuboctahedron (Triangular orthobicupola J27) " "D3h"
                 ),
             },
             "IC-12": {
@@ -760,8 +748,7 @@ class ShapeMeasure:
             shapes = {}
         else:
             shapes = {
-                i: float(values[1 + label_idx_map[i]])
-                for i in label_idx_map
+                i: float(values[1 + label_idx_map[i]]) for i in label_idx_map
             }
 
         return shapes
@@ -788,9 +775,7 @@ class ShapeMeasure:
         size_of_poly = f"{num_vertices} 0\n"
         codes = " ".join(shape_numbers) + "\n"
 
-        string = (
-            title + fix_perm + size_of_poly + codes + structure_string
-        )
+        string = title + fix_perm + size_of_poly + codes + structure_string
 
         with open(input_file, "w") as f:
             f.write(string)
@@ -829,10 +814,7 @@ class ShapeMeasure:
         bb_ids = {}
         for ai in molecule.get_atom_infos():
             aibbid = ai.get_building_block_id()
-            if (
-                ai.get_atom().get_atomic_number()
-                in self._target_atmnums
-            ):
+            if ai.get_atom().get_atomic_number() in self._target_atmnums:
                 if aibbid not in bb_ids:
                     bb_ids[aibbid] = []
                 bb_ids[aibbid].append(ai.get_atom().get_id())

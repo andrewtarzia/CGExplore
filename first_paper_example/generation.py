@@ -9,19 +9,20 @@ Author: Andrew Tarzia
 
 """
 
-import stk
-import os
-import json
 import itertools
+import json
+import logging
+import os
+
+import stk
+from analysis import (
+    ligand_expected_topologies,
+    node_expected_topologies,
+)
+from env_set import shape_path
 from openmm import openmm
 
-from cgexplore.shape import (
-    ShapeMeasure,
-    get_shape_molecule_ligands,
-    get_shape_molecule_nodes,
-)
-from cgexplore.geom import GeomMeasure
-from cgexplore.pore import PoreMeasure
+from cgexplore.ensembles import Ensemble
 from cgexplore.generation_utilities import (
     run_constrained_optimisation,
     run_optimisation,
@@ -29,16 +30,13 @@ from cgexplore.generation_utilities import (
     yield_near_models,
     yield_shifted_models,
 )
-from cgexplore.ensembles import Ensemble
-
-
-from env_set import shape_path
-from analysis import (
-    node_expected_topologies,
-    ligand_expected_topologies,
+from cgexplore.geom import GeomMeasure
+from cgexplore.pore import PoreMeasure
+from cgexplore.shape import (
+    ShapeMeasure,
+    get_shape_molecule_ligands,
+    get_shape_molecule_nodes,
 )
-
-import logging
 
 logging.basicConfig(
     level=logging.INFO,
@@ -327,10 +325,14 @@ def analyse_cage(
         g_measure = GeomMeasure(custom_torsion_atoms)
         bond_data = g_measure.calculate_bonds(conformer.molecule)
         angle_data = g_measure.calculate_angles(conformer.molecule)
-        dihedral_data = g_measure.calculate_torsions(conformer.molecule)
+        dihedral_data = g_measure.calculate_torsions(
+            molecule=conformer.molecule,
+            absolute=True,
+            path_length=5,
+        )
         min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
-            conformer.molecule
+            molecule=conformer.molecule,
         )
         max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
         if radius_gyration > max_diameter:

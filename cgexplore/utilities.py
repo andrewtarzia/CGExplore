@@ -9,13 +9,13 @@ Author: Andrew Tarzia
 
 """
 
-import numpy as np
 import json
-from rdkit.Chem import AllChem as rdkit
-from scipy.spatial.distance import euclidean
+import logging
 import os
 
-import logging
+import numpy as np
+from rdkit.Chem import AllChem as rdkit
+from scipy.spatial.distance import euclidean
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,7 +24,6 @@ logging.basicConfig(
 
 
 def check_long_distances(molecule, name, max_distance, step):
-
     max_present = 0
     for bond in molecule.get_bonds():
         distance = get_atom_distance(
@@ -88,9 +87,7 @@ def get_angles(optimizer, cage):
 
     angle_atoms = get_all_angles(cage)
     for angle_trip in angle_atoms:
-        triplet = tuple(
-            sorted([i.__class__.__name__ for i in angle_trip])
-        )
+        triplet = tuple(sorted([i.__class__.__name__ for i in angle_trip]))
         if triplet in set_ks:
             a1id = angle_trip[0].get_id()
             a2id = angle_trip[1].get_id()
@@ -193,7 +190,6 @@ def read_lib(lib_file):
 
 
 def get_all_angles(molecule):
-
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=3,
@@ -212,7 +208,6 @@ def get_all_angles(molecule):
 
 
 def get_all_torsions(molecule):
-
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=4,

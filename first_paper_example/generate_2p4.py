@@ -9,31 +9,30 @@ Author: Andrew Tarzia
 
 """
 
+import logging
 import sys
 
-from cgexplore.beads import bead_library_check
-from cgexplore.molecule_construction.topologies import (
-    TwoC1Arm,
-    FourC1Arm,
+from bead_libraries import (
+    arm_2c_beads,
+    beads_4c,
+    binder_beads,
+    core_2c_beads,
 )
-from cgexplore.generation_utilities import build_building_block
-
-from topologies import cage_topology_options
+from env_set import calculations, ligands, structures
 from generation import (
+    build_populations,
     custom_torsion_definitions,
     custom_vdw_definitions,
-    build_populations,
 )
-from bead_libraries import (
-    beads_4c,
-    arm_2c_beads,
-    core_2c_beads,
-    binder_beads,
-)
-from env_set import structures, calculations, ligands
-
-import logging
 from rdkit import RDLogger
+from topologies import cage_topology_options
+
+from cgexplore.beads import bead_library_check
+from cgexplore.generation_utilities import build_building_block
+from cgexplore.molecule_construction.topologies import (
+    FourC1Arm,
+    TwoC1Arm,
+)
 
 logging.basicConfig(
     level=logging.INFO,
