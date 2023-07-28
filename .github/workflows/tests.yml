@@ -58,6 +58,7 @@ jobs:
           printenv | sort
       - shell: bash -el {0}
         run: mamba install openmm openmmtools
-      - run: "pip install --user --upgrade setuptools"
+      - run: "pip install --upgrade pip"
+      - run: "pip install --upgrade setuptools"
       - run: "pip install -e '.[dev]' --user"
       - run: pytest
