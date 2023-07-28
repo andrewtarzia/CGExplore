@@ -25,7 +25,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - run: "pip install -e '.[dev]'"
-      - run: mypy cgexplore
+      - run: mypy src
   black:
     runs-on: ubuntu-22.04
     steps:
@@ -62,3 +62,35 @@ jobs:
         run: "pip install -e '.[dev]'"
       - shell: bash -el {0}
         run: pytest
+  build-test:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          python-version: 3.11
+          channels: conda-forge,defaults
+          channel-priority: true
+      - shell: bash -el {0}
+        run: |
+          conda info
+          conda list
+          conda config --show-sources
+          conda config --show
+          printenv | sort
+      - shell: bash -el {0}
+        run: conda install -c conda-forge openmm openmmtools
+      - shell: bash -el {0}
+        run: "pip install --upgrade pip"
+      - shell: bash -el {0}
+        run: "pip install --upgrade setuptools"
+      - shell: bash -el {0}
+        run: "pip install -e '.[dev]'"
+      - shell: bash -el {0}
+        run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
+      - shell: bash -e1 {0}
+        run: python cg_model_test/cg_model_test.py
+      - uses: actions/upload-artifact@v3
+        with:
+          name: intermediate-ea-fitness-plot
+          path: fitness_progress.png
