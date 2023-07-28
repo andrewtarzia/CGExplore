@@ -39,7 +39,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set) -> stk.Molecule:
         opt = CGOMMOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=bead_set,
+            bead_set=bead_set,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
@@ -95,7 +95,7 @@ def run_mc_cycle(
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_{suffix}",
         output_dir=output_dir,
-        param_pool=bead_set,
+        bead_set=bead_set,
         custom_torsion_set=custom_torsion_set,
         bonds=bonds,
         angles=angles,
@@ -185,7 +185,7 @@ def run_soft_md_cycle(
     md = CGOMMDynamics(
         fileprefix=f"{name}_{suffix}",
         output_dir=output_dir,
-        param_pool=soft_bead_set,
+        bead_set=soft_bead_set,
         custom_torsion_set=custom_torsion_set,
         bonds=True,
         angles=True,
@@ -353,7 +353,7 @@ def run_constrained_optimisation(
     constrained_opt = CGOMMOptimizer(
         fileprefix=f"{name}_constrained",
         output_dir=output_dir,
-        param_pool=soft_bead_set,
+        bead_set=soft_bead_set,
         custom_torsion_set=None,
         bonds=True,
         angles=True,
@@ -394,7 +394,7 @@ def run_optimisation(
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_{file_suffix}",
         output_dir=output_dir,
-        param_pool=bead_set,
+        bead_set=bead_set,
         custom_torsion_set=custom_torsion_set,
         bonds=bonds,
         angles=angles,
@@ -487,42 +487,3 @@ def yield_shifted_models(molecule, bead_set) -> typing.Iterator[stk.Molecule]:
         atom_number = periodic_table()[bead_set[bead].element_string]
         for kick in (1, 2, 3, 4):
             yield shift_beads(molecule, atom_number, kick)
-
-
-def target_torsions(bead_set, custom_torsion_option):
-    try:
-        (t_key_1,) = (i for i in bead_set if i[0] == "a")
-    except ValueError:
-        # For when 3+4 cages are being built - there are no target
-        # torsions.
-        return None
-
-    (c_key,) = (i for i in bead_set if i[0] == "c")
-    (t_key_2,) = (i for i in bead_set if i[0] == "b")
-    custom_torsion_set = {
-        (
-            t_key_2,
-            t_key_1,
-            c_key,
-            t_key_1,
-            t_key_2,
-        ): custom_torsion_option,
-    }
-    return custom_torsion_set
-
-
-def collect_custom_torsion(
-    custom_torsion_options,
-    custom_torsion,
-    bead_set,
-):
-    if custom_torsion_options[custom_torsion] is None:
-        custom_torsion_set = None
-    else:
-        tors_option = custom_torsion_options[custom_torsion]
-        custom_torsion_set = target_torsions(
-            bead_set=bead_set,
-            custom_torsion_option=tors_option,
-        )
-
-    return custom_torsion_set
