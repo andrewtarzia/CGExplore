@@ -40,7 +40,6 @@ def arm_2c_beads():
         element_string="Ba",
         bond_rs=(1,),
         angles=range(90, 181, 5),
-        # angles=(90, 100, 120, 140, 160, 180),
         bond_ks=(bond_k(),),
         angle_ks=(angle_k(),),
         sigma=1,
