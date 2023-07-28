@@ -58,7 +58,7 @@ def random_deform_molecule(molecule, generator, sigma) -> stk.Molecule:
     old_pos_mat = molecule.get_position_matrix()
 
     new_pos_mat = []
-    for atom, pos in zip(molecule.get_atoms(), old_pos_mat):
+    for pos in old_pos_mat:
         move = generator.random((3,)) * sigma
         new_pos = pos - move
         new_pos_mat.append(new_pos)
@@ -132,12 +132,13 @@ def run_mc_cycle(
         # Pass or fail.
         if passed:
             num_passed += 1
+            decomp = opt.read_final_energy_decomposition()
             conformer = Conformer(
                 molecule=test_molecule.clone().with_centroid(
                     np.array((0, 0, 0))
                 ),
                 conformer_id=None,
-                energy_decomposition=(opt.read_final_energy_decomposition()),
+                energy_decomposition=(decomp),
             )
 
             ensemble.add_conformer(
@@ -145,7 +146,7 @@ def run_mc_cycle(
                 source=suffix,
             )
             molecule = conformer.molecule
-            current_energy = conformer.energy_decomposition["total energy"][0]
+            current_energy = decomp["total energy"][0]  # type: ignore[index]
 
         num_run += 1
 
