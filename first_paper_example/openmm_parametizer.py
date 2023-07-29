@@ -117,6 +117,7 @@ def random_test(beads, calculation_output, figure_output):
             friction=1.0 / openmm.unit.picosecond,
             reporting_freq=100,
             traj_freq=100,
+            platform="CPU",
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -245,6 +246,7 @@ def test1(beads, calculation_output, figure_output):
             friction=1.0 / openmm.unit.picosecond,
             reporting_freq=100,
             traj_freq=100,
+            platform="CPU",
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -276,6 +278,7 @@ def test1(beads, calculation_output, figure_output):
             angles=False,
             torsions=False,
             vdw=False,
+            platform="CPU",
         )
         energy = opt.calculate_energy(new_bb)
         distance = np.linalg.norm(new_posmat[1] - new_posmat[0])
@@ -375,6 +378,7 @@ def test2(beads, calculation_output, figure_output):
             friction=1.0 / openmm.unit.picosecond,
             reporting_freq=100,
             traj_freq=100,
+            platform="CPU",
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -414,6 +418,7 @@ def test2(beads, calculation_output, figure_output):
             angles=False,
             torsions=False,
             vdw=False,
+            platform="CPU",
         )
         energy = opt.calculate_energy(new_bb)
         distance1 = np.linalg.norm(new_posmat[1] - new_posmat[0])
@@ -535,6 +540,7 @@ def test3(beads, calculation_output, figure_output):
             friction=1.0 / openmm.unit.picosecond,
             reporting_freq=100,
             traj_freq=100,
+            platform="CPU",
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -568,6 +574,7 @@ def test3(beads, calculation_output, figure_output):
             angles=True,
             torsions=False,
             vdw=False,
+            platform="CPU",
         )
         energy = opt.calculate_energy(new_bb)
         pos_mat = new_bb.get_position_matrix()
@@ -675,6 +682,7 @@ def test4(beads, calculation_output, figure_output):
             friction=1.0 / openmm.unit.picosecond,
             reporting_freq=100,
             traj_freq=100,
+            platform="CPU",
         )
         trajectory = opt.run_dynamics(linear_bb)
 
@@ -706,6 +714,7 @@ def test4(beads, calculation_output, figure_output):
             angles=True,
             torsions=True,
             vdw=False,
+            platform="CPU",
         )
         energy = opt.calculate_energy(new_bb)
         pos_mat = new_bb.get_position_matrix()
@@ -801,6 +810,7 @@ def test5(beads, calculation_output, figure_output):
             torsions=False,
             vdw=True,
             vdw_bond_cutoff=0,
+            platform="CPU",
         )
         energy = opt.calculate_energy(new_bb)
         distance = np.linalg.norm(new_posmat[1] - new_posmat[0])
