@@ -398,7 +398,7 @@ class CGOptimizer:
                     get_cgbead_from_element(i, self._bead_set)
                     for i in atom_estrings
                 )
-                cgbead_string = "".join(i.bead_type for i in cgbeads)
+                cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
                 for target_torsion in self._custom_torsion_set:
                     if target_torsion.search_string != cgbead_string:
                         continue

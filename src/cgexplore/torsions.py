@@ -31,8 +31,8 @@ class Torsion:
 
 @dataclass
 class TargetTorsion:
-    search_string: str
-    search_estring: str
+    search_string: tuple[str, ...]
+    search_estring: tuple[str, ...]
     measured_atom_ids: tuple[int, int, int, int]
     phi0: float
     torsion_k: float

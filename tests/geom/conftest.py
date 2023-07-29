@@ -27,8 +27,8 @@ from .case_data import CaseData
             geommeasure=GeomMeasure(
                 target_torsions=(
                     TargetTorsion(
-                        search_string="",
-                        search_estring="CNCC",
+                        search_string=(),
+                        search_estring=("C", "N", "C", "C"),
                         measured_atom_ids=(0, 1, 2, 3),
                         phi0=0,
                         torsion_k=0,
@@ -95,8 +95,8 @@ from .case_data import CaseData
             geommeasure=GeomMeasure(
                 target_torsions=(
                     TargetTorsion(
-                        search_string="",
-                        search_estring="COCC",
+                        search_string=(),
+                        search_estring=("C", "O", "C", "C"),
                         measured_atom_ids=(0, 1, 2, 3),
                         phi0=0,
                         torsion_k=0,
@@ -137,8 +137,8 @@ from .case_data import CaseData
             geommeasure=GeomMeasure(
                 target_torsions=(
                     TargetTorsion(
-                        search_string="",
-                        search_estring="COCC",
+                        search_string=(),
+                        search_estring=("C", "O", "C", "C"),
                         measured_atom_ids=(0, 1, 2, 3),
                         phi0=0,
                         torsion_k=0,

@@ -25,8 +25,8 @@ from .case_data import CaseData
             custom_torsion_set={
                 "ton": (
                     TargetTorsion(
-                        search_string="bacab",
-                        search_estring="",
+                        search_string=("b", "a", "c", "a", "b"),
+                        search_estring=(),
                         measured_atom_ids=[0, 1, 3, 4],
                         phi0=180,
                         torsion_k=50,
@@ -109,8 +109,8 @@ from .case_data import CaseData
             custom_torsion_set={
                 "ton": (
                     TargetTorsion(
-                        search_string="bacab",
-                        search_estring="",
+                        search_string=("b", "a", "c", "a", "b"),
+                        search_estring=(),
                         measured_atom_ids=[0, 1, 3, 4],
                         phi0=180,
                         torsion_k=50,
@@ -190,8 +190,8 @@ from .case_data import CaseData
             custom_torsion_set={
                 "ton": (
                     TargetTorsion(
-                        search_string="bacab",
-                        search_estring="",
+                        search_string=("b", "a", "c", "a", "b"),
+                        search_estring=(),
                         measured_atom_ids=[0, 1, 3, 4],
                         phi0=180,
                         torsion_k=50,
@@ -264,8 +264,8 @@ from .case_data import CaseData
             custom_torsion_set={
                 "ton": (
                     TargetTorsion(
-                        search_string="cncc",
-                        search_estring="",
+                        search_string=("c", "n", "c", "c"),
+                        search_estring=(),
                         measured_atom_ids=[0, 1, 2, 3],
                         phi0=30,
                         torsion_k=10,

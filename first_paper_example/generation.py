@@ -49,8 +49,8 @@ def custom_torsion_definitions(population):
         "2p3": {
             "ton": (
                 TargetTorsion(
-                    search_string="bacab",
-                    search_estring="PbBaAgBaPb",
+                    search_string=("b", "a", "c", "a", "b"),
+                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
                     measured_atom_ids=[0, 1, 3, 4],
                     phi0=180,
                     torsion_k=50,
@@ -62,8 +62,8 @@ def custom_torsion_definitions(population):
         "2p4": {
             "ton": (
                 TargetTorsion(
-                    search_string="bacab",
-                    search_estring="PbBaAgBaPb",
+                    search_string=("b", "a", "c", "a", "b"),
+                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
                     measured_atom_ids=[0, 1, 3, 4],
                     phi0=180,
                     torsion_k=50,

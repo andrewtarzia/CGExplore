@@ -102,9 +102,7 @@ class GeomMeasure:
             for torsion in find_torsions(
                 molecule, len(target_torsion.search_estring)
             ):
-                estrings = "".join(
-                    tuple([i.__class__.__name__ for i in torsion.atoms])
-                )
+                estrings = tuple([i.__class__.__name__ for i in torsion.atoms])
                 if estrings != target_torsion.search_estring:
                     continue
                 torsion_type_option1 = "_".join(
