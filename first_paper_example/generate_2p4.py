@@ -72,6 +72,7 @@ def main():
         option2_lib=beads_arm_2c_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
     c4_blocks = build_building_block(
         topology=FourC1Arm,
@@ -79,6 +80,7 @@ def main():
         option2_lib=beads_binder_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
 
     logging.info(
@@ -106,6 +108,7 @@ def main():
         calculation_output=calculation_output,
         node_element="Pd",
         ligand_element="Ag",
+        platform=None,
     )
 
 

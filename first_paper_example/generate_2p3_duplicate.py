@@ -75,6 +75,7 @@ def main():
         option2_lib=beads_arm_2c_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
     c3_blocks = build_building_block(
         topology=ThreeC1Arm,
@@ -82,6 +83,7 @@ def main():
         option2_lib=beads_binder_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
 
     logging.info(
@@ -113,6 +115,7 @@ def main():
         calculation_output=calculation_output,
         node_element="C",
         ligand_element="Ag",
+        platform=None,
     )
 
 
