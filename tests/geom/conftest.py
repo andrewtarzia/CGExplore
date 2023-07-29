@@ -1,7 +1,8 @@
-import cgexplore
 import numpy as np
 import pytest
 import stk
+from cgexplore.geom import GeomMeasure
+from cgexplore.torsions import TargetTorsion
 
 from .case_data import CaseData
 
@@ -23,8 +24,18 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            geommeasure=cgexplore.GeomMeasure(
-                torsion_set=("C", "N", "C", "C")
+            geommeasure=GeomMeasure(
+                target_torsions=(
+                    TargetTorsion(
+                        search_string=(),
+                        search_estring=("C", "N", "C", "C"),
+                        measured_atom_ids=(0, 1, 2, 3),
+                        phi0=0,
+                        torsion_k=0,
+                        torsion_n=0,
+                    ),
+                    # ("C", "N", "C", "C")
+                )
             ),
             length_dict={
                 "C_C": [2.0],
@@ -51,7 +62,7 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            geommeasure=cgexplore.GeomMeasure(),
+            geommeasure=GeomMeasure(),
             length_dict={
                 "C_C": [2.0],
                 "C_N": [1.5, 0.5],
@@ -81,7 +92,19 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            geommeasure=cgexplore.GeomMeasure(torsion_set="COCC"),
+            geommeasure=GeomMeasure(
+                target_torsions=(
+                    TargetTorsion(
+                        search_string=(),
+                        search_estring=("C", "O", "C", "C"),
+                        measured_atom_ids=(0, 1, 2, 3),
+                        phi0=0,
+                        torsion_k=0,
+                        torsion_n=0,
+                    ),
+                    # target_torsions="COCC"),
+                )
+            ),
             length_dict={
                 "C_C": [2.0],
                 "C_O": [1.0, 1.0],
@@ -90,7 +113,7 @@ from .case_data import CaseData
                 "C_O_C": [90.0],
                 "O_C_C": [90.0],
             },
-            torsion_dict={"C_N_C_C": [30.0]},
+            torsion_dict={"C_O_C_C": [30.0]},
             radius_gyration=0.9854,
             max_diam=2.2361,
             name=name,
@@ -111,7 +134,19 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            geommeasure=cgexplore.GeomMeasure(torsion_set="COCC"),
+            geommeasure=GeomMeasure(
+                target_torsions=(
+                    TargetTorsion(
+                        search_string=(),
+                        search_estring=("C", "O", "C", "C"),
+                        measured_atom_ids=(0, 1, 2, 3),
+                        phi0=0,
+                        torsion_k=0,
+                        torsion_n=0,
+                    ),
+                    # target_torsions="COCC"),
+                )
+            ),
             length_dict={
                 "C_C": [2.0],
                 "C_O": [1.0, 1.0],
@@ -120,7 +155,7 @@ from .case_data import CaseData
                 "C_O_C": [90.0],
                 "O_C_C": [90.0],
             },
-            torsion_dict={"C_N_C_C": [-30.0]},
+            torsion_dict={"C_O_C_C": [-30.0]},
             radius_gyration=0.9854,
             max_diam=2.2361,
             name=name,

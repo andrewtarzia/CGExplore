@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Module for Beads in GA cage optimisation.
+Module for beads.
 
 Author: Andrew Tarzia
 
@@ -20,8 +20,15 @@ logging.basicConfig(
 )
 
 
-def get_CGBead_from_string(string, bead_library):
-    return bead_library[string]
+def get_cgbead_from_string(string, bead_set):
+    return bead_set[string]
+
+
+def get_cgbead_from_element(estring, bead_set):
+    for i in bead_set:
+        bead = bead_set[i]
+        if bead.element_string == estring:
+            return bead
 
 
 def periodic_table():

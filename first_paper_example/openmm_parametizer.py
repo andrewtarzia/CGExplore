@@ -104,7 +104,7 @@ def random_test(beads, calculation_output, figure_output):
         opt = CGOMMDynamics(
             fileprefix=f"mdr_{run}",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
@@ -233,7 +233,7 @@ def test1(beads, calculation_output, figure_output):
         opt = CGOMMDynamics(
             fileprefix=f"mdl1_{temp}",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=False,
@@ -272,7 +272,7 @@ def test1(beads, calculation_output, figure_output):
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_om1",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=False,
@@ -365,7 +365,7 @@ def test2(beads, calculation_output, figure_output):
         opt = CGOMMDynamics(
             fileprefix=f"mdl2_{temp}",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=False,
@@ -412,7 +412,7 @@ def test2(beads, calculation_output, figure_output):
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_om1",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=False,
@@ -527,7 +527,7 @@ def test3(beads, calculation_output, figure_output):
         opt = CGOMMDynamics(
             fileprefix=f"mdl3_{temp}",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
@@ -568,7 +568,7 @@ def test3(beads, calculation_output, figure_output):
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_om1",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
@@ -669,7 +669,7 @@ def test4(beads, calculation_output, figure_output):
         opt = CGOMMDynamics(
             fileprefix=f"mdl4_{temp}",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
@@ -708,7 +708,7 @@ def test4(beads, calculation_output, figure_output):
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_om1",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
@@ -803,7 +803,7 @@ def test5(beads, calculation_output, figure_output):
         opt = CGOMMOptimizer(
             fileprefix=f"{name}_om1",
             output_dir=calculation_output,
-            param_pool=beads,
+            bead_set=beads,
             custom_torsion_set=None,
             bonds=False,
             angles=False,

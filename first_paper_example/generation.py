@@ -14,6 +14,7 @@ import json
 import logging
 import os
 
+import openmm
 import stk
 from analysis import (
     ligand_expected_topologies,
@@ -34,8 +35,8 @@ from cgexplore.shape import (
     get_shape_molecule_ligands,
     get_shape_molecule_nodes,
 )
+from cgexplore.torsions import TargetTorsion
 from env_set import shape_path
-from openmm import openmm
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,14 +47,32 @@ logging.basicConfig(
 def custom_torsion_definitions(population):
     return {
         "2p3": {
-            "ton": (180, 50),
-            "toff": None,
+            "ton": (
+                TargetTorsion(
+                    search_string=("b", "a", "c", "a", "b"),
+                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
+                    measured_atom_ids=[0, 1, 3, 4],
+                    phi0=180,
+                    torsion_k=50,
+                    torsion_n=1.0,
+                ),
+            ),
+            "toff": (),
         },
         "2p4": {
-            "ton": (180, 50),
-            "toff": None,
+            "ton": (
+                TargetTorsion(
+                    search_string=("b", "a", "c", "a", "b"),
+                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
+                    measured_atom_ids=[0, 1, 3, 4],
+                    phi0=180,
+                    torsion_k=50,
+                    torsion_n=1.0,
+                ),
+            ),
+            "toff": (),
         },
-        "3p4": {"toff": None},
+        "3p4": {"toff": ()},
     }[population]
 
 
@@ -250,9 +269,7 @@ def analyse_cage(
     conformer,
     name,
     output_dir,
-    bead_set,
-    custom_torsion_set,
-    custom_vdw_set,
+    custom_torsion_options,
     node_element,
     ligand_element,
 ):
@@ -262,20 +279,6 @@ def analyse_cage(
 
     if not os.path.exists(output_file):
         logging.info(f"analysing {name}")
-
-        # Always want to extract target torions.
-        temp_custom_torsion_set = target_torsions(
-            bead_set=bead_set,
-            custom_torsion_option=None,
-        )
-        if temp_custom_torsion_set is None:
-            custom_torsion_atoms = None
-        else:
-            custom_torsion_atoms = [
-                bead_set[j].element_string
-                for i in temp_custom_torsion_set
-                for j in i
-            ]
 
         energy_decomp = {
             f"{i}_{conformer.energy_decomposition[i][1]}": float(
@@ -323,13 +326,18 @@ def analyse_cage(
             conformer.molecule
         )
 
-        g_measure = GeomMeasure(custom_torsion_atoms)
+        # Always want to extract target torions if present.
+        try:
+            target_torsions = custom_torsion_options["ton"]
+        except KeyError:
+            target_torsions = None
+        assert len(target_torsions) == 1
+        g_measure = GeomMeasure(target_torsions)
         bond_data = g_measure.calculate_bonds(conformer.molecule)
         angle_data = g_measure.calculate_angles(conformer.molecule)
         dihedral_data = g_measure.calculate_torsions(
             molecule=conformer.molecule,
             absolute=True,
-            path_length=5,
         )
         min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
@@ -358,46 +366,6 @@ def analyse_cage(
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
-
-
-def target_torsions(bead_set, custom_torsion_option):
-    try:
-        (t_key_1,) = (i for i in bead_set if i[0] == "a")
-    except ValueError:
-        # For when 3+4 cages are being built - there are no target
-        # torsions.
-        return None
-
-    (c_key,) = (i for i in bead_set if i[0] == "c")
-    (t_key_2,) = (i for i in bead_set if i[0] == "b")
-    custom_torsion_set = {
-        (
-            t_key_2,
-            t_key_1,
-            c_key,
-            t_key_1,
-            t_key_2,
-        ): custom_torsion_option,
-    }
-    return custom_torsion_set
-
-
-def collect_custom_torsion(
-    bb2_bead_set,
-    custom_torsion_options,
-    custom_torsion,
-    bead_set,
-):
-    if custom_torsion_options[custom_torsion] is None:
-        custom_torsion_set = None
-    else:
-        tors_option = custom_torsion_options[custom_torsion]
-        custom_torsion_set = target_torsions(
-            bead_set=bead_set,
-            custom_torsion_option=tors_option,
-        )
-
-    return custom_torsion_set
 
 
 def build_populations(
@@ -435,13 +403,7 @@ def build_populations(
             bead_set = bb2_bead_set.copy()
             bead_set.update(bbl_bead_set)
 
-            custom_torsion_set = collect_custom_torsion(
-                bb2_bead_set=bb2_bead_set,
-                custom_torsion_options=(custom_torsion_options),
-                custom_torsion=custom_torsion,
-                bead_set=bead_set,
-            )
-
+            custom_torsion_set = custom_torsion_options[custom_torsion]
             custom_vdw_set = custom_vdw_options[custom_vdw]
 
             for run in range(num_runs):
@@ -476,9 +438,7 @@ def build_populations(
                     conformer=conformer,
                     name=name,
                     output_dir=calculation_output,
-                    bead_set=bead_set,
-                    custom_torsion_set=custom_torsion_set,
-                    custom_vdw_set=custom_vdw_set,
+                    custom_torsion_options=custom_torsion_options,
                     node_element=node_element,
                     ligand_element=ligand_element,
                 )

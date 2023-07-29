@@ -3,7 +3,7 @@
 # Distributed under the terms of the MIT License.
 
 """
-Module for CG Gulp optimizer.
+Module for CG OpenMM optimizer.
 
 Author: Andrew Tarzia
 
@@ -19,6 +19,7 @@ import pandas as pd
 from openmm import app, openmm
 from openmmtools import integrators
 
+from .beads import get_cgbead_from_element
 from .ensembles import Timestep
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
@@ -126,7 +127,7 @@ class CGOMMOptimizer(CGOptimizer):
         self,
         fileprefix,
         output_dir,
-        param_pool,
+        bead_set,
         custom_torsion_set,
         bonds,
         angles,
@@ -137,9 +138,7 @@ class CGOMMOptimizer(CGOptimizer):
         atom_constraints=None,
         platform=None,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = param_pool
+        self._bead_set = bead_set
         self._bonds = bonds
         self._angles = angles
         self._torsions = torsions
@@ -149,6 +148,8 @@ class CGOMMOptimizer(CGOptimizer):
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -292,45 +293,8 @@ class CGOMMOptimizer(CGOptimizer):
         self._output_string += "\n"
         return system
 
-    def _yield_custom_torsions(self, molecule, chain_length=5):
-        logging.info("warning: this interface will change in the near future")
-        logging.info("todo: want to use the TargetTorsion class")
-        if self._custom_torsion_set is None:
-            return ""
-
-        torsions = self._get_new_torsions(molecule, chain_length)
-        for torsion in torsions:
-            atom1, atom2, atom3, atom4, atom5 = torsion
-            names = list(
-                f"{i.__class__.__name__}{i.get_id()+1}" for i in torsion
-            )
-            ids = list(i.get_id() for i in torsion)
-
-            atom_estrings = list(i.__class__.__name__ for i in torsion)
-            cgbeads = list(
-                self._get_cgbead_from_element(i) for i in atom_estrings
-            )
-            cgbead_types = tuple(i.bead_type for i in cgbeads)
-            if cgbead_types in self._custom_torsion_set:
-                phi0 = self._custom_torsion_set[cgbead_types][0]
-                torsion_k = self._custom_torsion_set[cgbead_types][1]
-                torsion_n = 1
-                yield (
-                    names[0],
-                    names[1],
-                    names[3],
-                    names[4],
-                    ids[0],
-                    ids[1],
-                    ids[3],
-                    ids[4],
-                    torsion_k,
-                    torsion_n,
-                    phi0,
-                )
-            continue
-
     def _add_torsions(self, system, molecule):
+        raise NotImplementedError("Use custom torsions at this stage.")
         logging.info("warning: this interface will change in the near future")
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
@@ -363,33 +327,18 @@ class CGOMMOptimizer(CGOptimizer):
         return system
 
     def _add_custom_torsions(self, system, molecule):
-        logging.info("warning: this interface will change in the near future")
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
 
-        for torsion_info in self._yield_custom_torsions(molecule):
-            (
-                name1,
-                name2,
-                name3,
-                name4,
-                id1,
-                id2,
-                id3,
-                id4,
-                torsion_k,
-                torsion_n,
-                phi0,
-            ) = torsion_info
-
+        for torsion in self._yield_custom_torsions(molecule):
             force.addTorsion(
-                particle1=id1,
-                particle2=id2,
-                particle3=id3,
-                particle4=id4,
-                periodicity=torsion_n,
-                phase=np.radians(phi0),
-                k=torsion_k,
+                particle1=torsion.atom_ids[0],
+                particle2=torsion.atom_ids[1],
+                particle3=torsion.atom_ids[2],
+                particle4=torsion.atom_ids[3],
+                periodicity=torsion.torsion_n,
+                phase=np.radians(torsion.phi0),
+                k=torsion.torsion_k,
             )
 
         return system
@@ -433,7 +382,10 @@ class CGOMMOptimizer(CGOptimizer):
         for atom in molecule.get_atoms():
             aestring = atom.__class__.__name__
             aid = atom.get_id()
-            acgbead = self._get_cgbead_from_element(aestring)
+            acgbead = get_cgbead_from_element(
+                estring=aestring,
+                bead_set=self._bead_set,
+            )
             atype = acgbead.bead_type
             if atype not in present_beads:
                 present_beads[atype] = acgbead
@@ -482,7 +434,10 @@ class CGOMMOptimizer(CGOptimizer):
             a_element = app.element.Element.getByAtomicNumber(
                 atom.get_atomic_number()
             )
-            a_cgbead = self._get_cgbead_from_element(a_estring)
+            a_cgbead = get_cgbead_from_element(
+                estring=a_estring,
+                bead_set=self._bead_set,
+            )
 
             omm_atom = topology.addAtom(
                 name=a_cgbead.bead_type,
@@ -658,7 +613,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         self,
         fileprefix,
         output_dir,
-        param_pool,
+        bead_set,
         custom_torsion_set,
         bonds,
         angles,
@@ -676,9 +631,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         atom_constraints=None,
         platform=None,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = param_pool
+        self._bead_set = bead_set
         self._bonds = bonds
         self._angles = angles
         self._torsions = torsions
@@ -688,6 +641,8 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -874,7 +829,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         self,
         fileprefix,
         output_dir,
-        param_pool,
+        bead_set,
         custom_torsion_set,
         bonds,
         angles,
@@ -889,9 +844,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         atom_constraints=None,
         platform=None,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = param_pool
+        self._bead_set = bead_set
         self._bonds = bonds
         self._angles = angles
         self._torsions = torsions
@@ -901,6 +854,8 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omc.out"

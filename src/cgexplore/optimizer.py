@@ -14,8 +14,9 @@ from heapq import nsmallest
 from itertools import combinations
 
 import numpy as np
-from rdkit.Chem import AllChem as rdkit
 
+from .beads import get_cgbead_from_element
+from .torsions import Torsion, find_torsions
 from .utilities import (
     angle_between,
     convert_pyramid_angle,
@@ -36,17 +37,15 @@ def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
 class CGOptimizer:
     def __init__(
         self,
-        fileprefix,
-        output_dir,
-        param_pool,
+        bead_set,
+        custom_torsion_set,
         bonds,
         angles,
         torsions,
         vdw,
     ):
-        self._fileprefix = fileprefix
-        self._output_dir = output_dir
-        self._param_pool = param_pool
+        self._bead_set = bead_set
+        self._custom_torsion_set = custom_torsion_set
         self._bonds = bonds
         self._angles = angles
         self._torsions = torsions
@@ -56,31 +55,6 @@ class CGOptimizer:
         self._angle_cutoff = 30
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
-
-    def _get_cgbead_from_element(self, estring):
-        for i in self._param_pool:
-            bead = self._param_pool[i]
-            if bead.element_string == estring:
-                return bead
-
-    def _get_new_torsions(self, molecule, chain_length):
-        paths = rdkit.FindAllPathsOfLengthN(
-            mol=molecule.to_rdkit_mol(),
-            length=chain_length,
-            useBonds=False,
-            useHs=True,
-        )
-        torsions = []
-        for atom_ids in paths:
-            atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
-            atom1 = atoms[0]
-            atom2 = atoms[1]
-            atom3 = atoms[2]
-            atom4 = atoms[3]
-            atom5 = atoms[4]
-            torsions.append((atom1, atom2, atom3, atom4, atom5))
-
-        return torsions
 
     def _yield_bonds(self, molecule):
         if self._bonds is False:
@@ -98,8 +72,14 @@ class CGOptimizer:
             estring2 = atom2.__class__.__name__
 
             try:
-                cgbead1 = self._get_cgbead_from_element(estring1)
-                cgbead2 = self._get_cgbead_from_element(estring2)
+                cgbead1 = get_cgbead_from_element(
+                    estring=estring1,
+                    bead_set=self._bead_set,
+                )
+                cgbead2 = get_cgbead_from_element(
+                    estring=estring2,
+                    bead_set=self._bead_set,
+                )
                 bond_r = lorentz_berthelot_sigma_mixing(
                     sigma1=cgbead1.bond_r,
                     sigma2=cgbead2.bond_r,
@@ -139,8 +119,9 @@ class CGOptimizer:
             centre_estring = centre_atom.__class__.__name__
 
             try:
-                centre_cgbead = self._get_cgbead_from_element(
+                centre_cgbead = get_cgbead_from_element(
                     estring=centre_estring,
+                    bead_set=self._bead_set,
                 )
 
                 angle_theta = centre_cgbead.angle_centered
@@ -362,13 +343,9 @@ class CGOptimizer:
                 )
 
     def _yield_torsions(self, molecule):
-        logging.info("warning: this interface will change in the near future")
         if self._torsions is False:
             return ""
-        logging.info("OPT, WARNING: torsions are hardcoded!.")
-        phi0 = 180
-        torsion_n = 1
-        torsion_k = 50
+        raise NotImplementedError()
 
         torsions = get_all_torsions(molecule)
         for torsion in torsions:
@@ -381,6 +358,12 @@ class CGOptimizer:
             id2 = atom2.get_id()
             id3 = atom3.get_id()
             id4 = atom4.get_id()
+
+            # Here would be where you capture the torsions in some
+            # provided forcefield.
+            phi0 = None
+            torsion_n = None
+            torsion_k = None
 
             try:
                 yield (
@@ -399,6 +382,40 @@ class CGOptimizer:
 
             except KeyError:
                 continue
+
+    def _yield_custom_torsions(self, molecule):
+        # Iterate over the different path lengths, and find all torsions
+        # for that lengths.
+        path_lengths = set(
+            len(i.search_string) for i in self._custom_torsion_set
+        )
+        for pl in path_lengths:
+            for found_torsion in find_torsions(molecule, pl):
+                atom_estrings = list(
+                    i.__class__.__name__ for i in found_torsion.atoms
+                )
+                cgbeads = list(
+                    get_cgbead_from_element(i, self._bead_set)
+                    for i in atom_estrings
+                )
+                cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
+                for target_torsion in self._custom_torsion_set:
+                    if target_torsion.search_string != cgbead_string:
+                        continue
+                    yield Torsion(
+                        atom_names=tuple(
+                            f"{found_torsion.atoms[i].__class__.__name__}"
+                            f"{found_torsion.atoms[i].get_id()+1}"
+                            for i in target_torsion.measured_atom_ids
+                        ),
+                        atom_ids=tuple(
+                            found_torsion.atoms[i].get_id()
+                            for i in target_torsion.measured_atom_ids
+                        ),
+                        phi0=target_torsion.phi0,
+                        torsion_n=target_torsion.torsion_n,
+                        torsion_k=target_torsion.torsion_k,
+                    )
 
     def _yield_nonbondeds(self, molecule):
         raise NotImplementedError()
@@ -420,13 +437,19 @@ class CGOptimizer:
                 continue
 
             try:
-                cgbead1 = self._get_cgbead_from_element(estring1)
-                cgbead2 = self._get_cgbead_from_element(estring2)
+                cgbead1 = get_cgbead_from_element(
+                    estring=estring1,
+                    bead_set=self._bead_set,
+                )
+                cgbead2 = get_cgbead_from_element(
+                    estring=estring2,
+                    bead_set=self._bead_set,
+                )
                 sigma = lorentz_berthelot_sigma_mixing(
                     sigma1=cgbead1.sigma,
                     sigma2=cgbead2.sigma,
                 )
-                epsilon = self._param_pool[guest_estrings[0]].epsilon
+                epsilon = self._bead_set[guest_estrings[0]].epsilon
                 yield (name1, name2, epsilon, sigma)
 
             except KeyError:

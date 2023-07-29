@@ -12,9 +12,11 @@ Author: Andrew Tarzia
 import itertools
 import logging
 import os
+import typing
 from dataclasses import replace
 
 import numpy as np
+import stk
 from openmm import OpenMMException, openmm
 
 from .beads import periodic_table
@@ -27,7 +29,13 @@ logging.basicConfig(
 )
 
 
-def optimise_ligand(molecule, name, output_dir, bead_set, platform):
+def optimise_ligand(
+    molecule,
+    name,
+    output_dir,
+    bead_set,
+    platform,
+) -> stk.Molecule:
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
 
     if os.path.exists(opt1_mol_file):
@@ -37,7 +45,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set, platform):
         opt = CGOMMOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            param_pool=bead_set,
+            bead_set=bead_set,
             custom_torsion_set=None,
             bonds=True,
             angles=True,
@@ -52,110 +60,11 @@ def optimise_ligand(molecule, name, output_dir, bead_set, platform):
     return molecule
 
 
-def deform_molecule(molecule, generator, kick):
-    old_pos_mat = molecule.get_position_matrix()
-    centroid = molecule.get_centroid()
-
-    new_pos_mat = []
-    for atom, pos in zip(molecule.get_atoms(), old_pos_mat):
-        if atom.get_atomic_number() in (6, 46):
-            c_v = centroid - pos
-            c_v = c_v / np.linalg.norm(c_v)
-            # move = generator.choice([-1, 1]) * c_v
-            # move = generator.random((3,)) * percent
-            move = c_v * kick * generator.random()
-            new_pos = pos - move
-        else:
-            # move = generator.random((3,)) * 2
-            new_pos = pos
-        new_pos_mat.append(new_pos)
-
-    return molecule.with_position_matrix(np.array((new_pos_mat)))
-
-
-def deform_and_optimisations(
-    name,
-    molecule,
-    opt,
-    kick,
-    seed,
-    num_deformations=None,
-):
-    """
-    Run metropolis MC scheme to find a new lower energy conformer.
-
-    """
-
-    raise SystemExit(
-        "I have kept this here for backwards compatability, but this "
-        "approach is outdated. Try use run_mc_cycle function."
-    )
-
-    # Ensure same stream of random numbers.
-    generator = np.random.default_rng(seed=seed)
-    beta = 10
-
-    if num_deformations is None:
-        num_iterations = 200
-    else:
-        num_iterations = num_deformations
-
-    num_passed = 0
-    num_run = 0
-    for drun in range(num_iterations):
-        # logging.info(f"running MC step {drun}")
-
-        current_energy = opt.calculate_energy(molecule).value_in_unit(
-            openmm.unit.kilojoules_per_mole
-        )
-
-        # Perform deformation.
-        test_molecule = deform_molecule(molecule, generator, kick)
-        test_molecule = opt.optimize(test_molecule)
-
-        # Calculate energy.
-        test_energy = opt.calculate_energy(test_molecule).value_in_unit(
-            openmm.unit.kilojoules_per_mole
-        )
-
-        passed = False
-        if test_energy < current_energy:
-            passed = True
-        elif (
-            np.exp(-beta * (test_energy - current_energy)) > generator.random()
-        ):
-            passed = True
-
-        # Pass or fail.
-        if passed:
-            # logging.info(
-            #     f"new conformer (MC): "
-            #     f"{test_energy}, cf. {current_energy}"
-            # )
-            num_passed += 1
-            molecule = test_molecule.clone().with_centroid((0, 0, 0))
-            if num_deformations is None:
-                return molecule
-
-        num_run += 1
-
-    logging.info(
-        f"{num_passed} passed out of {num_run} ({num_passed/num_run})"
-    )
-
-    if num_deformations is None:
-        raise RuntimeError(
-            f"no lower energy conformers found in {num_iterations}"
-        )
-
-    return molecule
-
-
-def random_deform_molecule(molecule, generator, sigma):
+def random_deform_molecule(molecule, generator, sigma) -> stk.Molecule:
     old_pos_mat = molecule.get_position_matrix()
 
     new_pos_mat = []
-    for atom, pos in zip(molecule.get_atoms(), old_pos_mat):
+    for pos in old_pos_mat:
         move = generator.random((3,)) * sigma
         new_pos = pos - move
         new_pos_mat.append(new_pos)
@@ -181,7 +90,7 @@ def run_mc_cycle(
     beta,
     suffix,
     platform,
-):
+) -> stk.Molecule:
     """
     Run metropolis MC scheme.
 
@@ -193,7 +102,7 @@ def run_mc_cycle(
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_{suffix}",
         output_dir=output_dir,
-        param_pool=bead_set,
+        bead_set=bead_set,
         custom_torsion_set=custom_torsion_set,
         bonds=bonds,
         angles=angles,
@@ -230,10 +139,13 @@ def run_mc_cycle(
         # Pass or fail.
         if passed:
             num_passed += 1
+            decomp = opt.read_final_energy_decomposition()
             conformer = Conformer(
-                molecule=test_molecule.clone().with_centroid((0, 0, 0)),
+                molecule=test_molecule.clone().with_centroid(
+                    np.array((0, 0, 0))
+                ),
                 conformer_id=None,
-                energy_decomposition=(opt.read_final_energy_decomposition()),
+                energy_decomposition=(decomp),
             )
 
             ensemble.add_conformer(
@@ -241,7 +153,7 @@ def run_mc_cycle(
                 source=suffix,
             )
             molecule = conformer.molecule
-            current_energy = conformer.energy_decomposition["total energy"][0]
+            current_energy = decomp["total energy"][0]  # type: ignore[index]
 
         num_run += 1
 
@@ -267,7 +179,7 @@ def run_soft_md_cycle(
     reporting_freq,
     traj_freq,
     platform,
-):
+) -> stk.Molecule | None:
     """
     Run MD exploration with soft potentials.
 
@@ -282,7 +194,7 @@ def run_soft_md_cycle(
     md = CGOMMDynamics(
         fileprefix=f"{name}_{suffix}",
         output_dir=output_dir,
-        param_pool=soft_bead_set,
+        bead_set=soft_bead_set,
         custom_torsion_set=custom_torsion_set,
         bonds=True,
         angles=True,
@@ -314,6 +226,7 @@ def run_md_cycle(
     opt_class=None,
     min_energy=None,
 ):
+    logging.info("Change return to molecule | str, assign str to either")
     failed = False
     exploded = False
     try:
@@ -377,7 +290,7 @@ def build_building_block(
     calculation_output,
     ligand_output,
     platform,
-):
+) -> dict[str, tuple[stk.Molecule, dict]]:
     blocks = {}
     for options in itertools.product(option1_lib, option2_lib):
         option1 = option1_lib[options[0]]
@@ -406,24 +319,30 @@ def run_constrained_optimisation(
     angle_ff_scale,
     max_iterations,
     platform,
-):
+) -> stk.Molecule:
     """
     Run optimisation with constraints and softened potentials.
 
-    Keywords
-    ========
+    Keywords:
 
-    molecule: stk.Molecule
-    bead_set: dict
-    name: str
-    output_dir: str or Path
-    custom_vdw_set: ??
-    bond_ff_scale: float
-        Scale (divide) the bond terms in the model by this value.
-    angle_ff_scale: float
-        Scale (divide) the angle terms in the model by this value.
-    max_iterations: int
-        Num steps to take.
+        molecule: stk.Molecule
+
+        bead_set: dict
+
+        name: str
+
+        output_dir: str or Path
+
+        custom_vdw_set: ??
+
+        bond_ff_scale: float
+            Scale (divide) the bond terms in the model by this value.
+
+        angle_ff_scale: float
+            Scale (divide) the angle terms in the model by this value.
+
+        max_iterations: int
+            Num steps to take.
 
     """
 
@@ -445,7 +364,7 @@ def run_constrained_optimisation(
     constrained_opt = CGOMMOptimizer(
         fileprefix=f"{name}_constrained",
         output_dir=output_dir,
-        param_pool=soft_bead_set,
+        bead_set=soft_bead_set,
         custom_torsion_set=None,
         bonds=True,
         angles=True,
@@ -475,19 +394,18 @@ def run_optimisation(
     platform,
     max_iterations=None,
     ensemble=None,
-):
+) -> Conformer:
     """
     Run optimisation and save outcome to Ensemble.
 
-    Keywords
-    ========
+    Keywords:
 
     """
 
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_{file_suffix}",
         output_dir=output_dir,
-        param_pool=bead_set,
+        bead_set=bead_set,
         custom_torsion_set=custom_torsion_set,
         bonds=bonds,
         angles=angles,
@@ -522,7 +440,12 @@ def modify_bead(bead_name):
         yield "".join(temp_bead_name)
 
 
-def yield_near_models(molecule, name, bead_set, output_dir):
+def yield_near_models(
+    molecule,
+    name,
+    bead_set,
+    output_dir,
+) -> typing.Iterator[stk.Molecule]:
     (
         t_str,
         clbb_name,
@@ -552,7 +475,7 @@ def yield_near_models(molecule, name, bead_set, output_dir):
                 yield molecule.with_structure_from_file(new_fina_mol_file)
 
 
-def shift_beads(molecule, atomic_number, kick):
+def shift_beads(molecule, atomic_number, kick) -> stk.Molecule:
     old_pos_mat = molecule.get_position_matrix()
     centroid = molecule.get_centroid()
 
@@ -570,7 +493,7 @@ def shift_beads(molecule, atomic_number, kick):
     return molecule.with_position_matrix(np.array((new_pos_mat)))
 
 
-def yield_shifted_models(molecule, bead_set):
+def yield_shifted_models(molecule, bead_set) -> typing.Iterator[stk.Molecule]:
     for bead in bead_set:
         atom_number = periodic_table()[bead_set[bead].element_string]
         for kick in (1, 2, 3, 4):
