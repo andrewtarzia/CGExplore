@@ -48,7 +48,7 @@ from .case_data import CaseData
             bead_set={
                 "c": CgBead(
                     element_string="Ag",
-                    bead_type="c",
+                    bead_type="c0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -59,7 +59,7 @@ from .case_data import CaseData
                 ),
                 "a": CgBead(
                     element_string="Ba",
-                    bead_type="a",
+                    bead_type="a0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -70,7 +70,7 @@ from .case_data import CaseData
                 ),
                 "b": CgBead(
                     element_string="Pb",
-                    bead_type="b",
+                    bead_type="b0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -137,7 +137,7 @@ from .case_data import CaseData
             bead_set={
                 "c": CgBead(
                     element_string="Ag",
-                    bead_type="c",
+                    bead_type="c0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -148,7 +148,7 @@ from .case_data import CaseData
                 ),
                 "a": CgBead(
                     element_string="Ba",
-                    bead_type="a",
+                    bead_type="a0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -159,7 +159,7 @@ from .case_data import CaseData
                 ),
                 "b": CgBead(
                     element_string="Pb",
-                    bead_type="b",
+                    bead_type="b0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -204,7 +204,7 @@ from .case_data import CaseData
             bead_set={
                 "c": CgBead(
                     element_string="Ag",
-                    bead_type="d",
+                    bead_type="d0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -215,7 +215,7 @@ from .case_data import CaseData
                 ),
                 "a": CgBead(
                     element_string="Ba",
-                    bead_type="a",
+                    bead_type="a0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -226,7 +226,7 @@ from .case_data import CaseData
                 ),
                 "b": CgBead(
                     element_string="Pb",
-                    bead_type="b",
+                    bead_type="b0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -292,7 +292,7 @@ from .case_data import CaseData
             bead_set={
                 "c": CgBead(
                     element_string="C",
-                    bead_type="c",
+                    bead_type="c0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
@@ -303,7 +303,7 @@ from .case_data import CaseData
                 ),
                 "n": CgBead(
                     element_string="N",
-                    bead_type="n",
+                    bead_type="n0000",
                     bond_r=1,
                     bond_k=1,
                     angle_centered=1,
