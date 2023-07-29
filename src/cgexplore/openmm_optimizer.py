@@ -135,16 +135,20 @@ class CGOMMOptimizer(CGOptimizer):
         max_iterations=None,
         vdw_bond_cutoff=None,
         atom_constraints=None,
+        platform=None,
     ):
-        super().__init__(
-            fileprefix,
-            output_dir,
-            param_pool,
-            bonds,
-            angles,
-            torsions,
-            vdw,
-        )
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
+        self._param_pool = param_pool
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
+        self._mass = 10
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+        self._lj_cutoff = 10
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -160,6 +164,16 @@ class CGOMMOptimizer(CGOptimizer):
             self._vdw_bond_cutoff = 0
         else:
             self._vdw_bond_cutoff = vdw_bond_cutoff
+
+        if platform is not None:
+            self._platform = openmm.Platform.getPlatformByName(platform)
+            if platform == "CUDA":
+                self._properties = {"CudaPrecision": "mixed"}
+            else:
+                self._properties = None
+        else:
+            self._platform = None
+            self._properties = None
 
         self._atom_constraints = atom_constraints
 
@@ -515,7 +529,13 @@ class CGOMMOptimizer(CGOptimizer):
 
         # Define simulation.
         # st = time.time()
-        simulation = app.Simulation(topology, system, integrator)
+        simulation = app.Simulation(
+            topology,
+            system,
+            integrator,
+            platform=self._platform,
+            platformProperties=self._properties,
+        )
         # print("ss5", time.time() - st)
 
         # Set positions from structure.
@@ -654,16 +674,20 @@ class CGOMMDynamics(CGOMMOptimizer):
         max_iterations=None,
         vdw_bond_cutoff=None,
         atom_constraints=None,
+        platform=None,
     ):
-        super(CGOMMOptimizer, self).__init__(
-            fileprefix,
-            output_dir,
-            param_pool,
-            bonds,
-            angles,
-            torsions,
-            vdw,
-        )
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
+        self._param_pool = param_pool
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
+        self._mass = 10
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+        self._lj_cutoff = 10
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -698,6 +722,16 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._friction = friction
         self._reporting_freq = reporting_freq
         self._traj_freq = traj_freq
+
+        if platform is not None:
+            self._platform = openmm.Platform.getPlatformByName(platform)
+            if platform == "CUDA":
+                self._properties = {"CudaPrecision": "mixed"}
+            else:
+                self._properties = None
+        else:
+            self._platform = None
+            self._properties = None
 
     def _add_trajectory_reporter(self, simulation):
         simulation.reporters.append(
@@ -749,7 +783,13 @@ class CGOMMDynamics(CGOMMOptimizer):
         integrator.setRandomNumberSeed(self._random_seed)
 
         # Define simulation.
-        simulation = app.Simulation(topology, system, integrator)
+        simulation = app.Simulation(
+            topology,
+            system,
+            integrator,
+            platform=self._platform,
+            platformProperties=self._properties,
+        )
 
         # Set positions from structure.
         simulation.context.setPositions(molecule.get_position_matrix() / 10)
@@ -847,16 +887,20 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         max_iterations=None,
         vdw_bond_cutoff=None,
         atom_constraints=None,
+        platform=None,
     ):
-        super(CGOMMOptimizer, self).__init__(
-            fileprefix,
-            output_dir,
-            param_pool,
-            bonds,
-            angles,
-            torsions,
-            vdw,
-        )
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
+        self._param_pool = param_pool
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
+        self._mass = 10
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+        self._lj_cutoff = 10
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omc.out"
@@ -894,6 +938,16 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         self._reporting_freq = 1
         self._traj_freq = 1
 
+        if platform is not None:
+            self._platform = openmm.Platform.getPlatformByName(platform)
+            if platform == "CUDA":
+                self._properties = {"CudaPrecision": "mixed"}
+            else:
+                self._properties = None
+        else:
+            self._platform = None
+            self._properties = None
+
     def _setup_simulation(self, molecule):
         # Load force field.
         self._write_ff_file(molecule)
@@ -917,7 +971,13 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         integrator.setRandomNumberSeed(self._random_seed)
 
         # Define simulation.
-        simulation = app.Simulation(topology, system, integrator)
+        simulation = app.Simulation(
+            topology,
+            system,
+            integrator,
+            platform=self._platform,
+            platformProperties=self._properties,
+        )
 
         # Set positions from structure.
         simulation.context.setPositions(molecule.get_position_matrix() / 10)

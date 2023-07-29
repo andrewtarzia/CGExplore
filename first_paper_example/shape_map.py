@@ -17,12 +17,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import stk
+from cgexplore.shape import ShapeMeasure
+from cgexplore.utilities import check_directory
 from env_set import project_dir, shape_path
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
-
-from cgexplore.shape import ShapeMeasure
-from cgexplore.utilities import check_directory
 
 
 def get_all_templates(dir):

@@ -35,9 +35,8 @@ from analysis import (
     topology_labels,
     write_out_mapping,
 )
-from env_set import calculations, figures, outputdata
-
 from cgexplore.utilities import convert_pyramid_angle
+from env_set import calculations, figures, outputdata
 
 logging.basicConfig(
     level=logging.INFO,

@@ -1,8 +1,7 @@
+import cgexplore
 import numpy as np
 import pytest
 import stk
-
-import cgexplore
 
 from .case_data import CaseData
 

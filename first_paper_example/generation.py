@@ -19,9 +19,6 @@ from analysis import (
     ligand_expected_topologies,
     node_expected_topologies,
 )
-from env_set import shape_path
-from openmm import openmm
-
 from cgexplore.ensembles import Ensemble
 from cgexplore.generation_utilities import (
     run_constrained_optimisation,
@@ -37,6 +34,8 @@ from cgexplore.shape import (
     get_shape_molecule_ligands,
     get_shape_molecule_nodes,
 )
+from env_set import shape_path
+from openmm import openmm
 
 logging.basicConfig(
     level=logging.INFO,
@@ -82,6 +81,7 @@ def optimise_cage(
     bead_set,
     custom_torsion_set,
     custom_vdw_set,
+    platform,
 ):
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
     if os.path.exists(fina_mol_file):
@@ -111,6 +111,7 @@ def optimise_cage(
         bond_ff_scale=10,
         angle_ff_scale=10,
         max_iterations=20,
+        platform=platform,
     )
 
     logging.info(f"optimisation of {name}")
@@ -127,6 +128,7 @@ def optimise_cage(
         torsions=False,
         vdw_bond_cutoff=2,
         # max_iterations=50,
+        platform=platform,
     )
     ensemble.add_conformer(conformer=conformer, source="opt1")
 
@@ -147,6 +149,7 @@ def optimise_cage(
             torsions=False,
             vdw_bond_cutoff=2,
             # max_iterations=50,
+            platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="shifted")
 
@@ -171,6 +174,7 @@ def optimise_cage(
             torsions=False,
             vdw_bond_cutoff=2,
             # max_iterations=50,
+            platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="nearby_opt")
 
@@ -181,14 +185,9 @@ def optimise_cage(
         name=name,
         molecule=ensemble.get_lowest_e_conformer().molecule,
         bead_set=bead_set,
-        ensemble=ensemble,
         output_dir=output_dir,
         custom_vdw_set=custom_vdw_set,
         custom_torsion_set=None,
-        bonds=True,
-        angles=True,
-        torsions=False,
-        vdw_bond_cutoff=2,
         suffix="smd",
         bond_ff_scale=10,
         angle_ff_scale=10,
@@ -198,6 +197,7 @@ def optimise_cage(
         friction=1.0 / openmm.unit.picosecond,
         reporting_freq=traj_freq,
         traj_freq=traj_freq,
+        platform=platform,
     )
     if soft_md_trajectory is None:
         logging.info(f"!!!!! {name} MD exploded !!!!!")
@@ -228,6 +228,7 @@ def optimise_cage(
             torsions=False,
             vdw_bond_cutoff=2,
             # max_iterations=50,
+            platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="smd")
     ensemble.write_conformers_to_file()
@@ -463,6 +464,7 @@ def build_populations(
                     bead_set=bead_set,
                     custom_torsion_set=custom_torsion_set,
                     custom_vdw_set=custom_vdw_set,
+                    platform=None,
                 )
 
                 if conformer is not None:

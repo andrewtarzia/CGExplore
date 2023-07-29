@@ -19,14 +19,6 @@ from bead_libraries import (
     binder_beads,
     core_2c_beads,
 )
-from env_set import cages, ligands
-from generation import (
-    build_populations,
-    custom_torsion_definitions,
-    custom_vdw_definitions,
-)
-from rdkit import RDLogger
-
 from cgexplore.beads import bead_library_check
 from cgexplore.generation_utilities import build_building_block
 from cgexplore.molecule_construction.topologies import (
@@ -34,6 +26,13 @@ from cgexplore.molecule_construction.topologies import (
     TwoC1Arm,
 )
 from cgexplore.utilities import check_directory
+from env_set import cages, ligands
+from generation import (
+    build_populations,
+    custom_torsion_definitions,
+    custom_vdw_definitions,
+)
+from rdkit import RDLogger
 
 logging.basicConfig(
     level=logging.INFO,
@@ -76,6 +75,7 @@ def main():
         option2_lib=beads_arm_2c_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
     c3_blocks = build_building_block(
         topology=ThreeC1Arm,
@@ -83,6 +83,7 @@ def main():
         option2_lib=beads_binder_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
 
     logging.info(
@@ -114,6 +115,7 @@ def main():
         calculation_output=calculation_output,
         node_element="C",
         ligand_element="Ag",
+        platform=None,
     )
 
 

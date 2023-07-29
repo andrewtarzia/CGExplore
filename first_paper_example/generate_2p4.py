@@ -18,6 +18,12 @@ from bead_libraries import (
     binder_beads,
     core_2c_beads,
 )
+from cgexplore.beads import bead_library_check
+from cgexplore.generation_utilities import build_building_block
+from cgexplore.molecule_construction.topologies import (
+    FourC1Arm,
+    TwoC1Arm,
+)
 from env_set import calculations, ligands, structures
 from generation import (
     build_populations,
@@ -26,13 +32,6 @@ from generation import (
 )
 from rdkit import RDLogger
 from topologies import cage_topology_options
-
-from cgexplore.beads import bead_library_check
-from cgexplore.generation_utilities import build_building_block
-from cgexplore.molecule_construction.topologies import (
-    FourC1Arm,
-    TwoC1Arm,
-)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -73,6 +72,7 @@ def main():
         option2_lib=beads_arm_2c_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
     c4_blocks = build_building_block(
         topology=FourC1Arm,
@@ -80,6 +80,7 @@ def main():
         option2_lib=beads_binder_lib,
         calculation_output=calculation_output,
         ligand_output=ligand_output,
+        platform=None,
     )
 
     logging.info(
@@ -107,6 +108,7 @@ def main():
         calculation_output=calculation_output,
         node_element="Pd",
         ligand_element="Ag",
+        platform=None,
     )
 
 

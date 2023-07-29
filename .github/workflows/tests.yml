@@ -25,7 +25,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - run: "pip install -e '.[dev]'"
-      - run: mypy cgexplore
+      - run: mypy src
   black:
     runs-on: ubuntu-22.04
     steps:
@@ -37,28 +37,71 @@ jobs:
       - run: "pip install -e '.[dev]'"
       - run: black --check .
   pytest:
+    # https://ericmjl.github.io/blog/2021/12/30/better-conda-environments-on-github-actions/
     runs-on: ubuntu-22.04
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
     steps:
       - uses: actions/checkout@v2
       - uses: conda-incubator/setup-miniconda@v2
+
         with:
-          python-version: 3.11
+          auto-update-conda: true
+          miniforge-variant: Mambaforge
           channels: conda-forge,defaults
-          channel-priority: true
-      - shell: bash -el {0}
+          python-version: 3.11
+          activate-environment: pytest
+          use-mamba: true
+
+      - name: Build environment
         run: |
-          conda info
-          conda list
-          conda config --show-sources
-          conda config --show
-          printenv | sort
-      - shell: bash -el {0}
-        run: conda install -c conda-forge openmm openmmtools
-      - shell: bash -el {0}
-        run: "pip install --upgrade pip"
-      - shell: bash -el {0}
-        run: "pip install --upgrade setuptools"
-      - shell: bash -el {0}
-        run: "pip install -e '.[dev]'"
-      - shell: bash -el {0}
+          conda activate pytest
+          conda install -c conda-forge openmm openmmtools
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools
+          python -m pip install -e '.[dev]'
+
+      - name: pytest
         run: pytest
+
+  build-test:
+    # https://ericmjl.github.io/blog/2021/12/30/better-conda-environments-on-github-actions/
+    runs-on: ubuntu-22.04
+
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: conda-incubator/setup-miniconda@v2
+
+        with:
+          auto-update-conda: true
+          miniforge-variant: Mambaforge
+          channels: conda-forge,defaults
+          python-version: 3.11
+          activate-environment: buildtest
+          use-mamba: true
+
+      - name: Build environment
+        run: |
+          conda activate buildtest
+          conda install -c conda-forge openmm openmmtools
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade setuptools
+          python -m pip install -e '.[dev]'
+
+      - name: Clone repo
+        run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
+
+      - name: Run script
+        run: python cg_model_test/cg_model_test.py cg_model_test
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: parity-plot
+          path: parity.png

@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 
 
-def optimise_ligand(molecule, name, output_dir, bead_set):
+def optimise_ligand(molecule, name, output_dir, bead_set, platform):
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
 
     if os.path.exists(opt1_mol_file):
@@ -43,6 +43,7 @@ def optimise_ligand(molecule, name, output_dir, bead_set):
             angles=True,
             torsions=False,
             vdw=False,
+            platform=platform,
         )
         molecule = opt.optimize(molecule)
         molecule = molecule.with_centroid((0, 0, 0))
@@ -179,6 +180,7 @@ def run_mc_cycle(
     seed,
     beta,
     suffix,
+    platform,
 ):
     """
     Run metropolis MC scheme.
@@ -199,6 +201,7 @@ def run_mc_cycle(
         vdw=custom_vdw_set,
         max_iterations=200,
         vdw_bond_cutoff=vdw_bond_cutoff,
+        platform=platform,
     )
     molecule = opt.optimize(molecule)
     energy_decomp = opt.read_final_energy_decomposition()
@@ -251,14 +254,9 @@ def run_soft_md_cycle(
     name,
     molecule,
     bead_set,
-    ensemble,
     output_dir,
     custom_vdw_set,
     custom_torsion_set,
-    bonds,
-    angles,
-    torsions,
-    vdw_bond_cutoff,
     num_steps,
     suffix,
     bond_ff_scale,
@@ -268,6 +266,7 @@ def run_soft_md_cycle(
     friction,
     reporting_freq,
     traj_freq,
+    platform,
 ):
     """
     Run MD exploration with soft potentials.
@@ -297,6 +296,7 @@ def run_soft_md_cycle(
         friction=friction,
         reporting_freq=reporting_freq,
         traj_freq=traj_freq,
+        platform=platform,
     )
 
     try:
@@ -376,6 +376,7 @@ def build_building_block(
     option2_lib,
     calculation_output,
     ligand_output,
+    platform,
 ):
     blocks = {}
     for options in itertools.product(option1_lib, option2_lib):
@@ -388,6 +389,7 @@ def build_building_block(
             name=temp.get_name(),
             output_dir=calculation_output,
             bead_set=temp.get_bead_set(),
+            platform=platform,
         )
         opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
         blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
@@ -403,6 +405,7 @@ def run_constrained_optimisation(
     bond_ff_scale,
     angle_ff_scale,
     max_iterations,
+    platform,
 ):
     """
     Run optimisation with constraints and softened potentials.
@@ -451,6 +454,7 @@ def run_constrained_optimisation(
         max_iterations=max_iterations,
         vdw_bond_cutoff=2,
         atom_constraints=intra_bb_bonds,
+        platform=platform,
     )
     logging.info(f"optimising with {len(intra_bb_bonds)} constraints")
     return constrained_opt.optimize(molecule)
@@ -468,6 +472,7 @@ def run_optimisation(
     angles,
     torsions,
     vdw_bond_cutoff,
+    platform,
     max_iterations=None,
     ensemble=None,
 ):
@@ -490,6 +495,7 @@ def run_optimisation(
         vdw=custom_vdw_set,
         max_iterations=max_iterations,
         vdw_bond_cutoff=vdw_bond_cutoff,
+        platform=platform,
     )
     molecule = opt.optimize(molecule)
     energy_decomp = opt.read_final_energy_decomposition()

@@ -39,12 +39,12 @@ dev = [
 github = "https://github.com/andrewtarzia/CGExplore"
 
 [tool.setuptools_scm]
-write_to = "cgexplore/_version.py"
+write_to = "src/cgexplore/_version.py"
 
 [tool.setuptools.packages.find]
 where = [
   # list of folders that contain the packages (["."] by default)
-  "cgexplore",
+  "src",
 ]
 
 [tool.black]

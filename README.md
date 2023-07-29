@@ -1,7 +1,7 @@
 # CGExplore
 A general toolkit for working with coarse-grained models.
 
-The library is built off of [`stk`](https://stk.readthedocs.io/en/stable/), which comes with the pip install 
+The library is built off of [`stk`](https://stk.readthedocs.io/en/stable/), which comes with the pip install
 
 # Installation
 
@@ -39,7 +39,7 @@ or
 $ conda install -c conda-forge openmm
 ```
 
-5. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):   
+5. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
 ```
 $ mamba install openmmtools
 ```
@@ -60,6 +60,8 @@ The library implements some analysis that uses:
   * `generate_XX.py` generates cage structures for different topology sets
   * `env_set.py` sets a specific environment for file outputs
   * `plot_XX.py` produces images and figures, and performs analysis
+
+**Warning**: If you have a CUDA-capable GPU and attempt to use CUDA in the first example, you may get `NaN` errors due to the torsion restriction for angles at 180 degrees, which cause problematic forces. This will be handled in future versions of the code. And logically, I would suggest removing the torsion restriction for those angles. The `platform` can be handled through this argument in `build_building_blocks` and `build_populations`, which I currentl set to `None`, meaning `OpenMM` will decide for itself.
 
 # Acknowledgements
 
