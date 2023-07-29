@@ -1,5 +1,6 @@
-import pytest
 import numpy as np
+import pytest
+from cgexplore.beads import CgBead
 from cgexplore.molecule_construction import (
     FourC0Arm,
     FourC1Arm,
@@ -11,7 +12,6 @@ from cgexplore.molecule_construction import (
     TwoC2Arm,
     TwoC3Arm,
 )
-from cgexplore.beads import CgBead
 
 from .case_data import CaseData
 
@@ -406,9 +406,9 @@ from .case_data import CaseData
             smiles="[P][Ag][P]",
             position_matrix=np.array(
                 [
-                    [-1.5, 0, 0],
-                    [13.5, 0, 0],
-                    [6.0, 0, 0],
+                    [-3, 0, 0],
+                    [0, 0, 0],
+                    [3, 0, 0],
                 ]
             ),
             num_fgs=2,
@@ -489,11 +489,11 @@ from .case_data import CaseData
             smiles="[N][P][Ag][P][N]",
             position_matrix=np.array(
                 [
-                    [-1.5, 0, 0],
-                    [25.5, 0, 0],
-                    [6.0, 0, 0],
-                    [18.0, 0, 0],
-                    [12.0, 0, 0],
+                    [-8, 0, 0],
+                    [-3, 0, 0],
+                    [0, 0, 0],
+                    [3, 0, 0],
+                    [8, 0, 0],
                 ]
             ),
             num_fgs=2,
@@ -596,13 +596,13 @@ from .case_data import CaseData
             smiles="[C][N][P][Ag][P][N][C]",
             position_matrix=np.array(
                 [
-                    [-1.5, 0, 0],
-                    [37.5, 0, 0],
-                    [6.0, 0, 0],
-                    [30.0, 0, 0],
-                    [12.0, 0, 0],
-                    [24, 0, 0],
-                    [18, 0, 0],
+                    [-12, 0, 0],
+                    [-8, 0, 0],
+                    [-3, 0, 0],
+                    [0, 0, 0],
+                    [3, 0, 0],
+                    [8, 0, 0],
+                    [12, 0, 0],
                 ]
             ),
             num_fgs=2,
