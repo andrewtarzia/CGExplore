@@ -22,14 +22,11 @@ from bead_libraries import (
     beads_4c,
     core_2c_beads,
 )
-from cgexplore.beads import get_CGBead_from_string
+from cgexplore.beads import get_cgbead_from_string
 from cgexplore.shape import known_shape_vectors
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 from topologies import cage_topology_options
-
-from cgexplore.beads import get_cgbead_from_string
-from cgexplore.shape import known_shape_vectors
 
 logging.basicConfig(
     level=logging.INFO,

@@ -138,13 +138,16 @@ class CGOMMOptimizer(CGOptimizer):
         atom_constraints=None,
         platform=None,
     ):
-        super().__init__(
-            bead_set,
-            bonds,
-            angles,
-            torsions,
-            vdw,
-        )
+        self._bead_set = bead_set
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
+        self._mass = 10
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+        self._lj_cutoff = 10
         self._fileprefix = fileprefix
         self._output_dir = output_dir
         self._custom_torsion_set = custom_torsion_set
@@ -628,15 +631,18 @@ class CGOMMDynamics(CGOMMOptimizer):
         atom_constraints=None,
         platform=None,
     ):
-        super(CGOMMOptimizer, self).__init__(
-            fileprefix,
-            output_dir,
-            bead_set,
-            bonds,
-            angles,
-            torsions,
-            vdw,
-        )
+        self._bead_set = bead_set
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
+        self._mass = 10
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+        self._lj_cutoff = 10
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -838,15 +844,18 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         atom_constraints=None,
         platform=None,
     ):
-        super(CGOMMOptimizer, self).__init__(
-            fileprefix,
-            output_dir,
-            bead_set,
-            bonds,
-            angles,
-            torsions,
-            vdw,
-        )
+        self._bead_set = bead_set
+        self._bonds = bonds
+        self._angles = angles
+        self._torsions = torsions
+        self._vdw = vdw
+        self._mass = 10
+        self._bond_cutoff = 30
+        self._angle_cutoff = 30
+        self._torsion_cutoff = 30
+        self._lj_cutoff = 10
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
         self._custom_torsion_set = custom_torsion_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omc.out"

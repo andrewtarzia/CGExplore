@@ -29,7 +29,13 @@ logging.basicConfig(
 )
 
 
-def optimise_ligand(molecule, name, output_dir, bead_set) -> stk.Molecule:
+def optimise_ligand(
+    molecule,
+    name,
+    output_dir,
+    bead_set,
+    platform,
+) -> stk.Molecule:
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
 
     if os.path.exists(opt1_mol_file):
@@ -83,6 +89,7 @@ def run_mc_cycle(
     seed,
     beta,
     suffix,
+    platform,
 ) -> stk.Molecule:
     """
     Run metropolis MC scheme.
@@ -171,6 +178,7 @@ def run_soft_md_cycle(
     friction,
     reporting_freq,
     traj_freq,
+    platform,
 ) -> stk.Molecule | None:
     """
     Run MD exploration with soft potentials.
@@ -281,6 +289,7 @@ def build_building_block(
     option2_lib,
     calculation_output,
     ligand_output,
+    platform,
 ) -> dict[str, tuple[stk.Molecule, dict]]:
     blocks = {}
     for options in itertools.product(option1_lib, option2_lib):
@@ -309,6 +318,7 @@ def run_constrained_optimisation(
     bond_ff_scale,
     angle_ff_scale,
     max_iterations,
+    platform,
 ) -> stk.Molecule:
     """
     Run optimisation with constraints and softened potentials.

@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 import stk
-
 from cgexplore.beads import CgBead
 from cgexplore.torsions import TargetTorsion, Torsion
 

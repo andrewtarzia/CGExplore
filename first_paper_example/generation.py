@@ -14,6 +14,7 @@ import json
 import logging
 import os
 
+import openmm
 import stk
 from analysis import (
     ligand_expected_topologies,
@@ -35,6 +36,7 @@ from cgexplore.shape import (
     get_shape_molecule_nodes,
 )
 from cgexplore.torsions import TargetTorsion
+from env_set import shape_path
 
 logging.basicConfig(
     level=logging.INFO,
