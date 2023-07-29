@@ -20,7 +20,6 @@ from analysis import (
     eb_str,
     get_lowest_energy_data,
     isomer_energy,
-    topology_labels,
 )
 from cgexplore.utilities import check_directory
 from env_set import cages, calculations, figures, outputdata
@@ -107,48 +106,6 @@ def energy_parity(all_data, dupl_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
-
-    raise SystemExit()
-
-    tcmap = topology_labels(short="P")
-    tcpos = {tstr: i for i, tstr in enumerate(tcmap) if tstr != "6P8"}
-
-    vdata = all_data[all_data["vdws"] == "von"]
-
-    for tstr in tcmap:
-        if tstr in ("6P8",):
-            continue
-
-        tdata = vdata[vdata["topology"] == tstr]
-        data1 = tdata[tdata["torsions"] == "ton"]
-        data2 = tdata[tdata["torsions"] == "toff"]
-
-        out_data = data1.merge(
-            data2,
-            on="cage_name",
-        )
-
-        ydata = list(out_data["energy_per_bb_x"])
-        xdata = list(out_data["energy_per_bb_y"])
-        diffdata = [y - x for x, y, in zip(xdata, ydata)]
-        xpos = tcpos[tstr]
-
-        parts = ax.violinplot(
-            [i for i in diffdata],
-            [xpos],
-            # points=200,
-            vert=True,
-            widths=0.8,
-            showmeans=False,
-            showextrema=False,
-            showmedians=False,
-            # bw_method=0.5,
-        )
-
-        for pc in parts["bodies"]:
-            pc.set_facecolor("#086788")
-            pc.set_edgecolor("none")
-            pc.set_alpha(1.0)
 
 
 def main():
