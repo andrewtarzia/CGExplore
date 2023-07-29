@@ -89,8 +89,8 @@ jobs:
       - shell: bash -el {0}
         run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
       - shell: bash -e1 {0}
-        run: python cg_model_test/cg_model_test.py
+        run: "python cg_model_test/cg_model_test.py"
       - uses: actions/upload-artifact@v3
         with:
-          name: intermediate-ea-fitness-plot
-          path: fitness_progress.png
+          name: parity-plot
+          path: parity.png
