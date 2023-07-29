@@ -9,214 +9,8 @@ Author: Andrew Tarzia
 
 """
 
-# ruff: noqa: E501
 
 import stk
-
-try:
-    from stk._internal.topology_graphs.cage.vertices import _CageVertex
-except ImportError:
-    from stk.molecular.topology_graphs.cage.vertices import (  # type: ignore[no-redef]
-        _CageVertex,
-    )
-
-
-class TerminalVertex(_CageVertex):
-    def place_building_block(self, building_block, edges):
-        building_block = building_block.with_centroid(
-            position=self._position,
-            atom_ids=building_block.get_core_atom_ids(),
-        )
-        # return building_block.get_position_matrix()
-        (fg,) = building_block.get_functional_groups()
-        fg_centroid = building_block.get_centroid(
-            atom_ids=fg.get_placer_ids(),
-        )
-        core_centroid = building_block.get_centroid(
-            atom_ids=building_block.get_core_atom_ids(),
-        )
-        edge_centroid = sum(edge.get_position() for edge in edges) / len(edges)
-        return building_block.with_rotation_between_vectors(
-            start=(fg_centroid - core_centroid),
-            # _cap_direction is defined by a subclass.
-            target=edge_centroid - self._position,
-            origin=self._position,
-        ).get_position_matrix()
-
-    def map_functional_groups_to_edges(self, building_block, edges):
-        return {fg_id: edge.get_id() for fg_id, edge in enumerate(edges)}
-
-
-class Core3Arm1(stk.cage.Cage):
-    # Special vertex definitions to be maintained.
-    # Vertex ID, position.
-    # Note the classes are Cage specific!
-    _vertex_prototypes = (
-        stk.cage.NonLinearVertex(0, (0, 0, 0)),
-        TerminalVertex(
-            id=1,
-            position=(2, 0, 0.5),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=2,
-            position=(-1.2, 1.0, 0.5),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=3,
-            position=(-1.2, -1.0, 0.5),
-            use_neighbor_placement=False,
-        ),
-    )
-
-    # But Edges are not!
-    _edge_prototypes = (
-        # Edge ID, connected vertices by ID above.
-        stk.Edge(
-            id=0,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[1],
-        ),
-        stk.Edge(
-            id=1,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[2],
-        ),
-        stk.Edge(
-            id=2,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[3],
-        ),
-    )
-
-
-class Core4Arm1(stk.cage.Cage):
-    # Special vertex definitions to be maintained.
-    # Vertex ID, position.
-    # Note the classes are Cage specific!
-    _vertex_prototypes = (
-        stk.cage.NonLinearVertex(0, (0, 0, 0)),
-        TerminalVertex(
-            id=1,
-            position=(2, 0, 0),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=2,
-            position=(0, 2, 0),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=3,
-            position=(-2, 0, 0),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=4,
-            position=(0, -2, 0),
-            use_neighbor_placement=False,
-        ),
-    )
-
-    # But Edges are not!
-    _edge_prototypes = (
-        # Edge ID, connected vertices by ID above.
-        stk.Edge(
-            id=0,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[1],
-        ),
-        stk.Edge(
-            id=1,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[2],
-        ),
-        stk.Edge(
-            id=2,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[3],
-        ),
-        stk.Edge(
-            id=3,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[4],
-        ),
-    )
-
-
-class Core3Arm2(stk.cage.Cage):
-    # Special vertex definitions to be maintained.
-    # Vertex ID, position.
-    # Note the classes are Cage specific!
-    _vertex_prototypes = (
-        stk.cage.NonLinearVertex(0, (0, 0, 0)),
-        stk.cage.LinearVertex(
-            id=1,
-            position=(2, 0, 0.5),
-            use_neighbor_placement=False,
-        ),
-        stk.cage.LinearVertex(
-            id=2,
-            position=(-1.2, 1.0, 0.5),
-            use_neighbor_placement=False,
-        ),
-        stk.cage.LinearVertex(
-            id=3,
-            position=(-1.2, -1.0, 0.5),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=4,
-            position=(4, 0, 0),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=5,
-            position=(-2.4, 2.0, 0),
-            use_neighbor_placement=False,
-        ),
-        TerminalVertex(
-            id=6,
-            position=(-2.4, -2.0, 0),
-            use_neighbor_placement=False,
-        ),
-    )
-
-    # But Edges are not!
-    _edge_prototypes = (
-        # Edge ID, connected vertices by ID above.
-        stk.Edge(
-            id=0,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[1],
-        ),
-        stk.Edge(
-            id=1,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[2],
-        ),
-        stk.Edge(
-            id=2,
-            vertex1=_vertex_prototypes[0],
-            vertex2=_vertex_prototypes[3],
-        ),
-        stk.Edge(
-            id=3,
-            vertex1=_vertex_prototypes[4],
-            vertex2=_vertex_prototypes[1],
-        ),
-        stk.Edge(
-            id=4,
-            vertex1=_vertex_prototypes[5],
-            vertex2=_vertex_prototypes[2],
-        ),
-        stk.Edge(
-            id=5,
-            vertex1=_vertex_prototypes[6],
-            vertex2=_vertex_prototypes[3],
-        ),
-    )
 
 
 class Precursor:
@@ -250,7 +44,7 @@ class FourC0Arm(Precursor):
         )
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[{bead.element_string}]" f"[Br]"),
+            smarts=(f"[{bead.element_string}][Br]"),
             bonders=(0,),
             deleters=(1,),
             placers=(0, 1),
@@ -282,18 +76,20 @@ class FourC1Arm(Precursor):
                 [0, 2, -1],
             ],
         )
-        bb_tuple = (
-            four_c_bb,
-            stk.BuildingBlock(
-                smiles=f"[{abead1.element_string}][Br]",
-                functional_groups=factories,
-                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+        const_mol = stk.ConstructedMolecule(
+            topology_graph=stk.small.NCore(
+                core_building_block=four_c_bb,
+                arm_building_blocks=stk.BuildingBlock(
+                    smiles=f"[{abead1.element_string}][Br]",
+                    functional_groups=factories,
+                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
+                ),
+                repeating_unit="AAAA",
             ),
         )
-        const_mol = stk.ConstructedMolecule(topology_graph=Core4Arm1(bb_tuple))
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[{bead.element_string}]" f"[{abead1.element_string}]"),
+            smarts=(f"[{bead.element_string}][{abead1.element_string}]"),
             bonders=(1,),
             deleters=(),
         )
@@ -321,7 +117,7 @@ class ThreeC0Arm(Precursor):
         )
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[{bead.element_string}]" f"[Br]"),
+            smarts=f"[{bead.element_string}][Br]",
             bonders=(0,),
             deleters=(1,),
             placers=(0, 1),
@@ -352,18 +148,20 @@ class ThreeC1Arm(Precursor):
                 [-1.2, -1, 0],
             ],
         )
-        bb_tuple = (
-            three_c_bb,
-            stk.BuildingBlock(
-                smiles=f"[{abead1.element_string}][Br]",
-                functional_groups=factories,
-                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+        const_mol = stk.ConstructedMolecule(
+            topology_graph=stk.small.NCore(
+                core_building_block=three_c_bb,
+                arm_building_blocks=stk.BuildingBlock(
+                    smiles=f"[{abead1.element_string}][Br]",
+                    functional_groups=factories,
+                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
+                ),
+                repeating_unit="AAA",
             ),
         )
-        const_mol = stk.ConstructedMolecule(topology_graph=Core3Arm1(bb_tuple))
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[{bead.element_string}][{abead1.element_string}]"),
+            smarts=f"[{bead.element_string}][{abead1.element_string}]",
             bonders=(1,),
             deleters=(),
         )
@@ -395,22 +193,26 @@ class ThreeC2Arm(Precursor):
                 [-1.2, -1, 0],
             ],
         )
-        bb_tuple = (
-            three_c_bb,
-            stk.BuildingBlock(
-                smiles=f"[Br][{abead1.element_string}][Br]",
-                functional_groups=factories,
-                position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
-            ),
-            stk.BuildingBlock(
-                smiles=f"[{abead2.element_string}][Br]",
-                functional_groups=factories,
-                position_matrix=[[-3, 0, 0], [0, 0, 0]],
+
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=f"[{abead1.element_string}][{abead2.element_string}]",
+            bonders=(0,),
+            deleters=(),
+        )
+        const_mol = stk.ConstructedMolecule(
+            topology_graph=stk.small.NCore(
+                core_building_block=three_c_bb,
+                arm_building_blocks=stk.BuildingBlock(
+                    smiles=f"[{abead1.element_string}][{abead2.element_string}]",
+                    functional_groups=new_fgs,
+                    position_matrix=[[-3, 0, 0], [0, 0, 0]],
+                ),
+                repeating_unit="AAA",
             ),
         )
-        const_mol = stk.ConstructedMolecule(topology_graph=Core3Arm2(bb_tuple))
+
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[{abead1.element_string}]" f"[{abead2.element_string}]"),
+            smarts=f"[{abead1.element_string}][{abead2.element_string}]",
             bonders=(1,),
             deleters=(),
         )
@@ -430,7 +232,7 @@ class TwoC0Arm(Precursor):
             position_matrix=[[-3, 0, 0], [0, 0, 0], [3, 0, 0]],
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[Br][{bead.element_string}]"),
+            smarts=f"[Br][{bead.element_string}]",
             bonders=(1,),
             deleters=(0,),
             placers=(0, 1),
@@ -465,7 +267,7 @@ class TwoC1Arm(Precursor):
             core_c_bb,
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[{abead1.element_string}][{bead.element_string}]"),
+            smarts=f"[{abead1.element_string}][{bead.element_string}]",
             bonders=(0,),
             deleters=(),
             placers=(0, 1),
@@ -514,9 +316,7 @@ class TwoC2Arm(Precursor):
             core_c_bb,
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{abead2.element_string}X1]" f"[{abead1.element_string}]"
-            ),
+            smarts=f"[{abead2.element_string}X1][{abead1.element_string}]",
             bonders=(0,),
             deleters=(),
             placers=(0, 1),
@@ -575,9 +375,7 @@ class TwoC3Arm(Precursor):
             core_c_bb,
         )
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(
-                f"[{abead3.element_string}X1]" f"[{abead2.element_string}]"
-            ),
+            smarts=f"[{abead3.element_string}X1][{abead2.element_string}]",
             bonders=(0,),
             deleters=(),
             placers=(0, 1),
