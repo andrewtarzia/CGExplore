@@ -86,10 +86,8 @@ jobs:
         run: "pip install --upgrade setuptools"
       - shell: bash -el {0}
         run: "pip install -e '.[dev]'"
-      - shell: bash -el {0}
-        run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
-      - shell: bash -e {0}
-        run: python cg_model_test/cg_model_test.py
+      - run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
+      - run: python cg_model_test/cg_model_test.py
       - uses: actions/upload-artifact@v3
         with:
           name: parity-plot
