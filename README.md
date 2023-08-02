@@ -13,7 +13,7 @@ The code can be installed following these steps:
 
 2. Create a `conda` or `mamba` environment:
  ```
- $ mamba create -n NAME python=3.9
+ $ mamba create -n NAME python=3.11
  ```
 
 3. Activate the environment:
