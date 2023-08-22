@@ -373,6 +373,7 @@ class CGOMMOptimizer(CGOptimizer):
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
 
+        count = 0
         for torsion in self._yield_custom_torsions(molecule):
             force.addTorsion(
                 particle1=torsion.atom_ids[0],
@@ -383,6 +384,8 @@ class CGOMMOptimizer(CGOptimizer):
                 phase=np.radians(torsion.phi0),
                 k=torsion.torsion_k,
             )
+            count += 1
+        logging.info(f"{count} custom torsions added")
 
         return system
 
@@ -448,14 +451,13 @@ class CGOMMOptimizer(CGOptimizer):
         #     ff_str += self._get_angle_string(molecule)
         # if self._torsions:
         #     ff_str += self._get_torsion_string(molecule)
-        if self._custom_vdw_set is not None:
+
+        if self._custom_vdw_set is not None and self._custom_vdw_set:
             ff_str += self._get_vdw_string(present_beads)
         ff_str += "</ForceField>\n"
 
         with open(self._forcefield_path, "w") as f:
             f.write(ff_str)
-        print(self._forcefield_path)
-        raise SystemExit("you need to check this works.")
 
     def _stk_to_topology(
         self,
