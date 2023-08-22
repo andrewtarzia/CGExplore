@@ -9,9 +9,11 @@ Author: Andrew Tarzia
 
 """
 
+import typing
 from collections import defaultdict
 
 import numpy as np
+import stk
 from rdkit.Chem import AllChem as rdkit
 from scipy.spatial.distance import pdist
 
@@ -20,13 +22,17 @@ from .utilities import angle_between, get_atom_distance, get_dihedral
 
 
 class GeomMeasure:
-    def __init__(self, target_torsions=None):
+    def __init__(self, target_torsions: typing.Iterable | None = None) -> None:
         if target_torsions is None:
             self._target_torsions = None
         else:
             self._target_torsions = tuple(target_torsions)
 
-    def _get_paths(self, molecule, path_length):
+    def _get_paths(
+        self,
+        molecule: stk.Molecule,
+        path_length: int,
+    ) -> tuple[tuple[int]]:
         return rdkit.FindAllPathsOfLengthN(
             mol=molecule.to_rdkit_mol(),
             length=path_length,
@@ -34,11 +40,14 @@ class GeomMeasure:
             useHs=True,
         )
 
-    def calculate_minb2b(self, molecule):
+    def calculate_minb2b(self, molecule: stk.Molecule) -> float:
         pair_dists = pdist(molecule.get_position_matrix())
         return np.min(pair_dists.flatten())
 
-    def calculate_bonds(self, molecule):
+    def calculate_bonds(
+        self,
+        molecule: stk.Molecule,
+    ) -> dict[str, list[float]]:
         lengths = defaultdict(list)
         for bond in molecule.get_bonds():
             a1id = bond.get_atom1().get_id()
@@ -57,7 +66,10 @@ class GeomMeasure:
 
         return lengths
 
-    def calculate_angles(self, molecule):
+    def calculate_angles(
+        self,
+        molecule: stk.Molecule,
+    ) -> dict[str, list[float]]:
         pos_mat = molecule.get_position_matrix()
         angles = defaultdict(list)
         for a_ids in self._get_paths(molecule, 3):
@@ -93,9 +105,13 @@ class GeomMeasure:
 
         return angles
 
-    def calculate_torsions(self, molecule, absolute):
+    def calculate_torsions(
+        self,
+        molecule: stk.Molecule,
+        absolute: bool,
+    ) -> dict[str, list[float]]:
         if self._target_torsions is None:
-            return []
+            return {}
 
         torsions = defaultdict(list)
         for target_torsion in self._target_torsions:
@@ -141,7 +157,7 @@ class GeomMeasure:
 
         return torsions
 
-    def calculate_radius_gyration(self, molecule):
+    def calculate_radius_gyration(self, molecule: stk.Molecule) -> float:
         centroid = molecule.get_centroid()
         pos_mat = molecule.get_position_matrix()
         vectors = pos_mat - centroid
@@ -150,5 +166,5 @@ class GeomMeasure:
         rg2 = (1 / molecule.get_num_atoms()) * np.sum(distances2)
         return np.sqrt(rg2)
 
-    def calculate_max_diameter(self, molecule):
+    def calculate_max_diameter(self, molecule: stk.Molecule) -> float:
         return molecule.get_maximum_diameter()
