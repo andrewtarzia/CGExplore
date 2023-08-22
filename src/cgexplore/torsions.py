@@ -10,8 +10,10 @@ Author: Andrew Tarzia
 """
 
 import logging
+import typing
 from dataclasses import dataclass
 
+import stk
 from rdkit.Chem import AllChem as rdkit
 
 logging.basicConfig(
@@ -41,11 +43,14 @@ class TargetTorsion:
 
 @dataclass
 class FoundTorsion:
-    atoms: tuple[str, ...]
+    atoms: tuple[stk.Atom, ...]
     atom_ids: tuple[int, ...]
 
 
-def find_torsions(molecule, chain_length):
+def find_torsions(
+    molecule: stk.Molecule,
+    chain_length: int,
+) -> typing.Iterator[FoundTorsion]:
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=chain_length,
