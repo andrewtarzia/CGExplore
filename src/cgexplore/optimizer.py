@@ -10,12 +10,14 @@ Author: Andrew Tarzia
 """
 
 import logging
+import typing
 from heapq import nsmallest
 from itertools import combinations
 
 import numpy as np
+import stk
 
-from .beads import get_cgbead_from_element
+from .beads import CgBead, get_cgbead_from_element
 from .torsions import Torsion, find_torsions
 from .utilities import (
     angle_between,
@@ -30,22 +32,24 @@ logging.basicConfig(
 )
 
 
-def lorentz_berthelot_sigma_mixing(sigma1, sigma2):
+def lorentz_berthelot_sigma_mixing(sigma1: float, sigma2: float) -> float:
     return (sigma1 + sigma2) / 2
 
 
 class CGOptimizer:
     def __init__(
         self,
-        bead_set,
-        custom_torsion_set,
-        bonds,
-        angles,
-        torsions,
-        vdw,
-    ):
+        bead_set: dict[str, CgBead],
+        custom_torsion_set: tuple | None,
+        custom_vdw_set: tuple | None,
+        bonds: bool,
+        angles: bool,
+        torsions: bool,
+        vdw: bool,
+    ) -> None:
         self._bead_set = bead_set
         self._custom_torsion_set = custom_torsion_set
+        self._custom_vdw_set = custom_vdw_set
         self._bonds = bonds
         self._angles = angles
         self._torsions = torsions
@@ -56,9 +60,12 @@ class CGOptimizer:
         self._torsion_cutoff = 30
         self._lj_cutoff = 10
 
-    def _yield_bonds(self, molecule):
+    def _yield_bonds(
+        self,
+        molecule: stk.Molecule,
+    ) -> typing.Iterator[tuple]:
         if self._bonds is False:
-            return ""
+            return ()
 
         bonds = list(molecule.get_bonds())
         for bond in bonds:
@@ -93,15 +100,18 @@ class CGOptimizer:
                 logging.info(f"OPT: {(name1, name2)} bond not assigned.")
                 continue
 
-    def _yield_angles(self, molecule):
+    def _yield_angles(
+        self,
+        molecule: stk.Molecule,
+    ) -> typing.Iterator[tuple]:
         if self._angles is False:
-            return ""
+            return ()
 
         angles = get_all_angles(molecule)
         pos_mat = molecule.get_position_matrix()
 
-        pyramid_angles = {}
-        octahedral_angles = {}
+        pyramid_angles: dict[str, list] = {}
+        octahedral_angles: dict[str, list] = {}
         for angle in angles:
             outer_atom1, centre_atom, outer_atom2 = angle
             outer_name1 = (
@@ -193,7 +203,11 @@ class CGOptimizer:
                 )
                 for i, X in enumerate(sa_d)
             }
-            four_smallest = nsmallest(4, all_angles, key=all_angles.get)
+            four_smallest = nsmallest(
+                n=4,
+                iterable=all_angles,
+                key=all_angles.get,  # type: ignore[arg-type]
+            )
             for used_ang_id in four_smallest:
                 used_ang = sa_d[used_ang_id]
                 (
@@ -274,8 +288,11 @@ class CGOptimizer:
                 )
                 for i, X in enumerate(sa_d)
             }
-
-            smallest = nsmallest(12, all_angles, key=all_angles.get)
+            smallest = nsmallest(
+                n=12,
+                iterable=all_angles,
+                key=all_angles.get,  # type: ignore[arg-type]
+            )
             for used_ang_id in smallest:
                 used_ang = sa_d[used_ang_id]
                 (
@@ -342,9 +359,12 @@ class CGOptimizer:
                     angle_theta,
                 )
 
-    def _yield_torsions(self, molecule):
+    def _yield_torsions(
+        self,
+        molecule: stk.Molecule,
+    ) -> typing.Iterator[tuple]:
         if self._torsions is False:
-            return ""
+            return ()
         raise NotImplementedError()
 
         torsions = get_all_torsions(molecule)
@@ -383,7 +403,13 @@ class CGOptimizer:
             except KeyError:
                 continue
 
-    def _yield_custom_torsions(self, molecule):
+    def _yield_custom_torsions(
+        self,
+        molecule: stk.Molecule,
+    ) -> typing.Iterator[Torsion]:
+        if self._custom_torsion_set is None:
+            return ()
+
         # Iterate over the different path lengths, and find all torsions
         # for that lengths.
         path_lengths = set(
@@ -417,10 +443,13 @@ class CGOptimizer:
                         torsion_k=target_torsion.torsion_k,
                     )
 
-    def _yield_nonbondeds(self, molecule):
+    def _yield_nonbondeds(
+        self,
+        molecule: stk.Molecule,
+    ) -> typing.Iterator[tuple]:
         raise NotImplementedError()
         if self._vdw is False:
-            return ""
+            return ()
         logging.info("OPT: only vdw interactions between host and guest.")
 
         pairs = combinations(molecule.get_atoms(), 2)
@@ -456,5 +485,5 @@ class CGOptimizer:
                 # logging.info(f"OPT: {sorted_name} vdw not assigned.")
                 continue
 
-    def optimize(self, molecule):
+    def optimize(self, molecule: stk.Molecule) -> stk.Molecule:
         raise NotImplementedError()

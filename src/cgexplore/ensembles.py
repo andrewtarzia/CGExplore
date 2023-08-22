@@ -29,7 +29,7 @@ class Conformer:
 @dataclass
 class Timestep:
     molecule: stk.Molecule
-    timestep: int
+    timestep: float
 
 
 class Ensemble:

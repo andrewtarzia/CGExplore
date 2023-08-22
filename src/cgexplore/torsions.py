@@ -24,8 +24,8 @@ logging.basicConfig(
 
 @dataclass
 class Torsion:
-    atom_names: tuple[str, str, str, str]
-    atom_ids: tuple[int, int, int, int]
+    atom_names: tuple[str, ...]
+    atom_ids: tuple[int, ...]
     phi0: float
     torsion_k: float
     torsion_n: float
