@@ -11,6 +11,7 @@ Author: Andrew Tarzia
 
 import logging
 import os
+import pathlib
 import shutil
 import subprocess as sp
 
@@ -25,7 +26,12 @@ logging.basicConfig(
 )
 
 
-def test_shape_mol(topo_expected, atoms, name, topo_str):
+def test_shape_mol(
+    topo_expected: dict[str, int],
+    atoms: list,
+    name: str,
+    topo_str: str,
+) -> None:
     num_atoms = len(atoms)
     if num_atoms != topo_expected[topo_str]:
         raise ValueError(
@@ -35,17 +41,25 @@ def test_shape_mol(topo_expected, atoms, name, topo_str):
 
 
 def fill_position_matrix(
-    position_matrix,
-    constructed_molecule,
-    target_bb,
-    element,
-    old_position_matrix,
-    atoms,
-):
+    constructed_molecule: stk.ConstructedMolecule,
+    target_bb: stk.Molecule,
+    element: str,
+    old_position_matrix: np.ndarray,
+) -> tuple[list, list]:
+    position_matrix = []
+    atoms: list[stk.Atom] = []
+
     target_anum = periodic_table()[element]
     for ai in constructed_molecule.get_atom_infos():
-        if ai.get_building_block() == target_bb:
-            if ai.get_building_block_atom().get_atomic_number() == target_anum:
+        if (
+            ai.get_building_block() == target_bb
+            and ai.get_building_block_atom() is not None
+        ):
+            ai_atom = ai.get_building_block_atom()
+            ai_atomic_number = (
+                ai_atom.get_atomic_number()  # type: ignore[union-attr]
+            )
+            if ai_atomic_number == target_anum:
                 a = ai.get_atom()
                 new_atom = stk.Atom(
                     id=len(atoms),
@@ -54,15 +68,16 @@ def fill_position_matrix(
                 )
                 atoms.append(new_atom)
                 position_matrix.append(old_position_matrix[a.get_id()])
+
     return position_matrix, atoms
 
 
 def get_shape_molecule_nodes(
-    constructed_molecule,
-    name,
-    element,
-    topo_expected,
-):
+    constructed_molecule: stk.ConstructedMolecule,
+    name: str,
+    element: str,
+    topo_expected: dict[str, int],
+) -> stk.Molecule | None:
     splits = name.split("_")
     topo_str = splits[0]
     if topo_str not in topo_expected:
@@ -71,15 +86,11 @@ def get_shape_molecule_nodes(
     old_position_matrix = constructed_molecule.get_position_matrix()
 
     large_c_bb = bbs[0]
-    atoms = []
-    position_matrix = []
     position_matrix, atoms = fill_position_matrix(
-        position_matrix=position_matrix,
         constructed_molecule=constructed_molecule,
         target_bb=large_c_bb,
         element=element,
         old_position_matrix=old_position_matrix,
-        atoms=atoms,
     )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
@@ -92,11 +103,11 @@ def get_shape_molecule_nodes(
 
 
 def get_shape_molecule_ligands(
-    constructed_molecule,
-    name,
-    element,
-    topo_expected,
-):
+    constructed_molecule: stk.ConstructedMolecule,
+    name: str,
+    element: str,
+    topo_expected: dict[str, int],
+) -> stk.Molecule | None:
     splits = name.split("_")
     topo_str = splits[0]
     bbs = list(constructed_molecule.get_building_blocks())
@@ -105,17 +116,12 @@ def get_shape_molecule_ligands(
     if topo_str not in topo_expected:
         return None
 
-    atoms = []
-    position_matrix = []
-
     two_c_bb = bbs[1]
     position_matrix, atoms = fill_position_matrix(
-        position_matrix=position_matrix,
         constructed_molecule=constructed_molecule,
         target_bb=two_c_bb,
         element=element,
         old_position_matrix=old_position_matrix,
-        atoms=atoms,
     )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
@@ -139,14 +145,13 @@ class ShapeMeasure:
 
     def __init__(
         self,
-        output_dir,
-        shape_path,
-        target_atmnums=None,
-        shape_string=None,
-    ):
+        output_dir: pathlib.Path | str,
+        shape_path: pathlib.Path | str,
+        shape_string: str | None = None,
+    ) -> None:
         self._output_dir = output_dir
         self._shape_path = shape_path
-        self._target_atmnums = target_atmnums
+        self._shape_dict: dict[str, dict]
         if shape_string is None:
             self._shape_dict = self.reference_shape_dict()
         else:
@@ -157,7 +162,7 @@ class ShapeMeasure:
             set(int(self._shape_dict[i]["vertices"]) for i in self._shape_dict)
         )
 
-    def reference_shape_dict(self):
+    def reference_shape_dict(self) -> dict[str, dict]:
         return {
             "L-2": {
                 "code": "1",
@@ -719,7 +724,7 @@ class ShapeMeasure:
             },
         }
 
-    def _collect_all_shape_values(self, output_file):
+    def _collect_all_shape_values(self, output_file: str) -> dict:
         """
         Collect shape values from output.
 
@@ -732,7 +737,7 @@ class ShapeMeasure:
         values = None
         for line in reversed(lines):
             if "Structure" in line:
-                line = [
+                values = [
                     i.strip()
                     for i in line.rstrip().split("]")[1].split(" ")
                     if i.strip()
@@ -740,8 +745,7 @@ class ShapeMeasure:
                 for idx, symb in enumerate(line):
                     label_idx_map[symb] = idx
                 break
-            line = [i.strip() for i in line.rstrip().split(",")]
-            values = line
+            values = [i.strip() for i in line.rstrip().split(",")]
 
         if values is None:
             logging.info("no shapes found due to overlapping atoms")
@@ -755,9 +759,9 @@ class ShapeMeasure:
 
     def _write_input_file(
         self,
-        input_file,
-        structure_string,
-    ):
+        input_file: str,
+        structure_string: str,
+    ) -> None:
         """
         Write input file for shape.
 
@@ -780,7 +784,7 @@ class ShapeMeasure:
         with open(input_file, "w") as f:
             f.write(string)
 
-    def _run_calculation(self, structure_string):
+    def _run_calculation(self, structure_string: str) -> dict:
         """
         Calculate the shape of a molecule.
 
@@ -810,11 +814,15 @@ class ShapeMeasure:
 
         return self._collect_all_shape_values(output_file)
 
-    def _get_centroids(self, molecule):
-        bb_ids = {}
+    def _get_centroids(
+        self,
+        molecule: stk.ConstructedMolecule,
+        target_atmnums: tuple[int],
+    ) -> list[np.ndarray]:
+        bb_ids: dict[int | None, list] = {}
         for ai in molecule.get_atom_infos():
             aibbid = ai.get_building_block_id()
-            if ai.get_atom().get_atomic_number() in self._target_atmnums:
+            if ai.get_atom().get_atomic_number() in target_atmnums:
                 if aibbid not in bb_ids:
                     bb_ids[aibbid] = []
                 bb_ids[aibbid].append(ai.get_atom().get_id())
@@ -830,7 +838,7 @@ class ShapeMeasure:
 
         return centroids
 
-    def _get_possible_shapes(self, num_vertices):
+    def _get_possible_shapes(self, num_vertices: int) -> tuple[dict, ...]:
         ref_dict = self.reference_shape_dict()
         return tuple(
             ref_dict[i]
@@ -838,7 +846,7 @@ class ShapeMeasure:
             if int(ref_dict[i]["vertices"]) == num_vertices
         )
 
-    def calculate(self, molecule):
+    def calculate(self, molecule: stk.Molecule) -> dict:
         output_dir = os.path.abspath(self._output_dir)
 
         if os.path.exists(output_dir):
@@ -872,12 +880,11 @@ class ShapeMeasure:
 
         return shapes
 
-    def calculate_from_centroids(self, constructed_molecule):
-        if self._target_atmnums is None:
-            raise ValueError(
-                "you need to set the atom numbers to use to "
-                "calculate centroids."
-            )
+    def calculate_from_centroids(
+        self,
+        constructed_molecule: stk.ConstructedMolecule,
+        target_atmnums: tuple[int],
+    ) -> dict:
         output_dir = os.path.abspath(self._output_dir)
 
         if os.path.exists(output_dir):
@@ -887,7 +894,9 @@ class ShapeMeasure:
         init_dir = os.getcwd()
         try:
             os.chdir(output_dir)
-            centroids = self._get_centroids(constructed_molecule)
+            centroids = self._get_centroids(
+                constructed_molecule, target_atmnums
+            )
             structure_string = "shape run by AT\n"
             num_centroids = 0
             for c in centroids:
@@ -909,7 +918,7 @@ class ShapeMeasure:
         return shapes
 
 
-def known_shape_vectors():
+def known_shape_vectors() -> dict[str, dict]:
     """
     Printed from shape_map.py output.
 

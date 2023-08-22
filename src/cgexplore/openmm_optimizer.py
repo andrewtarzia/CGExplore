@@ -12,14 +12,17 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 """
 
 import logging
+import pathlib
 import time
+import typing
 
 import numpy as np
 import pandas as pd
+import stk
 from openmm import app, openmm
 from openmmtools import integrators
 
-from .beads import get_cgbead_from_element
+from .beads import CgBead, get_cgbead_from_element
 from .ensembles import Timestep
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
@@ -33,19 +36,19 @@ logging.basicConfig(
 class OMMTrajectory:
     def __init__(
         self,
-        base_molecule,
-        data_path,
-        traj_path,
-        forcefield_path,
-        output_path,
-        temperature,
-        random_seed,
-        num_steps,
-        time_step,
-        friction,
-        reporting_freq,
-        traj_freq,
-    ):
+        base_molecule: stk.Molecule,
+        data_path: pathlib.Path,
+        traj_path: pathlib.Path,
+        forcefield_path: pathlib.Path,
+        output_path: pathlib.Path,
+        temperature: float,
+        random_seed: int,
+        num_steps: int,
+        time_step: float,
+        friction: float | None,
+        reporting_freq: float,
+        traj_freq: float,
+    ) -> None:
         self._base_molecule = base_molecule
         self._data_path = data_path
         self._traj_path = traj_path
@@ -61,19 +64,19 @@ class OMMTrajectory:
         self._random_seed = random_seed
         self._friction = friction
 
-    def get_data(self):
+    def get_data(self) -> pd.DataFrame:
         return pd.read_csv(self._data_path)
 
-    def get_base_molecule(self):
+    def get_base_molecule(self) -> stk.Molecule:
         return self._base_molecule
 
-    def yield_conformers(self):
+    def yield_conformers(self) -> typing.Iterator[Timestep]:
         num_atoms = self._base_molecule.get_num_atoms()
         start_trigger = "MODEL"
         triggered = False
         end_trigger = "ENDMDL"
         model_number = 0
-        new_pos_mat = []
+        new_pos_mat: list = []
         atom_trigger = "HETATM"
 
         with open(self._traj_path, "r") as f:
@@ -125,19 +128,20 @@ class MDEmptyTrajcetoryError(Exception):
 class CGOMMOptimizer(CGOptimizer):
     def __init__(
         self,
-        fileprefix,
-        output_dir,
-        bead_set,
-        custom_torsion_set,
-        bonds,
-        angles,
-        torsions,
-        vdw,
-        max_iterations=None,
-        vdw_bond_cutoff=None,
-        atom_constraints=None,
-        platform=None,
-    ):
+        fileprefix: str,
+        output_dir: pathlib.Path,
+        bead_set: dict[str, CgBead],
+        custom_torsion_set: tuple | None,
+        custom_vdw_set: tuple | None,
+        bonds: bool,
+        angles: bool,
+        torsions: bool,
+        vdw: bool,
+        max_iterations: int | None = None,
+        vdw_bond_cutoff: int | None = None,
+        atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
+        platform: str | None = None,
+    ) -> None:
         self._bead_set = bead_set
         self._bonds = bonds
         self._angles = angles
@@ -150,19 +154,27 @@ class CGOMMOptimizer(CGOptimizer):
         self._lj_cutoff = 10
         self._fileprefix = fileprefix
         self._output_dir = output_dir
-        self._custom_torsion_set = custom_torsion_set
+        self._custom_torsion_set: tuple | None = custom_torsion_set
+        self._custom_vdw_set: tuple | None = custom_vdw_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
         self._output_string = ""
+        self._properties: dict | None
+
         if max_iterations is None:
             self._max_iterations = 0
         else:
             self._max_iterations = max_iterations
+
         self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
+
         if self._vdw and vdw_bond_cutoff is None:
             raise ValueError("if `vdw` is on, `vdw_bond_cutoff` should be set")
-        elif vdw_bond_cutoff is None:
-            self._vdw_bond_cutoff = 0
+        elif self._custom_vdw_set is not None and vdw_bond_cutoff is None:
+            raise ValueError(
+                "if `custom_torsion_set` is on, "
+                "`vdw_bond_cutoff` should be set"
+            )
         else:
             self._vdw_bond_cutoff = vdw_bond_cutoff
 
@@ -178,20 +190,24 @@ class CGOMMOptimizer(CGOptimizer):
 
         self._atom_constraints = atom_constraints
 
-    def _add_forces(self, system, molecule):
+    def _add_forces(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
         if self._bonds:
             system = self._add_bonds(system, molecule)
         if self._angles:
             system = self._add_angles(system, molecule)
         if self._torsions:
             system = self._add_torsions(system, molecule)
-        if self._custom_torsion_set:
+        if self._custom_torsion_set is not None:
             system = self._add_custom_torsions(system, molecule)
         if self._atom_constraints is not None:
             system = self._add_atom_constraints(system, molecule)
         return system
 
-    def _group_forces(self, system):
+    def _group_forces(self, system: openmm.System) -> dict:
         """
         Method to group forces.
 
@@ -215,7 +231,11 @@ class CGOMMOptimizer(CGOptimizer):
             forcegroups[force] = i
         return forcegroups
 
-    def _get_energy_decomposition(self, context, forcegroups):
+    def _get_energy_decomposition(
+        self,
+        context: openmm.Context,
+        forcegroups: dict,
+    ) -> dict:
         """
         Method to decompose energies.
 
@@ -231,7 +251,11 @@ class CGOMMOptimizer(CGOptimizer):
             ).getPotentialEnergy()
         return energies
 
-    def _add_bonds(self, system, molecule):
+    def _add_bonds(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
         force = openmm.HarmonicBondForce()
         system.addForce(force)
 
@@ -246,7 +270,11 @@ class CGOMMOptimizer(CGOptimizer):
 
         return system
 
-    def _add_angles(self, system, molecule):
+    def _add_angles(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
         force = openmm.HarmonicAngleForce()
         system.addForce(force)
 
@@ -272,7 +300,14 @@ class CGOMMOptimizer(CGOptimizer):
 
         return system
 
-    def _add_atom_constraints(self, system, molecule):
+    def _add_atom_constraints(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
+        if self._atom_constraints is None:
+            return system
+
         self._output_string += "   constraints applied:\n"
         for constraint in self._atom_constraints:
             current_distance = get_atom_distance(
@@ -293,7 +328,11 @@ class CGOMMOptimizer(CGOptimizer):
         self._output_string += "\n"
         return system
 
-    def _add_torsions(self, system, molecule):
+    def _add_torsions(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
         raise NotImplementedError("Use custom torsions at this stage.")
         logging.info("warning: this interface will change in the near future")
         force = openmm.PeriodicTorsionForce()
@@ -326,7 +365,11 @@ class CGOMMOptimizer(CGOptimizer):
 
         return system
 
-    def _add_custom_torsions(self, system, molecule):
+    def _add_custom_torsions(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
 
@@ -343,7 +386,7 @@ class CGOMMOptimizer(CGOptimizer):
 
         return system
 
-    def _get_vdw_string(self, molecule, present_beads):
+    def _get_vdw_string(self, present_beads: dict[str, CgBead]) -> str:
         nb_eqn = "sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12"
         nb_str = (
             f' <CustomNonbondedForce energy="{nb_eqn}" '
@@ -361,18 +404,8 @@ class CGOMMOptimizer(CGOptimizer):
 
         return nb_str
 
-    def _write_ff_file(self, molecule):
+    def _write_ff_file(self, molecule: stk.Molecule) -> None:
         ff_str = "<ForceField>\n\n"
-
-        # logging.info("much redundancy here, can fix.")
-        # logging.info(
-        #     "if you use BBs as templates, not whole mol, then you "
-        #     "need to change the ID"
-        # )
-        # logging.info(
-        #     "if you use BBs as templates, not whole mol, then you "
-        #     "need external bonds and to change the ID"
-        # )
 
         at_str = " <AtomTypes>\n"
         re_str = " <Residues>\n"
@@ -415,14 +448,18 @@ class CGOMMOptimizer(CGOptimizer):
         #     ff_str += self._get_angle_string(molecule)
         # if self._torsions:
         #     ff_str += self._get_torsion_string(molecule)
-        if self._vdw:
-            ff_str += self._get_vdw_string(molecule, present_beads)
+
+        if self._custom_vdw_set is not None and self._custom_vdw_set:
+            ff_str += self._get_vdw_string(present_beads)
         ff_str += "</ForceField>\n"
 
         with open(self._forcefield_path, "w") as f:
             f.write(ff_str)
 
-    def _stk_to_topology(self, molecule):
+    def _stk_to_topology(
+        self,
+        molecule: stk.Molecule,
+    ) -> app.topology.Topology:
         topology = app.topology.Topology()
         chain = topology.addChain()
         residue = topology.addResidue(name="ALL", chain=chain)
@@ -458,7 +495,10 @@ class CGOMMOptimizer(CGOptimizer):
 
         return topology
 
-    def _setup_simulation(self, molecule):
+    def _setup_simulation(
+        self,
+        molecule: stk.Molecule,
+    ) -> tuple[app.Simulation, openmm.System]:
         # Load force field.
         # st = time.time()
         self._write_ff_file(molecule)
@@ -499,7 +539,11 @@ class CGOMMOptimizer(CGOptimizer):
         # print("ss6", time.time() - st)
         return simulation, system
 
-    def _run_energy_decomp(self, simulation, system):
+    def _run_energy_decomp(
+        self,
+        simulation: app.Simulation,
+        system: openmm.System,
+    ) -> dict:
         fgroups = self._group_forces(system)
         egroups = self._get_energy_decomposition(
             context=simulation.context,
@@ -518,7 +562,11 @@ class CGOMMOptimizer(CGOptimizer):
 
         return energy_decomp
 
-    def _output_energy_decomp(self, simulation, system):
+    def _output_energy_decomp(
+        self,
+        simulation: app.Simulation,
+        system: openmm.System,
+    ) -> None:
         energy_decomp = self._run_energy_decomp(simulation, system)
         self._output_string += "energy decomposition:\n"
 
@@ -529,7 +577,7 @@ class CGOMMOptimizer(CGOptimizer):
         self._output_string += f"total energy: {energy_decomp['tot_energy']}\n"
         self._output_string += "\n"
 
-    def _get_energy(self, simulation, system):
+    def _get_energy(self, simulation: app.Simulation) -> float:
         state = simulation.context.getState(
             getPositions=True,
             getEnergy=True,
@@ -539,7 +587,11 @@ class CGOMMOptimizer(CGOptimizer):
             openmm.unit.kilojoules_per_mole
         )
 
-    def _minimize_energy(self, simulation, system):
+    def _minimize_energy(
+        self,
+        simulation: app.Simulation,
+        system: openmm.System,
+    ) -> app.Simulation:
         self._output_energy_decomp(simulation, system)
 
         self._output_string += "minimizing energy\n\n"
@@ -551,7 +603,11 @@ class CGOMMOptimizer(CGOptimizer):
 
         return simulation
 
-    def _update_stk_molecule(self, molecule, simulation):
+    def _update_stk_molecule(
+        self,
+        molecule: stk.Molecule,
+        simulation: app.Simulation,
+    ) -> stk.Molecule:
         state = simulation.context.getState(
             getPositions=True,
             getEnergy=True,
@@ -560,15 +616,15 @@ class CGOMMOptimizer(CGOptimizer):
         molecule = molecule.with_position_matrix(positions * 10)
         return molecule
 
-    def calculate_energy(self, molecule):
-        simulation, system = self._setup_simulation(molecule)
-        return self._get_energy(simulation, system)
+    def calculate_energy(self, molecule: stk.Molecule) -> float:
+        simulation, _ = self._setup_simulation(molecule)
+        return self._get_energy(simulation)
 
-    def calculate_energy_decomposed(self, molecule):
+    def calculate_energy_decomposed(self, molecule: stk.Molecule) -> dict:
         simulation, system = self._setup_simulation(molecule)
         return self._run_energy_decomp(simulation, system)
 
-    def read_final_energy_decomposition(self):
+    def read_final_energy_decomposition(self) -> dict:
         decomp_data = (
             self._output_string.split("energy decomposition:")[-1]
             .split("end time:")[0]
@@ -580,11 +636,11 @@ class CGOMMOptimizer(CGOptimizer):
                 continue
             force, value_unit = i.split(":")
             value, unit = value_unit.split()
-            value = float(value)
+            value = float(value)  # type: ignore[assignment]
             decomposition[force] = (value, unit)
         return decomposition
 
-    def optimize(self, molecule):
+    def optimize(self, molecule: stk.Molecule) -> stk.Molecule:
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
         self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
@@ -611,26 +667,27 @@ class CGOMMOptimizer(CGOptimizer):
 class CGOMMDynamics(CGOMMOptimizer):
     def __init__(
         self,
-        fileprefix,
-        output_dir,
-        bead_set,
-        custom_torsion_set,
-        bonds,
-        angles,
-        torsions,
-        vdw,
-        temperature,
-        num_steps,
-        time_step,
-        friction,
-        reporting_freq,
-        traj_freq,
-        random_seed=None,
-        max_iterations=None,
-        vdw_bond_cutoff=None,
-        atom_constraints=None,
-        platform=None,
-    ):
+        fileprefix: str,
+        output_dir: pathlib.Path,
+        bead_set: dict[str, CgBead],
+        custom_torsion_set: tuple | None,
+        custom_vdw_set: tuple | None,
+        bonds: bool,
+        angles: bool,
+        torsions: bool,
+        vdw: bool,
+        temperature: openmm.unit.Quantity,
+        num_steps: int,
+        time_step: openmm.unit.Quantity,
+        friction: openmm.unit.Quantity,
+        reporting_freq: float,
+        traj_freq: float,
+        random_seed: int | None = None,
+        max_iterations: int | None = None,
+        vdw_bond_cutoff: int | None = None,
+        atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
+        platform: str | None = None,
+    ) -> None:
         self._bead_set = bead_set
         self._bonds = bonds
         self._angles = angles
@@ -643,7 +700,8 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._lj_cutoff = 10
         self._fileprefix = fileprefix
         self._output_dir = output_dir
-        self._custom_torsion_set = custom_torsion_set
+        self._custom_torsion_set: tuple | None = custom_torsion_set
+        self._custom_vdw_set: tuple | None = custom_vdw_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
         self._trajectory_data = output_dir / f"{fileprefix}_traj.dat"
@@ -688,7 +746,10 @@ class CGOMMDynamics(CGOMMOptimizer):
             self._platform = None
             self._properties = None
 
-    def _add_trajectory_reporter(self, simulation):
+    def _add_trajectory_reporter(
+        self,
+        simulation: app.Simulation,
+    ) -> app.Simulation:
         simulation.reporters.append(
             app.PDBReporter(
                 file=str(self._trajectory_file),
@@ -697,7 +758,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         )
         return simulation
 
-    def _add_reporter(self, simulation):
+    def _add_reporter(self, simulation: app.Simulation) -> app.Simulation:
         simulation.reporters.append(
             app.StateDataReporter(
                 file=str(self._trajectory_data),
@@ -718,7 +779,10 @@ class CGOMMDynamics(CGOMMOptimizer):
         )
         return simulation
 
-    def _setup_simulation(self, molecule):
+    def _setup_simulation(
+        self,
+        molecule: stk.Molecule,
+    ) -> tuple[app.Simulation, openmm.System]:
         # Load force field.
         self._write_ff_file(molecule)
         forcefield = app.ForceField(self._forcefield_path)
@@ -750,7 +814,11 @@ class CGOMMDynamics(CGOMMOptimizer):
         simulation.context.setPositions(molecule.get_position_matrix() / 10)
         return simulation, system
 
-    def _run_molecular_dynamics(self, simulation, system):
+    def _run_molecular_dynamics(
+        self,
+        simulation: app.Simulation,
+        system: openmm.System,
+    ) -> app.Simulation:
         self._output_string += "simulation parameters:\n"
         self._output_string += (
             f"initalise velocities at T={self._temperature}\n"
@@ -789,7 +857,7 @@ class CGOMMDynamics(CGOMMOptimizer):
 
         return simulation
 
-    def _get_trajectory(self, molecule):
+    def _get_trajectory(self, molecule: stk.Molecule) -> OMMTrajectory:
         return OMMTrajectory(
             base_molecule=molecule,
             data_path=self._trajectory_data,
@@ -805,7 +873,7 @@ class CGOMMDynamics(CGOMMOptimizer):
             traj_freq=self._traj_freq,
         )
 
-    def run_dynamics(self, molecule):
+    def run_dynamics(self, molecule: stk.Molecule) -> OMMTrajectory:
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
         self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
@@ -827,22 +895,23 @@ class CGOMMDynamics(CGOMMOptimizer):
 class CGOMMMonteCarlo(CGOMMDynamics):
     def __init__(
         self,
-        fileprefix,
-        output_dir,
-        bead_set,
-        custom_torsion_set,
-        bonds,
-        angles,
-        torsions,
-        vdw,
-        temperature,
-        num_steps,
-        sigma,
-        random_seed=None,
-        max_iterations=None,
-        vdw_bond_cutoff=None,
-        atom_constraints=None,
-        platform=None,
+        fileprefix: str,
+        output_dir: pathlib.Path,
+        bead_set: dict[str, CgBead],
+        custom_torsion_set: tuple | None,
+        custom_vdw_set: tuple | None,
+        bonds: bool,
+        angles: bool,
+        torsions: bool,
+        vdw: bool,
+        temperature: float,
+        num_steps: int,
+        sigma: float,
+        random_seed: int | None = None,
+        max_iterations: int | None = None,
+        vdw_bond_cutoff: int | None = None,
+        atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
+        platform: str | None = None,
     ):
         self._bead_set = bead_set
         self._bonds = bonds
@@ -856,7 +925,8 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         self._lj_cutoff = 10
         self._fileprefix = fileprefix
         self._output_dir = output_dir
-        self._custom_torsion_set = custom_torsion_set
+        self._custom_torsion_set: tuple | None = custom_torsion_set
+        self._custom_vdw_set: tuple | None = custom_vdw_set
         self._forcefield_path = output_dir / f"{fileprefix}_ff.xml"
         self._output_path = output_dir / f"{fileprefix}_omc.out"
         self._trajectory_data = output_dir / f"{fileprefix}_traj.dat"
@@ -889,7 +959,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         self._sigma = sigma * openmm.unit.angstroms
 
         # Artificial.
-        self._time_step = 1.0 * openmm.unit.femtoseconds
+        self._time_step: openmm.unit.Quantity = 1.0 * openmm.unit.femtoseconds
         self._reporting_freq = 1
         self._traj_freq = 1
 
@@ -903,7 +973,10 @@ class CGOMMMonteCarlo(CGOMMDynamics):
             self._platform = None
             self._properties = None
 
-    def _setup_simulation(self, molecule):
+    def _setup_simulation(
+        self,
+        molecule: stk.Molecule,
+    ) -> tuple[app.Simulation, openmm.System]:
         # Load force field.
         self._write_ff_file(molecule)
         forcefield = app.ForceField(self._forcefield_path)
@@ -938,7 +1011,11 @@ class CGOMMMonteCarlo(CGOMMDynamics):
         simulation.context.setPositions(molecule.get_position_matrix() / 10)
         return simulation, system
 
-    def _run_monte_carlo(self, simulation, system):
+    def _run_monte_carlo(
+        self,
+        simulation: app.Simulation,
+        system: openmm.System,
+    ) -> app.Simulation:
         total_time = self._num_steps * self._time_step
         tt_in_ns = total_time.in_units_of(openmm.unit.nanoseconds)
         tf_in_ns = self._traj_freq * self._time_step
@@ -968,7 +1045,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
 
         return simulation
 
-    def _get_trajectory(self, molecule):
+    def _get_trajectory(self, molecule: stk.Molecule) -> OMMTrajectory:
         return OMMTrajectory(
             base_molecule=molecule,
             data_path=self._trajectory_data,
@@ -984,7 +1061,7 @@ class CGOMMMonteCarlo(CGOMMDynamics):
             traj_freq=self._traj_freq,
         )
 
-    def run_dynamics(self, molecule):
+    def run_dynamics(self, molecule: stk.Molecule) -> OMMTrajectory:
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
         self._output_string += f"atoms: {molecule.get_num_atoms()}\n"

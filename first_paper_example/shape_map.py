@@ -58,7 +58,6 @@ def get_shape(coords, num_vertices, name):
     shape_measures = ShapeMeasure(
         output_dir=(struct_output / f"{name}_shape"),
         shape_path=shape_path(),
-        target_atmnums=None,
         shape_string=None,
     ).calculate(molecule)
     return shape_measures

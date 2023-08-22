@@ -19,6 +19,7 @@ def test_present_torsions(molecule):
     optimizer = CGOptimizer(
         bead_set=molecule.bead_set,
         custom_torsion_set=molecule.custom_torsion_set["ton"],
+        custom_vdw_set=None,
         bonds=False,
         angles=False,
         torsions=False,

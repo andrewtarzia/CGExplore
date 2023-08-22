@@ -12,16 +12,18 @@ Author: Andrew Tarzia
 import itertools
 import logging
 import os
-import typing
+import pathlib
+from collections.abc import Iterator
 from dataclasses import replace
 
 import numpy as np
 import stk
 from openmm import OpenMMException, openmm
 
-from .beads import periodic_table
-from .ensembles import Conformer
-from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer
+from .beads import CgBead, periodic_table
+from .ensembles import Conformer, Ensemble
+from .molecule_construction.topologies import Precursor
+from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer, OMMTrajectory
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,11 +32,11 @@ logging.basicConfig(
 
 
 def optimise_ligand(
-    molecule,
-    name,
-    output_dir,
-    bead_set,
-    platform,
+    molecule: stk.Molecule,
+    name: str,
+    output_dir: pathlib.Path,
+    bead_set: dict[str, CgBead],
+    platform: str | None,
 ) -> stk.Molecule:
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
 
@@ -47,6 +49,7 @@ def optimise_ligand(
             output_dir=output_dir,
             bead_set=bead_set,
             custom_torsion_set=None,
+            custom_vdw_set=None,
             bonds=True,
             angles=True,
             torsions=False,
@@ -54,13 +57,17 @@ def optimise_ligand(
             platform=platform,
         )
         molecule = opt.optimize(molecule)
-        molecule = molecule.with_centroid((0, 0, 0))
+        molecule = molecule.with_centroid(np.array((0, 0, 0)))
         molecule.write(opt1_mol_file)
 
     return molecule
 
 
-def random_deform_molecule(molecule, generator, sigma) -> stk.Molecule:
+def random_deform_molecule(
+    molecule: stk.Molecule,
+    generator: np.random.Generator,
+    sigma: float,
+) -> stk.Molecule:
     old_pos_mat = molecule.get_position_matrix()
 
     new_pos_mat = []
@@ -73,23 +80,23 @@ def random_deform_molecule(molecule, generator, sigma) -> stk.Molecule:
 
 
 def run_mc_cycle(
-    name,
-    molecule,
-    bead_set,
-    ensemble,
-    output_dir,
-    custom_vdw_set,
-    custom_torsion_set,
-    bonds,
-    angles,
-    torsions,
-    vdw_bond_cutoff,
-    sigma,
-    num_steps,
-    seed,
-    beta,
-    suffix,
-    platform,
+    name: str,
+    molecule: stk.Molecule,
+    bead_set: dict[str, CgBead],
+    ensemble: Ensemble,
+    output_dir: pathlib.Path,
+    custom_vdw_set: tuple,
+    custom_torsion_set: tuple,
+    bonds: bool,
+    angles: bool,
+    torsions: bool,
+    vdw_bond_cutoff: int,
+    sigma: float,
+    num_steps: int,
+    seed: int,
+    beta: float,
+    suffix: str,
+    platform: str,
 ) -> stk.Molecule:
     """
     Run metropolis MC scheme.
@@ -104,10 +111,11 @@ def run_mc_cycle(
         output_dir=output_dir,
         bead_set=bead_set,
         custom_torsion_set=custom_torsion_set,
+        custom_vdw_set=custom_vdw_set,
         bonds=bonds,
         angles=angles,
         torsions=torsions,
-        vdw=custom_vdw_set,
+        vdw=False,
         max_iterations=200,
         vdw_bond_cutoff=vdw_bond_cutoff,
         platform=platform,
@@ -163,23 +171,23 @@ def run_mc_cycle(
 
 
 def run_soft_md_cycle(
-    name,
-    molecule,
-    bead_set,
-    output_dir,
-    custom_vdw_set,
-    custom_torsion_set,
-    num_steps,
-    suffix,
-    bond_ff_scale,
-    angle_ff_scale,
-    temperature,
-    time_step,
-    friction,
-    reporting_freq,
-    traj_freq,
-    platform,
-) -> stk.Molecule | None:
+    name: str,
+    molecule: stk.Molecule,
+    bead_set: dict[str, CgBead],
+    output_dir: pathlib.Path,
+    custom_vdw_set: tuple,
+    custom_torsion_set: tuple,
+    num_steps: int,
+    suffix: str,
+    bond_ff_scale: float,
+    angle_ff_scale: float,
+    temperature: openmm.unit.Quantity,
+    time_step: openmm.unit.Quantity,
+    friction: openmm.unit.Quantity,
+    reporting_freq: float,
+    traj_freq: float,
+    platform: str,
+) -> OMMTrajectory | None:
     """
     Run MD exploration with soft potentials.
 
@@ -196,10 +204,11 @@ def run_soft_md_cycle(
         output_dir=output_dir,
         bead_set=soft_bead_set,
         custom_torsion_set=custom_torsion_set,
+        custom_vdw_set=custom_vdw_set,
         bonds=True,
         angles=True,
         torsions=False,
-        vdw=custom_vdw_set,
+        vdw=False,
         vdw_bond_cutoff=2,
         temperature=temperature,
         random_seed=1000,
@@ -219,14 +228,16 @@ def run_soft_md_cycle(
 
 
 def run_md_cycle(
-    name,
-    molecule,
-    md_class,
+    name: str,
+    molecule: stk.Molecule,
+    md_class: CGOMMDynamics,
     expected_num_steps,
-    opt_class=None,
-    min_energy=None,
+    opt_class: CGOMMOptimizer | None = None,
+    min_energy: float | None = None,
 ):
-    logging.info("Change return to molecule | str, assign str to either")
+    raise NotImplementedError(
+        "Change return to molecule | str, assign str to either"
+    )
     failed = False
     exploded = False
     try:
@@ -284,18 +295,18 @@ def run_md_cycle(
 
 
 def build_building_block(
-    topology,
-    option1_lib,
-    option2_lib,
-    calculation_output,
-    ligand_output,
-    platform,
+    topology: Precursor,
+    option1_lib: dict[str, CgBead],
+    option2_lib: dict[str, CgBead],
+    calculation_output: pathlib.Path,
+    ligand_output: pathlib.Path,
+    platform: str,
 ) -> dict[str, tuple[stk.Molecule, dict]]:
     blocks = {}
     for options in itertools.product(option1_lib, option2_lib):
         option1 = option1_lib[options[0]]
         option2 = option2_lib[options[1]]
-        temp = topology(bead=option1, abead1=option2)
+        temp = topology(bead=option1, abead1=option2)  # type: ignore[operator]
 
         opt_bb = optimise_ligand(
             molecule=temp.get_building_block(),
@@ -310,15 +321,15 @@ def build_building_block(
 
 
 def run_constrained_optimisation(
-    molecule,
-    bead_set,
-    name,
-    output_dir,
-    custom_vdw_set,
-    bond_ff_scale,
-    angle_ff_scale,
-    max_iterations,
-    platform,
+    molecule: stk.ConstructedMolecule,
+    bead_set: dict[str, CgBead],
+    name: str,
+    output_dir: pathlib.Path,
+    custom_vdw_set: tuple,
+    bond_ff_scale: float,
+    angle_ff_scale: float,
+    max_iterations: int,
+    platform: str,
 ) -> stk.Molecule:
     """
     Run optimisation with constraints and softened potentials.
@@ -366,10 +377,11 @@ def run_constrained_optimisation(
         output_dir=output_dir,
         bead_set=soft_bead_set,
         custom_torsion_set=None,
+        custom_vdw_set=custom_vdw_set,
         bonds=True,
         angles=True,
         torsions=False,
-        vdw=custom_vdw_set,
+        vdw=False,
         max_iterations=max_iterations,
         vdw_bond_cutoff=2,
         atom_constraints=intra_bb_bonds,
@@ -380,20 +392,20 @@ def run_constrained_optimisation(
 
 
 def run_optimisation(
-    molecule,
-    bead_set,
-    name,
-    file_suffix,
-    output_dir,
-    custom_vdw_set,
-    custom_torsion_set,
-    bonds,
-    angles,
-    torsions,
-    vdw_bond_cutoff,
-    platform,
-    max_iterations=None,
-    ensemble=None,
+    molecule: stk.Molecule,
+    bead_set: dict[str, CgBead],
+    name: str,
+    file_suffix: str,
+    output_dir: pathlib.Path,
+    custom_vdw_set: tuple,
+    custom_torsion_set: tuple,
+    bonds: bool,
+    angles: bool,
+    torsions: bool,
+    vdw_bond_cutoff: int,
+    platform: str,
+    max_iterations: int | None = None,
+    ensemble: Ensemble | None = None,
 ) -> Conformer:
     """
     Run optimisation and save outcome to Ensemble.
@@ -407,10 +419,11 @@ def run_optimisation(
         output_dir=output_dir,
         bead_set=bead_set,
         custom_torsion_set=custom_torsion_set,
+        custom_vdw_set=custom_vdw_set,
         bonds=bonds,
         angles=angles,
         torsions=torsions,
-        vdw=custom_vdw_set,
+        vdw=False,
         max_iterations=max_iterations,
         vdw_bond_cutoff=vdw_bond_cutoff,
         platform=platform,
@@ -429,7 +442,7 @@ def run_optimisation(
     )
 
 
-def modify_bead(bead_name):
+def modify_bead(bead_name: str) -> Iterator[str]:
     for i, s in enumerate(bead_name):
         temp_bead_name = list(bead_name)
         if not s.isnumeric():
@@ -441,11 +454,11 @@ def modify_bead(bead_name):
 
 
 def yield_near_models(
-    molecule,
-    name,
-    bead_set,
-    output_dir,
-) -> typing.Iterator[stk.Molecule]:
+    molecule: stk.Molecule,
+    name: str,
+    bead_set: dict[str, CgBead],
+    output_dir: pathlib.Path | str,
+) -> Iterator[stk.Molecule]:
     (
         t_str,
         clbb_name,
@@ -475,7 +488,11 @@ def yield_near_models(
                 yield molecule.with_structure_from_file(new_fina_mol_file)
 
 
-def shift_beads(molecule, atomic_number, kick) -> stk.Molecule:
+def shift_beads(
+    molecule: stk.Molecule,
+    atomic_number: int,
+    kick: float,
+) -> stk.Molecule:
     old_pos_mat = molecule.get_position_matrix()
     centroid = molecule.get_centroid()
 
@@ -493,7 +510,10 @@ def shift_beads(molecule, atomic_number, kick) -> stk.Molecule:
     return molecule.with_position_matrix(np.array((new_pos_mat)))
 
 
-def yield_shifted_models(molecule, bead_set) -> typing.Iterator[stk.Molecule]:
+def yield_shifted_models(
+    molecule: stk.Molecule,
+    bead_set: dict[str, CgBead],
+) -> Iterator[stk.Molecule]:
     for bead in bead_set:
         atom_number = periodic_table()[bead_set[bead].element_string]
         for kick in (1, 2, 3, 4):

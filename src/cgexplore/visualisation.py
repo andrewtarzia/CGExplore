@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 import os
+import pathlib
 
 import stk
 
@@ -17,10 +18,10 @@ import stk
 class Pymol:
     def __init__(
         self,
-        output_dir,
-        file_prefix,
-        pymol_path,
-        settings=None,
+        output_dir: pathlib.Path,
+        file_prefix: str,
+        pymol_path: pathlib.Path,
+        settings: dict | None = None,
     ):
         self._output_dir = output_dir
         self._file_prefix = file_prefix
@@ -34,7 +35,7 @@ class Pymol:
                     settings[setting] = sett
             self._settings = settings
 
-    def _default_settings(self):
+    def _default_settings(self) -> dict:
         return {
             "grid_mode": 1,
             "stick_rad": 0.7,
@@ -44,8 +45,8 @@ class Pymol:
             "zoom_string": "zoom",
         }
 
-    def _get_zoom_string(self, structure_files):
-        max_max_diam = 0
+    def _get_zoom_string(self, structure_files: list) -> str:
+        max_max_diam = 0.0
         for fi in structure_files:
             max_diam = stk.BuildingBlock.init_from_file(
                 path=str(fi),
@@ -56,12 +57,12 @@ class Pymol:
 
     def _write_pymol_script(
         self,
-        structure_files,
-        structure_colours,
-        pml_file,
-        orient_atoms,
-        big_colour,
-    ):
+        structure_files: list,
+        structure_colours: list | None,
+        pml_file: pathlib.Path,
+        orient_atoms: str | None,
+        big_colour: str | None,
+    ) -> None:
         if self._settings["zoom_string"] == "custom":
             zoom_string = self._get_zoom_string(structure_files)
         else:
@@ -120,11 +121,11 @@ class Pymol:
 
     def visualise(
         self,
-        structure_files,
-        structure_colours=None,
-        orient_atoms=None,
-        big_colour=None,
-    ):
+        structure_files: list,
+        structure_colours: list | None = None,
+        orient_atoms: str | None = None,
+        big_colour: str | None = None,
+    ) -> None:
         pml_file = self._output_dir / f"{self._file_prefix}.pml"
         self._write_pymol_script(
             structure_files=structure_files,

@@ -23,7 +23,7 @@ def test_torsions(molecule):
 
     print(torsions, molecule.torsion_dict)
     if len(molecule.torsion_dict) == 0:
-        assert torsions == []
+        assert torsions == {}
         assert len(molecule.torsion_dict) == 0
 
     for key in molecule.torsion_dict:

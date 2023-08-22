@@ -307,7 +307,6 @@ def analyse_cage(
             node_shape_measures = ShapeMeasure(
                 output_dir=(output_dir / f"{name}_nshape"),
                 shape_path=shape_path(),
-                target_atmnums=None,
                 shape_string=None,
             ).calculate(n_shape_mol)
 
@@ -317,7 +316,6 @@ def analyse_cage(
             lig_shape_measures = ShapeMeasure(
                 output_dir=(output_dir / f"{name}_lshape"),
                 shape_path=shape_path(),
-                target_atmnums=None,
                 shape_string=None,
             ).calculate(l_shape_mol)
             l_shape_mol.write(shape_molfile2)
