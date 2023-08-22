@@ -13,6 +13,7 @@ import json
 import os
 
 import numpy as np
+import stk
 from scipy.spatial.distance import cdist
 
 
@@ -28,7 +29,10 @@ class PoreMeasure:
 
     """
 
-    def calculate_min_distance(self, molecule):
+    def calculate_min_distance(
+        self,
+        molecule: stk.Molecule,
+    ) -> dict[str, float]:
         pair_dists = cdist(
             molecule.get_position_matrix(),
             molecule.get_centroid().reshape(1, 3),
@@ -38,7 +42,11 @@ class PoreMeasure:
             "min_distance": min_distance,
         }
 
-    def calculate_pore(self, molecule, output_file):
+    def calculate_pore(
+        self,
+        molecule: stk.Molecule,
+        output_file: str,
+    ) -> dict:
         try:
             import pore_mapper as pm
         except ModuleNotFoundError:
@@ -81,7 +89,11 @@ class PoreMeasure:
         pore.write_xyz_file(por_file)
         return pore_data
 
-    def calculate_pw(self, molecule, output_file):
+    def calculate_pw(
+        self,
+        molecule: stk.Molecule,
+        output_file: str,
+    ) -> dict:
         try:
             import pywindow as pw
         except ModuleNotFoundError:
