@@ -376,6 +376,7 @@ def build_populations(
     calculation_output,
     node_element,
     ligand_element,
+    platform,
 ):
     num_runs = 1
     for popn in populations:
@@ -426,7 +427,7 @@ def build_populations(
                     bead_set=bead_set,
                     custom_torsion_set=custom_torsion_set,
                     custom_vdw_set=custom_vdw_set,
-                    platform=None,
+                    platform=platform,
                 )
 
                 if conformer is not None:
