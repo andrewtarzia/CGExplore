@@ -12,8 +12,10 @@ Author: Andrew Tarzia
 import json
 import logging
 import os
+import pathlib
 
 import numpy as np
+import stk
 from rdkit.Chem import AllChem as rdkit
 from scipy.spatial.distance import euclidean
 
@@ -23,24 +25,7 @@ logging.basicConfig(
 )
 
 
-def check_long_distances(molecule, name, max_distance, step):
-    max_present = 0
-    for bond in molecule.get_bonds():
-        distance = get_atom_distance(
-            molecule=molecule,
-            atom1_id=bond.get_atom1().get_id(),
-            atom2_id=bond.get_atom2().get_id(),
-        )
-        max_present = max((distance, max_present))
-
-    if max_present >= max_distance:
-        raise ValueError(
-            f"a max dist of {max_distance} found for {name}. "
-            f"Suggests bad optimisation at step {step}."
-        )
-
-
-def convert_pyramid_angle(outer_angle):
+def convert_pyramid_angle(outer_angle: float) -> float:
     """
     Some basic trig on square-pyramids
 
@@ -54,54 +39,16 @@ def convert_pyramid_angle(outer_angle):
     return round(np.degrees(opposite_angle), 2)
 
 
-def check_directory(path):
+def check_directory(path: pathlib.Path) -> None:
     if not os.path.exists(path):
         os.mkdir(path)
 
 
-def get_distances(optimizer, cage):
-    bond_set = optimizer.define_bond_potentials()
-    set_ks = tuple(bond_set.get_keys())
-    distances = {"".join(i): [] for i in set_ks}
-    for bond in cage.get_bonds():
-        a1 = bond.get_atom1()
-        a2 = bond.get_atom2()
-        a1name = a1.__class__.__name__
-        a2name = a2.__class__.__name__
-        pair = tuple(sorted([a1name, a2name]))
-        if pair in set_ks:
-            a1id = a1.get_id()
-            a2id = a2.get_id()
-            distances["".join(pair)].append(
-                get_atom_distance(cage, a1id, a2id)
-            )
-
-    return distances
-
-
-def get_angles(optimizer, cage):
-    angle_set = optimizer.define_angle_potentials()
-    set_ks = tuple(angle_set.get_keys())
-    angles = {"".join(i): [] for i in set_ks}
-    pos_mat = cage.get_position_matrix()
-
-    angle_atoms = get_all_angles(cage)
-    for angle_trip in angle_atoms:
-        triplet = tuple(sorted([i.__class__.__name__ for i in angle_trip]))
-        if triplet in set_ks:
-            a1id = angle_trip[0].get_id()
-            a2id = angle_trip[1].get_id()
-            a3id = angle_trip[2].get_id()
-            vector1 = pos_mat[a2id] - pos_mat[a1id]
-            vector2 = pos_mat[a2id] - pos_mat[a3id]
-            angles["".join(triplet)].append(
-                np.degrees(angle_between(vector1, vector2))
-            )
-
-    return angles
-
-
-def get_atom_distance(molecule, atom1_id, atom2_id):
+def get_atom_distance(
+    molecule: stk.Molecule,
+    atom1_id: int,
+    atom2_id: int,
+) -> float:
     """
     Return the distance between atom1 and atom2.
 
@@ -189,7 +136,7 @@ def read_lib(lib_file):
     return lib
 
 
-def get_all_angles(molecule):
+def get_all_angles(molecule: stk.Molecule) -> list:
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=3,
@@ -207,7 +154,7 @@ def get_all_angles(molecule):
     return angles
 
 
-def get_all_torsions(molecule):
+def get_all_torsions(molecule: stk.Molecule) -> list:
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=4,
@@ -226,7 +173,12 @@ def get_all_torsions(molecule):
     return torsions
 
 
-def get_dihedral(pt1, pt2, pt3, pt4):
+def get_dihedral(
+    pt1: np.ndarray,
+    pt2: np.ndarray,
+    pt3: np.ndarray,
+    pt4: np.ndarray,
+) -> float:
     """
     Calculate the dihedral between four points.
 
