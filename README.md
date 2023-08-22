@@ -13,40 +13,40 @@ The code can be installed following these steps:
 
 2. Create a `conda` or `mamba` environment:
  ```
- $ mamba create -n NAME python=3.11
+ mamba create -n NAME python=3.11
  ```
 
 3. Activate the environment:
  ```
-$ conda activate NAME
-```
+ conda activate NAME
+ ```
 
 5. From `CGExplore` directory, install pip environment:
 ```
-$ pip install .
+pip install .
 ```
 or for development,
 ```
-$ pip install -e .
+pip install -e .
 ```
 
 6. Install `OpenMM` [docs](https://openmm.org/):
  ```
-$ mamba install openmm
+mamba install openmm
 ```
 or
 ```
-$ conda install -c conda-forge openmm
+conda install -c conda-forge openmm
 ```
 
 5. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
 ```
-$ mamba install openmmtools
+mamba install openmmtools
 ```
 or
 ```
-$ conda config --add channels omnia --add channels conda-forge
-$ conda install openmmtools
+conda config --add channels omnia --add channels conda-forge
+conda install openmmtools
 ```
 
 The library implements some analysis that uses:
