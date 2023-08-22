@@ -373,7 +373,6 @@ class CGOMMOptimizer(CGOptimizer):
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
 
-        count = 0
         for torsion in self._yield_custom_torsions(molecule):
             force.addTorsion(
                 particle1=torsion.atom_ids[0],
@@ -384,8 +383,6 @@ class CGOMMOptimizer(CGOptimizer):
                 phase=np.radians(torsion.phi0),
                 k=torsion.torsion_k,
             )
-            count += 1
-        logging.info(f"{count} custom torsions added")
 
         return system
 
