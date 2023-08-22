@@ -20,18 +20,42 @@ logging.basicConfig(
 )
 
 
-def get_cgbead_from_string(string, bead_set):
+@dataclass
+class CgBead:
+    element_string: str
+    bead_type: str
+    bond_r: float
+    bond_k: float
+    angle_centered: float
+    angle_k: float
+    sigma: float
+    epsilon: float
+    coordination: int
+
+
+@dataclass
+class GuestBead:
+    element_string: str
+    sigma: float
+    epsilon: float
+
+
+def get_cgbead_from_string(string: str, bead_set: dict[str, CgBead]) -> CgBead:
     return bead_set[string]
 
 
-def get_cgbead_from_element(estring, bead_set):
+def get_cgbead_from_element(
+    estring: str,
+    bead_set: dict[str, CgBead],
+) -> CgBead:
     for i in bead_set:
         bead = bead_set[i]
         if bead.element_string == estring:
             return bead
+    raise ValueError(f"{estring} not found in {bead_set}")
 
 
-def periodic_table():
+def periodic_table() -> dict[str, int]:
     return {
         "H": 1,
         "He": 2,
@@ -133,35 +157,15 @@ def periodic_table():
     }
 
 
-def string_to_atom_number(string):
+def string_to_atom_number(string: str) -> int:
     return periodic_table()[string]
-
-
-@dataclass
-class CgBead:
-    element_string: str
-    bead_type: str
-    bond_r: float
-    bond_k: float
-    angle_centered: float
-    angle_k: float
-    sigma: float
-    epsilon: float
-    coordination: int
-
-
-@dataclass
-class GuestBead:
-    element_string: str
-    sigma: float
-    epsilon: float
 
 
 def guest_beads():
     return (GuestBead("Li", sigma=3.0, epsilon=1.0),)
 
 
-def bead_library_check(bead_libraries):
+def bead_library_check(bead_libraries: list[CgBead]) -> None:
     logging.info(f"there are {len(bead_libraries)} beads")
     used_names = tuple(i.bead_type for i in bead_libraries)
     counts = Counter(used_names)
@@ -191,16 +195,16 @@ def bead_library_check(bead_libraries):
 
 
 def produce_bead_library(
-    type_prefix,
-    element_string,
-    bond_rs,
-    angles,
-    bond_ks,
-    angle_ks,
-    sigma,
-    epsilon,
-    coordination,
-):
+    type_prefix: str,
+    element_string: str,
+    bond_rs: tuple[float],
+    angles: tuple[float],
+    bond_ks: tuple[float],
+    angle_ks: tuple[float],
+    sigma: float,
+    epsilon: float,
+    coordination: int,
+) -> dict[str, CgBead]:
     return {
         f"{type_prefix}{idx1}{idx2}{idx3}{idx4}": CgBead(
             element_string=element_string,
