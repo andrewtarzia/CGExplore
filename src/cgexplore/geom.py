@@ -141,25 +141,32 @@ class GeomMeasure:
                     )
                 )
 
-                if torsion_type_option1 not in torsions:
-                    if torsion_type_option2 in torsions:
-                        key_string = torsion_type_option2
-                        new_ids = tuple(
-                            torsion.atom_ids[i]
-                            for i in reversed(target_torsion.measured_atom_ids)
-                        )
-                    else:
-                        key_string = torsion_type_option1
-                        new_ids = tuple(
-                            torsion.atom_ids[i]
-                            for i in target_torsion.measured_atom_ids
-                        )
+                if torsion_type_option1 in torsions:
+                    key_string = torsion_type_option1
+                    new_ids = tuple(
+                        torsion.atom_ids[i]
+                        for i in target_torsion.measured_atom_ids
+                    )
+                elif torsion_type_option2 in torsions:
+                    key_string = torsion_type_option2
+                    new_ids = tuple(
+                        torsion.atom_ids[i]
+                        for i in reversed(target_torsion.measured_atom_ids)
+                    )
+                else:
+                    key_string = torsion_type_option1
+                    new_ids = tuple(
+                        torsion.atom_ids[i]
+                        for i in target_torsion.measured_atom_ids
+                    )
+
                 torsion_value = get_dihedral(
                     pt1=tuple(molecule.get_atomic_positions(new_ids[0]))[0],
                     pt2=tuple(molecule.get_atomic_positions(new_ids[1]))[0],
                     pt3=tuple(molecule.get_atomic_positions(new_ids[2]))[0],
                     pt4=tuple(molecule.get_atomic_positions(new_ids[3]))[0],
                 )
+
                 if absolute:
                     torsion_value = abs(torsion_value)
                 torsions[key_string].append(torsion_value)
