@@ -160,6 +160,44 @@ from .case_data import CaseData
             max_diam=2.2361,
             name=name,
         ),
+        lambda name: CaseData(
+            molecule=stk.BuildingBlock(
+                smiles="[C][C][O][C][C]",
+                position_matrix=np.array(
+                    (
+                        [1, 1, 0],
+                        [1, 0, 0],
+                        [0, 0, 0],
+                        [-1, 0, 0],
+                        [-1, 1, 0],
+                    )
+                ),
+            ),
+            geommeasure=GeomMeasure(
+                target_torsions=(
+                    TargetTorsion(
+                        search_string=(),
+                        search_estring=("C", "O", "C", "C"),
+                        measured_atom_ids=(0, 1, 2, 3),
+                        phi0=0,
+                        torsion_k=0,
+                        torsion_n=0,
+                    ),
+                )
+            ),
+            length_dict={
+                "C_C": [1.0, 1.0],
+                "C_O": [1.0, 1.0],
+            },
+            angle_dict={
+                "C_O_C": [180.0],
+                "C_C_O": [90.0, 90.0],
+            },
+            torsion_dict={"C_C_O_C": [0.0, 0.0]},
+            radius_gyration=1.0198,
+            max_diam=2.2361,
+            name=name,
+        ),
     )
 )
 def molecule(request: pytest.FixtureRequest) -> CaseData:
