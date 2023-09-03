@@ -91,17 +91,22 @@ class GeomMeasure:
                     atom1.__class__.__name__,
                 )
             )
+
             vector1 = pos_mat[atom2.get_id()] - pos_mat[atom1.get_id()]
             vector2 = pos_mat[atom2.get_id()] - pos_mat[atom3.get_id()]
-            if angle_type_option1 not in angles:
-                if angle_type_option2 in angles:
-                    angles[angle_type_option2].append(
-                        np.degrees(angle_between(vector1, vector2))
-                    )
-                else:
-                    angles[angle_type_option1].append(
-                        np.degrees(angle_between(vector1, vector2))
-                    )
+
+            if angle_type_option1 in angles:
+                angles[angle_type_option1].append(
+                    np.degrees(angle_between(vector1, vector2))
+                )
+            elif angle_type_option2 in angles:
+                angles[angle_type_option2].append(
+                    np.degrees(angle_between(vector1, vector2))
+                )
+            else:
+                angles[angle_type_option1].append(
+                    np.degrees(angle_between(vector1, vector2))
+                )
 
         return angles
 
@@ -119,7 +124,10 @@ class GeomMeasure:
                 molecule, len(target_torsion.search_estring)
             ):
                 estrings = tuple([i.__class__.__name__ for i in torsion.atoms])
-                if estrings != target_torsion.search_estring:
+                if estrings not in (
+                    target_torsion.search_estring,
+                    tuple(reversed(target_torsion.search_estring)),
+                ):
                     continue
                 torsion_type_option1 = "_".join(
                     tuple(
@@ -132,25 +140,33 @@ class GeomMeasure:
                         for i in reversed(target_torsion.measured_atom_ids)
                     )
                 )
-                if torsion_type_option1 not in torsions:
-                    if torsion_type_option2 in torsions:
-                        key_string = torsion_type_option2
-                        new_ids = tuple(
-                            torsion.atom_ids[i]
-                            for i in reversed(target_torsion.measured_atom_ids)
-                        )
-                    else:
-                        key_string = torsion_type_option1
-                        new_ids = tuple(
-                            torsion.atom_ids[i]
-                            for i in target_torsion.measured_atom_ids
-                        )
+
+                if torsion_type_option1 in torsions:
+                    key_string = torsion_type_option1
+                    new_ids = tuple(
+                        torsion.atom_ids[i]
+                        for i in target_torsion.measured_atom_ids
+                    )
+                elif torsion_type_option2 in torsions:
+                    key_string = torsion_type_option2
+                    new_ids = tuple(
+                        torsion.atom_ids[i]
+                        for i in reversed(target_torsion.measured_atom_ids)
+                    )
+                else:
+                    key_string = torsion_type_option1
+                    new_ids = tuple(
+                        torsion.atom_ids[i]
+                        for i in target_torsion.measured_atom_ids
+                    )
+
                 torsion_value = get_dihedral(
                     pt1=tuple(molecule.get_atomic_positions(new_ids[0]))[0],
                     pt2=tuple(molecule.get_atomic_positions(new_ids[1]))[0],
                     pt3=tuple(molecule.get_atomic_positions(new_ids[2]))[0],
                     pt4=tuple(molecule.get_atomic_positions(new_ids[3]))[0],
                 )
+
                 if absolute:
                     torsion_value = abs(torsion_value)
                 torsions[key_string].append(torsion_value)

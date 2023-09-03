@@ -282,6 +282,13 @@ from .case_data import CaseData
                     torsion_n=1,
                 ),
                 Torsion(
+                    atom_names=("C5", "C6", "N7", "C8"),
+                    atom_ids=(4, 5, 6, 7),
+                    phi0=30,
+                    torsion_k=10,
+                    torsion_n=1,
+                ),
+                Torsion(
                     atom_names=("C6", "N7", "C8", "C9"),
                     atom_ids=(5, 6, 7, 8),
                     phi0=30,

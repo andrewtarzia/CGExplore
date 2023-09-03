@@ -426,7 +426,10 @@ class CGOptimizer:
                 )
                 cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
                 for target_torsion in self._custom_torsion_set:
-                    if target_torsion.search_string != cgbead_string:
+                    if target_torsion.search_string not in (
+                        cgbead_string,
+                        tuple(reversed(cgbead_string)),
+                    ):
                         continue
                     yield Torsion(
                         atom_names=tuple(
