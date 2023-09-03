@@ -20,7 +20,6 @@ from bead_libraries import (
     core_2c_beads,
 )
 from cgexplore.beads import bead_library_check
-from cgexplore.generation_utilities import build_building_block
 from cgexplore.molecule_construction.topologies import (
     ThreeC1Arm,
     TwoC1Arm,
@@ -28,6 +27,7 @@ from cgexplore.molecule_construction.topologies import (
 from cgexplore.utilities import check_directory
 from env_set import cages, ligands
 from generation import (
+    build_building_block,
     build_populations,
     custom_torsion_definitions,
     custom_vdw_definitions,

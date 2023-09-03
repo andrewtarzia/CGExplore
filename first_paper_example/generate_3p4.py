@@ -18,13 +18,13 @@ from bead_libraries import (
     binder_beads,
 )
 from cgexplore.beads import bead_library_check
-from cgexplore.generation_utilities import build_building_block
 from cgexplore.molecule_construction.topologies import (
     FourC1Arm,
     ThreeC1Arm,
 )
 from env_set import calculations, ligands, structures
 from generation import (
+    build_building_block,
     build_populations,
     custom_torsion_definitions,
     custom_vdw_definitions,

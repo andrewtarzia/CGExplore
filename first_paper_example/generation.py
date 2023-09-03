@@ -13,6 +13,7 @@ import itertools
 import json
 import logging
 import os
+import pathlib
 
 import openmm
 import stk
@@ -20,8 +21,10 @@ from analysis import (
     ligand_expected_topologies,
     node_expected_topologies,
 )
+from cgexplore.beads import CgBead
 from cgexplore.ensembles import Ensemble
 from cgexplore.generation_utilities import (
+    optimise_ligand,
     run_constrained_optimisation,
     run_optimisation,
     run_soft_md_cycle,
@@ -29,6 +32,7 @@ from cgexplore.generation_utilities import (
     yield_shifted_models,
 )
 from cgexplore.geom import GeomMeasure
+from cgexplore.molecule_construction.topologies import Precursor
 from cgexplore.pore import PoreMeasure
 from cgexplore.shape import (
     ShapeMeasure,
@@ -42,6 +46,32 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+
+
+def build_building_block(
+    topology: Precursor,
+    option1_lib: dict[str, CgBead],
+    option2_lib: dict[str, CgBead],
+    calculation_output: pathlib.Path,
+    ligand_output: pathlib.Path,
+    platform: str,
+) -> dict[str, tuple[stk.Molecule, dict]]:
+    blocks = {}
+    for options in itertools.product(option1_lib, option2_lib):
+        option1 = option1_lib[options[0]]
+        option2 = option2_lib[options[1]]
+        temp = topology(bead=option1, abead1=option2)  # type: ignore[operator]
+
+        opt_bb = optimise_ligand(
+            molecule=temp.get_building_block(),
+            name=temp.get_name(),
+            output_dir=calculation_output,
+            bead_set=temp.get_bead_set(),
+            platform=platform,
+        )
+        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
+        blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
+    return blocks
 
 
 def custom_torsion_definitions(population):

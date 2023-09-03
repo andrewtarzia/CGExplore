@@ -61,7 +61,7 @@ The library implements some analysis that uses:
   * `env_set.py` sets a specific environment for file outputs
   * `plot_XX.py` produces images and figures, and performs analysis
 
-**Warning**: If you have a CUDA-capable GPU and attempt to use CUDA in the first example, you may get `NaN` errors due to the torsion restriction for angles at 180 degrees, which cause problematic forces. This will be handled in future versions of the code. And logically, I would suggest removing the torsion restriction for those angles. The `platform` can be handled through this argument in `build_building_blocks` and `build_populations`, which I currentl set to `None`, meaning `OpenMM` will decide for itself.
+**Warning**: If you have a CUDA-capable GPU and attempt to use CUDA in the first example, you may get `NaN` errors due to the torsion restriction for angles at 180 degrees, which cause problematic forces. This will be handled in future versions of the code. And logically, I would suggest removing the torsion restriction for those angles. The `platform` can be handled through this argument in `build_building_blocks` and `build_populations`, which I currently set to `None`, meaning `OpenMM` will decide for itself.
 
 # Acknowledgements
 

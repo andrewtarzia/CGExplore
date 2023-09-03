@@ -9,7 +9,7 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
+
 import logging
 import os
 import pathlib
@@ -22,7 +22,6 @@ from openmm import OpenMMException, openmm
 
 from .beads import CgBead, periodic_table
 from .ensembles import Conformer, Ensemble
-from .molecule_construction.topologies import Precursor
 from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer, OMMTrajectory
 
 logging.basicConfig(
@@ -292,32 +291,6 @@ def run_md_cycle(
         exploded = True
 
     return molecule, failed, exploded
-
-
-def build_building_block(
-    topology: Precursor,
-    option1_lib: dict[str, CgBead],
-    option2_lib: dict[str, CgBead],
-    calculation_output: pathlib.Path,
-    ligand_output: pathlib.Path,
-    platform: str,
-) -> dict[str, tuple[stk.Molecule, dict]]:
-    blocks = {}
-    for options in itertools.product(option1_lib, option2_lib):
-        option1 = option1_lib[options[0]]
-        option2 = option2_lib[options[1]]
-        temp = topology(bead=option1, abead1=option2)  # type: ignore[operator]
-
-        opt_bb = optimise_ligand(
-            molecule=temp.get_building_block(),
-            name=temp.get_name(),
-            output_dir=calculation_output,
-            bead_set=temp.get_bead_set(),
-            platform=platform,
-        )
-        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
-        blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
-    return blocks
 
 
 def run_constrained_optimisation(
