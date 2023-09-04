@@ -14,7 +14,6 @@ import logging
 import os
 import pathlib
 from collections.abc import Iterator
-from dataclasses import replace
 
 import numpy as np
 import stk
@@ -96,6 +95,7 @@ def run_mc_cycle(
     Run metropolis MC scheme.
 
     """
+    raise NotImplementedError()
 
     generator = np.random.default_rng(seed=seed)
 
@@ -167,10 +167,8 @@ def run_mc_cycle(
 def run_soft_md_cycle(
     name: str,
     molecule: stk.Molecule,
-    bead_set: dict[str, CgBead],
     output_dir: pathlib.Path,
-    custom_vdw_set: tuple,
-    custom_torsion_set: tuple,
+    force_field: Forcefield,
     num_steps: int,
     suffix: str,
     bond_ff_scale: float,
@@ -186,24 +184,35 @@ def run_soft_md_cycle(
     Run MD exploration with soft potentials.
 
     """
-    soft_bead_set = {}
-    for i in bead_set:
-        new_bead = replace(bead_set[i])
-        new_bead.bond_k = bead_set[i].bond_k / bond_ff_scale
-        new_bead.angle_k = bead_set[i].angle_k / angle_ff_scale
-        soft_bead_set[i] = new_bead
+
+    new_bond_terms = []
+    for i in force_field.get_bond_terms():
+        i.bond_k /= bond_ff_scale
+        new_bond_terms.append(i)
+
+    new_angle_terms = []
+    for i in force_field.get_angle_terms():
+        i.angle_k /= angle_ff_scale
+        new_angle_terms.append(i)
+
+    soft_force_field = Forcefield(
+        identifier=f"soft_{force_field.get_identifier()}",
+        output_dir=output_dir,
+        prefix=force_field.get_prefix(),
+        present_beads=force_field.get_present_beads(),
+        bond_terms=tuple(new_bond_terms),
+        angle_terms=tuple(new_angle_terms),
+        torsion_terms=force_field.get_torsion_terms(),
+        custom_torsion_terms=force_field.get_custom_torsion_terms(),
+        nonbonded_terms=force_field.get_nonbonded_terms(),
+        vdw_bond_cutoff=2,
+    )
+    soft_force_field.write_xml_file()
 
     md = CGOMMDynamics(
         fileprefix=f"{name}_{suffix}",
         output_dir=output_dir,
-        bead_set=soft_bead_set,
-        custom_torsion_set=custom_torsion_set,
-        custom_vdw_set=custom_vdw_set,
-        bonds=True,
-        angles=True,
-        torsions=False,
-        vdw=False,
-        vdw_bond_cutoff=2,
+        force_field=soft_force_field,
         temperature=temperature,
         random_seed=1000,
         num_steps=num_steps,
@@ -290,10 +299,9 @@ def run_md_cycle(
 
 def run_constrained_optimisation(
     molecule: stk.ConstructedMolecule,
-    bead_set: dict[str, CgBead],
     name: str,
     output_dir: pathlib.Path,
-    custom_vdw_set: tuple,
+    force_field: Forcefield,
     bond_ff_scale: float,
     angle_ff_scale: float,
     max_iterations: int,
@@ -306,13 +314,11 @@ def run_constrained_optimisation(
 
         molecule: stk.Molecule
 
-        bead_set: dict
+        force_field: ForceField
 
         name: str
 
         output_dir: str or Path
-
-        custom_vdw_set: ??
 
         bond_ff_scale: float
             Scale (divide) the bond terms in the model by this value.
@@ -325,12 +331,29 @@ def run_constrained_optimisation(
 
     """
 
-    soft_bead_set = {}
-    for i in bead_set:
-        new_bead = replace(bead_set[i])
-        new_bead.bond_k = bead_set[i].bond_k / bond_ff_scale
-        new_bead.angle_k = bead_set[i].angle_k / angle_ff_scale
-        soft_bead_set[i] = new_bead
+    new_bond_terms = []
+    for i in force_field.get_bond_terms():
+        i.bond_k /= bond_ff_scale
+        new_bond_terms.append(i)
+
+    new_angle_terms = []
+    for i in force_field.get_angle_terms():
+        i.angle_k /= angle_ff_scale
+        new_angle_terms.append(i)
+
+    soft_force_field = Forcefield(
+        identifier=f"soft_{force_field.get_identifier()}",
+        output_dir=output_dir,
+        prefix=force_field.get_prefix(),
+        present_beads=force_field.get_present_beads(),
+        bond_terms=tuple(new_bond_terms),
+        angle_terms=tuple(new_angle_terms),
+        torsion_terms=(),
+        custom_torsion_terms=(),
+        nonbonded_terms=force_field.get_nonbonded_terms(),
+        vdw_bond_cutoff=2,
+    )
+    soft_force_field.write_xml_file()
 
     intra_bb_bonds = []
     for bond_info in molecule.get_bond_infos():
@@ -343,15 +366,8 @@ def run_constrained_optimisation(
     constrained_opt = CGOMMOptimizer(
         fileprefix=f"{name}_constrained",
         output_dir=output_dir,
-        bead_set=soft_bead_set,
-        custom_torsion_set=None,
-        custom_vdw_set=custom_vdw_set,
-        bonds=True,
-        angles=True,
-        torsions=False,
-        vdw=False,
+        force_field=soft_force_field,
         max_iterations=max_iterations,
-        vdw_bond_cutoff=2,
         atom_constraints=intra_bb_bonds,
         platform=platform,
     )
@@ -361,16 +377,10 @@ def run_constrained_optimisation(
 
 def run_optimisation(
     molecule: stk.Molecule,
-    bead_set: dict[str, CgBead],
     name: str,
     file_suffix: str,
     output_dir: pathlib.Path,
-    custom_vdw_set: tuple,
-    custom_torsion_set: tuple,
-    bonds: bool,
-    angles: bool,
-    torsions: bool,
-    vdw_bond_cutoff: int,
+    force_field: Forcefield,
     platform: str,
     max_iterations: int | None = None,
     ensemble: Ensemble | None = None,
@@ -385,15 +395,8 @@ def run_optimisation(
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_{file_suffix}",
         output_dir=output_dir,
-        bead_set=bead_set,
-        custom_torsion_set=custom_torsion_set,
-        custom_vdw_set=custom_vdw_set,
-        bonds=bonds,
-        angles=angles,
-        torsions=torsions,
-        vdw=False,
+        force_field=force_field,
         max_iterations=max_iterations,
-        vdw_bond_cutoff=vdw_bond_cutoff,
         platform=platform,
     )
     molecule = opt.optimize(molecule)
@@ -427,6 +430,7 @@ def yield_near_models(
     bead_set: dict[str, CgBead],
     output_dir: pathlib.Path | str,
 ) -> Iterator[stk.Molecule]:
+    raise NotImplementedError("removed in latest versions")
     (
         t_str,
         clbb_name,
@@ -480,9 +484,9 @@ def shift_beads(
 
 def yield_shifted_models(
     molecule: stk.Molecule,
-    bead_set: dict[str, CgBead],
+    force_field: Forcefield,
 ) -> Iterator[stk.Molecule]:
-    for bead in bead_set:
-        atom_number = periodic_table()[bead_set[bead].element_string]
+    for bead in force_field.get_present_beads():
+        atom_number = periodic_table()[bead.element_string]
         for kick in (1, 2, 3, 4):
             yield shift_beads(molecule, atom_number, kick)
