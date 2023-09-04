@@ -156,7 +156,7 @@ class ThreeC1Arm(Precursor):
             position_matrix=np.array(
                 [
                     [-2, 0, 0],
-                    [0, 0, 0],
+                    [0, 0, 0.5],
                     [-1.2, 1, 0],
                     [-1.2, -1, 0],
                 ]
