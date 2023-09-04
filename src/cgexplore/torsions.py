@@ -12,7 +12,7 @@ Author: Andrew Tarzia
 import logging
 import typing
 from dataclasses import dataclass
-
+import itertools
 import stk
 from rdkit.Chem import AllChem as rdkit
 
@@ -39,6 +39,29 @@ class TargetTorsion:
     phi0: float
     torsion_k: float
     torsion_n: float
+
+
+@dataclass
+class TargetTorsionRange:
+    search_string: tuple[str, ...]
+    search_estring: tuple[str, ...]
+    measured_atom_ids: tuple[int, int, int, int]
+    phi0s: tuple[float]
+    torsion_ks: tuple[float]
+    torsion_ns: tuple[float]
+
+    def yield_torsions(self):
+        for phi0, k, n in itertools.product(
+            self.phi0s, self.torsion_ks, self.torsion_ns
+        ):
+            yield TargetTorsion(
+                search_string=self.search_string,
+                search_estring=self.search_estring,
+                measured_atom_ids=self.measured_atom_ids,
+                phi0=phi0,
+                torsion_k=k,
+                torsion_n=n,
+            )
 
 
 @dataclass
