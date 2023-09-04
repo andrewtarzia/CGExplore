@@ -9,12 +9,12 @@ Author: Andrew Tarzia
 
 """
 
-import logging
 import itertools
+import logging
 import pathlib
-import stk
 import typing
 
+import stk
 from openmm import openmm
 
 from .beads import CgBead, get_cgbead_from_element

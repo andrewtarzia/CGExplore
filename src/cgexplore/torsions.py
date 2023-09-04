@@ -9,10 +9,11 @@ Author: Andrew Tarzia
 
 """
 
+import itertools
 import logging
 import typing
 from dataclasses import dataclass
-import itertools
+
 import stk
 from rdkit.Chem import AllChem as rdkit
 

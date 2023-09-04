@@ -9,10 +9,9 @@ Author: Andrew Tarzia
 
 """
 
-import logging
 import itertools
+import logging
 from dataclasses import dataclass
-
 
 logging.basicConfig(
     level=logging.INFO,
