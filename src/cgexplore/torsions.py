@@ -38,7 +38,7 @@ class TargetTorsion:
     measured_atom_ids: tuple[int, int, int, int]
     phi0: float
     torsion_k: float
-    torsion_n: float
+    torsion_n: int
 
 
 @dataclass
@@ -48,7 +48,7 @@ class TargetTorsionRange:
     measured_atom_ids: tuple[int, int, int, int]
     phi0s: tuple[float]
     torsion_ks: tuple[float]
-    torsion_ns: tuple[float]
+    torsion_ns: tuple[int]
 
     def yield_torsions(self):
         for phi0, k, n in itertools.product(
