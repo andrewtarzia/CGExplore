@@ -22,6 +22,7 @@ from openmm import OpenMMException, openmm
 
 from .beads import CgBead, periodic_table
 from .ensembles import Conformer, Ensemble
+from .forcefield import Forcefield
 from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer, OMMTrajectory
 
 logging.basicConfig(
@@ -34,7 +35,7 @@ def optimise_ligand(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path,
-    bead_set: dict[str, CgBead],
+    force_field: Forcefield,
     platform: str | None,
 ) -> stk.Molecule:
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
@@ -46,13 +47,7 @@ def optimise_ligand(
         opt = CGOMMOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            bead_set=bead_set,
-            custom_torsion_set=None,
-            custom_vdw_set=None,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw=False,
+            force_field=force_field,
             platform=platform,
         )
         molecule = opt.optimize(molecule)
