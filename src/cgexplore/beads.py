@@ -9,7 +9,6 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
 import logging
 from collections import Counter
 from dataclasses import dataclass
@@ -24,20 +23,7 @@ logging.basicConfig(
 class CgBead:
     element_string: str
     bead_type: str
-    bond_r: float
-    bond_k: float
-    angle_centered: float
-    angle_k: float
-    sigma: float
-    epsilon: float
     coordination: int
-
-
-@dataclass
-class GuestBead:
-    element_string: str
-    sigma: float
-    epsilon: float
 
 
 def get_cgbead_from_string(string: str, bead_set: dict[str, CgBead]) -> CgBead:
@@ -161,69 +147,16 @@ def string_to_atom_number(string: str) -> int:
     return periodic_table()[string]
 
 
-def guest_beads():
-    return (GuestBead("Li", sigma=3.0, epsilon=1.0),)
-
-
-def bead_library_check(bead_libraries: list[CgBead]) -> None:
-    logging.info(f"there are {len(bead_libraries)} beads")
-    used_names = tuple(i.bead_type for i in bead_libraries)
+def bead_library_check(bead_library: tuple[CgBead]) -> None:
+    logging.info(f"there are {len(bead_library)} beads")
+    used_names = tuple(i.bead_type for i in bead_library)
     counts = Counter(used_names)
     if any((i > 1 for i in counts.values())):
         raise ValueError(f"you used a bead twice in your library: {counts}")
 
-    used_strings = tuple(i.element_string for i in bead_libraries)
+    used_strings = tuple(i.element_string for i in bead_library)
     for string in used_strings:
         if string not in periodic_table():
             raise ValueError(
                 f"you used a bead not available in PoreMapper: {string}"
             )
-
-    bl_string = "bead library:\n"
-    bl_string += (
-        "element name bond_r[A] bond_k[kJ/mol/nm^2] angle[deg.] "
-        "angle_k[kJ/mol/radian2] sigma[A] epsilon[kJ/mol] coord.\n"
-    )
-    for bead in bead_libraries:
-        bl_string += (
-            f"{bead.element_string} {bead.bead_type} "
-            f"{bead.bond_r} {bead.bond_k} "
-            f"{bead.angle_centered} {bead.angle_k} "
-            f"{bead.sigma} {bead.epsilon} {bead.coordination}\n"
-        )
-    logging.info(bl_string)
-
-
-def produce_bead_library(
-    type_prefix: str,
-    element_string: str,
-    bond_rs: tuple[float],
-    angles: tuple[float],
-    bond_ks: tuple[float],
-    angle_ks: tuple[float],
-    sigma: float,
-    epsilon: float,
-    coordination: int,
-) -> dict[str, CgBead]:
-    return {
-        f"{type_prefix}{idx1}{idx2}{idx3}{idx4}": CgBead(
-            element_string=element_string,
-            bead_type=f"{type_prefix}{idx1}{idx2}{idx3}{idx4}",
-            bond_r=bond_r,
-            angle_centered=angle,
-            bond_k=bond_k,
-            angle_k=angle_k,
-            sigma=sigma,
-            epsilon=epsilon,
-            coordination=coordination,
-        )
-        for (idx1, bond_r), (idx2, angle), (idx3, bond_k), (
-            idx4,
-            angle_k,
-        ) in itertools.product(
-            enumerate(bond_rs),
-            enumerate(angles),
-            enumerate(bond_ks),
-            enumerate(angle_ks),
-        )
-    }
