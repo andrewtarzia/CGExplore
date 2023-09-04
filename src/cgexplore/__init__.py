@@ -7,3 +7,8 @@ from .shape import *  # noqa
 from .utilities import *  # noqa
 from .ensembles import *  # noqa
 from .visualisation import *  # noqa
+from .forcefield import *  # noqa
+from .bonds import *  # noqa
+from .angles import *  # noqa
+from .torsions import *  # noqa
+from .nonbonded import *  # noqa
