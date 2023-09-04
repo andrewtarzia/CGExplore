@@ -12,10 +12,13 @@ Author: Andrew Tarzia
 import logging
 import itertools
 import pathlib
+import stk
+import typing
 
 from openmm import openmm
 
-from .beads import CgBead
+from .beads import CgBead, get_cgbead_from_element
+from .torsions import Torsion, find_torsions
 
 logging.basicConfig(
     level=logging.INFO,
@@ -75,6 +78,13 @@ class ForceFieldLibrary:
                     i
                     for i in parameter_set
                     if "Torsion" in i.__class__.__name__
+                    if len(i.search_string) == 4
+                ),
+                custom_torsion_terms=tuple(
+                    i
+                    for i in parameter_set
+                    if "Torsion" in i.__class__.__name__
+                    if len(i.search_string) != 4
                 ),
                 nonbonded_terms=tuple(
                     i
@@ -109,6 +119,7 @@ class Forcefield:
         bond_terms: tuple,
         angle_terms: tuple,
         torsion_terms: tuple,
+        custom_torsion_terms: tuple,
         nonbonded_terms: tuple,
         vdw_bond_cutoff: int,
     ) -> None:
@@ -119,6 +130,7 @@ class Forcefield:
         self._bond_terms = bond_terms
         self._angle_terms = angle_terms
         self._torsion_terms = torsion_terms
+        self._custom_torsion_terms = custom_torsion_terms
         self._nonbonded_terms = nonbonded_terms
         self._vdw_bond_cutoff = vdw_bond_cutoff
 
@@ -140,8 +152,29 @@ class Forcefield:
     def get_bead_set(self) -> dict[str, CgBead]:
         return {i.bead_type: i for i in self._present_beads}
 
+    def get_bond_terms(self) -> tuple:
+        return self._bond_terms
+
+    def get_angle_terms(self) -> tuple:
+        return self._angle_terms
+
+    def get_torsion_terms(self) -> tuple:
+        return self._torsion_terms
+
+    def get_custom_torsion_terms(self) -> tuple:
+        return self._custom_torsion_terms
+
+    def get_nonbonded_terms(self) -> tuple:
+        return self._nonbonded_terms
+
     def get_identifier(self) -> str:
         return self._identifier
+
+    def get_prefix(self) -> str:
+        return self._prefix
+
+    def get_present_beads(self) -> tuple:
+        return self._present_beads
 
     def get_path(self) -> pathlib.Path:
         return self._output_dir / f"{self._prefix}_ff_{self._identifier}.xml"
@@ -227,6 +260,47 @@ class Forcefield:
 
         return nb_str
 
+    def yield_custom_torsions(
+        self,
+        molecule: stk.Molecule,
+    ) -> typing.Iterator[Torsion]:
+        # Iterate over the different path lengths, and find all torsions
+        # for that lengths.
+        path_lengths = set(
+            len(i.search_string) for i in self._custom_torsion_terms
+        )
+        for pl in path_lengths:
+            for found_torsion in find_torsions(molecule, pl):
+                atom_estrings = list(
+                    i.__class__.__name__ for i in found_torsion.atoms
+                )
+                cgbeads = list(
+                    get_cgbead_from_element(i, self.get_bead_set())
+                    for i in atom_estrings
+                )
+                cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
+                for target_torsion in self._custom_torsion_terms:
+                    if target_torsion.search_string not in (
+                        cgbead_string,
+                        tuple(reversed(cgbead_string)),
+                    ):
+                        continue
+
+                    yield Torsion(
+                        atom_names=tuple(
+                            f"{found_torsion.atoms[i].__class__.__name__}"
+                            f"{found_torsion.atoms[i].get_id()+1}"
+                            for i in target_torsion.measured_atom_ids
+                        ),
+                        atom_ids=tuple(
+                            found_torsion.atoms[i].get_id()
+                            for i in target_torsion.measured_atom_ids
+                        ),
+                        phi0=target_torsion.phi0,
+                        torsion_n=target_torsion.torsion_n,
+                        torsion_k=target_torsion.torsion_k,
+                    )
+
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}(\n"
@@ -234,6 +308,7 @@ class Forcefield:
             f"  bond_terms={len(self._bond_terms)}, \n"
             f"  angle_terms={len(self._angle_terms)}, \n"
             f"  torsion_terms={len(self._torsion_terms)}, \n"
+            f"  custom_torsion_terms={len(self._custom_torsion_terms)}, \n"
             f"  nonbonded_terms={len(self._nonbonded_terms)}"
             "\n)"
         )
