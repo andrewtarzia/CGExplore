@@ -427,37 +427,20 @@ def modify_bead(bead_name: str) -> Iterator[str]:
 def yield_near_models(
     molecule: stk.Molecule,
     name: str,
-    bead_set: dict[str, CgBead],
     output_dir: pathlib.Path | str,
 ) -> Iterator[stk.Molecule]:
-    raise NotImplementedError("removed in latest versions")
-    (
-        t_str,
-        clbb_name,
-        c2bb_name,
-        torsions,
-        vdws,
-        run_number,
-    ) = name.split("_")
+    ff_name = [i for i in name.split("_") if "f" in i][-1]
+    ff_num = int(ff_name[1:])
+    ff_options = (ff_num - 2, ff_num - 1, ff_num + 1, ff_num + 2)
 
-    for bead_name in bead_set:
-        for modification in modify_bead(bead_name):
-            if bead_name not in clbb_name:
-                new_bbl_str = clbb_name
-                new_bb2_str = c2bb_name.replace(bead_name, modification)
-            elif bead_name not in c2bb_name:
-                new_bbl_str = clbb_name.replace(bead_name, modification)
-                new_bb2_str = c2bb_name
-            new_name = (
-                f"{t_str}_{new_bbl_str}_{new_bb2_str}_"
-                f"{torsions}_{vdws}_{run_number}"
-            )
-            new_fina_mol_file = os.path.join(
-                output_dir, f"{new_name}_final.mol"
-            )
-            if os.path.exists(new_fina_mol_file):
-                logging.info(f"found neigh: {new_fina_mol_file}")
-                yield molecule.with_structure_from_file(new_fina_mol_file)
+    for ff_option in ff_options:
+        if ff_option < 0:
+            continue
+        new_name = name.replace(ff_name, f"f{ff_option}")
+        new_fina_mol_file = os.path.join(output_dir, f"{new_name}_final.mol")
+        if os.path.exists(new_fina_mol_file):
+            logging.info(f"found neigh: {new_fina_mol_file}")
+            yield molecule.with_structure_from_file(new_fina_mol_file)
 
 
 def shift_beads(
