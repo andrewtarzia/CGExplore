@@ -17,16 +17,12 @@ def test_present_torsions(molecule):
     """
 
     optimizer = CGOptimizer(
-        bead_set=molecule.bead_set,
-        custom_torsion_set=molecule.custom_torsion_set["ton"],
-        custom_vdw_set=None,
-        bonds=False,
-        angles=False,
-        torsions=False,
-        vdw=False,
+        force_field=molecule.force_field,
     )
 
-    found_torsions = list(optimizer._yield_custom_torsions(molecule.molecule))
+    found_torsions = list(
+        optimizer._force_field.yield_custom_torsions(molecule.molecule)
+    )
     print(found_torsions)
     assert len(found_torsions) == len(molecule.present_torsions)
     for torsion, test in zip(found_torsions, molecule.present_torsions):

@@ -3,6 +3,7 @@ import pytest
 import stk
 from cgexplore.beads import CgBead
 from cgexplore.torsions import TargetTorsion, Torsion
+from cgexplore.forcefield import Forcefield
 
 from .case_data import CaseData
 
@@ -22,8 +23,31 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            custom_torsion_set={
-                "ton": (
+            force_field=Forcefield(
+                identifier="testff",
+                output_dir=".",
+                prefix="testffprefix",
+                present_beads=(
+                    CgBead(
+                        element_string="Ag",
+                        bead_type="c",
+                        coordination=2,
+                    ),
+                    CgBead(
+                        element_string="Ba",
+                        bead_type="a",
+                        coordination=2,
+                    ),
+                    CgBead(
+                        element_string="Pb",
+                        bead_type="b",
+                        coordination=2,
+                    ),
+                ),
+                bond_terms=(),
+                angle_terms=(),
+                torsion_terms=(),
+                custom_torsion_terms=(
                     TargetTorsion(
                         search_string=("b", "a", "c", "a", "b"),
                         search_estring=(),
@@ -32,8 +56,10 @@ from .case_data import CaseData
                         torsion_k=50,
                         torsion_n=1.0,
                     ),
-                )
-            },
+                ),
+                nonbonded_terms=(),
+                vdw_bond_cutoff=0,
+            ),
             # custom_torsion_set={("b", "a", "c", "a", "b"): (180, 50)},
             present_torsions=(
                 Torsion(
@@ -45,41 +71,6 @@ from .case_data import CaseData
                 ),
                 # ("Pb1", "Ba2", "Ba4", "Pb5", 0, 1, 3, 4, 50, 1, 180),
             ),
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-                "a": CgBead(
-                    element_string="Ba",
-                    bead_type="a0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-                "b": CgBead(
-                    element_string="Pb",
-                    bead_type="b0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-            },
             name=name,
         ),
         lambda name: CaseData(
@@ -106,8 +97,31 @@ from .case_data import CaseData
             #     ("Pb1", "Ba2", "Ba4", "Pb5", 0, 1, 3, 4, 50, 1, 180),
             #     ("Pb6", "Ba7", "Ba9", "Pb10", 5, 6, 8, 9, 50, 1, 180),
             # ),
-            custom_torsion_set={
-                "ton": (
+            force_field=Forcefield(
+                identifier="testff",
+                output_dir=".",
+                prefix="testffprefix",
+                present_beads=(
+                    CgBead(
+                        element_string="Ag",
+                        bead_type="c",
+                        coordination=2,
+                    ),
+                    CgBead(
+                        element_string="Ba",
+                        bead_type="a",
+                        coordination=2,
+                    ),
+                    CgBead(
+                        element_string="Pb",
+                        bead_type="b",
+                        coordination=2,
+                    ),
+                ),
+                bond_terms=(),
+                angle_terms=(),
+                torsion_terms=(),
+                custom_torsion_terms=(
                     TargetTorsion(
                         search_string=("b", "a", "c", "a", "b"),
                         search_estring=(),
@@ -116,8 +130,10 @@ from .case_data import CaseData
                         torsion_k=50,
                         torsion_n=1.0,
                     ),
-                )
-            },
+                ),
+                nonbonded_terms=(),
+                vdw_bond_cutoff=0,
+            ),
             present_torsions=(
                 Torsion(
                     atom_names=("Pb1", "Ba2", "Ba4", "Pb5"),
@@ -134,41 +150,6 @@ from .case_data import CaseData
                     torsion_n=1,
                 ),
             ),
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-                "a": CgBead(
-                    element_string="Ba",
-                    bead_type="a0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-                "b": CgBead(
-                    element_string="Pb",
-                    bead_type="b0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-            },
             name=name,
         ),
         lambda name: CaseData(
@@ -187,8 +168,31 @@ from .case_data import CaseData
             # custom_torsion_definition=(180, 50),
             # custom_torsion_set={("b", "a", "d", "a", "b"): (180, 50)},
             # present_torsions=(),
-            custom_torsion_set={
-                "ton": (
+            force_field=Forcefield(
+                identifier="testff",
+                output_dir=".",
+                prefix="testffprefix",
+                present_beads=(
+                    CgBead(
+                        element_string="Ag",
+                        bead_type="d",
+                        coordination=2,
+                    ),
+                    CgBead(
+                        element_string="Ba",
+                        bead_type="a",
+                        coordination=2,
+                    ),
+                    CgBead(
+                        element_string="Pb",
+                        bead_type="b",
+                        coordination=2,
+                    ),
+                ),
+                bond_terms=(),
+                angle_terms=(),
+                torsion_terms=(),
+                custom_torsion_terms=(
                     TargetTorsion(
                         search_string=("b", "a", "c", "a", "b"),
                         search_estring=(),
@@ -197,45 +201,12 @@ from .case_data import CaseData
                         torsion_k=50,
                         torsion_n=1.0,
                     ),
-                )
-            },
+                ),
+                nonbonded_terms=(),
+                vdw_bond_cutoff=0,
+            ),
             # custom_torsion_set={("b", "a", "c", "a", "b"): (180, 50)},
             present_torsions=(),
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="d0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-                "a": CgBead(
-                    element_string="Ba",
-                    bead_type="a0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-                "b": CgBead(
-                    element_string="Pb",
-                    bead_type="b0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-            },
             name=name,
         ),
         lambda name: CaseData(
@@ -261,8 +232,26 @@ from .case_data import CaseData
             #     ("C1", "N2", "C3", "C4", 0, 1, 2, 3, 20, 1, 30),
             #     ("C5", "N6", "C7", "C8", 4, 5, 6, 7, 20, 1, 30),
             # ),
-            custom_torsion_set={
-                "ton": (
+            force_field=Forcefield(
+                identifier="testff",
+                output_dir=".",
+                prefix="testffprefix",
+                present_beads=(
+                    CgBead(
+                        element_string="C",
+                        bead_type="c",
+                        coordination=2,
+                    ),
+                    CgBead(
+                        element_string="N",
+                        bead_type="n",
+                        coordination=2,
+                    ),
+                ),
+                bond_terms=(),
+                angle_terms=(),
+                torsion_terms=(),
+                custom_torsion_terms=(
                     TargetTorsion(
                         search_string=("c", "n", "c", "c"),
                         search_estring=(),
@@ -271,8 +260,10 @@ from .case_data import CaseData
                         torsion_k=10,
                         torsion_n=1.0,
                     ),
-                )
-            },
+                ),
+                nonbonded_terms=(),
+                vdw_bond_cutoff=0,
+            ),
             present_torsions=(
                 Torsion(
                     atom_names=("C1", "N2", "C3", "C4"),
@@ -296,30 +287,6 @@ from .case_data import CaseData
                     torsion_n=1,
                 ),
             ),
-            bead_set={
-                "c": CgBead(
-                    element_string="C",
-                    bead_type="c0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-                "n": CgBead(
-                    element_string="N",
-                    bead_type="n0000",
-                    bond_r=1,
-                    bond_k=1,
-                    angle_centered=1,
-                    angle_k=1,
-                    sigma=1,
-                    epsilon=1,
-                    coordination=2,
-                ),
-            },
             name=name,
         ),
     )
