@@ -18,7 +18,10 @@ import stk
 from openmm import openmm
 
 from .beads import CgBead, get_cgbead_from_element
-from .torsions import Torsion, find_torsions
+from .torsions import Torsion, find_torsions, TargetTorsion
+from .bonds import TargetBond
+from .angles import TargetAngle
+from .nonbonded import TargetNonbonded
 
 logging.basicConfig(
     level=logging.INFO,
@@ -115,12 +118,12 @@ class Forcefield:
         identifier: str,
         output_dir: pathlib.Path,
         prefix: str,
-        present_beads: tuple,
-        bond_terms: tuple,
-        angle_terms: tuple,
-        torsion_terms: tuple,
-        custom_torsion_terms: tuple,
-        nonbonded_terms: tuple,
+        present_beads: tuple[CgBead],
+        bond_terms: tuple[TargetBond],
+        angle_terms: tuple[TargetAngle],
+        torsion_terms: tuple[TargetTorsion],
+        custom_torsion_terms: tuple[TargetTorsion],
+        nonbonded_terms: tuple[TargetNonbonded],
         vdw_bond_cutoff: int,
     ) -> None:
         self._identifier = identifier
