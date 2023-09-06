@@ -23,7 +23,7 @@ from openmm import app, openmm
 
 from .beads import get_cgbead_from_element
 from .ensembles import Timestep
-from .forcefield import Forcefield
+from .forcefield import Forcefield, ForcefieldUnitError
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
 
@@ -249,21 +249,27 @@ class CGOMMOptimizer(CGOptimizer):
         force = openmm.PeriodicTorsionForce()
         system.addForce(force)
         for torsion in self._forcefield.yield_custom_torsions(molecule):
-            force.addTorsion(
-                particle1=torsion.atom_ids[0],
-                particle2=torsion.atom_ids[1],
-                particle3=torsion.atom_ids[2],
-                particle4=torsion.atom_ids[3],
-                periodicity=torsion.torsion_n,
-                phase=torsion.phi0.value_in_unit(openmm.unit.radian),
-                k=torsion.torsion_k.value_in_unit(
-                    openmm.unit.kilojoule / openmm.unit.mole
-                ),
-            )
+            try:
+                force.addTorsion(
+                    particle1=torsion.atom_ids[0],
+                    particle2=torsion.atom_ids[1],
+                    particle3=torsion.atom_ids[2],
+                    particle4=torsion.atom_ids[3],
+                    periodicity=torsion.torsion_n,
+                    phase=torsion.phi0.value_in_unit(openmm.unit.radian),
+                    k=torsion.torsion_k.value_in_unit(
+                        openmm.unit.kilojoule / openmm.unit.mole
+                    ),
+                )
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{torsion} in torsions does not have units for "
+                    "parameters"
+                )
 
         return system
 
-    def _write_xml_file(self, molecule: stk.Molecule) -> None:
+    def _get_xml_string(self, molecule: stk.Molecule) -> str:
         ff_str = "<ForceField>\n\n"
 
         at_str = " <AtomTypes>\n"
@@ -303,6 +309,10 @@ class CGOMMOptimizer(CGOptimizer):
         ff_str += re_str
 
         ff_str += "</ForceField>\n"
+        return ff_str
+
+    def _write_xml_file(self, molecule: stk.Molecule) -> None:
+        ff_str = self._get_xml_string(molecule)
 
         with open(self._topology_path, "w") as f:
             f.write(ff_str)
@@ -512,7 +522,6 @@ class CGOMMDynamics(CGOMMOptimizer):
         traj_freq: float,
         random_seed: int | None = None,
         max_iterations: int | None = None,
-        vdw_bond_cutoff: int | None = None,
         atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
         platform: str | None = None,
     ) -> None:

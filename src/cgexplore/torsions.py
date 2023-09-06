@@ -13,7 +13,7 @@ import itertools
 import logging
 import typing
 from dataclasses import dataclass
-
+from openmm import openmm
 import stk
 from rdkit.Chem import AllChem as rdkit
 
@@ -27,9 +27,9 @@ logging.basicConfig(
 class Torsion:
     atom_names: tuple[str, ...]
     atom_ids: tuple[int, ...]
-    phi0: float
-    torsion_k: float
-    torsion_n: float
+    phi0: openmm.unit.Quantity
+    torsion_k: openmm.unit.Quantity
+    torsion_n: int
 
 
 @dataclass
@@ -37,8 +37,8 @@ class TargetTorsion:
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
     measured_atom_ids: tuple[int, int, int, int]
-    phi0: float
-    torsion_k: float
+    phi0: openmm.unit.Quantity
+    torsion_k: openmm.unit.Quantity
     torsion_n: int
 
 
@@ -47,8 +47,8 @@ class TargetTorsionRange:
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
     measured_atom_ids: tuple[int, int, int, int]
-    phi0s: tuple[float]
-    torsion_ks: tuple[float]
+    phi0s: tuple[openmm.unit.Quantity]
+    torsion_ks: tuple[openmm.unit.Quantity]
     torsion_ns: tuple[int]
 
     def yield_torsions(self):

@@ -11,6 +11,7 @@ Author: Andrew Tarzia
 
 import itertools
 import logging
+from openmm import openmm
 from dataclasses import dataclass
 
 logging.basicConfig(
@@ -25,8 +26,8 @@ class TargetBond:
     class2: str
     eclass1: str
     eclass2: str
-    bond_r: float
-    bond_k: float
+    bond_r: openmm.unit.Quantity
+    bond_k: openmm.unit.Quantity
 
 
 @dataclass
@@ -35,8 +36,8 @@ class TargetBondRange:
     class2: str
     eclass1: str
     eclass2: str
-    bond_rs: tuple[float]
-    bond_ks: tuple[float]
+    bond_rs: tuple[openmm.unit.Quantity]
+    bond_ks: tuple[openmm.unit.Quantity]
 
     def yield_bonds(self):
         for r, k in itertools.product(self.bond_rs, self.bond_ks):

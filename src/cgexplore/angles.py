@@ -12,6 +12,7 @@ Author: Andrew Tarzia
 import itertools
 import logging
 from dataclasses import dataclass
+from openmm import openmm
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,8 +28,8 @@ class TargetAngle:
     eclass1: str
     eclass2: str
     eclass3: str
-    angle: float
-    angle_k: float
+    angle: openmm.unit.Quantity
+    angle_k: openmm.unit.Quantity
 
 
 @dataclass
@@ -39,8 +40,8 @@ class TargetAngleRange:
     eclass1: str
     eclass2: str
     eclass3: str
-    angles: tuple[float]
-    angle_ks: tuple[float]
+    angles: tuple[openmm.unit.Quantity]
+    angle_ks: tuple[openmm.unit.Quantity]
 
     def yield_angles(self):
         for angle, k in itertools.product(self.angles, self.angle_ks):

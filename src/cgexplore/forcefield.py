@@ -29,8 +29,16 @@ logging.basicConfig(
 )
 
 
+class ForcefieldUnitError(Exception):
+    pass
+
+
 class ForceFieldLibrary:
-    def __init__(self, bead_library: tuple, vdw_bond_cutoff: int) -> None:
+    def __init__(
+        self,
+        bead_library: tuple[CgBead],
+        vdw_bond_cutoff: int,
+    ) -> None:
         self._bead_library = bead_library
         self._vdw_bond_cutoff = vdw_bond_cutoff
         self._bond_ranges: tuple = ()
@@ -100,10 +108,10 @@ class ForceFieldLibrary:
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}(\n"
-            f"  bead_library={self._bead_library}, \n"
-            f"  bond_ranges={self._bond_ranges}, \n"
-            f"  angle_ranges={self._angle_ranges}, \n"
-            f"  torsion_ranges={self._torsion_ranges}, \n"
+            f"  bead_library={self._bead_library},\n"
+            f"  bond_ranges={self._bond_ranges},\n"
+            f"  angle_ranges={self._angle_ranges},\n"
+            f"  torsion_ranges={self._torsion_ranges},\n"
             f"  nonbonded_ranges={self._nonbonded_ranges}"
             "\n)"
         )
@@ -137,14 +145,17 @@ class Forcefield:
         self._nonbonded_terms = nonbonded_terms
         self._vdw_bond_cutoff = vdw_bond_cutoff
 
-    def write_xml_file(self) -> None:
+    def get_xml_string(self) -> str:
         ff_str = "<ForceField>\n\n"
-
         ff_str += self.get_bond_string()
         ff_str += self.get_angle_string()
         ff_str += self.get_torsion_string()
         ff_str += self.get_nonbonded_string()
         ff_str += "</ForceField>\n"
+        return ff_str
+
+    def write_xml_file(self) -> None:
+        ff_str = self.get_xml_string()
 
         with open(
             self._output_dir / f"{self._prefix}_ff_{self._identifier}.xml",
@@ -185,12 +196,22 @@ class Forcefield:
     def get_bond_string(self) -> str:
         b_str = " <HarmonicBondForce>\n"
         for term in self._bond_terms:
-            length = term.bond_r.value_in_unit(openmm.unit.nanometer)
-            kvalue = term.bond_k.value_in_unit(
-                openmm.unit.kilojoule
-                / openmm.unit.mole
-                / openmm.unit.nanometer**2
-            )
+            try:
+                length = term.bond_r.value_in_unit(openmm.unit.nanometer)
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in bonds does not have units for bond_r"
+                )
+            try:
+                kvalue = term.bond_k.value_in_unit(
+                    openmm.unit.kilojoule
+                    / openmm.unit.mole
+                    / openmm.unit.nanometer**2
+                )
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in bonds does not have units for bond_k"
+                )
             b_str += (
                 f'  <Bond class1="{term.class1}" class2="{term.class2}"'
                 f' length="{length}"'
@@ -203,12 +224,22 @@ class Forcefield:
     def get_angle_string(self) -> str:
         b_str = " <HarmonicAngleForce>\n"
         for term in self._angle_terms:
-            angle = term.angle.value_in_unit(openmm.unit.radians)
-            kvalue = term.angle_k.value_in_unit(
-                openmm.unit.kilojoule
-                / openmm.unit.mole
-                / openmm.unit.radian**2
-            )
+            try:
+                angle = term.angle.value_in_unit(openmm.unit.radians)
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in angles does not have units for angle"
+                )
+            try:
+                kvalue = term.angle_k.value_in_unit(
+                    openmm.unit.kilojoule
+                    / openmm.unit.mole
+                    / openmm.unit.radian**2
+                )
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in angles does not have units for angle_k"
+                )
             b_str += (
                 f'  <Angle class1="{term.class1}" class2="{term.class2}"'
                 f' class3="{term.class3}"'
@@ -227,10 +258,20 @@ class Forcefield:
                 if i in term.measured_atom_ids
             )
             periodicity1 = term.torsion_n
-            phase1 = term.phi0.value_in_unit(openmm.unit.radian)
-            kvalue1 = term.torsion_k.value_in_unit(
-                openmm.unit.kilojoule / openmm.unit.mole
-            )
+            try:
+                phase1 = term.phi0.value_in_unit(openmm.unit.radian)
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in torsions does not have units for phi0"
+                )
+            try:
+                kvalue1 = term.torsion_k.value_in_unit(
+                    openmm.unit.kilojoule / openmm.unit.mole
+                )
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in torsions does not have units for torsion_k"
+                )
 
             b_str += (
                 f'  <Proper  class1="{class1}" class2="{class2}"'
@@ -251,10 +292,20 @@ class Forcefield:
         nb_str += '  <PerParticleParameter name="sigma"/>\n'
         nb_str += '  <PerParticleParameter name="epsilon"/>\n'
         for term in self._nonbonded_terms:
-            sigma = term.sigma.value_in_unit(openmm.unit.nanometer)
-            epsilon = term.epsilon.value_in_unit(
-                openmm.unit.kilojoule / openmm.unit.mole
-            )
+            try:
+                sigma = term.sigma.value_in_unit(openmm.unit.nanometer)
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in nonbondeds does not have units for sigma"
+                )
+            try:
+                epsilon = term.epsilon.value_in_unit(
+                    openmm.unit.kilojoule / openmm.unit.mole
+                )
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{term} in nonbondeds does not have units for epsilon"
+                )
             nb_str += (
                 f'  <Atom type="{term.search_string}" sigma="{sigma}" '
                 f'epsilon="{epsilon}"/>\n'
@@ -288,6 +339,19 @@ class Forcefield:
                         tuple(reversed(cgbead_string)),
                     ):
                         continue
+
+                    try:
+                        assert isinstance(
+                            target_torsion.phi0, openmm.unit.Quantity
+                        )
+                        assert isinstance(
+                            target_torsion.torsion_k, openmm.unit.Quantity
+                        )
+                    except AssertionError:
+                        raise ForcefieldUnitError(
+                            f"{target_torsion} in torsions does not have"
+                            " units for parameters"
+                        )
 
                     yield Torsion(
                         atom_names=tuple(
