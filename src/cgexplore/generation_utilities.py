@@ -37,6 +37,34 @@ def optimise_ligand(
     force_field: Forcefield,
     platform: str | None,
 ) -> stk.Molecule:
+    """
+    Optimise a building block.
+
+    Keywords:
+
+        molecule:
+            The molecule to optimise.
+
+        name:
+            Name to use for naming output files. E.g. produces a file
+            `{name}_opted1.mol` in `output_dir`.
+
+        output_dir:
+            Directory to save outputs of optimisation process.
+
+        force_field:
+            Define the forces used in the molecule.
+
+        platform:
+            Which platform to use with OpenMM optimisation. Options are
+            `CPU` or `CUDA`. More are available but may not work well
+            out of the box.
+
+    Returns:
+
+        An stk molecule.
+
+    """
     opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
 
     if os.path.exists(opt1_mol_file):
@@ -61,6 +89,25 @@ def random_deform_molecule(
     generator: np.random.Generator,
     sigma: float,
 ) -> stk.Molecule:
+    """
+    Randomly deform a molecule by changing the atom positions.
+
+    Keywords:
+
+        molecule:
+            The molecule to deform.
+
+        generator:
+            Random number generator to use in deformations.
+
+        sigma:
+            Scale of deformations.
+
+    Returns:
+
+        An stk molecule.
+
+    """
     old_pos_mat = molecule.get_position_matrix()
 
     new_pos_mat = []
@@ -92,10 +139,14 @@ def run_mc_cycle(
     platform: str,
 ) -> stk.Molecule:
     """
-    Run metropolis MC scheme.
+    Run metropolis MC scheme. [Currently in old interface, needs updating.]
+
+    Keywords:
+
+    Returns:
 
     """
-    raise NotImplementedError()
+    raise NotImplementedError("[Currently in old interface, needs updating.]")
 
     generator = np.random.default_rng(seed=seed)
 
@@ -164,6 +215,64 @@ def run_mc_cycle(
     return molecule
 
 
+def soften_force_field(
+    force_field: Forcefield,
+    bond_ff_scale: float,
+    angle_ff_scale: float,
+    output_dir: pathlib.Path,
+    prefix: str,
+) -> Forcefield:
+    """
+    Soften force field by scaling parameters.
+
+    Keywords:
+
+        force_field:
+            Define the forces used in the molecule. Will be softened and
+            constrained.
+
+        bond_ff_scale:
+            Scale (divide) the bond terms in the model by this value.
+
+        angle_ff_scale:
+            Scale (divide) the angle terms in the model by this value.
+
+        output_dir:
+            Directory to save outputs of optimisation process.
+
+        prefix:
+            Prefix to use for writing forcefield to file.
+
+    Returns:
+
+        New Forcefield.
+
+    """
+    new_bond_terms = []
+    for i in force_field.get_bond_terms():
+        i.bond_k /= bond_ff_scale
+        new_bond_terms.append(i)
+
+    new_angle_terms = []
+    for i in force_field.get_angle_terms():
+        i.angle_k /= angle_ff_scale
+        new_angle_terms.append(i)
+
+    soft_force_field = Forcefield(
+        identifier=f"{prefix}{force_field.get_identifier()}",
+        output_dir=output_dir,
+        prefix=force_field.get_prefix(),
+        present_beads=force_field.get_present_beads(),
+        bond_terms=tuple(new_bond_terms),
+        angle_terms=tuple(new_angle_terms),
+        torsion_terms=(),
+        custom_torsion_terms=(),
+        nonbonded_terms=force_field.get_nonbonded_terms(),
+        vdw_bond_cutoff=2,
+    )
+    return soft_force_field
+
+
 def run_soft_md_cycle(
     name: str,
     molecule: stk.Molecule,
@@ -183,29 +292,73 @@ def run_soft_md_cycle(
     """
     Run MD exploration with soft potentials.
 
+    Keywords:
+
+        name:
+            Name to use for naming output files. E.g. produces a file
+            `{name}_opted1.mol` in `output_dir`.
+
+        molecule:
+            The molecule to optimise.
+
+        output_dir:
+            Directory to save outputs of optimisation process.
+
+        force_field:
+            Define the forces used in the molecule. Will be softened and
+            constrained.
+
+        num_steps:
+            The number of time steps to run the MD for.
+
+        suffix:
+            Suffix to use for naming output files. E.g. produces a file
+            `{name}_{suffix}_ff.xml` in `output_dir`. Used to define step
+            in process.
+
+        bond_ff_scale:
+            Scale (divide) the bond terms in the model by this value.
+
+        angle_ff_scale:
+            Scale (divide) the angle terms in the model by this value.
+
+        temperature:
+            Simulation temperature. Should be
+            an openmm.unit.Quantity with units of openmm.unit.kelvin.
+
+        time_step:
+            Simulation timestep to use in Integrator. Should be
+            an openmm.unit.Quantity with units of [time],
+            e.g., openmm.unit.femtoseconds.
+
+        friction:
+            Friction constant to use in LangevinIntegrator. Should be
+            an openmm.unit.Quantity with units of [time^-1],
+            e.g., / openmm.unit.picosecond.
+
+        reporting_freq:
+            How often the simulation properties should be written in
+            time steps.
+
+        traj_freq:
+            How often the trajectory should be written in time steps.
+
+        platform:
+            Which platform to use with OpenMM optimisation. Options are
+            `CPU` or `CUDA`. More are available but may not work well
+            out of the box.
+
+    Returns:
+
+        An OMMTrajectory containing the data and conformers.
+
     """
-
-    new_bond_terms = []
-    for i in force_field.get_bond_terms():
-        i.bond_k /= bond_ff_scale
-        new_bond_terms.append(i)
-
-    new_angle_terms = []
-    for i in force_field.get_angle_terms():
-        i.angle_k /= angle_ff_scale
-        new_angle_terms.append(i)
-
-    soft_force_field = Forcefield(
-        identifier=f"soft_{force_field.get_identifier()}",
+    soft_force_field = soften_force_field(
+        force_field=force_field,
+        bond_ff_scale=bond_ff_scale,
+        angle_ff_scale=angle_ff_scale,
         output_dir=output_dir,
-        prefix=force_field.get_prefix(),
-        present_beads=force_field.get_present_beads(),
-        bond_terms=tuple(new_bond_terms),
-        angle_terms=tuple(new_angle_terms),
-        torsion_terms=force_field.get_torsion_terms(),
-        custom_torsion_terms=force_field.get_custom_torsion_terms(),
-        nonbonded_terms=force_field.get_nonbonded_terms(),
-        vdw_bond_cutoff=2,
+        prefix="softmd",
     )
     soft_force_field.write_xml_file()
 
@@ -238,6 +391,14 @@ def run_md_cycle(
     opt_class: CGOMMOptimizer | None = None,
     min_energy: float | None = None,
 ):
+    """
+    Run a MD cycle. [Currently in old interface, needs updating.]
+
+    Keywords:
+
+    Returns:
+
+    """
     raise NotImplementedError(
         "Change return to molecule | str, assign str to either"
     )
@@ -312,46 +473,47 @@ def run_constrained_optimisation(
 
     Keywords:
 
-        molecule: stk.Molecule
+        molecule:
+            The molecule to optimise.
 
-        force_field: ForceField
+        name:
+            Name to use for naming output files. E.g. produces a file
+            `{name}_constrained_ff.xml` in `output_dir`.
 
-        name: str
+        output_dir:
+            Directory to save outputs of optimisation process.
 
-        output_dir: str or Path
+        force_field:
+            Define the forces used in the molecule. Will be softened and
+            constrained.
 
-        bond_ff_scale: float
+        bond_ff_scale:
             Scale (divide) the bond terms in the model by this value.
 
-        angle_ff_scale: float
+        angle_ff_scale:
             Scale (divide) the angle terms in the model by this value.
 
-        max_iterations: int
-            Num steps to take.
+        max_iterations:
+            Number of iterations to use in optimisation. Can be None, for
+            until convergence is met.
+
+        platform:
+            Which platform to use with OpenMM optimisation. Options are
+            `CPU` or `CUDA`. More are available but may not work well
+            out of the box.
+
+    Returns:
+
+        An stk molecule.
 
     """
 
-    new_bond_terms = []
-    for i in force_field.get_bond_terms():
-        i.bond_k /= bond_ff_scale
-        new_bond_terms.append(i)
-
-    new_angle_terms = []
-    for i in force_field.get_angle_terms():
-        i.angle_k /= angle_ff_scale
-        new_angle_terms.append(i)
-
-    soft_force_field = Forcefield(
-        identifier=f"soft_{force_field.get_identifier()}",
+    soft_force_field = soften_force_field(
+        force_field=force_field,
+        bond_ff_scale=bond_ff_scale,
+        angle_ff_scale=angle_ff_scale,
         output_dir=output_dir,
-        prefix=force_field.get_prefix(),
-        present_beads=force_field.get_present_beads(),
-        bond_terms=tuple(new_bond_terms),
-        angle_terms=tuple(new_angle_terms),
-        torsion_terms=(),
-        custom_torsion_terms=(),
-        nonbonded_terms=force_field.get_nonbonded_terms(),
-        vdw_bond_cutoff=2,
+        prefix="soft",
     )
     soft_force_field.write_xml_file()
 
@@ -386,9 +548,43 @@ def run_optimisation(
     ensemble: Ensemble | None = None,
 ) -> Conformer:
     """
-    Run optimisation and save outcome to Ensemble.
+    Run optimisation.
 
     Keywords:
+
+        molecule:
+            The molecule to optimise.
+
+        name:
+            Name to use for naming output files. E.g. produces a file
+            `{name}_{suffix}_ff.xml` in `output_dir`.
+
+        file_suffix:
+            Suffix to use for naming output files. E.g. produces a file
+            `{name}_{suffix}_ff.xml` in `output_dir`. Used to define step
+            in process.
+
+        output_dir:
+            Directory to save outputs of optimisation process.
+
+        force_field:
+            Define the forces used in the molecule.
+
+        platform:
+            Which platform to use with OpenMM optimisation. Options are
+            `CPU` or `CUDA`. More are available but may not work well
+            out of the box.
+
+        max_iterations:
+            Number of iterations to use in optimisation. Can be None, for
+            until convergence is met.
+
+        ensemble:
+            Ensemble to get the conformer id from.
+
+    Returns:
+
+        A Conformer.
 
     """
 
@@ -413,22 +609,30 @@ def run_optimisation(
     )
 
 
-def modify_bead(bead_name: str) -> Iterator[str]:
-    for i, s in enumerate(bead_name):
-        temp_bead_name = list(bead_name)
-        if not s.isnumeric():
-            continue
-        temp_bead_name[i] = str(int(s) - 1)
-        yield "".join(temp_bead_name)
-        temp_bead_name[i] = str(int(s) + 1)
-        yield "".join(temp_bead_name)
-
-
 def yield_near_models(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path | str,
 ) -> Iterator[stk.Molecule]:
+    """
+    Yield structures of cage models with neighbouring force field IDs.
+
+    Keywords:
+
+        molecule:
+            The molecule to replace.
+
+        name:
+            Name of molecule, holding force field ID.
+
+        output_dir:
+            Directory with optimisation outputs saved.
+
+    Returns:
+
+        An stk molecule.
+
+    """
     ff_name = [i for i in name.split("_") if "f" in i][-1]
     ff_num = int(ff_name[1:])
     ff_options = (ff_num - 2, ff_num - 1, ff_num + 1, ff_num + 2)
@@ -448,6 +652,25 @@ def shift_beads(
     atomic_number: int,
     kick: float,
 ) -> stk.Molecule:
+    """
+    Shift beads away from cage centroid.
+
+    Keywords:
+
+        molecule:
+            The molecule to manipulate.
+
+        atomic_number:
+            Atomic number of beads to manipulate.
+
+        kick:
+            Scale determining size of manipulation.
+
+    Returns:
+
+        An stk molecule.
+
+    """
     old_pos_mat = molecule.get_position_matrix()
     centroid = molecule.get_centroid()
 
@@ -469,6 +692,22 @@ def yield_shifted_models(
     molecule: stk.Molecule,
     force_field: Forcefield,
 ) -> Iterator[stk.Molecule]:
+    """
+    Yield conformers with atom positions of particular beads shifted.
+
+    Keywords:
+
+        molecule:
+            The molecule to manipulate.
+
+        force_field:
+            Defines the force field.
+
+    Yields:
+
+        An stk molecule.
+
+    """
     for bead in force_field.get_present_beads():
         atom_number = periodic_table()[bead.element_string]
         for kick in (1, 2, 3, 4):
