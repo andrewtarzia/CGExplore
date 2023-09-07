@@ -23,11 +23,15 @@ logging.basicConfig(
 class CgBead:
     element_string: str
     bead_type: str
+    bead_class: str
     coordination: int
 
 
-def get_cgbead_from_string(string: str, bead_set: dict[str, CgBead]) -> CgBead:
-    return bead_set[string]
+def get_cgbead_from_type(
+    bead_type: str,
+    bead_set: dict[str, CgBead],
+) -> CgBead:
+    return bead_set[bead_type]
 
 
 def get_cgbead_from_element(
@@ -148,11 +152,21 @@ def string_to_atom_number(string: str) -> int:
 
 
 def bead_library_check(bead_library: tuple[CgBead]) -> None:
+    print(bead_library)
     logging.info(f"there are {len(bead_library)} beads")
-    used_names = tuple(i.bead_type for i in bead_library)
+    used_names = tuple(i.bead_class for i in bead_library)
     counts = Counter(used_names)
-    if any((i > 1 for i in counts.values())):
-        raise ValueError(f"you used a bead twice in your library: {counts}")
+    for bead_class in counts:
+        if counts[bead_class] > 1:
+            # Check if they are different classes.
+            bead_types = set(
+                i.bead_type for i in bead_library if i.bead_class == bead_class
+            )
+            if len(bead_types) == 1:
+                raise ValueError(
+                    f"you used a bead ({bead_class}) twice in your "
+                    f"library: {counts}"
+                )
 
     used_strings = tuple(i.element_string for i in bead_library)
     for string in used_strings:
