@@ -1,4 +1,5 @@
-from cgexplore.forcefield import ForcefieldUnitError
+from cgexplore.errors import ForcefieldUnitError
+import pathlib
 
 
 def test_present_custom_torsions(molecule):
@@ -17,7 +18,12 @@ def test_present_custom_torsions(molecule):
     """
 
     try:
-        for i, ff in enumerate(molecule.force_fields):
+        force_fields = tuple(
+            molecule.force_field_library.yield_forcefields(
+                prefix="testff", output_path=pathlib.Path()
+            )
+        )
+        for i, ff in enumerate(force_fields):
             found_torsions = list(ff.yield_custom_torsions(molecule.molecule))
             print(found_torsions)
             assert len(found_torsions) == len(

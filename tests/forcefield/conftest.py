@@ -4,12 +4,56 @@ import stk
 from openmm import openmm
 from cgexplore.beads import CgBead
 from cgexplore.bonds import TargetBondRange
-from cgexplore.angles import TargetAngleRange
+from cgexplore.angles import TargetAngleRange, PyramidAngleRange, Angle
 from cgexplore.nonbonded import TargetNonbondedRange
 from cgexplore.torsions import Torsion, TargetTorsionRange
 from cgexplore.forcefield import ForceFieldLibrary
+from cgexplore.molecule_construction.topologies import FourC1Arm
 
 from .case_data import CaseData
+
+ag_bead = CgBead(
+    element_string="Ag",
+    bead_type="c1",
+    bead_class="c",
+    coordination=2,
+)
+ba_bead = CgBead(
+    element_string="Ba",
+    bead_type="a1",
+    bead_class="a",
+    coordination=2,
+)
+pb_bead = CgBead(
+    element_string="Pb",
+    bead_type="b1",
+    bead_class="b",
+    coordination=2,
+)
+pd_bead = CgBead(
+    element_string="Pd",
+    bead_class="m",
+    bead_type="m1",
+    coordination=4,
+)
+c_bead = CgBead(
+    element_string="C",
+    bead_type="c1",
+    bead_class="c",
+    coordination=2,
+)
+n_bead = CgBead(
+    element_string="N",
+    bead_type="n1",
+    bead_class="n",
+    coordination=2,
+)
+o_bead = CgBead(
+    element_string="O",
+    bead_type="o1",
+    bead_class="o",
+    coordination=2,
+)
 
 
 @pytest.fixture(
@@ -28,23 +72,7 @@ from .case_data import CaseData
                 ),
             ),
             force_field_library=ForceFieldLibrary(
-                bead_library=(
-                    CgBead(
-                        element_string="Ag",
-                        bead_type="c",
-                        coordination=2,
-                    ),
-                    CgBead(
-                        element_string="Ba",
-                        bead_type="a",
-                        coordination=2,
-                    ),
-                    CgBead(
-                        element_string="Pb",
-                        bead_type="b",
-                        coordination=2,
-                    ),
-                ),
+                bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
             ),
             bond_ranges=(
@@ -165,14 +193,15 @@ from .case_data import CaseData
                     ),
                 ),
             ),
+            present_custom_angles=((), ()),
             present_nonbondeds=(
                 (
-                    '  <Atom type="c" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="b" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="c" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="b" sigma="0.1" epsilon="10.0"/>',
                 ),
                 (
-                    '  <Atom type="c" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="b" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="c" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="b" sigma="0.1" epsilon="10.0"/>',
                 ),
             ),
             present_torsions=((), ()),
@@ -208,11 +237,11 @@ from .case_data import CaseData
             ),
             library_string=(
                 """ForceFieldLibrary(
-  bead_library=(CgBead(element_string='Ag', bead_type='c', coordination=2), CgBead(element_string='Ba', bead_type='a', coordination=2), CgBead(element_string='Pb', bead_type='b', coordination=2)),
+  bead_library=(CgBead(element_string='Ag', bead_type='c1', bead_class='c', coordination=2), CgBead(element_string='Ba', bead_type='a1', bead_class='a', coordination=2), CgBead(element_string='Pb', bead_type='b1', bead_class='b', coordination=2)),
   bond_ranges=(TargetBondRange(class1='a', class2='b', eclass1='Ba', eclass2='Pb', bond_rs=(Quantity(value=1.0, unit=angstrom),), bond_ks=(Quantity(value=100000.0, unit=kilojoule/(nanometer**2*mole)),)),),
   angle_ranges=(TargetAngleRange(class1='n', class2='b', class3='a', eclass1='C', eclass2='Pb', eclass3='Ba', angles=(Quantity(value=180, unit=degree),), angle_ks=(Quantity(value=100.0, unit=kilojoule/(mole*radian**2)),)),),
   torsion_ranges=(TargetTorsionRange(search_string=('b', 'a', 'c', 'a', 'b'), search_estring=('Pb', 'Ba', 'Ag', 'Ba', 'Pb'), measured_atom_ids=[0, 1, 3, 4], phi0s=(Quantity(value=180, unit=degree),), torsion_ks=(Quantity(value=50, unit=kilojoule/mole), Quantity(value=0, unit=kilojoule/mole)), torsion_ns=(1,)),),
-  nonbonded_ranges=(TargetNonbondedRange(search_string='c', search_estring='Ag', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)), TargetNonbondedRange(search_string='b', search_estring='Pb', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)))
+  nonbonded_ranges=(TargetNonbondedRange(bead_class='c', bead_element='Ag', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)), TargetNonbondedRange(bead_class='b', bead_element='Pb', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)))
 )"""
             ),
             xml_strings=(
@@ -233,8 +262,8 @@ from .case_data import CaseData
  <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
   <PerParticleParameter name="sigma"/>
   <PerParticleParameter name="epsilon"/>
-  <Atom type="c" sigma="0.1" epsilon="10.0"/>
-  <Atom type="b" sigma="0.1" epsilon="10.0"/>
+  <Atom class="c" sigma="0.1" epsilon="10.0"/>
+  <Atom class="b" sigma="0.1" epsilon="10.0"/>
  </CustomNonbondedForce>
 
 </ForceField>
@@ -257,8 +286,8 @@ from .case_data import CaseData
  <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
   <PerParticleParameter name="sigma"/>
   <PerParticleParameter name="epsilon"/>
-  <Atom type="c" sigma="0.1" epsilon="10.0"/>
-  <Atom type="b" sigma="0.1" epsilon="10.0"/>
+  <Atom class="c" sigma="0.1" epsilon="10.0"/>
+  <Atom class="b" sigma="0.1" epsilon="10.0"/>
  </CustomNonbondedForce>
 
 </ForceField>
@@ -285,23 +314,7 @@ from .case_data import CaseData
                 ),
             ),
             force_field_library=ForceFieldLibrary(
-                bead_library=(
-                    CgBead(
-                        element_string="C",
-                        bead_type="c",
-                        coordination=2,
-                    ),
-                    CgBead(
-                        element_string="N",
-                        bead_type="n",
-                        coordination=2,
-                    ),
-                    CgBead(
-                        element_string="O",
-                        bead_type="o",
-                        coordination=2,
-                    ),
-                ),
+                bead_library=(c_bead, n_bead, o_bead),
                 vdw_bond_cutoff=2,
             ),
             bond_ranges=(
@@ -476,26 +489,27 @@ from .case_data import CaseData
                     '.792526803190927" k="100.0"/>',
                 ),
             ),
+            present_custom_angles=((), (), (), ()),
             present_nonbondeds=(
                 (
-                    '  <Atom type="c" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="n" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="o" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="c" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="n" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="o" sigma="0.1" epsilon="10.0"/>',
                 ),
                 (
-                    '  <Atom type="c" sigma="0.2" epsilon="10.0"/>',
-                    '  <Atom type="n" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="o" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="c" sigma="0.2" epsilon="10.0"/>',
+                    '  <Atom class="n" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="o" sigma="0.1" epsilon="10.0"/>',
                 ),
                 (
-                    '  <Atom type="c" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="n" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="o" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="c" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="n" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="o" sigma="0.1" epsilon="10.0"/>',
                 ),
                 (
-                    '  <Atom type="c" sigma="0.2" epsilon="10.0"/>',
-                    '  <Atom type="n" sigma="0.1" epsilon="10.0"/>',
-                    '  <Atom type="o" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="c" sigma="0.2" epsilon="10.0"/>',
+                    '  <Atom class="n" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="o" sigma="0.1" epsilon="10.0"/>',
                 ),
             ),
             present_torsions=(
@@ -519,11 +533,11 @@ from .case_data import CaseData
             present_custom_torsions=((), (), (), ()),
             library_string=(
                 """ForceFieldLibrary(
-  bead_library=(CgBead(element_string='C', bead_type='c', coordination=2), CgBead(element_string='N', bead_type='n', coordination=2), CgBead(element_string='O', bead_type='o', coordination=2)),
+  bead_library=(CgBead(element_string='C', bead_type='c1', bead_class='c', coordination=2), CgBead(element_string='N', bead_type='n1', bead_class='n', coordination=2), CgBead(element_string='O', bead_type='o1', bead_class='o', coordination=2)),
   bond_ranges=(TargetBondRange(class1='n', class2='c', eclass1='C', eclass2='N', bond_rs=(Quantity(value=1.0, unit=angstrom), Quantity(value=2.0, unit=angstrom)), bond_ks=(Quantity(value=100000.0, unit=kilojoule/(nanometer**2*mole)),)), TargetBondRange(class1='n', class2='o', eclass1='C', eclass2='O', bond_rs=(Quantity(value=2.0, unit=angstrom),), bond_ks=(Quantity(value=100000.0, unit=kilojoule/(nanometer**2*mole)),))),
   angle_ranges=(TargetAngleRange(class1='c', class2='n', class3='c', eclass1='C', eclass2='N', eclass3='C', angles=(Quantity(value=160, unit=degree),), angle_ks=(Quantity(value=100.0, unit=kilojoule/(mole*radian**2)),)),),
   torsion_ranges=(TargetTorsionRange(search_string=('c', 'n', 'c', 'c'), search_estring=('C', 'N', 'C', 'C'), measured_atom_ids=[0, 1, 2, 3], phi0s=(Quantity(value=180, unit=degree),), torsion_ks=(Quantity(value=50, unit=kilojoule/mole),), torsion_ns=(1,)),),
-  nonbonded_ranges=(TargetNonbondedRange(search_string='c', search_estring='C', sigmas=(Quantity(value=1.0, unit=angstrom), Quantity(value=2.0, unit=angstrom)), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)), TargetNonbondedRange(search_string='n', search_estring='N', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)), TargetNonbondedRange(search_string='o', search_estring='O', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)))
+  nonbonded_ranges=(TargetNonbondedRange(bead_class='c', bead_element='C', sigmas=(Quantity(value=1.0, unit=angstrom), Quantity(value=2.0, unit=angstrom)), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)), TargetNonbondedRange(bead_class='n', bead_element='N', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)), TargetNonbondedRange(bead_class='o', bead_element='O', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)))
 )"""
             ),
             xml_strings=(
@@ -546,9 +560,9 @@ from .case_data import CaseData
  <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
   <PerParticleParameter name="sigma"/>
   <PerParticleParameter name="epsilon"/>
-  <Atom type="c" sigma="0.1" epsilon="10.0"/>
-  <Atom type="n" sigma="0.1" epsilon="10.0"/>
-  <Atom type="o" sigma="0.1" epsilon="10.0"/>
+  <Atom class="c" sigma="0.1" epsilon="10.0"/>
+  <Atom class="n" sigma="0.1" epsilon="10.0"/>
+  <Atom class="o" sigma="0.1" epsilon="10.0"/>
  </CustomNonbondedForce>
 
 </ForceField>
@@ -573,9 +587,9 @@ from .case_data import CaseData
  <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
   <PerParticleParameter name="sigma"/>
   <PerParticleParameter name="epsilon"/>
-  <Atom type="c" sigma="0.2" epsilon="10.0"/>
-  <Atom type="n" sigma="0.1" epsilon="10.0"/>
-  <Atom type="o" sigma="0.1" epsilon="10.0"/>
+  <Atom class="c" sigma="0.2" epsilon="10.0"/>
+  <Atom class="n" sigma="0.1" epsilon="10.0"/>
+  <Atom class="o" sigma="0.1" epsilon="10.0"/>
  </CustomNonbondedForce>
 
 </ForceField>
@@ -600,9 +614,9 @@ from .case_data import CaseData
  <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
   <PerParticleParameter name="sigma"/>
   <PerParticleParameter name="epsilon"/>
-  <Atom type="c" sigma="0.1" epsilon="10.0"/>
-  <Atom type="n" sigma="0.1" epsilon="10.0"/>
-  <Atom type="o" sigma="0.1" epsilon="10.0"/>
+  <Atom class="c" sigma="0.1" epsilon="10.0"/>
+  <Atom class="n" sigma="0.1" epsilon="10.0"/>
+  <Atom class="o" sigma="0.1" epsilon="10.0"/>
  </CustomNonbondedForce>
 
 </ForceField>
@@ -627,14 +641,353 @@ from .case_data import CaseData
  <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
   <PerParticleParameter name="sigma"/>
   <PerParticleParameter name="epsilon"/>
-  <Atom type="c" sigma="0.2" epsilon="10.0"/>
-  <Atom type="n" sigma="0.1" epsilon="10.0"/>
-  <Atom type="o" sigma="0.1" epsilon="10.0"/>
+  <Atom class="c" sigma="0.2" epsilon="10.0"/>
+  <Atom class="n" sigma="0.1" epsilon="10.0"/>
+  <Atom class="o" sigma="0.1" epsilon="10.0"/>
  </CustomNonbondedForce>
 
 </ForceField>
 """
                 ),
+            ),
+            name=name,
+        ),
+        lambda name: CaseData(
+            molecule=FourC1Arm(
+                bead=pd_bead, abead1=pb_bead
+            ).get_building_block(),
+            force_field_library=ForceFieldLibrary(
+                bead_library=(pd_bead, pb_bead),
+                vdw_bond_cutoff=2,
+            ),
+            bond_ranges=(
+                TargetBondRange(
+                    class1="b",
+                    class2="m",
+                    eclass1="Pb",
+                    eclass2="Pd",
+                    bond_rs=(
+                        openmm.unit.Quantity(
+                            value=1.5, unit=openmm.unit.angstrom
+                        ),
+                    ),
+                    bond_ks=(
+                        openmm.unit.Quantity(
+                            value=1e5,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.nanometer**2,
+                        ),
+                    ),
+                ),
+            ),
+            angle_ranges=(
+                PyramidAngleRange(
+                    class1="b",
+                    class2="m",
+                    class3="b",
+                    eclass1="Pd",
+                    eclass2="Pb",
+                    eclass3="Pd",
+                    angles=(
+                        openmm.unit.Quantity(
+                            value=80, unit=openmm.unit.degrees
+                        ),
+                        openmm.unit.Quantity(
+                            value=90, unit=openmm.unit.degrees
+                        ),
+                    ),
+                    angle_ks=(
+                        openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                ),
+            ),
+            torsion_ranges=(),
+            nonbonded_ranges=(
+                TargetNonbondedRange(
+                    bead_class="m",
+                    bead_element="Pb",
+                    epsilons=(
+                        openmm.unit.Quantity(
+                            value=10.0,
+                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                        ),
+                    ),
+                    sigmas=(
+                        openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                    ),
+                ),
+                TargetNonbondedRange(
+                    bead_class="b",
+                    bead_element="Pb",
+                    epsilons=(
+                        openmm.unit.Quantity(
+                            value=10.0,
+                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                        ),
+                    ),
+                    sigmas=(
+                        openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                    ),
+                ),
+            ),
+            num_forcefields=2,
+            present_bonds=(
+                (
+                    '  <Bond class1="b" class2="m" length="0.15000000000000002" k="100000.0"/>',
+                ),
+                (
+                    '  <Bond class1="b" class2="m" length="0.15000000000000002" k="100000.0"/>',
+                ),
+            ),
+            present_angles=((), ()),
+            present_custom_angles=(
+                (
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb2", "Pd1", "Pb3"),
+                        atom_ids=(1, 0, 2),
+                        angle=openmm.unit.Quantity(
+                            value=80, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb2", "Pd1", "Pb4"),
+                        atom_ids=(1, 0, 3),
+                        angle=openmm.unit.Quantity(
+                            value=130.75, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb2", "Pd1", "Pb5"),
+                        atom_ids=(1, 0, 4),
+                        angle=openmm.unit.Quantity(
+                            value=80, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb3", "Pd1", "Pb4"),
+                        atom_ids=(2, 0, 3),
+                        angle=openmm.unit.Quantity(
+                            value=80, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb3", "Pd1", "Pb5"),
+                        atom_ids=(2, 0, 4),
+                        angle=openmm.unit.Quantity(
+                            value=130.75, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb4", "Pd1", "Pb5"),
+                        atom_ids=(3, 0, 4),
+                        angle=openmm.unit.Quantity(
+                            value=80, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                ),
+                (
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb2", "Pd1", "Pb3"),
+                        atom_ids=(1, 0, 2),
+                        angle=openmm.unit.Quantity(
+                            value=90, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb2", "Pd1", "Pb4"),
+                        atom_ids=(1, 0, 3),
+                        angle=openmm.unit.Quantity(
+                            value=180, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb2", "Pd1", "Pb5"),
+                        atom_ids=(1, 0, 4),
+                        angle=openmm.unit.Quantity(
+                            value=90, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb3", "Pd1", "Pb4"),
+                        atom_ids=(2, 0, 3),
+                        angle=openmm.unit.Quantity(
+                            value=90, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb3", "Pd1", "Pb5"),
+                        atom_ids=(2, 0, 4),
+                        angle=openmm.unit.Quantity(
+                            value=180, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                    Angle(
+                        atoms=None,
+                        atom_names=("Pb4", "Pd1", "Pb5"),
+                        atom_ids=(3, 0, 4),
+                        angle=openmm.unit.Quantity(
+                            value=90, unit=openmm.unit.degrees
+                        ),
+                        angle_k=openmm.unit.Quantity(
+                            value=1e2,
+                            unit=openmm.unit.kilojoule
+                            / openmm.unit.mole
+                            / openmm.unit.radian**2,
+                        ),
+                    ),
+                ),
+            ),
+            present_nonbondeds=(
+                (
+                    '  <Atom class="m" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="b" sigma="0.1" epsilon="10.0"/>',
+                ),
+                (
+                    '  <Atom class="m" sigma="0.1" epsilon="10.0"/>',
+                    '  <Atom class="b" sigma="0.1" epsilon="10.0"/>',
+                ),
+            ),
+            present_torsions=((), ()),
+            present_custom_torsions=((), ()),
+            library_string=(
+                """ForceFieldLibrary(
+  bead_library=(CgBead(element_string='Pd', bead_type='m1', bead_class='m', coordination=4), CgBead(element_string='Pb', bead_type='b1', bead_class='b', coordination=2)),
+  bond_ranges=(TargetBondRange(class1='b', class2='m', eclass1='Pb', eclass2='Pd', bond_rs=(Quantity(value=1.5, unit=angstrom),), bond_ks=(Quantity(value=100000.0, unit=kilojoule/(nanometer**2*mole)),)),),
+  angle_ranges=(PyramidAngleRange(class1='b', class2='m', class3='b', eclass1='Pd', eclass2='Pb', eclass3='Pd', angles=(Quantity(value=80, unit=degree), Quantity(value=90, unit=degree)), angle_ks=(Quantity(value=100.0, unit=kilojoule/(mole*radian**2)),)),),
+  torsion_ranges=(),
+  nonbonded_ranges=(TargetNonbondedRange(bead_class='m', bead_element='Pb', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)), TargetNonbondedRange(bead_class='b', bead_element='Pb', sigmas=(Quantity(value=1.0, unit=angstrom),), epsilons=(Quantity(value=10.0, unit=kilojoule/mole),)))
+)"""
+            ),
+            xml_strings=(
+                """<ForceField>
+
+ <HarmonicBondForce>
+  <Bond class1="b" class2="m" length="0.15000000000000002" k="100000.0"/>
+ </HarmonicBondForce>
+
+ <HarmonicAngleForce>
+ </HarmonicAngleForce>
+
+ <PeriodicTorsionForce>
+ </PeriodicTorsionForce>
+
+ <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
+  <PerParticleParameter name="sigma"/>
+  <PerParticleParameter name="epsilon"/>
+  <Atom class="m" sigma="0.1" epsilon="10.0"/>
+  <Atom class="b" sigma="0.1" epsilon="10.0"/>
+ </CustomNonbondedForce>
+
+</ForceField>
+""",
+                """<ForceField>
+
+ <HarmonicBondForce>
+  <Bond class1="b" class2="m" length="0.15000000000000002" k="100000.0"/>
+ </HarmonicBondForce>
+
+ <HarmonicAngleForce>
+ </HarmonicAngleForce>
+
+ <PeriodicTorsionForce>
+ </PeriodicTorsionForce>
+
+ <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">
+  <PerParticleParameter name="sigma"/>
+  <PerParticleParameter name="epsilon"/>
+  <Atom class="m" sigma="0.1" epsilon="10.0"/>
+  <Atom class="b" sigma="0.1" epsilon="10.0"/>
+ </CustomNonbondedForce>
+
+</ForceField>
+""",
             ),
             name=name,
         ),
@@ -653,23 +1006,7 @@ from .case_data import CaseData
                 ),
             ),
             force_field_library=ForceFieldLibrary(
-                bead_library=(
-                    CgBead(
-                        element_string="Ag",
-                        bead_type="c",
-                        coordination=2,
-                    ),
-                    CgBead(
-                        element_string="Ba",
-                        bead_type="a",
-                        coordination=2,
-                    ),
-                    CgBead(
-                        element_string="Pb",
-                        bead_type="b",
-                        coordination=2,
-                    ),
-                ),
+                bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
             ),
             bond_ranges=(
@@ -729,6 +1066,63 @@ from .case_data import CaseData
             num_forcefields=0,
             present_bonds=([]),
             present_angles=([]),
+            present_custom_angles=([]),
+            present_nonbondeds=([]),
+            present_torsions=([]),
+            present_custom_torsions=([]),
+            library_string="",
+            xml_strings=(),
+            name=name,
+        ),
+        # This one should fail with bad units for pyramid angles -
+        # needed separate tests because pyramid angle error will show
+        # up before all other exceptions, voiding their tests.
+        lambda name: CaseData(
+            molecule=stk.BuildingBlock(
+                smiles="[Pb][Ba][Ag][Ba][Pb]",
+                position_matrix=np.array(
+                    (
+                        [1, 1, 0],
+                        [1, 0, 0],
+                        [0.5, 0, 0],
+                        [2, 0, 0],
+                        [2, 2, 0],
+                    )
+                ),
+            ),
+            force_field_library=ForceFieldLibrary(
+                bead_library=(ag_bead, ba_bead, pb_bead),
+                vdw_bond_cutoff=2,
+            ),
+            bond_ranges=(),
+            angle_ranges=(
+                TargetAngleRange(
+                    class1="n",
+                    class2="b",
+                    class3="a",
+                    eclass1="C",
+                    eclass2="Pb",
+                    eclass3="Ba",
+                    angles=(180,),
+                    angle_ks=(1e2,),
+                ),
+                PyramidAngleRange(
+                    class1="n",
+                    class2="b",
+                    class3="a",
+                    eclass1="C",
+                    eclass2="Pb",
+                    eclass3="Ba",
+                    angles=(180,),
+                    angle_ks=(1e2,),
+                ),
+            ),
+            torsion_ranges=(),
+            nonbonded_ranges=(),
+            num_forcefields=0,
+            present_bonds=([]),
+            present_angles=([]),
+            present_custom_angles=([]),
             present_nonbondeds=([]),
             present_torsions=([]),
             present_custom_torsions=([]),

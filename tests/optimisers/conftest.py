@@ -34,22 +34,26 @@ from .case_data import CaseData
                 present_beads=(
                     CgBead(
                         element_string="Ag",
-                        bead_type="c",
+                        bead_type="c1",
+                        bead_class="c",
                         coordination=2,
                     ),
                     CgBead(
                         element_string="Ba",
-                        bead_type="a",
+                        bead_type="a1",
+                        bead_class="a",
                         coordination=2,
                     ),
                     CgBead(
                         element_string="Pb",
-                        bead_type="b",
+                        bead_type="b1",
+                        bead_class="b",
                         coordination=2,
                     ),
                 ),
                 bond_terms=(),
                 angle_terms=(),
+                custom_angle_terms=(),
                 torsion_terms=(),
                 custom_torsion_terms=(
                     TargetTorsion(
@@ -91,18 +95,18 @@ from .case_data import CaseData
                 """<ForceField>
 
  <AtomTypes>
-  <Type name="b" class="b" element="Pb" mass="10"/>
-  <Type name="a" class="a" element="Ba" mass="10"/>
-  <Type name="c" class="c" element="Ag" mass="10"/>
+  <Type name="b1" class="b" element="Pb" mass="10"/>
+  <Type name="a1" class="a" element="Ba" mass="10"/>
+  <Type name="c1" class="c" element="Ag" mass="10"/>
  </AtomTypes>
 
  <Residues>
   <Residue name="ALL">
-   <Atom name="0" type="b"/>
-   <Atom name="1" type="a"/>
-   <Atom name="2" type="c"/>
-   <Atom name="3" type="a"/>
-   <Atom name="4" type="b"/>
+   <Atom name="0" type="b1"/>
+   <Atom name="1" type="a1"/>
+   <Atom name="2" type="c1"/>
+   <Atom name="3" type="a1"/>
+   <Atom name="4" type="b1"/>
    <Bond atomName1="0" atomName2="1"/>
    <Bond atomName1="1" atomName2="2"/>
    <Bond atomName1="2" atomName2="3"/>
@@ -135,17 +139,20 @@ from .case_data import CaseData
                 present_beads=(
                     CgBead(
                         element_string="Ag",
-                        bead_type="c",
+                        bead_type="c1",
+                        bead_class="c",
                         coordination=2,
                     ),
                     CgBead(
                         element_string="Ba",
-                        bead_type="a",
+                        bead_type="a1",
+                        bead_class="a",
                         coordination=2,
                     ),
                     CgBead(
                         element_string="Pb",
-                        bead_type="b",
+                        bead_type="b1",
+                        bead_class="b",
                         coordination=2,
                     ),
                 ),
@@ -185,6 +192,7 @@ from .case_data import CaseData
                         ),
                     )
                 ),
+                custom_angle_terms=(),
                 torsion_terms=(),
                 custom_torsion_terms=(
                     TargetTorsion(
@@ -226,18 +234,18 @@ from .case_data import CaseData
                 """<ForceField>
 
  <AtomTypes>
-  <Type name="b" class="b" element="Pb" mass="10"/>
-  <Type name="a" class="a" element="Ba" mass="10"/>
-  <Type name="c" class="c" element="Ag" mass="10"/>
+  <Type name="b1" class="b" element="Pb" mass="10"/>
+  <Type name="a1" class="a" element="Ba" mass="10"/>
+  <Type name="c1" class="c" element="Ag" mass="10"/>
  </AtomTypes>
 
  <Residues>
   <Residue name="ALL">
-   <Atom name="0" type="b"/>
-   <Atom name="1" type="a"/>
-   <Atom name="2" type="c"/>
-   <Atom name="3" type="a"/>
-   <Atom name="4" type="b"/>
+   <Atom name="0" type="b1"/>
+   <Atom name="1" type="a1"/>
+   <Atom name="2" type="c1"/>
+   <Atom name="3" type="a1"/>
+   <Atom name="4" type="b1"/>
    <Bond atomName1="0" atomName2="1"/>
    <Bond atomName1="1" atomName2="2"/>
    <Bond atomName1="2" atomName2="3"/>

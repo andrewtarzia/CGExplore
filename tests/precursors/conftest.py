@@ -15,28 +15,39 @@ from cgexplore.molecule_construction import (
 
 from .case_data import CaseData
 
-# Three tests cases with four atoms with known bond lengths,
-# angles and torsions.
+
+ag_bead = CgBead(
+    element_string="Ag",
+    bead_type="c1",
+    bead_class="c",
+    coordination=4,
+)
+p_bead = CgBead(
+    element_string="P",
+    bead_type="p1",
+    bead_class="p",
+    coordination=2,
+)
+n_bead = CgBead(
+    element_string="N",
+    bead_class="n",
+    bead_type="n1",
+    coordination=2,
+)
+a_bead = CgBead(
+    element_string="C",
+    bead_class="a",
+    bead_type="a1",
+    coordination=2,
+)
 
 
 @pytest.fixture(
     params=(
         lambda name: CaseData(
-            precursor=FourC0Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=4,
-                ),
-            ),
-            precursor_name="4C0c",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=4,
-                )
-            },
+            precursor=FourC0Arm(bead=ag_bead),
+            precursor_name="4C0c1",
+            bead_set={"c1": ag_bead},
             smiles="Br[Ag](Br)(Br)Br",
             position_matrix=np.array(
                 [
@@ -51,31 +62,9 @@ from .case_data import CaseData
             name=name,
         ),
         lambda name: CaseData(
-            precursor=FourC1Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=4,
-                ),
-                abead1=CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-            ),
-            precursor_name="4C1cp",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=4,
-                ),
-                "p": CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-            },
+            precursor=FourC1Arm(bead=ag_bead, abead1=p_bead),
+            precursor_name="4C1c1p1",
+            bead_set={"c1": ag_bead, "p1": p_bead},
             smiles="[P][Ag]([P])([P])[P]",
             position_matrix=np.array(
                 [
@@ -90,21 +79,9 @@ from .case_data import CaseData
             name=name,
         ),
         lambda name: CaseData(
-            precursor=ThreeC0Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=3,
-                ),
-            ),
-            precursor_name="3C0c",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=3,
-                ),
-            },
+            precursor=ThreeC0Arm(bead=ag_bead),
+            precursor_name="3C0c1",
+            bead_set={"c1": ag_bead},
             smiles="Br[Ag](Br)Br",
             position_matrix=np.array(
                 [
@@ -118,31 +95,9 @@ from .case_data import CaseData
             name=name,
         ),
         lambda name: CaseData(
-            precursor=ThreeC1Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=3,
-                ),
-                abead1=CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-            ),
-            precursor_name="3C1cp",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=3,
-                ),
-                "p": CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-            },
+            precursor=ThreeC1Arm(bead=ag_bead, abead1=p_bead),
+            precursor_name="3C1c1p1",
+            bead_set={"c1": ag_bead, "p1": p_bead},
             smiles="[P][Ag]([P])[P]",
             position_matrix=np.array(
                 [
@@ -156,41 +111,9 @@ from .case_data import CaseData
             name=name,
         ),
         lambda name: CaseData(
-            precursor=ThreeC2Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=3,
-                ),
-                abead1=CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-                abead2=CgBead(
-                    element_string="N",
-                    bead_type="n",
-                    coordination=2,
-                ),
-            ),
-            precursor_name="3C2cpn",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=3,
-                ),
-                "p": CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-                "n": CgBead(
-                    element_string="N",
-                    bead_type="n",
-                    coordination=2,
-                ),
-            },
+            precursor=ThreeC2Arm(bead=ag_bead, abead1=p_bead, abead2=n_bead),
+            precursor_name="3C2c1p1n1",
+            bead_set={"c1": ag_bead, "p1": p_bead, "n1": n_bead},
             smiles="[N][P][Ag]([P][N])[P][N]",
             position_matrix=np.array(
                 [
@@ -207,21 +130,9 @@ from .case_data import CaseData
             name=name,
         ),
         lambda name: CaseData(
-            precursor=TwoC0Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-            ),
-            precursor_name="2C0c",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-            },
+            precursor=TwoC0Arm(bead=ag_bead),
+            precursor_name="2C0c1",
+            bead_set={"c1": ag_bead},
             smiles="Br[Ag]Br",
             position_matrix=np.array(
                 [
@@ -234,31 +145,9 @@ from .case_data import CaseData
             name=name,
         ),
         lambda name: CaseData(
-            precursor=TwoC1Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-                abead1=CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-            ),
-            precursor_name="2C1cp",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-                "p": CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-            },
+            precursor=TwoC1Arm(bead=ag_bead, abead1=p_bead),
+            precursor_name="2C1c1p1",
+            bead_set={"c1": ag_bead, "p1": p_bead},
             smiles="[P][Ag][P]",
             position_matrix=np.array(
                 [
@@ -271,41 +160,9 @@ from .case_data import CaseData
             name=name,
         ),
         lambda name: CaseData(
-            precursor=TwoC2Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-                abead1=CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-                abead2=CgBead(
-                    element_string="N",
-                    bead_type="n",
-                    coordination=2,
-                ),
-            ),
-            precursor_name="2C2cpn",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-                "p": CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-                "n": CgBead(
-                    element_string="N",
-                    bead_type="n",
-                    coordination=2,
-                ),
-            },
+            precursor=TwoC2Arm(bead=ag_bead, abead1=p_bead, abead2=n_bead),
+            precursor_name="2C2c1p1n1",
+            bead_set={"c1": ag_bead, "p1": p_bead, "n1": n_bead},
             smiles="[N][P][Ag][P][N]",
             position_matrix=np.array(
                 [
@@ -321,50 +178,10 @@ from .case_data import CaseData
         ),
         lambda name: CaseData(
             precursor=TwoC3Arm(
-                bead=CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-                abead1=CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-                abead2=CgBead(
-                    element_string="N",
-                    bead_type="n",
-                    coordination=2,
-                ),
-                abead3=CgBead(
-                    element_string="C",
-                    bead_type="a",
-                    coordination=2,
-                ),
+                bead=ag_bead, abead1=p_bead, abead2=n_bead, abead3=a_bead
             ),
-            precursor_name="2C3cpna",
-            bead_set={
-                "c": CgBead(
-                    element_string="Ag",
-                    bead_type="c",
-                    coordination=2,
-                ),
-                "p": CgBead(
-                    element_string="P",
-                    bead_type="p",
-                    coordination=2,
-                ),
-                "n": CgBead(
-                    element_string="N",
-                    bead_type="n",
-                    coordination=2,
-                ),
-                "a": CgBead(
-                    element_string="C",
-                    bead_type="a",
-                    coordination=2,
-                ),
-            },
+            precursor_name="2C3c1p1n1a1",
+            bead_set={"c1": ag_bead, "p1": p_bead, "n1": n_bead, "a1": a_bead},
             smiles="[C][N][P][Ag][P][N][C]",
             position_matrix=np.array(
                 [

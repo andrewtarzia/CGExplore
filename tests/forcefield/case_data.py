@@ -1,5 +1,4 @@
 import stk
-import pathlib
 
 
 class CaseData:
@@ -20,6 +19,7 @@ class CaseData:
         nonbonded_ranges,
         present_bonds,
         present_angles,
+        present_custom_angles,
         present_nonbondeds,
         present_torsions,
         present_custom_torsions,
@@ -39,13 +39,9 @@ class CaseData:
         for i in nonbonded_ranges:
             self.force_field_library.add_nonbonded_range(i)
         self.num_forcefields = num_forcefields
-        self.force_fields = tuple(
-            force_field_library.yield_forcefields(
-                prefix="testff", output_path=pathlib.Path()
-            )
-        )
         self.present_bonds = present_bonds
         self.present_angles = present_angles
+        self.present_custom_angles = present_custom_angles
         self.present_nonbondeds = present_nonbondeds
         self.present_torsions = present_torsions
         self.present_custom_torsions = present_custom_torsions

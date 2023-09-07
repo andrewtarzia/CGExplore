@@ -1,4 +1,5 @@
-from cgexplore.forcefield import ForcefieldUnitError
+from cgexplore.errors import ForcefieldUnitError
+import pathlib
 
 
 def test_present_torsions(molecule):
@@ -17,7 +18,12 @@ def test_present_torsions(molecule):
     """
 
     try:
-        for i, ff in enumerate(molecule.force_fields):
+        force_fields = tuple(
+            molecule.force_field_library.yield_forcefields(
+                prefix="testff", output_path=pathlib.Path()
+            )
+        )
+        for i, ff in enumerate(force_fields):
             string = ff.get_torsion_string().split("\n")
             print(string)
             assert string[0] == " <PeriodicTorsionForce>"

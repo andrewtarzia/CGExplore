@@ -1,4 +1,5 @@
-from cgexplore.forcefield import ForcefieldUnitError
+from cgexplore.errors import ForcefieldUnitError
+import pathlib
 
 
 def test_ff_xml_writer(molecule):
@@ -17,7 +18,12 @@ def test_ff_xml_writer(molecule):
     """
 
     try:
-        for i, ff in enumerate(molecule.force_fields):
+        force_fields = tuple(
+            molecule.force_field_library.yield_forcefields(
+                prefix="testff", output_path=pathlib.Path()
+            )
+        )
+        for i, ff in enumerate(force_fields):
             xml_string = ff.get_xml_string()
             print(xml_string)
             assert xml_string == molecule.xml_strings[i]
