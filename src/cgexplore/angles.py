@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import typing
 from openmm import openmm
 
+from .errors import ForcefieldUnitError
 from .utilities import convert_pyramid_angle
 
 logging.basicConfig(
@@ -27,11 +28,11 @@ logging.basicConfig(
 
 @dataclass
 class Angle:
-    atoms: tuple[stk.Atom, stk.Atom, stk.Atom]
     atom_names: tuple[str, str, str]
     atom_ids: tuple[int, int, int]
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
+    atoms: tuple[stk.Atom, stk.Atom, stk.Atom] | None
 
 
 @dataclass
@@ -89,6 +90,18 @@ class PyramidAngleRange:
 
     def yield_angles(self):
         for angle, k in itertools.product(self.angles, self.angle_ks):
+            try:
+                opposite_angle = openmm.unit.Quantity(
+                    value=convert_pyramid_angle(
+                        angle.value_in_unit(angle.unit)
+                    ),
+                    unit=angle.unit,
+                )
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{self} in angles does not have units for parameters"
+                )
+
             yield TargetPyramidAngle(
                 class1=self.class1,
                 class2=self.class2,
@@ -97,12 +110,7 @@ class PyramidAngleRange:
                 eclass2=self.eclass2,
                 eclass3=self.eclass3,
                 angle=angle,
-                opposite_angle=openmm.unit.Quantity(
-                    value=convert_pyramid_angle(
-                        angle.value_in_unit(angle.unit)
-                    ),
-                    unit=angle.unit,
-                ),
+                opposite_angle=opposite_angle,
                 angle_k=k,
             )
 
@@ -121,7 +129,7 @@ def find_angles(molecule: stk.Molecule) -> typing.Iterator[FoundAngle]:
         useHs=True,
     )
     for atom_ids in paths:
-        atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
+        atoms = tuple(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
         yield FoundAngle(
             atoms=atoms,
             atom_ids=tuple(i.get_id() for i in atoms),
