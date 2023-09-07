@@ -241,6 +241,33 @@ class CGOMMOptimizer(CGOptimizer):
         self._output_string += "\n"
         return system
 
+    def _add_custom_angles(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
+        force = openmm.HarmonicAngleForce()
+        system.addForce(force)
+        for angle in self._forcefield.yield_custom_angles(molecule):
+            try:
+                force.addAngle(
+                    particle1=angle.atom_ids[0],
+                    particle2=angle.atom_ids[1],
+                    particle3=angle.atom_ids[2],
+                    angle=angle.angle.value_in_unit(openmm.unit.radian),
+                    k=angle.angle_k.value_in_unit(
+                        openmm.unit.kilojoule
+                        / openmm.unit.mole
+                        / openmm.unit.radian**2
+                    ),
+                )
+            except AttributeError:
+                raise ForcefieldUnitError(
+                    f"{angle} in angles does not have units for parameters"
+                )
+
+        return system
+
     def _add_custom_torsions(
         self,
         system: openmm.System,
@@ -285,11 +312,13 @@ class CGOMMOptimizer(CGOptimizer):
                 bead_set=self._forcefield.get_bead_set(),
             )
             atype = acgbead.bead_type
+            aclass = acgbead.bead_class
+
             if atype not in present_beads:
                 present_beads[atype] = acgbead
                 at_str += (
                     f'  <Type name="{atype}" '
-                    f'class="{atype}" element="{aestring}" '
+                    f'class="{aclass}" element="{aestring}" '
                     f'mass="{self._mass}"/>\n'
                 )
 
@@ -373,6 +402,7 @@ class CGOMMOptimizer(CGOptimizer):
         if self._atom_constraints is not None:
             system = self._add_atom_constraints(system, molecule)
         system = self._add_custom_torsions(system, molecule)
+        system = self._add_custom_angles(system, molecule)
         for i, f in enumerate(system.getForces()):
             f.setForceGroup(i)
 
