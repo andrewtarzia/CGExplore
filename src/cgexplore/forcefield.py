@@ -13,6 +13,8 @@ import itertools
 import logging
 import pathlib
 import typing
+import numpy as np
+from heapq import nsmallest
 
 import stk
 from openmm import openmm
@@ -20,8 +22,9 @@ from openmm import openmm
 from .beads import CgBead, get_cgbead_from_element
 from .torsions import Torsion, find_torsions, TargetTorsion
 from .bonds import TargetBond
-from .angles import TargetAngle
+from .angles import Angle, TargetAngle, find_angles
 from .nonbonded import TargetNonbonded
+from .utilities import angle_between, convert_pyramid_angle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -83,7 +86,15 @@ class ForceFieldLibrary:
                     i for i in parameter_set if "Bond" in i.__class__.__name__
                 ),
                 angle_terms=tuple(
-                    i for i in parameter_set if "Angle" in i.__class__.__name__
+                    i
+                    for i in parameter_set
+                    if "Angle" in i.__class__.__name__
+                    and "Pyramid" not in i.__class__.__name__
+                ),
+                custom_angle_terms=tuple(
+                    i
+                    for i in parameter_set
+                    if "Pyramid" in i.__class__.__name__
                 ),
                 torsion_terms=tuple(
                     i
@@ -129,6 +140,7 @@ class Forcefield:
         present_beads: tuple[CgBead],
         bond_terms: tuple[TargetBond],
         angle_terms: tuple[TargetAngle],
+        custom_angle_terms: tuple[TargetAngle],
         torsion_terms: tuple[TargetTorsion],
         custom_torsion_terms: tuple[TargetTorsion],
         nonbonded_terms: tuple[TargetNonbonded],
@@ -140,6 +152,7 @@ class Forcefield:
         self._present_beads = present_beads
         self._bond_terms = bond_terms
         self._angle_terms = angle_terms
+        self._custom_angle_terms = custom_angle_terms
         self._torsion_terms = torsion_terms
         self._custom_torsion_terms = custom_torsion_terms
         self._nonbonded_terms = nonbonded_terms
@@ -171,6 +184,9 @@ class Forcefield:
 
     def get_angle_terms(self) -> tuple:
         return self._angle_terms
+
+    def get_custom_angle_terms(self) -> tuple:
+        return self._custom_angle_terms
 
     def get_torsion_terms(self) -> tuple:
         return self._torsion_terms
@@ -246,6 +262,7 @@ class Forcefield:
                 f' angle="{angle}"'
                 f' k="{kvalue}"/>\n'
             )
+
         b_str += " </HarmonicAngleForce>\n\n"
         return b_str
 
@@ -307,7 +324,7 @@ class Forcefield:
                     f"{term} in nonbondeds does not have units for epsilon"
                 )
             nb_str += (
-                f'  <Atom type="{term.search_string}" sigma="{sigma}" '
+                f'  <Atom class="{term.bead_class}" sigma="{sigma}" '
                 f'epsilon="{epsilon}"/>\n'
             )
         nb_str += " </CustomNonbondedForce>\n\n"
@@ -368,12 +385,171 @@ class Forcefield:
                         torsion_k=target_torsion.torsion_k,
                     )
 
+    def yield_custom_angles(
+        self,
+        molecule: stk.Molecule,
+    ) -> typing.Iterator[Angle]:
+        pos_mat = molecule.get_position_matrix()
+
+        pyramid_angles: dict[str, list] = {}
+        octahedral_angles: dict[str, list] = {}
+        for found_angle in find_angles(molecule):
+            atom_estrings = list(
+                i.__class__.__name__ for i in found_angle.atoms
+            )
+            try:
+                cgbeads = list(
+                    get_cgbead_from_element(i, self.get_bead_set())
+                    for i in atom_estrings
+                )
+            except KeyError:
+                logging.info(
+                    f"Angle not assigned ({found_angle}; {atom_estrings})."
+                )
+
+            cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
+            for target_angle in self._custom_angle_terms:
+                search_string = (
+                    target_angle.class1,
+                    target_angle.class2,
+                    target_angle.class3,
+                )
+                if search_string not in (
+                    cgbead_string,
+                    tuple(reversed(cgbead_string)),
+                ):
+                    continue
+
+                try:
+                    assert isinstance(target_angle.angle, openmm.unit.Quantity)
+                    assert isinstance(
+                        target_angle.angle_k, openmm.unit.Quantity
+                    )
+                except AssertionError:
+                    raise ForcefieldUnitError(
+                        f"{target_angle} in custom angles does not have"
+                        " units for parameters"
+                    )
+
+                central_bead = cgbeads[1]
+                central_atom = list(found_angle.atoms)[1]
+                central_name = f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                actual_angle = Angle(
+                    atoms=found_angle.atoms,
+                    atom_names=tuple(
+                        f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                        for i in found_angle.atoms
+                    ),
+                    atom_ids=found_angle.atom_ids,
+                    angle=target_angle.angle,
+                    angle_k=target_angle.angle_k,
+                )
+                if central_bead.coordination == 4:
+                    if central_name not in pyramid_angles:
+                        pyramid_angles[central_name] = []
+                    pyramid_angles[central_name].append(actual_angle)
+                elif central_bead.coordination == 6:
+                    if central_name not in octahedral_angles:
+                        octahedral_angles[central_name] = []
+                    octahedral_angles[central_name].append(actual_angle)
+                else:
+                    raise ValueError(
+                        "Only use custom angles if coordination == 4 or"
+                        " 6 at this version"
+                    )
+
+        # For four coordinate systems, apply standard angle theta to
+        # neighbouring atoms, then compute pyramid angle for opposing
+        # interaction.
+        for central_name in pyramid_angles:
+            found_angles = pyramid_angles[central_name]
+            all_angles_values = {
+                i: np.degrees(
+                    angle_between(
+                        v1=pos_mat[X.atoms[1].get_id()]
+                        - pos_mat[X.atoms[0].get_id()],
+                        v2=pos_mat[X.atoms[1].get_id()]
+                        - pos_mat[X.atoms[2].get_id()],
+                    )
+                )
+                for i, X in enumerate(found_angles)
+            }
+            four_smallest = nsmallest(
+                n=4,
+                iterable=all_angles_values,
+                key=all_angles_values.get,  # type: ignore[arg-type]
+            )
+
+            # Assign smallest the main angle.
+            # All others, get opposite angle.
+            for angle_id in all_angles_values:
+                found_angle = found_angles[angle_id]
+                if angle_id in four_smallest:
+                    angle = found_angle.angle
+                else:
+                    angle = openmm.unit.Quantity(
+                        value=convert_pyramid_angle(
+                            found_angle.angle.value_in_unit(
+                                found_angle.angle.unit
+                            )
+                        ),
+                        unit=found_angle.angle.unit,
+                    )
+                yield Angle(
+                    atoms=found_angle.atoms,
+                    atom_names=found_angle.atom_names,
+                    atom_ids=found_angle.atom_ids,
+                    angle=angle,
+                    angle_k=found_angle.angle_k,
+                )
+
+        # For six coordinate systems, assume octahedral geometry.
+        # So 90 degrees with 12 smallest angles, 180 degrees for the rest.
+        for central_name in octahedral_angles:
+            found_angles = octahedral_angles[central_name]
+            all_angles_values = {
+                i: np.degrees(
+                    angle_between(
+                        v1=pos_mat[X.atoms[1].get_id()]
+                        - pos_mat[X.atoms[0].get_id()],
+                        v2=pos_mat[X.atoms[1].get_id()]
+                        - pos_mat[X.atoms[2].get_id()],
+                    )
+                )
+                for i, X in enumerate(found_angles)
+            }
+            smallest = nsmallest(
+                n=12,
+                iterable=all_angles_values,
+                key=all_angles_values.get,  # type: ignore[arg-type]
+            )
+
+            # Assign smallest the main angle.
+            # All others, get opposite angle.
+            for angle_id in all_angles_values:
+                found_angle = found_angles[angle_id]
+                if angle_id in smallest:
+                    angle = found_angle.angle
+                else:
+                    angle = openmm.unit.Quantity(
+                        value=180,
+                        unit=found_angle.angle.unit,
+                    )
+                yield Angle(
+                    atoms=found_angle.atoms,
+                    atom_names=found_angle.atom_names,
+                    atom_ids=found_angle.atom_ids,
+                    angle=angle,
+                    angle_k=found_angle.angle_k,
+                )
+
     def __str__(self) -> str:
         return (
             f"{self.__class__.__name__}(\n"
             f"  present_beads={self._present_beads}, \n"
             f"  bond_terms={len(self._bond_terms)}, \n"
             f"  angle_terms={len(self._angle_terms)}, \n"
+            f"  custom_angle_terms={len(self._custom_angle_terms)}, \n"
             f"  torsion_terms={len(self._torsion_terms)}, \n"
             f"  custom_torsion_terms={len(self._custom_torsion_terms)}, \n"
             f"  nonbonded_terms={len(self._nonbonded_terms)}"
