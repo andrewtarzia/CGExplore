@@ -22,24 +22,24 @@ logging.basicConfig(
 
 @dataclass
 class TargetNonbonded:
-    search_string: str
-    search_estring: str
+    bead_class: str
+    bead_element: str
     sigma: openmm.unit.Quantity
     epsilon: openmm.unit.Quantity
 
 
 @dataclass
 class TargetNonbondedRange:
-    search_string: str
-    search_estring: str
+    bead_class: str
+    bead_element: str
     sigmas: tuple[openmm.unit.Quantity]
     epsilons: tuple[openmm.unit.Quantity]
 
     def yield_nonbondeds(self):
         for sigma, epsilon in itertools.product(self.sigmas, self.epsilons):
             yield TargetNonbonded(
-                search_string=self.search_string,
-                search_estring=self.search_estring,
+                bead_class=self.bead_class,
+                bead_element=self.bead_element,
                 epsilon=epsilon,
                 sigma=sigma,
             )
