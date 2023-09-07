@@ -16,7 +16,6 @@ import pathlib
 
 import numpy as np
 import stk
-from rdkit.Chem import AllChem as rdkit
 from scipy.spatial.distance import euclidean
 
 logging.basicConfig(
@@ -134,43 +133,6 @@ def read_lib(lib_file):
         lib = json.load(f)
 
     return lib
-
-
-def get_all_angles(molecule: stk.Molecule) -> list:
-    paths = rdkit.FindAllPathsOfLengthN(
-        mol=molecule.to_rdkit_mol(),
-        length=3,
-        useBonds=False,
-        useHs=True,
-    )
-    angles = []
-    for atom_ids in paths:
-        atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
-        atom1 = atoms[0]
-        atom2 = atoms[1]
-        atom3 = atoms[2]
-        angles.append((atom1, atom2, atom3))
-
-    return angles
-
-
-def get_all_torsions(molecule: stk.Molecule) -> list:
-    paths = rdkit.FindAllPathsOfLengthN(
-        mol=molecule.to_rdkit_mol(),
-        length=4,
-        useBonds=False,
-        useHs=True,
-    )
-    torsions = []
-    for atom_ids in paths:
-        atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
-        atom1 = atoms[0]
-        atom2 = atoms[1]
-        atom3 = atoms[2]
-        atom4 = atoms[3]
-        torsions.append((atom1, atom2, atom3, atom4))
-
-    return torsions
 
 
 def get_dihedral(
