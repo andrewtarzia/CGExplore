@@ -14,6 +14,7 @@ import logging
 import pathlib
 import typing
 import numpy as np
+import json
 from heapq import nsmallest
 
 import stk
@@ -25,15 +26,12 @@ from .bonds import TargetBond
 from .angles import Angle, TargetAngle, find_angles
 from .nonbonded import TargetNonbonded
 from .utilities import angle_between, convert_pyramid_angle
+from .errors import ForcefieldUnitError
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
-
-
-class ForcefieldUnitError(Exception):
-    pass
 
 
 class ForceFieldLibrary:
@@ -76,45 +74,63 @@ class ForceFieldLibrary:
         for nonbonded_range in self._nonbonded_ranges:
             iterations.append(tuple(nonbonded_range.yield_nonbondeds()))
 
+        ff_iterations = {}
         for i, parameter_set in enumerate(itertools.product(*iterations)):
+            bond_terms = tuple(
+                i for i in parameter_set if "Bond" in i.__class__.__name__
+            )
+            angle_terms = tuple(
+                i
+                for i in parameter_set
+                if "Angle" in i.__class__.__name__
+                and "Pyramid" not in i.__class__.__name__
+            )
+            custom_angle_terms = tuple(
+                i for i in parameter_set if "Pyramid" in i.__class__.__name__
+            )
+            torsion_terms = tuple(
+                i
+                for i in parameter_set
+                if "Torsion" in i.__class__.__name__
+                if len(i.search_string) == 4
+            )
+            custom_torsion_terms = tuple(
+                i
+                for i in parameter_set
+                if "Torsion" in i.__class__.__name__
+                if len(i.search_string) != 4
+            )
+            nonbonded_terms = tuple(
+                i for i in parameter_set if "Nonbonded" in i.__class__.__name__
+            )
+            ff_iterations[i] = {
+                "bonds": ";     ".join((str(i) for i in bond_terms)),
+                "angles": ";     ".join((str(i) for i in angle_terms)),
+                "custom_angles": ";     ".join(
+                    (str(i) for i in custom_angle_terms)
+                ),
+                "torsions": ";     ".join((str(i) for i in torsion_terms)),
+                "custom_torsions": ";     ".join(
+                    (str(i) for i in custom_torsion_terms)
+                ),
+                "nonbondeds": ";     ".join((str(i) for i in nonbonded_terms)),
+            }
             yield Forcefield(
                 identifier=i,
                 output_dir=output_path,
                 prefix=prefix,
                 present_beads=self._bead_library,
-                bond_terms=tuple(
-                    i for i in parameter_set if "Bond" in i.__class__.__name__
-                ),
-                angle_terms=tuple(
-                    i
-                    for i in parameter_set
-                    if "Angle" in i.__class__.__name__
-                    and "Pyramid" not in i.__class__.__name__
-                ),
-                custom_angle_terms=tuple(
-                    i
-                    for i in parameter_set
-                    if "Pyramid" in i.__class__.__name__
-                ),
-                torsion_terms=tuple(
-                    i
-                    for i in parameter_set
-                    if "Torsion" in i.__class__.__name__
-                    if len(i.search_string) == 4
-                ),
-                custom_torsion_terms=tuple(
-                    i
-                    for i in parameter_set
-                    if "Torsion" in i.__class__.__name__
-                    if len(i.search_string) != 4
-                ),
-                nonbonded_terms=tuple(
-                    i
-                    for i in parameter_set
-                    if "Nonbonded" in i.__class__.__name__
-                ),
+                bond_terms=bond_terms,
+                angle_terms=angle_terms,
+                custom_angle_terms=custom_angle_terms,
+                torsion_terms=torsion_terms,
+                custom_torsion_terms=custom_torsion_terms,
+                nonbonded_terms=nonbonded_terms,
                 vdw_bond_cutoff=self._vdw_bond_cutoff,
             )
+
+        with open(output_path / f"{prefix}_iterations.json", "w") as f:
+            json.dump(ff_iterations, f, indent=4)
 
     def __str__(self) -> str:
         return (
@@ -496,7 +512,7 @@ class Forcefield:
                         unit=found_angle.angle.unit,
                     )
                 yield Angle(
-                    atoms=found_angle.atoms,
+                    atoms=None,
                     atom_names=found_angle.atom_names,
                     atom_ids=found_angle.atom_ids,
                     angle=angle,
@@ -536,7 +552,7 @@ class Forcefield:
                         unit=found_angle.angle.unit,
                     )
                 yield Angle(
-                    atoms=found_angle.atoms,
+                    atoms=None,
                     atom_names=found_angle.atom_names,
                     atom_ids=found_angle.atom_ids,
                     angle=angle,
