@@ -14,6 +14,7 @@ import logging
 import os
 import pathlib
 from collections.abc import Iterator
+from copy import deepcopy
 
 import numpy as np
 import stk
@@ -250,13 +251,21 @@ def soften_force_field(
     """
     new_bond_terms = []
     for i in force_field.get_bond_terms():
-        i.bond_k /= bond_ff_scale
-        new_bond_terms.append(i)
+        new_term = deepcopy(i)
+        new_term.bond_k = i.bond_k / bond_ff_scale
+        new_bond_terms.append(new_term)
 
     new_angle_terms = []
     for i in force_field.get_angle_terms():
-        i.angle_k /= angle_ff_scale
-        new_angle_terms.append(i)
+        new_term = deepcopy(i)
+        new_term.angle_k = i.angle_k / angle_ff_scale
+        new_angle_terms.append(new_term)
+
+    new_custom_angle_terms = []
+    for i in force_field.get_custom_angle_terms():
+        new_term = deepcopy(i)
+        new_term.angle_k = i.angle_k / angle_ff_scale
+        new_custom_angle_terms.append(new_term)
 
     soft_force_field = Forcefield(
         identifier=f"{prefix}{force_field.get_identifier()}",
@@ -265,6 +274,7 @@ def soften_force_field(
         present_beads=force_field.get_present_beads(),
         bond_terms=tuple(new_bond_terms),
         angle_terms=tuple(new_angle_terms),
+        custom_angle_terms=tuple(new_custom_angle_terms),
         torsion_terms=(),
         custom_torsion_terms=(),
         nonbonded_terms=force_field.get_nonbonded_terms(),
