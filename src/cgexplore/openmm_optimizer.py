@@ -23,7 +23,8 @@ from openmm import app, openmm
 
 from .beads import get_cgbead_from_element
 from .ensembles import Timestep
-from .forcefield import Forcefield, ForcefieldUnitError
+from .forcefield import Forcefield
+from .errors import ForcefieldUnitError
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
 
@@ -121,10 +122,6 @@ class OMMTrajectory:
 
     def __repr__(self) -> str:
         return str(self)
-
-
-class MDEmptyTrajcetoryError(Exception):
-    ...
 
 
 class CGOMMOptimizer(CGOptimizer):
