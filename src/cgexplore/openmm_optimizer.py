@@ -23,8 +23,8 @@ from openmm import app, openmm
 
 from .beads import get_cgbead_from_element
 from .ensembles import Timestep
-from .forcefield import Forcefield
 from .errors import ForcefieldUnitError
+from .forcefield import Forcefield
 from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
 
@@ -143,6 +143,7 @@ class CGOMMOptimizer(CGOptimizer):
         self._fileprefix = fileprefix
         self._output_dir = output_dir
         self._topology_path = output_dir / f"{fileprefix}_ff.xml"
+        self._system_xml_path = output_dir / f"{fileprefix}_syst.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
         self._output_string = ""
         self._properties: dict | None
@@ -532,6 +533,8 @@ class CGOMMOptimizer(CGOptimizer):
         self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
 
         simulation, system = self._setup_simulation(molecule)
+        with open(self._system_xml_path, "w") as f:
+            f.write(openmm.XmlSerializer.serialize(system))
         simulation = self._minimize_energy(simulation, system)
         molecule = self._update_stk_molecule(molecule, simulation)
 
@@ -570,6 +573,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._fileprefix = fileprefix
         self._output_dir = output_dir
         self._topology_path = output_dir / f"{fileprefix}_ff.xml"
+        self._system_xml_path = output_dir / f"{fileprefix}_syst.xml"
         self._output_path = output_dir / f"{fileprefix}_omm.out"
         self._trajectory_data = output_dir / f"{fileprefix}_traj.dat"
         self._trajectory_file = output_dir / f"{fileprefix}_traj.pdb"
@@ -747,6 +751,8 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._output_string += f"atoms: {molecule.get_num_atoms()}\n"
 
         simulation, system = self._setup_simulation(molecule)
+        with open(self._system_xml_path, "w") as f:
+            f.write(openmm.XmlSerializer.serialize(system))
         simulation = self._minimize_energy(simulation, system)
         simulation = self._run_molecular_dynamics(simulation, system)
 
