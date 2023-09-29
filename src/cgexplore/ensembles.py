@@ -156,7 +156,7 @@ class Ensemble:
             data = self._data[temp_energy_conformerid]  # type: ignore[index]
             min_energy = data["total energy"][0]
 
-        min_energy_conformerid = "0"
+        min_energy_conformerid = 0
         for confid in self._data:
             conf_energy = self._data[confid]["total energy"][0]
             if conf_energy < min_energy:
