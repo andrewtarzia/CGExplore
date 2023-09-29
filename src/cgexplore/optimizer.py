@@ -10,6 +10,7 @@ Author: Andrew Tarzia
 """
 
 import logging
+
 import stk
 
 from .forcefield import Forcefield
