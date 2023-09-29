@@ -13,8 +13,9 @@ import itertools
 import logging
 import typing
 from dataclasses import dataclass
-from openmm import openmm
+
 import stk
+from openmm import openmm
 from rdkit.Chem import AllChem as rdkit
 
 logging.basicConfig(

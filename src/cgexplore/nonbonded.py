@@ -11,8 +11,9 @@ Author: Andrew Tarzia
 
 import itertools
 import logging
-from openmm import openmm
 from dataclasses import dataclass
+
+from openmm import openmm
 
 logging.basicConfig(
     level=logging.INFO,

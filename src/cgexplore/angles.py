@@ -11,11 +11,12 @@ Author: Andrew Tarzia
 
 import itertools
 import logging
-from rdkit.Chem import AllChem as rdkit
-import stk
-from dataclasses import dataclass
 import typing
+from dataclasses import dataclass
+
+import stk
 from openmm import openmm
+from rdkit.Chem import AllChem as rdkit
 
 from .errors import ForcefieldUnitError
 from .utilities import convert_pyramid_angle
