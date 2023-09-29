@@ -13,20 +13,19 @@ import itertools
 import logging
 import pathlib
 import typing
-import numpy as np
-import json
 from heapq import nsmallest
 
+import numpy as np
 import stk
 from openmm import openmm
 
-from .beads import CgBead, get_cgbead_from_element
-from .torsions import Torsion, find_torsions, TargetTorsion
-from .bonds import TargetBond
 from .angles import Angle, TargetAngle, find_angles
-from .nonbonded import TargetNonbonded
-from .utilities import angle_between, convert_pyramid_angle
+from .beads import CgBead, get_cgbead_from_element
+from .bonds import TargetBond
 from .errors import ForcefieldUnitError
+from .nonbonded import TargetNonbonded
+from .torsions import TargetTorsion, Torsion, find_torsions
+from .utilities import angle_between, convert_pyramid_angle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -39,9 +38,11 @@ class ForceFieldLibrary:
         self,
         bead_library: tuple[CgBead],
         vdw_bond_cutoff: int,
+        prefix: str,
     ) -> None:
         self._bead_library = bead_library
         self._vdw_bond_cutoff = vdw_bond_cutoff
+        self._prefix = prefix
         self._bond_ranges: tuple = ()
         self._angle_ranges: tuple = ()
         self._torsion_ranges: tuple = ()
@@ -59,7 +60,7 @@ class ForceFieldLibrary:
     def add_nonbonded_range(self, nonbonded_range: tuple) -> None:
         self._nonbonded_ranges += (nonbonded_range,)
 
-    def yield_forcefields(self, prefix: str, output_path: pathlib.Path):
+    def yield_forcefields(self, output_path: pathlib.Path):
         iterations = []
 
         for bond_range in self._bond_ranges:
@@ -74,7 +75,6 @@ class ForceFieldLibrary:
         for nonbonded_range in self._nonbonded_ranges:
             iterations.append(tuple(nonbonded_range.yield_nonbondeds()))
 
-        ff_iterations = {}
         for i, parameter_set in enumerate(itertools.product(*iterations)):
             bond_terms = tuple(
                 i for i in parameter_set if "Bond" in i.__class__.__name__
@@ -103,22 +103,11 @@ class ForceFieldLibrary:
             nonbonded_terms = tuple(
                 i for i in parameter_set if "Nonbonded" in i.__class__.__name__
             )
-            ff_iterations[i] = {
-                "bonds": ";     ".join((str(i) for i in bond_terms)),
-                "angles": ";     ".join((str(i) for i in angle_terms)),
-                "custom_angles": ";     ".join(
-                    (str(i) for i in custom_angle_terms)
-                ),
-                "torsions": ";     ".join((str(i) for i in torsion_terms)),
-                "custom_torsions": ";     ".join(
-                    (str(i) for i in custom_torsion_terms)
-                ),
-                "nonbondeds": ";     ".join((str(i) for i in nonbonded_terms)),
-            }
+
             yield Forcefield(
                 identifier=i,
                 output_dir=output_path,
-                prefix=prefix,
+                prefix=self._prefix,
                 present_beads=self._bead_library,
                 bond_terms=bond_terms,
                 angle_terms=angle_terms,
@@ -128,9 +117,6 @@ class ForceFieldLibrary:
                 nonbonded_terms=nonbonded_terms,
                 vdw_bond_cutoff=self._vdw_bond_cutoff,
             )
-
-        with open(output_path / f"{prefix}_iterations.json", "w") as f:
-            json.dump(ff_iterations, f, indent=4)
 
     def __str__(self) -> str:
         return (
@@ -495,7 +481,6 @@ class Forcefield:
                 iterable=all_angles_values,
                 key=all_angles_values.get,  # type: ignore[arg-type]
             )
-
             # Assign smallest the main angle.
             # All others, get opposite angle.
             for angle_id in all_angles_values:
