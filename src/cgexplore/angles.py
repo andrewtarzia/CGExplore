@@ -29,11 +29,11 @@ logging.basicConfig(
 
 @dataclass
 class Angle:
-    atom_names: tuple[str, str, str]
-    atom_ids: tuple[int, int, int]
+    atom_names: tuple[str, ...]
+    atom_ids: tuple[int, ...]
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
-    atoms: tuple[stk.Atom, stk.Atom, stk.Atom] | None
+    atoms: tuple[stk.Atom, ...] | None
 
 
 @dataclass
@@ -118,8 +118,8 @@ class PyramidAngleRange:
 
 @dataclass
 class FoundAngle:
-    atoms: tuple[stk.Atom, stk.Atom, stk.Atom]
-    atom_ids: tuple[int, int, int]
+    atoms: tuple[stk.Atom, ...]
+    atom_ids: tuple[int, ...]
 
 
 def find_angles(molecule: stk.Molecule) -> typing.Iterator[FoundAngle]:

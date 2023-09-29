@@ -105,7 +105,7 @@ class ForceFieldLibrary:
             )
 
             yield Forcefield(
-                identifier=i,
+                identifier=str(i),
                 output_dir=output_path,
                 prefix=self._prefix,
                 present_beads=self._bead_library,
@@ -139,13 +139,13 @@ class Forcefield:
         identifier: str,
         output_dir: pathlib.Path,
         prefix: str,
-        present_beads: tuple[CgBead],
-        bond_terms: tuple[TargetBond],
-        angle_terms: tuple[TargetAngle],
-        custom_angle_terms: tuple[TargetAngle],
-        torsion_terms: tuple[TargetTorsion],
-        custom_torsion_terms: tuple[TargetTorsion],
-        nonbonded_terms: tuple[TargetNonbonded],
+        present_beads: tuple[CgBead, ...],
+        bond_terms: tuple[TargetBond, ...],
+        angle_terms: tuple[TargetAngle, ...],
+        custom_angle_terms: tuple[TargetAngle, ...],
+        torsion_terms: tuple[TargetTorsion, ...],
+        custom_torsion_terms: tuple[TargetTorsion, ...],
+        nonbonded_terms: tuple[TargetNonbonded, ...],
         vdw_bond_cutoff: int,
     ) -> None:
         self._identifier = identifier
@@ -464,7 +464,7 @@ class Forcefield:
         # neighbouring atoms, then compute pyramid angle for opposing
         # interaction.
         for central_name in pyramid_angles:
-            found_angles = pyramid_angles[central_name]
+            angles = pyramid_angles[central_name]
             all_angles_values = {
                 i: np.degrees(
                     angle_between(
@@ -474,7 +474,7 @@ class Forcefield:
                         - pos_mat[X.atoms[2].get_id()],
                     )
                 )
-                for i, X in enumerate(found_angles)
+                for i, X in enumerate(angles)
             }
             four_smallest = nsmallest(
                 n=4,
@@ -484,30 +484,30 @@ class Forcefield:
             # Assign smallest the main angle.
             # All others, get opposite angle.
             for angle_id in all_angles_values:
-                found_angle = found_angles[angle_id]
+                current_angle = angles[angle_id]
                 if angle_id in four_smallest:
-                    angle = found_angle.angle
+                    angle = current_angle.angle
                 else:
                     angle = openmm.unit.Quantity(
                         value=convert_pyramid_angle(
-                            found_angle.angle.value_in_unit(
-                                found_angle.angle.unit
+                            current_angle.angle.value_in_unit(
+                                current_angle.angle.unit
                             )
                         ),
-                        unit=found_angle.angle.unit,
+                        unit=current_angle.angle.unit,
                     )
                 yield Angle(
                     atoms=None,
-                    atom_names=found_angle.atom_names,
-                    atom_ids=found_angle.atom_ids,
+                    atom_names=current_angle.atom_names,
+                    atom_ids=current_angle.atom_ids,
                     angle=angle,
-                    angle_k=found_angle.angle_k,
+                    angle_k=current_angle.angle_k,
                 )
 
         # For six coordinate systems, assume octahedral geometry.
         # So 90 degrees with 12 smallest angles, 180 degrees for the rest.
         for central_name in octahedral_angles:
-            found_angles = octahedral_angles[central_name]
+            angles = octahedral_angles[central_name]
             all_angles_values = {
                 i: np.degrees(
                     angle_between(
@@ -517,7 +517,7 @@ class Forcefield:
                         - pos_mat[X.atoms[2].get_id()],
                     )
                 )
-                for i, X in enumerate(found_angles)
+                for i, X in enumerate(angles)
             }
             smallest = nsmallest(
                 n=12,
@@ -528,20 +528,20 @@ class Forcefield:
             # Assign smallest the main angle.
             # All others, get opposite angle.
             for angle_id in all_angles_values:
-                found_angle = found_angles[angle_id]
+                current_angle = angles[angle_id]
                 if angle_id in smallest:
-                    angle = found_angle.angle
+                    angle = current_angle.angle
                 else:
                     angle = openmm.unit.Quantity(
                         value=180,
-                        unit=found_angle.angle.unit,
+                        unit=current_angle.angle.unit,
                     )
                 yield Angle(
                     atoms=None,
-                    atom_names=found_angle.atom_names,
-                    atom_ids=found_angle.atom_ids,
+                    atom_names=current_angle.atom_names,
+                    atom_ids=current_angle.atom_ids,
                     angle=angle,
-                    angle_k=found_angle.angle_k,
+                    angle_k=current_angle.angle_k,
                 )
 
     def __str__(self) -> str:

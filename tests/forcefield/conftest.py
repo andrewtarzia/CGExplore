@@ -74,6 +74,7 @@ o_bead = CgBead(
             force_field_library=ForceFieldLibrary(
                 bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
+                prefix="testff",
             ),
             bond_ranges=(
                 TargetBondRange(
@@ -342,6 +343,7 @@ o_bead = CgBead(
             force_field_library=ForceFieldLibrary(
                 bead_library=(c_bead, n_bead, o_bead),
                 vdw_bond_cutoff=2,
+                prefix="testff",
             ),
             bond_ranges=(
                 TargetBondRange(
@@ -745,6 +747,7 @@ o_bead = CgBead(
             force_field_library=ForceFieldLibrary(
                 bead_library=(pd_bead, pb_bead),
                 vdw_bond_cutoff=2,
+                prefix="testff",
             ),
             bond_ranges=(
                 TargetBondRange(
@@ -1114,6 +1117,7 @@ o_bead = CgBead(
             force_field_library=ForceFieldLibrary(
                 bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
+                prefix="testff",
             ),
             bond_ranges=(
                 TargetBondRange(
@@ -1199,6 +1203,7 @@ o_bead = CgBead(
             force_field_library=ForceFieldLibrary(
                 bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
+                prefix="testff",
             ),
             bond_ranges=(),
             angle_ranges=(

@@ -20,7 +20,7 @@ def test_present_angles(molecule):
     try:
         force_fields = tuple(
             molecule.force_field_library.yield_forcefields(
-                prefix="testff", output_path=pathlib.Path()
+                output_path=pathlib.Path()
             )
         )
         for i, ff in enumerate(force_fields):
