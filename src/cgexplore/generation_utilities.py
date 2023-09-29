@@ -544,7 +544,8 @@ def run_constrained_optimisation(
         platform=platform,
     )
     logging.info(f"optimising with {len(intra_bb_bonds)} constraints")
-    return constrained_opt.optimize(molecule)
+    opt_molecule = constrained_opt.optimize(molecule)
+    return opt_molecule
 
 
 def run_optimisation(
@@ -645,16 +646,19 @@ def yield_near_models(
     """
     ff_name = [i for i in name.split("_") if "f" in i][-1]
     ff_num = int(ff_name[1:])
-    ff_options = (ff_num - 2, ff_num - 1, ff_num + 1, ff_num + 2)
+    ff_range = 10
 
-    for ff_option in ff_options:
-        if ff_option < 0:
-            continue
-        new_name = name.replace(ff_name, f"f{ff_option}")
-        new_fina_mol_file = os.path.join(output_dir, f"{new_name}_final.mol")
-        if os.path.exists(new_fina_mol_file):
-            logging.info(f"found neigh: {new_fina_mol_file}")
-            yield molecule.with_structure_from_file(new_fina_mol_file)
+    for ff_shift in range(1, ff_range):
+        for ff_option in (ff_num - ff_shift, ff_num + ff_shift):
+            if ff_option < 0:
+                continue
+            new_name = name.replace(ff_name, f"f{ff_option}")
+            new_fina_mol_file = os.path.join(
+                output_dir, f"{new_name}_final.mol"
+            )
+            if os.path.exists(new_fina_mol_file):
+                logging.info(f"found neigh: {new_fina_mol_file}")
+                yield molecule.with_structure_from_file(new_fina_mol_file)
 
 
 def shift_beads(
