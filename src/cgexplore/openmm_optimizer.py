@@ -382,6 +382,17 @@ class CGOMMOptimizer(CGOptimizer):
 
         return topology
 
+    def _add_forces(
+        self,
+        system: openmm.System,
+        molecule: stk.Molecule,
+    ) -> openmm.System:
+        if self._atom_constraints is not None:
+            system = self._add_atom_constraints(system, molecule)
+        system = self._add_custom_angles(system, molecule)
+        system = self._add_custom_torsions(system, molecule)
+        return system
+
     def _setup_simulation(
         self,
         molecule: stk.Molecule,
@@ -396,10 +407,8 @@ class CGOMMOptimizer(CGOptimizer):
         # Create system.
         topology = self._stk_to_topology(molecule)
         system = forcefield.createSystem(topology)
-        if self._atom_constraints is not None:
-            system = self._add_atom_constraints(system, molecule)
-        system = self._add_custom_torsions(system, molecule)
-        system = self._add_custom_angles(system, molecule)
+        system = self._add_forces(system, molecule)
+
         for i, f in enumerate(system.getForces()):
             f.setForceGroup(i)
 
@@ -646,9 +655,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         # Create system.
         topology = self._stk_to_topology(molecule)
         system = forcefield.createSystem(topology)
-        if self._atom_constraints is not None:
-            system = self._add_atom_constraints(system, molecule)
-        system = self._add_custom_torsions(system, molecule)
+        system = self._add_forces(system, molecule)
         for i, f in enumerate(system.getForces()):
             f.setForceGroup(i)
 
