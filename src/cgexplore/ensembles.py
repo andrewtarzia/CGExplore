@@ -156,18 +156,21 @@ class Ensemble:
             data = self._data[temp_energy_conformerid]  # type: ignore[index]
             min_energy = data["total energy"][0]
 
-        min_energy_conformerid = 0
+        min_energy_conformerid = "0"
         for confid in self._data:
             conf_energy = self._data[confid]["total energy"][0]
             if conf_energy < min_energy:
                 min_energy = conf_energy
-                min_energy_conformerid = confid
+                min_energy_conformerid = confid  # type: ignore[assignment]
 
         return self.get_conformer(min_energy_conformerid)
 
-    def get_conformer(self, conf_id: int) -> Conformer:
+    def get_conformer(self, conf_id: int | str) -> Conformer:
         if conf_id not in self._data:
-            raise ValueError(f"conformer {conf_id} not found in ensemble.")
+            raise ValueError(
+                f"conformer {conf_id} not found in ensemble "
+                f"({self._data_json})."
+            )
         conf_lines = self._trajectory[int(conf_id)]
         extracted_id = int(conf_lines[1].strip().split()[1])
         if extracted_id != int(conf_id):
@@ -183,14 +186,14 @@ class Ensemble:
                 f"base molecule ({self._molecule_num_atoms})"
             )
 
-        conf_data = self._data[conf_id]
+        conf_data = self._data[conf_id]  # type: ignore[index]
         source = conf_data["source"]
         energy_decomp = {i: conf_data[i] for i in conf_data if i != "source"}
         return Conformer(
             molecule=(
                 self._base_molecule.with_position_matrix(np.array(new_pos_mat))
             ),
-            conformer_id=conf_id,
+            conformer_id=int(conf_id),
             energy_decomposition=energy_decomp,
             source=source,
         )
