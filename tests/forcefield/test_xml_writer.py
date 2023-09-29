@@ -1,5 +1,6 @@
-from cgexplore.errors import ForcefieldUnitError
 import pathlib
+
+from cgexplore.errors import ForcefieldUnitError
 
 
 def test_ff_xml_writer(molecule):

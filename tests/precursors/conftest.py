@@ -15,7 +15,6 @@ from cgexplore.molecule_construction import (
 
 from .case_data import CaseData
 
-
 ag_bead = CgBead(
     element_string="Ag",
     bead_type="c1",

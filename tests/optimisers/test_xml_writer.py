@@ -1,4 +1,5 @@
 import pathlib
+
 from cgexplore.openmm_optimizer import CGOMMOptimizer
 
 

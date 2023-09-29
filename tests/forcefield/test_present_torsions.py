@@ -1,5 +1,6 @@
-from cgexplore.errors import ForcefieldUnitError
 import pathlib
+
+from cgexplore.errors import ForcefieldUnitError
 
 
 def test_present_torsions(molecule):
