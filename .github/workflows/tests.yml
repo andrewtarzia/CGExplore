@@ -101,7 +101,40 @@ jobs:
       - name: Run script
         run: python cg_model_test/cg_model_test.py cg_model_test
 
+      - name: Run parameteriser script
+        run: python cg_model_test/openmm_parametizer.py cg_model_test
+
       - uses: actions/upload-artifact@v3
         with:
           name: parity-plot
           path: parity.png
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: l1-plot
+          path: l1.png
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: l2-plot
+          path: l2.png
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: l3-plot
+          path: l3.png
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: l4-plot
+          path: l4.png
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: l5-plot
+          path: l5.png
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: rt-plot
+          path: random_test.png
