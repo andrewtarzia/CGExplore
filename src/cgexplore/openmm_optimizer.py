@@ -204,7 +204,7 @@ class CGOMMOptimizer(CGOptimizer):
 
         energies = {}
         for f, i in forcegroups.items():
-            energies[f.__class__.__name__] = context.getState(
+            energies[(i, f.__class__.__name__)] = context.getState(
                 getEnergy=True,
                 groups=2**i,
             ).getPotentialEnergy()
