@@ -34,6 +34,7 @@ class Angle:
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
     atoms: tuple[stk.Atom, ...] | None
+    force: str | None
 
 
 @dataclass

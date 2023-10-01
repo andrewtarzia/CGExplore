@@ -31,6 +31,7 @@ class Torsion:
     phi0: openmm.unit.Quantity
     torsion_k: openmm.unit.Quantity
     torsion_n: int
+    force: str | None
 
 
 @dataclass

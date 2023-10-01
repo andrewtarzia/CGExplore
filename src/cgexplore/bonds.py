@@ -13,12 +13,23 @@ import itertools
 import logging
 from dataclasses import dataclass
 
+import stk
 from openmm import openmm
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+
+
+@dataclass
+class Bond:
+    atom_names: tuple[str, ...]
+    atom_ids: tuple[int, ...]
+    bond_r: openmm.unit.Quantity
+    bond_k: openmm.unit.Quantity
+    atoms: tuple[stk.Atom, ...] | None
+    force: str | None
 
 
 @dataclass
