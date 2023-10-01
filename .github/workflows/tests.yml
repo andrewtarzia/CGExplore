@@ -116,11 +116,6 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
-          name: l2-plot
-          path: l2.png
-
-      - uses: actions/upload-artifact@v3
-        with:
           name: l3-plot
           path: l3.png
 
