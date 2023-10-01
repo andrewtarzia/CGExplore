@@ -16,6 +16,7 @@ import pathlib
 
 import numpy as np
 import stk
+from openmm import openmm
 from scipy.spatial.distance import euclidean
 
 logging.basicConfig(
@@ -178,3 +179,13 @@ def get_dihedral(
     x = np.dot(v, w)
     y = np.dot(np.cross(b1, v), w)
     return np.degrees(np.arctan2(y, x))
+
+
+def custom_excluded_volume_force() -> openmm.CustomNonbondedForce:
+    energy_expression = "epsilon*((sigma)/(r))^12;"
+    energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
+    energy_expression += "sigma = 0.5*(sigma1+sigma2);"
+    custom_force = openmm.CustomNonbondedForce(energy_expression)
+    custom_force.addPerParticleParameter("sigma")
+    custom_force.addPerParticleParameter("epsilon")
+    return custom_force
