@@ -14,13 +14,15 @@ import logging
 import os
 import pathlib
 from collections.abc import Iterator
-from copy import deepcopy
 
 import numpy as np
 import stk
 from openmm import OpenMMException, openmm
 
-from .beads import CgBead, periodic_table
+from .angles import Angle
+from .assigned_system import AssignedSystem
+from .beads import periodic_table
+from .bonds import Bond
 from .ensembles import Conformer, Ensemble
 from .forcefield import Forcefield
 from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer, OMMTrajectory
@@ -72,13 +74,17 @@ def optimise_ligand(
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}, no max_iterations")
+        assigned_system = force_field.assign_terms(
+            molecule=molecule,
+            name=name,
+            output_dir=output_dir,
+        )
         opt = CGOMMOptimizer(
             fileprefix=name,
             output_dir=output_dir,
-            force_field=force_field,
             platform=platform,
         )
-        molecule = opt.optimize(molecule)
+        molecule = opt.optimize(assigned_system)
         molecule = molecule.with_centroid(np.array((0, 0, 0)))
         molecule.write(opt1_mol_file)
 
@@ -217,20 +223,18 @@ def run_mc_cycle(
 
 
 def soften_force_field(
-    force_field: Forcefield,
+    assigned_system: AssignedSystem,
     bond_ff_scale: float,
     angle_ff_scale: float,
-    output_dir: pathlib.Path,
-    prefix: str,
-) -> Forcefield:
+    new_name: str,
+) -> AssignedSystem:
     """
-    Soften force field by scaling parameters.
+    Soften force field by scaling parameters and turning off torsions.
 
     Keywords:
 
-        force_field:
-            Define the forces used in the molecule. Will be softened and
-            constrained.
+        assigned_system:
+            Molecule with force field terms assigned that will be modified.
 
         bond_ff_scale:
             Scale (divide) the bond terms in the model by this value.
@@ -238,56 +242,62 @@ def soften_force_field(
         angle_ff_scale:
             Scale (divide) the angle terms in the model by this value.
 
-        output_dir:
-            Directory to save outputs of optimisation process.
-
-        prefix:
-            Prefix to use for writing forcefield to file.
+        new_name:
+            New name for system xml.
 
     Returns:
 
-        New Forcefield.
+        New assigned system.
 
     """
-    new_bond_terms = []
-    for i in force_field.get_bond_terms():
-        new_term = deepcopy(i)
-        new_term.bond_k = i.bond_k / bond_ff_scale
-        new_bond_terms.append(new_term)
 
-    new_angle_terms = []
-    for i in force_field.get_angle_terms():
-        new_term = deepcopy(i)
-        new_term.angle_k = i.angle_k / angle_ff_scale
-        new_angle_terms.append(new_term)
+    new_force_field_terms = {
+        "bond": tuple(
+            Bond(
+                atom_names=i.atom_names,
+                atom_ids=i.atom_ids,
+                bond_r=i.bond_r,
+                bond_k=i.bond_k / bond_ff_scale,
+                atoms=i.atoms,
+                force=i.force,
+            )
+            for i in assigned_system.force_field_terms["bond"]
+        ),
+        "angle": tuple(
+            Angle(
+                atom_names=i.atom_names,
+                atom_ids=i.atom_ids,
+                angle=i.angle,
+                angle_k=i.angle_k / angle_ff_scale,
+                atoms=i.atoms,
+                force=i.force,
+            )
+            for i in assigned_system.force_field_terms["angle"]
+        ),
+        "torsion": (),
+        "nonbonded": assigned_system.force_field_terms["nonbonded"],
+    }
 
-    new_custom_angle_terms = []
-    for i in force_field.get_custom_angle_terms():
-        new_term = deepcopy(i)
-        new_term.angle_k = i.angle_k / angle_ff_scale
-        new_custom_angle_terms.append(new_term)
-
-    soft_force_field = Forcefield(
-        identifier=f"{prefix}{force_field.get_identifier()}",
-        output_dir=output_dir,
-        prefix=force_field.get_prefix(),
-        present_beads=force_field.get_present_beads(),
-        bond_terms=tuple(new_bond_terms),
-        angle_terms=tuple(new_angle_terms),
-        custom_angle_terms=tuple(new_custom_angle_terms),
-        torsion_terms=(),
-        custom_torsion_terms=(),
-        nonbonded_terms=force_field.get_nonbonded_terms(),
-        vdw_bond_cutoff=2,
+    new_system_xml = pathlib.Path(
+        str(assigned_system.system_xml).replace(
+            "_syst.xml", f"_{new_name}syst.xml"
+        )
     )
-    return soft_force_field
+
+    return AssignedSystem(
+        molecule=assigned_system.molecule,
+        force_field_terms=new_force_field_terms,
+        system_xml=new_system_xml,
+        topology_xml=assigned_system.topology_xml,
+        bead_set=assigned_system.bead_set,
+        vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+    )
 
 
 def run_soft_md_cycle(
     name: str,
-    molecule: stk.Molecule,
+    assigned_system: AssignedSystem,
     output_dir: pathlib.Path,
-    force_field: Forcefield,
     num_steps: int,
     suffix: str,
     bond_ff_scale: float,
@@ -308,15 +318,11 @@ def run_soft_md_cycle(
             Name to use for naming output files. E.g. produces a file
             `{name}_opted1.mol` in `output_dir`.
 
-        molecule:
-            The molecule to optimise.
+        assigned_system:
+            The system to optimise with force field assigned.
 
         output_dir:
             Directory to save outputs of optimisation process.
-
-        force_field:
-            Define the forces used in the molecule. Will be softened and
-            constrained.
 
         num_steps:
             The number of time steps to run the MD for.
@@ -363,19 +369,17 @@ def run_soft_md_cycle(
         An OMMTrajectory containing the data and conformers.
 
     """
-    soft_force_field = soften_force_field(
-        force_field=force_field,
+
+    soft_assigned_system = soften_force_field(
+        assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
         angle_ff_scale=angle_ff_scale,
-        output_dir=output_dir,
-        prefix="softmd",
+        new_name="softmd",
     )
-    soft_force_field.write_xml_file()
 
     md = CGOMMDynamics(
         fileprefix=f"{name}_{suffix}",
         output_dir=output_dir,
-        force_field=soft_force_field,
         temperature=temperature,
         random_seed=1000,
         num_steps=num_steps,
@@ -387,7 +391,7 @@ def run_soft_md_cycle(
     )
 
     try:
-        return md.run_dynamics(molecule)
+        return md.run_dynamics(soft_assigned_system)
 
     except OpenMMException:
         return None
@@ -469,10 +473,9 @@ def run_md_cycle(
 
 
 def run_constrained_optimisation(
-    molecule: stk.ConstructedMolecule,
+    assigned_system: AssignedSystem,
     name: str,
     output_dir: pathlib.Path,
-    force_field: Forcefield,
     bond_ff_scale: float,
     angle_ff_scale: float,
     max_iterations: int,
@@ -483,8 +486,8 @@ def run_constrained_optimisation(
 
     Keywords:
 
-        molecule:
-            The molecule to optimise.
+        assigned_system:
+            The system to optimise with force field assigned.
 
         name:
             Name to use for naming output files. E.g. produces a file
@@ -492,10 +495,6 @@ def run_constrained_optimisation(
 
         output_dir:
             Directory to save outputs of optimisation process.
-
-        force_field:
-            Define the forces used in the molecule. Will be softened and
-            constrained.
 
         bond_ff_scale:
             Scale (divide) the bond terms in the model by this value.
@@ -518,17 +517,15 @@ def run_constrained_optimisation(
 
     """
 
-    soft_force_field = soften_force_field(
-        force_field=force_field,
+    soft_assigned_system = soften_force_field(
+        assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
         angle_ff_scale=angle_ff_scale,
-        output_dir=output_dir,
-        prefix="soft",
+        new_name="const",
     )
-    soft_force_field.write_xml_file()
 
     intra_bb_bonds = []
-    for bond_info in molecule.get_bond_infos():
+    for bond_info in assigned_system.molecule.get_bond_infos():
         if bond_info.get_building_block_id() is not None:
             bond = bond_info.get_bond()
             intra_bb_bonds.append(
@@ -538,22 +535,20 @@ def run_constrained_optimisation(
     constrained_opt = CGOMMOptimizer(
         fileprefix=f"{name}_constrained",
         output_dir=output_dir,
-        force_field=soft_force_field,
         max_iterations=max_iterations,
         atom_constraints=intra_bb_bonds,
         platform=platform,
     )
     logging.info(f"optimising with {len(intra_bb_bonds)} constraints")
-    opt_molecule = constrained_opt.optimize(molecule)
+    opt_molecule = constrained_opt.optimize(soft_assigned_system)
     return opt_molecule
 
 
 def run_optimisation(
-    molecule: stk.Molecule,
+    assigned_system: AssignedSystem,
     name: str,
     file_suffix: str,
     output_dir: pathlib.Path,
-    force_field: Forcefield,
     platform: str,
     max_iterations: int | None = None,
     ensemble: Ensemble | None = None,
@@ -563,8 +558,8 @@ def run_optimisation(
 
     Keywords:
 
-        molecule:
-            The molecule to optimise.
+        assigned_system:
+            The system to optimise with force field assigned.
 
         name:
             Name to use for naming output files. E.g. produces a file
@@ -577,9 +572,6 @@ def run_optimisation(
 
         output_dir:
             Directory to save outputs of optimisation process.
-
-        force_field:
-            Define the forces used in the molecule.
 
         platform:
             Which platform to use with OpenMM optimisation. Options are
@@ -602,11 +594,10 @@ def run_optimisation(
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_{file_suffix}",
         output_dir=output_dir,
-        force_field=force_field,
         max_iterations=max_iterations,
         platform=platform,
     )
-    molecule = opt.optimize(molecule)
+    molecule = opt.optimize(assigned_system)
     energy_decomp = opt.read_final_energy_decomposition()
     if ensemble is None:
         confid = None
@@ -631,7 +622,7 @@ def yield_near_models(
     Keywords:
 
         molecule:
-            The molecule to replace.
+            The molecule to modify the position matrix of.
 
         name:
             Name of molecule, holding force field ID.
