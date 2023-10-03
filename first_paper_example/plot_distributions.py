@@ -439,8 +439,11 @@ def single_value_distributions(all_data, figure_output):
             "xtitle": r"$R_{\mathrm{g}}$ / $D$",
             "xlim": (0, 0.6),
         },
-        "pore_md": {"xtitle": "pore size / $D$", "xlim": (0, 0.5)},
-        "pore_rg": {"xtitle": "pore size / R_g", "xlim": (0, 1.2)},
+        "pore_md": {"xtitle": r"pore size / $D$", "xlim": (0, 0.5)},
+        "pore_rg": {
+            "xtitle": r"pore size / $R_{\mathrm{g}}$",
+            "xlim": (0, 1.2),
+        },
     }
 
     topologies = topology_labels(short="P")
@@ -568,7 +571,7 @@ def single_value_distributions(all_data, figure_output):
 
 
 def plot_sorted(bb_data, color_map, figure_output):
-    fig, ax = plt.subplots(figsize=(8, 3))
+    fig, ax = plt.subplots(figsize=(8, 3.5))
     max_ = 6
 
     # for ax, cltitle in zip(axs, ("3C1", "4C1")):
@@ -605,7 +608,7 @@ def plot_sorted(bb_data, color_map, figure_output):
     # ax.set_title(f"{cltitle}", fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
-    ax.set_ylabel(r"% selected", fontsize=16)
+    ax.set_ylabel(r"% with single species", fontsize=16)
     ax.set_xlim(0, max_ + 0.1)
     ax.set_ylim(0, None)
 
@@ -759,7 +762,7 @@ def plot_clangle(cl_data, color_map, figure_output):
         )
         cbar.ax.tick_params(labelsize=16)
         cbar.set_label(
-            r"% selected",
+            r"% with single species",
             fontsize=16,
         )
 
