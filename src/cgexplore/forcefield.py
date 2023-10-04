@@ -407,14 +407,13 @@ class Forcefield:
         self,
         molecule: stk.Molecule,
     ) -> tuple:
-        nonbonded_terms = [None for i in range(molecule.get_num_atoms())]
+        nonbonded_terms = []
 
         for atom in molecule.get_atoms():
-            atom_id = atom.get_id()
             atom_estring = atom.__class__.__name__
             cgbead = get_cgbead_from_element(atom_estring, self.get_bead_set())
 
-            for target_term in self._nonbonded_terms:
+            for target_term in self._nonbonded_targets:
                 if target_term.bead_class != cgbead.bead_class:
                     continue
                 try:
@@ -427,12 +426,15 @@ class Forcefield:
                         f"{target_term} in nonbondeds does not have units"
                     )
 
-                nonbonded_terms[atom_id] = Nonbonded(
-                    bead_class=cgbead.bead_class,
-                    bead_element=atom_estring,
-                    sigma=target_term.sigma,
-                    epsilon=target_term.epsilon,
-                    force=target_term.force,
+                nonbonded_terms.append(
+                    Nonbonded(
+                        atom_id=atom.get_id(),
+                        bead_class=cgbead.bead_class,
+                        bead_element=atom_estring,
+                        sigma=target_term.sigma,
+                        epsilon=target_term.epsilon,
+                        force=target_term.force,
+                    )
                 )
 
         return tuple(nonbonded_terms)
