@@ -51,11 +51,9 @@ from .case_data import CaseData
                         coordination=2,
                     ),
                 ),
-                bond_terms=(),
-                angle_terms=(),
-                custom_angle_terms=(),
-                torsion_terms=(),
-                custom_torsion_terms=(
+                bond_targets=(),
+                angle_targets=(),
+                torsion_targets=(
                     TargetTorsion(
                         search_string=("b", "a", "c", "a", "b"),
                         search_estring=(),
@@ -65,7 +63,7 @@ from .case_data import CaseData
                         torsion_n=1.0,
                     ),
                 ),
-                nonbonded_terms=(
+                nonbonded_targets=(
                     TargetNonbonded(
                         "c",
                         "Ag",
@@ -156,7 +154,7 @@ from .case_data import CaseData
                         coordination=2,
                     ),
                 ),
-                bond_terms=(
+                bond_targets=(
                     TargetBond(
                         class1="a",
                         class2="b",
@@ -173,7 +171,7 @@ from .case_data import CaseData
                         ),
                     )
                 ),
-                angle_terms=(
+                angle_targets=(
                     TargetAngle(
                         class1="b",
                         class2="n",
@@ -192,9 +190,7 @@ from .case_data import CaseData
                         ),
                     )
                 ),
-                custom_angle_terms=(),
-                torsion_terms=(),
-                custom_torsion_terms=(
+                torsion_targets=(
                     TargetTorsion(
                         search_string=("b", "a", "c", "a", "b"),
                         search_estring=(),
@@ -204,7 +200,7 @@ from .case_data import CaseData
                         torsion_n=1.0,
                     ),
                 ),
-                nonbonded_terms=(
+                nonbonded_targets=(
                     TargetNonbonded(
                         "c",
                         "Ag",
