@@ -319,12 +319,13 @@ def run_constrained_optimisation(
     )
 
     intra_bb_bonds = []
-    for bond_info in assigned_system.molecule.get_bond_infos():
-        if bond_info.get_building_block_id() is not None:
-            bond = bond_info.get_bond()
-            intra_bb_bonds.append(
-                (bond.get_atom1().get_id(), bond.get_atom2().get_id())
-            )
+    if isinstance(assigned_system.molecule, stk.ConstructedMolecule):
+        for bond_info in assigned_system.molecule.get_bond_infos():
+            if bond_info.get_building_block_id() is not None:
+                bond = bond_info.get_bond()
+                intra_bb_bonds.append(
+                    (bond.get_atom1().get_id(), bond.get_atom2().get_id())
+                )
 
     constrained_opt = CGOMMOptimizer(
         fileprefix=f"{name}_constrained",
