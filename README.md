@@ -7,6 +7,8 @@ The library is built off of [`stk`](https://stk.readthedocs.io/en/stable/), whic
 
 `CGExplore` is a library but contains an example library usage in the `first_paper_example` directory. I recommend installing the library with the following instructions and then using the example directory in a separate repository or code base of your own.
 
+**To reproduce data in DOI: [URL](URL)**: Download the source code from `first_paper_example - presubmission` release from [Releases](https://github.com/andrewtarzia/CGExplore/releases) instead of the repo in step 1.
+
 The code can be installed following these steps:
 
 1. clone `CGExplore` from [here](https://github.com/andrewtarzia/CGExplore)
