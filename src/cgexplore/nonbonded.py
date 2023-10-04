@@ -23,6 +23,7 @@ logging.basicConfig(
 
 @dataclass
 class Nonbonded:
+    atom_id: int
     bead_class: str
     bead_element: str
     sigma: openmm.unit.Quantity
