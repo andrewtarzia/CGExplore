@@ -23,7 +23,6 @@ from openmm import app, openmm
 
 from .assigned_system import AssignedSystem
 from .ensembles import Timestep
-from .optimizer import CGOptimizer
 from .utilities import get_atom_distance
 
 logging.basicConfig(
@@ -118,7 +117,7 @@ class OMMTrajectory:
         return str(self)
 
 
-class CGOMMOptimizer(CGOptimizer):
+class CGOMMOptimizer:
     def __init__(
         self,
         fileprefix: str,
