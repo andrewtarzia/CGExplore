@@ -19,12 +19,9 @@ class CaseData:
         nonbonded_ranges,
         present_bonds,
         present_angles,
-        present_custom_angles,
         present_nonbondeds,
         present_torsions,
-        present_custom_torsions,
         num_forcefields: int,
-        xml_strings: tuple[str],
         library_string: str,
         name: str,
     ) -> None:
@@ -41,10 +38,7 @@ class CaseData:
         self.num_forcefields = num_forcefields
         self.present_bonds = present_bonds
         self.present_angles = present_angles
-        self.present_custom_angles = present_custom_angles
         self.present_nonbondeds = present_nonbondeds
         self.present_torsions = present_torsions
-        self.present_custom_torsions = present_custom_torsions
-        self.xml_strings = xml_strings
         self.library_string = library_string
         self.name = name

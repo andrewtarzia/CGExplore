@@ -1,11 +1,14 @@
+import os
 import pathlib
 
 from cgexplore.errors import ForcefieldUnitError
 
+from .utilities import is_equivalent_atom
+
 
 def test_present_angles(molecule):
     """
-    Test methods toward :meth:`.ForceField.get_angle_string`.
+    Test methods toward :meth:`.ForceField._assign_angle_terms`.
 
     Parameters:
 
@@ -17,6 +20,7 @@ def test_present_angles(molecule):
         None : :class:`NoneType`
 
     """
+
     try:
         force_fields = tuple(
             molecule.force_field_library.yield_forcefields(
@@ -24,18 +28,30 @@ def test_present_angles(molecule):
             )
         )
         for i, ff in enumerate(force_fields):
-            string = ff.get_angle_string().split("\n")
-            print(string)
-            assert string[0] == " <HarmonicAngleForce>"
-            assert string[-3] == " </HarmonicAngleForce>"
-            if len(string) > 4:
-                assert "Angle" in string[1]
-                # There are some actual measures here. Test them.
-                measures = string[1:-3]
-                print(measures)
-                for j, measure in enumerate(measures):
-                    assert measure == molecule.present_angles[i][j]
-            else:
-                assert len(molecule.present_angles[i]) == 0
+            assigned_system = ff.assign_terms(
+                molecule=molecule.molecule,
+                output_dir=pathlib.Path(
+                    os.path.dirname(os.path.realpath(__file__))
+                ),
+                name=molecule.name,
+            )
+
+            present_terms = assigned_system.force_field_terms["angle"]
+            print(present_terms)
+            assert len(present_terms) == len(molecule.present_angles[i])
+            for test, present in zip(
+                present_terms, molecule.present_angles[i]
+            ):
+                assert test.atom_names == present.atom_names
+                if present.atoms is None:
+                    assert test.atoms is None
+                else:
+                    for a1, a2 in zip(test.atoms, present.atoms):
+                        is_equivalent_atom(a1, a2)
+                assert test.atom_ids == present.atom_ids
+                assert test.angle == present.angle
+                assert test.angle_k == present.angle_k
+                assert test.force == present.force
+
     except ForcefieldUnitError:
         assert molecule.num_forcefields == 0

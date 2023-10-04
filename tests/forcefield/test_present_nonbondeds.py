@@ -1,3 +1,4 @@
+import os
 import pathlib
 
 from cgexplore.errors import ForcefieldUnitError
@@ -5,7 +6,7 @@ from cgexplore.errors import ForcefieldUnitError
 
 def test_present_nonbondeds(molecule):
     """
-    Test methods toward :meth:`.ForceField.get_nonbonded_string`.
+    Test methods toward :meth:`.ForceField._assign_nonbonded_terms`.
 
     Parameters:
 
@@ -24,23 +25,26 @@ def test_present_nonbondeds(molecule):
             )
         )
         for i, ff in enumerate(force_fields):
-            string = ff.get_nonbonded_string().split("\n")
-            print(string)
-            assert string[0] == (
-                ' <CustomNonbondedForce energy="sqrt(epsilon1*epsilon2)'
-                '*((sigma1+sigma2)/(2*r))^12" bondCutoff="2">'
+            assigned_system = ff.assign_terms(
+                molecule=molecule.molecule,
+                output_dir=pathlib.Path(
+                    os.path.dirname(os.path.realpath(__file__))
+                ),
+                name=molecule.name,
             )
-            assert string[1] == '  <PerParticleParameter name="sigma"/>'
-            assert string[2] == '  <PerParticleParameter name="epsilon"/>'
-            assert string[-3] == " </CustomNonbondedForce>"
-            if len(string) > 6:
-                assert "Atom" in string[3]
-                # There are some actual measures here. Test them.
-                measures = string[3:-3]
-                print(measures)
-                for j, measure in enumerate(measures):
-                    assert measure == molecule.present_nonbondeds[i][j]
-            else:
-                assert len(molecule.present_nonbondeds[i]) == 0
+
+            present_terms = assigned_system.force_field_terms["nonbonded"]
+            print(present_terms)
+            assert len(present_terms) == len(molecule.present_nonbondeds[i])
+            for test, present in zip(
+                present_terms, molecule.present_nonbondeds[i]
+            ):
+                assert test.atom_id == present.atom_id
+                assert test.bead_class == present.bead_class
+                assert test.bead_element == present.bead_element
+                assert test.sigma == present.sigma
+                assert test.epsilon == present.epsilon
+                assert test.force == present.force
+
     except ForcefieldUnitError:
         assert molecule.num_forcefields == 0
