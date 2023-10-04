@@ -838,7 +838,7 @@ def pd_3p64p8_figure_bite_angle(all_data, figure_output):
             ey = float(tdata["energy_per_bb"].iloc[0])
             tstr_points[tstr].append((ba, ey))
 
-    print(tstr_points)
+    next(ax._get_lines.prop_cycler)["color"]
     for tstr in color_map:
         ax.plot(
             [i[0] for i in tstr_points[tstr]],
