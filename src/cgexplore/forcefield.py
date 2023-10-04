@@ -100,10 +100,10 @@ class ForceFieldLibrary:
                 output_dir=output_path,
                 prefix=self._prefix,
                 present_beads=self._bead_library,
-                bond_terms=bond_terms,
-                angle_terms=angle_terms,
-                torsion_terms=torsion_terms,
-                nonbonded_terms=nonbonded_terms,
+                bond_targets=bond_terms,
+                angle_targets=angle_terms,
+                torsion_targets=torsion_terms,
+                nonbonded_targets=nonbonded_terms,
                 vdw_bond_cutoff=self._vdw_bond_cutoff,
             )
 
@@ -129,20 +129,20 @@ class Forcefield:
         output_dir: pathlib.Path,
         prefix: str,
         present_beads: tuple[CgBead, ...],
-        bond_terms: tuple[TargetBond, ...],
-        angle_terms: tuple[TargetAngle, ...],
-        torsion_terms: tuple[TargetTorsion, ...],
-        nonbonded_terms: tuple[TargetNonbonded, ...],
+        bond_targets: tuple[TargetBond, ...],
+        angle_targets: tuple[TargetAngle, ...],
+        torsion_targets: tuple[TargetTorsion, ...],
+        nonbonded_targets: tuple[TargetNonbonded, ...],
         vdw_bond_cutoff: int,
     ) -> None:
         self._identifier = identifier
         self._output_dir = output_dir
         self._prefix = prefix
         self._present_beads = present_beads
-        self._bond_terms = bond_terms
-        self._angle_terms = angle_terms
-        self._torsion_terms = torsion_terms
-        self._nonbonded_terms = nonbonded_terms
+        self._bond_targets = bond_targets
+        self._angle_targets = angle_targets
+        self._torsion_targets = torsion_targets
+        self._nonbonded_targets = nonbonded_targets
         self._vdw_bond_cutoff = vdw_bond_cutoff
 
     def _assign_bond_terms(self, molecule: stk.Molecule) -> tuple:
@@ -157,7 +157,7 @@ class Forcefield:
             )
             cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
 
-            for target_term in self._bond_terms:
+            for target_term in self._bond_targets:
                 if (target_term.class1, target_term.class2) not in (
                     cgbead_string,
                     tuple(reversed(cgbead_string)),
@@ -207,7 +207,7 @@ class Forcefield:
                 )
 
             cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
-            for target_angle in self._angle_terms:
+            for target_angle in self._angle_targets:
                 search_string = (
                     target_angle.class1,
                     target_angle.class2,
@@ -354,7 +354,7 @@ class Forcefield:
 
         # Iterate over the different path lengths, and find all torsions
         # for that lengths.
-        path_lengths = set(len(i.search_string) for i in self._torsion_terms)
+        path_lengths = set(len(i.search_string) for i in self._torsion_targets)
         for pl in path_lengths:
             for found_torsion in find_torsions(molecule, pl):
                 atom_estrings = list(
@@ -365,7 +365,7 @@ class Forcefield:
                     for i in atom_estrings
                 )
                 cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
-                for target_torsion in self._torsion_terms:
+                for target_torsion in self._torsion_targets:
                     if target_torsion.search_string not in (
                         cgbead_string,
                         tuple(reversed(cgbead_string)),
@@ -483,18 +483,6 @@ class Forcefield:
     def get_bead_set(self) -> dict[str, CgBead]:
         return {i.bead_type: i for i in self._present_beads}
 
-    def get_bond_terms(self) -> tuple:
-        return self._bond_terms
-
-    def get_angle_terms(self) -> tuple:
-        return self._angle_terms
-
-    def get_torsion_terms(self) -> tuple:
-        return self._torsion_terms
-
-    def get_nonbonded_terms(self) -> tuple:
-        return self._nonbonded_terms
-
     def get_identifier(self) -> str:
         return self._identifier
 
@@ -511,10 +499,10 @@ class Forcefield:
         return (
             f"{self.__class__.__name__}(\n"
             f"  present_beads={self._present_beads}, \n"
-            f"  bond_terms={len(self._bond_terms)}, \n"
-            f"  angle_terms={len(self._angle_terms)}, \n"
-            f"  torsion_terms={len(self._torsion_terms)}, \n"
-            f"  nonbonded_terms={len(self._nonbonded_terms)}"
+            f"  bond_targets={len(self._bond_targets)}, \n"
+            f"  angle_targets={len(self._angle_targets)}, \n"
+            f"  torsion_targets={len(self._torsion_targets)}, \n"
+            f"  nonbonded_targets={len(self._nonbonded_targets)}"
             "\n)"
         )
 
