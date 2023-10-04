@@ -14,7 +14,7 @@ import pathlib
 from dataclasses import dataclass
 
 import stk
-from openmm import app, openmm
+from openmm import OpenMMException, app, openmm
 
 from .beads import CgBead, get_cgbead_from_element
 from .errors import ForcefieldUnavailableError, ForcefieldUnitError
@@ -248,11 +248,17 @@ class AssignedSystem:
                     raise ForcefieldUnitError(
                         f"{assigned_force} in nonbondeds does not have units"
                     )
-            # This method MUST be after terms are assigned.
-            force_function.createExclusionsFromBonds(
-                exclusion_bonds,
-                self.vdw_bond_cutoff,
-            )
+
+            try:
+                # This method MUST be after terms are assigned.
+                force_function.createExclusionsFromBonds(
+                    exclusion_bonds,
+                    self.vdw_bond_cutoff,
+                )
+            except OpenMMException:
+                raise ForcefieldUnitError(
+                    f"{force_type} is missing a definition for a particle."
+                )
 
         return system
 
