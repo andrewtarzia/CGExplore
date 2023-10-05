@@ -12,7 +12,7 @@ Author: Andrew Tarzia
 import logging
 import sys
 
-from bead_libraries import binder_bead, trigonal_bead, tetragonal_bead
+from bead_libraries import binder_bead, tetragonal_bead, trigonal_bead
 from cgexplore.beads import bead_library_check
 from cgexplore.molecule_construction.topologies import FourC1Arm, ThreeC1Arm
 from define_forcefields import define_3p4_forcefield_library
