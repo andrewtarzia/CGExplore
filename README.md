@@ -7,7 +7,7 @@ The library is built off of [`stk`](https://stk.readthedocs.io/en/stable/), whic
 
 `CGExplore` is a library but contains an example library usage in the `first_paper_example` directory. I recommend installing the library with the following instructions and then using the example directory in a separate repository or code base of your own.
 
-**To reproduce data in DOI: [URL](URL)**: Download the source code from `first_paper_example - presubmission` release from [Releases](https://github.com/andrewtarzia/CGExplore/releases) instead of the repo in step 1.
+**To reproduce data in DOI: [URL](URL)**: Download the source code from `first_paper_example - presubmission` release from [Releases](https://github.com/andrewtarzia/CGExplore/releases) instead of the repo in step 1. I do not guarantee that running the example code on the current version will work. However, with each pull request a test is run as a GitHub Action connected to this [repository](https://github.com/andrewtarzia/cg_model_test). This ensures that the results obtained for a subset of the original data set do not change with changes to this library. Additionally, the naming convention has changed and force field xml files should provide the appropriate information for mapping angles to models.
 
 The code can be installed following these steps:
 
@@ -41,7 +41,7 @@ or
 conda install -c conda-forge openmm
 ```
 
-5. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
+7. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
 ```
 mamba install openmmtools
 ```
@@ -50,6 +50,8 @@ or
 conda config --add channels omnia --add channels conda-forge
 conda install openmmtools
 ```
+
+8. Update directory structure in `env_set.py` if using example code.
 
 The library implements some analysis that uses:
 
