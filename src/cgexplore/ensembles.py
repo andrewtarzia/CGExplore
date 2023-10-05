@@ -172,7 +172,8 @@ class Ensemble:
                     f"conformer {conf_id} not found in ensemble "
                     f"({self._data_json})."
                     "Strict handling of `conf_id` is coming."
-                    f"Current types: {list(type(i) for i in self._data.keys())}"
+                    "Current types: "
+                    f"{list(type(i) for i in self._data.keys())}"
                 )
             else:
                 conf_id = str(conf_id)
