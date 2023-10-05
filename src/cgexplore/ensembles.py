@@ -167,10 +167,16 @@ class Ensemble:
 
     def get_conformer(self, conf_id: int | str) -> Conformer:
         if conf_id not in self._data:
-            raise ValueError(
-                f"conformer {conf_id} not found in ensemble "
-                f"({self._data_json})."
-            )
+            if str(conf_id) not in self._data:
+                raise ValueError(
+                    f"conformer {conf_id} not found in ensemble "
+                    f"({self._data_json})."
+                    "Strict handling of `conf_id` is coming."
+                    f"Current types: {list(type(i) for i in self._data.keys())}"
+                )
+            else:
+                conf_id = str(conf_id)
+
         conf_lines = self._trajectory[int(conf_id)]
         extracted_id = int(conf_lines[1].strip().split()[1])
         if extracted_id != int(conf_id):
