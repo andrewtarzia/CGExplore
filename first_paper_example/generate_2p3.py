@@ -12,24 +12,12 @@ Author: Andrew Tarzia
 import logging
 import sys
 
-from bead_libraries import (
-    arm_2c_beads,
-    beads_3c,
-    binder_beads,
-    core_2c_beads,
-)
+from bead_libraries import arm_bead, binder_bead, core_bead, trigonal_bead
 from cgexplore.beads import bead_library_check
-from cgexplore.molecule_construction.topologies import (
-    ThreeC1Arm,
-    TwoC1Arm,
-)
+from cgexplore.molecule_construction.topologies import ThreeC1Arm, TwoC1Arm
+from define_forcefields import define_2p3_forcefield_library
 from env_set import calculations, ligands, structures
-from generation import (
-    build_building_block,
-    build_populations,
-    custom_torsion_definitions,
-    custom_vdw_definitions,
-)
+from generation import build_populations
 from rdkit import RDLogger
 from topologies import cage_topology_options
 
@@ -53,59 +41,41 @@ def main():
     ligand_output = ligands()
 
     # Define bead libraries.
-    beads_core_2c_lib = core_2c_beads()
-    beads_3c_lib = beads_3c()
-    beads_arm_2c_lib = arm_2c_beads()
-    beads_binder_lib = binder_beads()
     full_bead_library = (
-        list(beads_3c_lib.values())
-        + list(beads_arm_2c_lib.values())
-        + list(beads_core_2c_lib.values())
-        + list(beads_binder_lib.values())
+        core_bead(),
+        arm_bead(),
+        binder_bead(),
+        trigonal_bead(),
     )
     bead_library_check(full_bead_library)
 
-    logging.info("building building blocks")
-    c2_blocks = build_building_block(
-        topology=TwoC1Arm,
-        option1_lib=beads_core_2c_lib,
-        option2_lib=beads_arm_2c_lib,
-        calculation_output=calculation_output,
-        ligand_output=ligand_output,
-        platform=None,
-    )
-    c3_blocks = build_building_block(
-        topology=ThreeC1Arm,
-        option1_lib=beads_3c_lib,
-        option2_lib=beads_binder_lib,
-        calculation_output=calculation_output,
-        ligand_output=ligand_output,
-        platform=None,
+    logging.info("defining force field")
+    forcefieldlibrary = define_2p3_forcefield_library(
+        full_bead_library=full_bead_library,
+        prefix="2p3",
     )
 
-    logging.info(
-        f"there are {len(c2_blocks)} 2-C and "
-        f"{len(c3_blocks)} 3-C and building blocks."
-    )
+    logging.info("defining building blocks")
+    ditopic = TwoC1Arm(bead=core_bead(), abead1=arm_bead())
+    tritopic = ThreeC1Arm(bead=trigonal_bead(), abead1=binder_bead())
 
     # Define list of topology functions.
-    cage_3p2_topologies = cage_topology_options("2p3")
+    cage_2p3_topologies = cage_topology_options("2p3")
 
     populations = {
         "2p3": {
-            "t": cage_3p2_topologies,
-            "c2": c2_blocks,
-            "cl": c3_blocks,
+            "topologies": cage_2p3_topologies,
+            "c2": ditopic,
+            "cl": tritopic,
+            "fflibrary": forcefieldlibrary,
         },
     }
-    custom_torsion_options = custom_torsion_definitions("2p3")
-    custom_vdw_options = custom_vdw_definitions("2p3")
+
     build_populations(
         populations=populations,
-        custom_torsion_options=custom_torsion_options,
-        custom_vdw_options=custom_vdw_options,
         struct_output=struct_output,
         calculation_output=calculation_output,
+        ligand_output=ligand_output,
         node_element="C",
         ligand_element="Ag",
         platform=None,

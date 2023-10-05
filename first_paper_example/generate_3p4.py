@@ -12,23 +12,12 @@ Author: Andrew Tarzia
 import logging
 import sys
 
-from bead_libraries import (
-    beads_3c,
-    beads_4c,
-    binder_beads,
-)
+from bead_libraries import binder_bead, trigonal_bead, tetragonal_bead
 from cgexplore.beads import bead_library_check
-from cgexplore.molecule_construction.topologies import (
-    FourC1Arm,
-    ThreeC1Arm,
-)
+from cgexplore.molecule_construction.topologies import FourC1Arm, ThreeC1Arm
+from define_forcefields import define_3p4_forcefield_library
 from env_set import calculations, ligands, structures
-from generation import (
-    build_building_block,
-    build_populations,
-    custom_torsion_definitions,
-    custom_vdw_definitions,
-)
+from generation import build_populations
 from rdkit import RDLogger
 from topologies import cage_topology_options
 
@@ -52,38 +41,22 @@ def main():
     ligand_output = ligands()
 
     # Define bead libraries.
-    beads_4c_lib = beads_4c()
-    beads_3c_lib = beads_3c()
-    beads_binder_lib = binder_beads()
     full_bead_library = (
-        list(beads_3c_lib.values())
-        + list(beads_4c_lib.values())
-        + list(beads_binder_lib.values())
+        tetragonal_bead(),
+        binder_bead(),
+        trigonal_bead(),
     )
     bead_library_check(full_bead_library)
 
-    logging.info("building building blocks")
-    c3_blocks = build_building_block(
-        topology=ThreeC1Arm,
-        option1_lib=beads_3c_lib,
-        option2_lib=beads_binder_lib,
-        calculation_output=calculation_output,
-        ligand_output=ligand_output,
-        platform=None,
-    )
-    c4_blocks = build_building_block(
-        topology=FourC1Arm,
-        option1_lib=beads_4c_lib,
-        option2_lib=beads_binder_lib,
-        calculation_output=calculation_output,
-        ligand_output=ligand_output,
-        platform=None,
+    logging.info("defining force field")
+    forcefieldlibrary = define_3p4_forcefield_library(
+        full_bead_library=full_bead_library,
+        prefix="3p4",
     )
 
-    logging.info(
-        f"there are {len(c3_blocks)} 3-C and "
-        f"{len(c4_blocks)} 4-C building blocks."
-    )
+    logging.info("defining building blocks")
+    tetratopic = FourC1Arm(bead=tetragonal_bead(), abead1=binder_bead())
+    tritopic = ThreeC1Arm(bead=trigonal_bead(), abead1=binder_bead())
 
     # Define list of topology functions.
     cage_3p4_topologies = cage_topology_options("3p4")
@@ -92,18 +65,17 @@ def main():
     populations = {
         "3p4": {
             "t": cage_3p4_topologies,
-            "c2": c3_blocks,
-            "cl": c4_blocks,
+            "c2": tritopic,
+            "cl": tetratopic,
+            "fflibrary": forcefieldlibrary,
         },
     }
-    custom_torsion_options = custom_torsion_definitions("3p4")
-    custom_vdw_options = custom_vdw_definitions("3p4")
+
     build_populations(
         populations=populations,
-        custom_torsion_options=custom_torsion_options,
-        custom_vdw_options=custom_vdw_options,
         struct_output=struct_output,
         calculation_output=calculation_output,
+        ligand_output=ligand_output,
         node_element="Pd",
         ligand_element="C",
         platform=None,
