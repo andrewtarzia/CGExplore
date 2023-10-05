@@ -430,6 +430,7 @@ def yield_near_models(
         An stk molecule.
 
     """
+
     ff_name = [i for i in name.split("_") if "f" in i][-1]
     ff_num = int(ff_name[1:])
     ff_range = 10

@@ -13,33 +13,26 @@ import itertools
 import json
 import logging
 import os
-import pathlib
 
 import openmm
 import stk
-from analysis import (
-    ligand_expected_topologies,
-    node_expected_topologies,
-)
-from cgexplore.beads import CgBead
+from analysis import ligand_expected_topologies, node_expected_topologies
+from cgexplore.assigned_system import AssignedSystem
 from cgexplore.ensembles import Ensemble
 from cgexplore.generation_utilities import (
     optimise_ligand,
     run_constrained_optimisation,
     run_optimisation,
     run_soft_md_cycle,
-    yield_near_models,
     yield_shifted_models,
 )
 from cgexplore.geom import GeomMeasure
-from cgexplore.molecule_construction.topologies import Precursor
 from cgexplore.pore import PoreMeasure
 from cgexplore.shape import (
     ShapeMeasure,
     get_shape_molecule_ligands,
     get_shape_molecule_nodes,
 )
-from cgexplore.torsions import TargetTorsion
 from env_set import shape_path
 
 logging.basicConfig(
@@ -48,88 +41,11 @@ logging.basicConfig(
 )
 
 
-def build_building_block(
-    topology: Precursor,
-    option1_lib: dict[str, CgBead],
-    option2_lib: dict[str, CgBead],
-    calculation_output: pathlib.Path,
-    ligand_output: pathlib.Path,
-    platform: str,
-) -> dict[str, tuple[stk.Molecule, dict]]:
-    blocks = {}
-    for options in itertools.product(option1_lib, option2_lib):
-        option1 = option1_lib[options[0]]
-        option2 = option2_lib[options[1]]
-        temp = topology(bead=option1, abead1=option2)  # type: ignore[operator]
-
-        opt_bb = optimise_ligand(
-            molecule=temp.get_building_block(),
-            name=temp.get_name(),
-            output_dir=calculation_output,
-            bead_set=temp.get_bead_set(),
-            platform=platform,
-        )
-        opt_bb.write(str(ligand_output / f"{temp.get_name()}_optl.mol"))
-        blocks[temp.get_name()] = (opt_bb, temp.get_bead_set())
-    return blocks
-
-
-def custom_torsion_definitions(population):
-    return {
-        "2p3": {
-            "ton": (
-                TargetTorsion(
-                    search_string=("b", "a", "c", "a", "b"),
-                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
-                    measured_atom_ids=[0, 1, 3, 4],
-                    phi0=180,
-                    torsion_k=50,
-                    torsion_n=1.0,
-                ),
-            ),
-            "toff": (),
-        },
-        "2p4": {
-            "ton": (
-                TargetTorsion(
-                    search_string=("b", "a", "c", "a", "b"),
-                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
-                    measured_atom_ids=[0, 1, 3, 4],
-                    phi0=180,
-                    torsion_k=50,
-                    torsion_n=1.0,
-                ),
-            ),
-            "toff": (),
-        },
-        "3p4": {"toff": ()},
-    }[population]
-
-
-def custom_vdw_definitions(population):
-    return {
-        "2p3": {
-            "von": True,
-            # "voff": False,
-        },
-        "2p4": {
-            "von": True,
-            # "voff": False,
-        },
-        "3p4": {
-            "von": True,
-            # "voff": False,
-        },
-    }[population]
-
-
 def optimise_cage(
     molecule,
     name,
     output_dir,
-    bead_set,
-    custom_torsion_set,
-    custom_vdw_set,
+    force_field,
     platform,
 ):
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
@@ -143,6 +59,8 @@ def optimise_cage(
         )
         return ensemble.get_lowest_e_conformer()
 
+    assigned_system = force_field.assign_terms(molecule, name, output_dir)
+
     ensemble = Ensemble(
         base_molecule=molecule,
         base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
@@ -150,13 +68,10 @@ def optimise_cage(
         data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
         overwrite=True,
     )
-
-    molecule = run_constrained_optimisation(
-        molecule=molecule,
-        bead_set=bead_set,
+    temp_molecule = run_constrained_optimisation(
+        assigned_system=assigned_system,
         name=name,
         output_dir=output_dir,
-        custom_vdw_set=custom_vdw_set,
         bond_ff_scale=10,
         angle_ff_scale=10,
         max_iterations=20,
@@ -165,17 +80,17 @@ def optimise_cage(
 
     logging.info(f"optimisation of {name}")
     conformer = run_optimisation(
-        molecule=molecule,
-        bead_set=bead_set,
+        assigned_system=AssignedSystem(
+            molecule=temp_molecule,
+            force_field_terms=assigned_system.force_field_terms,
+            system_xml=assigned_system.system_xml,
+            topology_xml=assigned_system.topology_xml,
+            bead_set=assigned_system.bead_set,
+            vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+        ),
         name=name,
         file_suffix="opt1",
         output_dir=output_dir,
-        custom_vdw_set=custom_vdw_set,
-        custom_torsion_set=custom_torsion_set,
-        bonds=True,
-        angles=True,
-        torsions=False,
-        vdw_bond_cutoff=2,
         # max_iterations=50,
         platform=platform,
     )
@@ -184,59 +99,60 @@ def optimise_cage(
     # Run optimisations of series of conformers with shifted out
     # building blocks.
     logging.info(f"optimisation of shifted structures of {name}")
-    for test_molecule in yield_shifted_models(molecule, bead_set):
+    for test_molecule in yield_shifted_models(temp_molecule, force_field):
         conformer = run_optimisation(
-            molecule=test_molecule,
-            bead_set=bead_set,
+            assigned_system=AssignedSystem(
+                molecule=test_molecule,
+                force_field_terms=assigned_system.force_field_terms,
+                system_xml=assigned_system.system_xml,
+                topology_xml=assigned_system.topology_xml,
+                bead_set=assigned_system.bead_set,
+                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+            ),
             name=name,
             file_suffix="sopt",
             output_dir=output_dir,
-            custom_vdw_set=custom_vdw_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw_bond_cutoff=2,
             # max_iterations=50,
             platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="shifted")
 
     # Collect and optimise structures nearby in phase space.
-    logging.info(f"optimisation of nearby structures of {name}")
-    for test_molecule in yield_near_models(
-        molecule=molecule,
-        name=name,
-        bead_set=bead_set,
-        output_dir=output_dir,
-    ):
-        conformer = run_optimisation(
-            molecule=test_molecule,
-            bead_set=bead_set,
-            name=name,
-            file_suffix="nopt",
-            output_dir=output_dir,
-            custom_vdw_set=custom_vdw_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw_bond_cutoff=2,
-            # max_iterations=50,
-            platform=platform,
-        )
-        ensemble.add_conformer(conformer=conformer, source="nearby_opt")
+    # logging.info(f"optimisation of nearby structures of {name}")
+    logging.info("optimisation of nearby structures turned off for now")
+    # for test_molecule in yield_near_models(
+    #     molecule=molecule,
+    #     name=name,
+    #     output_dir=output_dir,
+    # ):
+    #     conformer = run_optimisation(
+    #         assigned_system=AssignedSystem(
+    #             molecule=test_molecule,
+    #             force_field_terms=assigned_system.force_field_terms,
+    #         ),
+    #         name=name,
+    #         file_suffix="nopt",
+    #         output_dir=output_dir,
+    #         force_field=force_field,
+    #         # max_iterations=50,
+    #         platform=platform,
+    #     )
+    #     ensemble.add_conformer(conformer=conformer, source="nearby_opt")
 
     logging.info(f"soft MD run of {name}")
     num_steps = 20000
     traj_freq = 500
     soft_md_trajectory = run_soft_md_cycle(
         name=name,
-        molecule=ensemble.get_lowest_e_conformer().molecule,
-        bead_set=bead_set,
+        assigned_system=AssignedSystem(
+            molecule=ensemble.get_lowest_e_conformer().molecule,
+            force_field_terms=assigned_system.force_field_terms,
+            system_xml=assigned_system.system_xml,
+            topology_xml=assigned_system.topology_xml,
+            bead_set=assigned_system.bead_set,
+            vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+        ),
         output_dir=output_dir,
-        custom_vdw_set=custom_vdw_set,
-        custom_torsion_set=None,
         suffix="smd",
         bond_ff_scale=10,
         angle_ff_scale=10,
@@ -265,17 +181,17 @@ def optimise_cage(
     # Optimise them all.
     for md_conformer in soft_md_trajectory.yield_conformers():
         conformer = run_optimisation(
-            molecule=md_conformer.molecule,
-            bead_set=bead_set,
+            assigned_system=AssignedSystem(
+                molecule=md_conformer.molecule,
+                force_field_terms=assigned_system.force_field_terms,
+                system_xml=assigned_system.system_xml,
+                topology_xml=assigned_system.topology_xml,
+                bead_set=assigned_system.bead_set,
+                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+            ),
             name=name,
             file_suffix="smd_mdc",
             output_dir=output_dir,
-            custom_vdw_set=custom_vdw_set,
-            custom_torsion_set=custom_torsion_set,
-            bonds=True,
-            angles=True,
-            torsions=False,
-            vdw_bond_cutoff=2,
             # max_iterations=50,
             platform=platform,
         )
@@ -398,79 +314,87 @@ def analyse_cage(
 
 def build_populations(
     populations,
-    custom_torsion_options,
-    custom_vdw_options,
     struct_output,
     calculation_output,
+    ligand_output,
     node_element,
     ligand_element,
     platform,
 ):
-    num_runs = 1
-    for popn in populations:
-        logging.info(f"building {popn} population")
+    count = 0
+    for population in populations:
+        logging.info(f"running population {population}")
+        popn_dict = populations[population]
         popn_iterator = itertools.product(
-            populations[popn]["t"],
-            populations[popn]["c2"],
-            populations[popn]["cl"],
-            custom_torsion_options,
-            custom_vdw_options,
+            popn_dict["topologies"],
+            tuple(
+                popn_dict["fflibrary"].yield_forcefields(
+                    output_path=calculation_output
+                )
+            ),
         )
-        count = 0
-        for iteration in popn_iterator:
-            (
-                cage_topo_str,
-                bb2_str,
-                bbl_str,
-                custom_torsion,
-                custom_vdw,
-            ) = iteration
+        for cage_topo_str, force_field in popn_iterator:
+            c2_precursor = popn_dict["c2"]
+            cl_precursor = popn_dict["cl"]
+            name = (
+                f"{cage_topo_str}_{cl_precursor.get_name()}_"
+                f"{c2_precursor.get_name()}_"
+                f"f{force_field.get_identifier()}"
+            )
 
-            bb2, bb2_bead_set = populations[popn]["c2"][bb2_str]
-            bbl, bbl_bead_set = populations[popn]["cl"][bbl_str]
+            # Optimise building blocks.
+            c2_name = (
+                f"{c2_precursor.get_name()}_f{force_field.get_identifier()}"
+            )
+            c2_building_block = optimise_ligand(
+                molecule=c2_precursor.get_building_block(),
+                name=c2_name,
+                output_dir=calculation_output,
+                force_field=force_field,
+                platform=None,
+            )
+            c2_building_block.write(str(ligand_output / f"{c2_name}_optl.mol"))
 
-            bead_set = bb2_bead_set.copy()
-            bead_set.update(bbl_bead_set)
+            cl_name = (
+                f"{cl_precursor.get_name()}_f{force_field.get_identifier()}"
+            )
+            cl_building_block = optimise_ligand(
+                molecule=cl_precursor.get_building_block(),
+                name=cl_name,
+                output_dir=calculation_output,
+                force_field=force_field,
+                platform=None,
+            )
+            cl_building_block.write(str(ligand_output / f"{cl_name}_optl.mol"))
 
-            custom_torsion_set = custom_torsion_options[custom_torsion]
-            custom_vdw_set = custom_vdw_options[custom_vdw]
+            logging.info(f"building {name}")
+            cage = stk.ConstructedMolecule(
+                topology_graph=popn_dict["topologies"][cage_topo_str](
+                    building_blocks=(c2_building_block, cl_building_block),
+                ),
+            )
 
-            for run in range(num_runs):
-                name = (
-                    f"{cage_topo_str}_{bbl_str}_{bb2_str}_"
-                    f"{custom_torsion}_{custom_vdw}_{run}"
+            conformer = optimise_cage(
+                molecule=cage,
+                name=name,
+                output_dir=calculation_output,
+                force_field=force_field,
+                platform=platform,
+            )
+            if conformer is not None:
+                conformer.molecule.write(
+                    str(struct_output / f"{name}_optc.mol")
                 )
+            logging.info("skipping analysis right now.")
+            continue
 
-                logging.info(f"building {name}")
-                cage = stk.ConstructedMolecule(
-                    topology_graph=populations[popn]["t"][cage_topo_str](
-                        building_blocks=(bb2, bbl),
-                    ),
-                )
-
-                conformer = optimise_cage(
-                    molecule=cage,
-                    name=name,
-                    output_dir=calculation_output,
-                    bead_set=bead_set,
-                    custom_torsion_set=custom_torsion_set,
-                    custom_vdw_set=custom_vdw_set,
-                    platform=platform,
-                )
-
-                if conformer is not None:
-                    conformer.molecule.write(
-                        str(struct_output / f"{name}_optc.mol")
-                    )
-
-                analyse_cage(
-                    conformer=conformer,
-                    name=name,
-                    output_dir=calculation_output,
-                    custom_torsion_options=custom_torsion_options,
-                    node_element=node_element,
-                    ligand_element=ligand_element,
-                )
+            analyse_cage(
+                conformer=conformer,
+                name=name,
+                output_dir=calculation_output,
+                node_element=node_element,
+                ligand_element=ligand_element,
+            )
             count += 1
 
-        logging.info(f"{count} {popn} cages built.")
+        logging.info(f"{count} {population} cages built.")
