@@ -504,20 +504,20 @@ class Forcefield:
                 f.write(f"{i} \n")
 
             f.write("\nbonds:\n")
-            for i in self._bond_targets:
-                f.write(f"{i.human_readable()} \n")
+            for bt in self._bond_targets:
+                f.write(f"{bt.human_readable()} \n")
 
             f.write("\nangles:\n")
-            for i in self._angle_targets:
-                f.write(f"{i.human_readable()} \n")
+            for at in self._angle_targets:
+                f.write(f"{at.human_readable()} \n")
 
             f.write("\ntorsions:\n")
-            for i in self._torsion_targets:
-                f.write(f"{i.human_readable()} \n")
+            for tt in self._torsion_targets:
+                f.write(f"{tt.human_readable()} \n")
 
             f.write("\nnobondeds:\n")
-            for i in self._nonbonded_targets:
-                f.write(f"{i.human_readable()} \n")
+            for nt in self._nonbonded_targets:
+                f.write(f"{nt.human_readable()} \n")
 
     def __str__(self) -> str:
         return (
