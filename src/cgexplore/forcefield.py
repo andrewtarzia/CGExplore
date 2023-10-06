@@ -60,7 +60,7 @@ class ForceFieldLibrary:
     def add_nonbonded_range(self, nonbonded_range: tuple) -> None:
         self._nonbonded_ranges += (nonbonded_range,)
 
-    def yield_forcefields(self, output_path: pathlib.Path):
+    def yield_forcefields(self):
         iterations = []
 
         for bond_range in self._bond_ranges:
@@ -97,7 +97,6 @@ class ForceFieldLibrary:
 
             yield Forcefield(
                 identifier=str(i),
-                output_dir=output_path,
                 prefix=self._prefix,
                 present_beads=self._bead_library,
                 bond_targets=bond_terms,
@@ -126,7 +125,6 @@ class Forcefield:
     def __init__(
         self,
         identifier: str,
-        output_dir: pathlib.Path,
         prefix: str,
         present_beads: tuple[CgBead, ...],
         bond_targets: tuple[TargetBond, ...],
@@ -136,7 +134,6 @@ class Forcefield:
         vdw_bond_cutoff: int,
     ) -> None:
         self._identifier = identifier
-        self._output_dir = output_dir
         self._prefix = prefix
         self._present_beads = present_beads
         self._bond_targets = bond_targets
@@ -494,6 +491,33 @@ class Forcefield:
 
     def get_vdw_bond_cutoff(self) -> int:
         return self._vdw_bond_cutoff
+
+    def write_human_readable(self, output_dir) -> None:
+        with open(
+            output_dir / f"{self._prefix}_{self._identifier}.txt", "w"
+        ) as f:
+            f.write(f"prefix: {self._prefix}\n")
+            f.write(f"identifier: {self._identifier}\n")
+            f.write(f"vdw bond cut off: {self._vdw_bond_cutoff}\n")
+            f.write("present beads:\n")
+            for i in self._present_beads:
+                f.write(f"{i} \n")
+
+            f.write("\nbonds:\n")
+            for i in self._bond_targets:
+                f.write(f"{i.human_readable()} \n")
+
+            f.write("\nangles:\n")
+            for i in self._angle_targets:
+                f.write(f"{i.human_readable()} \n")
+
+            f.write("\ntorsions:\n")
+            for i in self._torsion_targets:
+                f.write(f"{i.human_readable()} \n")
+
+            f.write("\nnobondeds:\n")
+            for i in self._nonbonded_targets:
+                f.write(f"{i.human_readable()} \n")
 
     def __str__(self) -> str:
         return (

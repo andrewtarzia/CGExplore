@@ -39,6 +39,17 @@ class TargetNonbonded:
     epsilon: openmm.unit.Quantity
     force: str
 
+    def human_readable(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.bead_class}, "
+            f"{self.bead_element}, "
+            f"{self.sigma.in_units_of(openmm.unit.angstrom)}, "
+            f"{self.epsilon.in_units_of(openmm.unit.kilojoules_per_mole)}, "
+            f"{self.force}, "
+            ")"
+        )
+
 
 @dataclass
 class TargetNonbondedRange:

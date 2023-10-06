@@ -22,6 +22,10 @@ logging.basicConfig(
 )
 
 
+def bond_k_unit():
+    return openmm.unit.kilojoules_per_mole / openmm.unit.nanometer**2
+
+
 @dataclass
 class Bond:
     atom_names: tuple[str, ...]
@@ -40,6 +44,16 @@ class TargetBond:
     eclass2: str
     bond_r: openmm.unit.Quantity
     bond_k: openmm.unit.Quantity
+
+    def human_readable(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.class1}{self.class2}, "
+            f"{self.eclass1}{self.eclass2}, "
+            f"{self.bond_r.in_units_of(openmm.unit.angstrom)}, "
+            f"{self.bond_k.in_units_of(bond_k_unit())}, "
+            ")"
+        )
 
 
 @dataclass
