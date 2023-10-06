@@ -10,13 +10,12 @@ Author: Andrew Tarzia
 """
 
 import itertools
-import json
 import logging
 import os
 
 import openmm
 import stk
-from analysis import ligand_expected_topologies, node_expected_topologies
+from analysis import analyse_cage
 from cgexplore.assigned_system import AssignedSystem
 from cgexplore.ensembles import Ensemble
 from cgexplore.generation_utilities import (
@@ -26,14 +25,6 @@ from cgexplore.generation_utilities import (
     run_soft_md_cycle,
     yield_shifted_models,
 )
-from cgexplore.geom import GeomMeasure
-from cgexplore.pore import PoreMeasure
-from cgexplore.shape import (
-    ShapeMeasure,
-    get_shape_molecule_ligands,
-    get_shape_molecule_nodes,
-)
-from env_set import shape_path
 
 logging.basicConfig(
     level=logging.INFO,
@@ -221,107 +212,6 @@ def optimise_cage(
     return min_energy_conformer
 
 
-def analyse_cage(
-    conformer,
-    name,
-    output_dir,
-    custom_torsion_options,
-    node_element,
-    ligand_element,
-):
-    output_file = os.path.join(output_dir, f"{name}_res.json")
-    shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
-    shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
-
-    if not os.path.exists(output_file):
-        logging.info(f"analysing {name}")
-
-        energy_decomp = {
-            f"{i}_{conformer.energy_decomposition[i][1]}": float(
-                conformer.energy_decomposition[i][0]
-            )
-            for i in conformer.energy_decomposition
-        }
-        fin_energy = energy_decomp["total energy_kJ/mol"]
-
-        n_shape_mol = get_shape_molecule_nodes(
-            constructed_molecule=conformer.molecule,
-            name=name,
-            element=node_element,
-            topo_expected=node_expected_topologies(),
-        )
-        l_shape_mol = get_shape_molecule_ligands(
-            constructed_molecule=conformer.molecule,
-            name=name,
-            element=ligand_element,
-            topo_expected=ligand_expected_topologies(),
-        )
-        if n_shape_mol is None:
-            node_shape_measures = None
-        else:
-            n_shape_mol.write(shape_molfile1)
-            node_shape_measures = ShapeMeasure(
-                output_dir=(output_dir / f"{name}_nshape"),
-                shape_path=shape_path(),
-                shape_string=None,
-            ).calculate(n_shape_mol)
-
-        if l_shape_mol is None:
-            lig_shape_measures = None
-        else:
-            lig_shape_measures = ShapeMeasure(
-                output_dir=(output_dir / f"{name}_lshape"),
-                shape_path=shape_path(),
-                shape_string=None,
-            ).calculate(l_shape_mol)
-            l_shape_mol.write(shape_molfile2)
-
-        opt_pore_data = PoreMeasure().calculate_min_distance(
-            conformer.molecule
-        )
-
-        # Always want to extract target torions if present.
-        try:
-            target_torsions = custom_torsion_options["ton"]
-        except KeyError:
-            target_torsions = None
-        assert len(target_torsions) == 1
-        g_measure = GeomMeasure(target_torsions)
-        bond_data = g_measure.calculate_bonds(conformer.molecule)
-        angle_data = g_measure.calculate_angles(conformer.molecule)
-        dihedral_data = g_measure.calculate_torsions(
-            molecule=conformer.molecule,
-            absolute=True,
-        )
-        min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
-        radius_gyration = g_measure.calculate_radius_gyration(
-            molecule=conformer.molecule,
-        )
-        max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
-        if radius_gyration > max_diameter:
-            raise ValueError(
-                f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
-            )
-
-        res_dict = {
-            "optimised": True,
-            "fin_energy_kjmol": fin_energy,
-            "fin_energy_decomp": energy_decomp,
-            "opt_pore_data": opt_pore_data,
-            "lig_shape_measures": lig_shape_measures,
-            "node_shape_measures": node_shape_measures,
-            "bond_data": bond_data,
-            "angle_data": angle_data,
-            "dihedral_data": dihedral_data,
-            "min_b2b_distance": min_b2b_distance,
-            "radius_gyration": radius_gyration,
-            "max_diameter": max_diameter,
-            # "trajectory": trajectory_data,
-        }
-        with open(output_file, "w") as f:
-            json.dump(res_dict, f, indent=4)
-
-
 def build_populations(
     populations,
     struct_output,
@@ -335,10 +225,12 @@ def build_populations(
     for population in populations:
         logging.info(f"running population {population}")
         popn_dict = populations[population]
-        popn_iterator = itertools.product(
-            popn_dict["topologies"],
-            tuple(popn_dict["fflibrary"].yield_forcefields()),
-        )
+        topologies = popn_dict["topologies"]
+        force_fields = tuple(popn_dict["fflibrary"].yield_forcefields())
+        logging.info(f"there are {len(topologies)} topologies")
+        logging.info(f"there are {len(force_fields)} ffs")
+        logging.info(f"building {len(force_fields) * len(topologies)} cages")
+        popn_iterator = itertools.product(topologies, force_fields)
         for cage_topo_str, force_field in popn_iterator:
             c2_precursor = popn_dict["c2"]
             cl_precursor = popn_dict["cl"]
@@ -394,16 +286,15 @@ def build_populations(
                 conformer.molecule.write(
                     str(struct_output / f"{name}_optc.mol")
                 )
-            logging.info("skipping analysis right now.")
-            continue
+            count += 1
 
             analyse_cage(
                 conformer=conformer,
                 name=name,
                 output_dir=calculation_output,
+                force_field=force_field,
                 node_element=node_element,
                 ligand_element=ligand_element,
             )
-            count += 1
 
         logging.info(f"{count} {population} cages built.")

@@ -13,25 +13,231 @@ import json
 import logging
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
+import openmm
 import pandas as pd
-from bead_libraries import (
-    arm_2c_beads,
-    beads_3c,
-    beads_4c,
-    core_2c_beads,
-)
+
+# from bead_libraries import (
+#     arm_2c_beads,
+#     beads_3c,
+#     beads_4c,
+#     core_2c_beads,
+# )
 from cgexplore.beads import get_cgbead_from_type
-from cgexplore.shape import known_shape_vectors
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+from cgexplore.geom import GeomMeasure
+from cgexplore.pore import PoreMeasure
+from cgexplore.shape import (
+    ShapeMeasure,
+    get_shape_molecule_ligands,
+    get_shape_molecule_nodes,
+    known_shape_vectors,
+)
+from cgexplore.torsions import TargetTorsion
+from env_set import shape_path
 from topologies import cage_topology_options
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+
+
+def analyse_cage(
+    conformer,
+    name,
+    output_dir,
+    force_field,
+    node_element,
+    ligand_element,
+):
+    output_file = os.path.join(output_dir, f"{name}_res.json")
+    shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
+    shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
+
+    if not os.path.exists(output_file):
+        logging.info(f"analysing {name}")
+
+        energy_decomp = {}
+        for component in conformer.energy_decomposition:
+            component_tup = conformer.energy_decomposition[component]
+            if component == "total energy":
+                energy_decomp[f"{component}_{component_tup[1]}"] = float(
+                    component_tup[0]
+                )
+            else:
+                just_name = component.split("'")[1]
+                key = f"{just_name}_{component_tup[1]}"
+                value = float(component_tup[0])
+                if key in energy_decomp:
+                    energy_decomp[key] += value
+                else:
+                    energy_decomp[key] = value
+        fin_energy = energy_decomp["total energy_kJ/mol"]
+        try:
+            assert (
+                sum(
+                    energy_decomp[i]
+                    for i in energy_decomp
+                    if "total energy" not in i
+                )
+                == fin_energy
+            )
+        except AssertionError:
+            raise AssertionError(
+                "energy decompisition does not sum to total energy for"
+                f" {name}: {energy_decomp}"
+            )
+
+        n_shape_mol = get_shape_molecule_nodes(
+            constructed_molecule=conformer.molecule,
+            name=name,
+            element=node_element,
+            topo_expected=node_expected_topologies(),
+        )
+        l_shape_mol = get_shape_molecule_ligands(
+            constructed_molecule=conformer.molecule,
+            name=name,
+            element=ligand_element,
+            topo_expected=ligand_expected_topologies(),
+        )
+        if n_shape_mol is None:
+            node_shape_measures = None
+        else:
+            n_shape_mol.write(shape_molfile1)
+            node_shape_measures = ShapeMeasure(
+                output_dir=(output_dir / f"{name}_nshape"),
+                shape_path=shape_path(),
+                shape_string=None,
+            ).calculate(n_shape_mol)
+
+        if l_shape_mol is None:
+            lig_shape_measures = None
+        else:
+            lig_shape_measures = ShapeMeasure(
+                output_dir=(output_dir / f"{name}_lshape"),
+                shape_path=shape_path(),
+                shape_string=None,
+            ).calculate(l_shape_mol)
+            l_shape_mol.write(shape_molfile2)
+
+        opt_pore_data = PoreMeasure().calculate_min_distance(
+            conformer.molecule
+        )
+
+        # Always want to extract target torions if present.
+        g_measure = GeomMeasure(
+            target_torsions=(
+                TargetTorsion(
+                    search_string=("b", "a", "c", "a", "b"),
+                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
+                    measured_atom_ids=[0, 1, 3, 4],
+                    phi0=openmm.unit.Quantity(
+                        value=180, unit=openmm.unit.degrees
+                    ),
+                    torsion_k=openmm.unit.Quantity(
+                        value=0,
+                        unit=openmm.unit.kilojoules_per_mole,
+                    ),
+                    torsion_n=1,
+                ),
+            )
+        )
+        bond_data = g_measure.calculate_bonds(conformer.molecule)
+        angle_data = g_measure.calculate_angles(conformer.molecule)
+        dihedral_data = g_measure.calculate_torsions(
+            molecule=conformer.molecule,
+            absolute=True,
+        )
+        min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
+        radius_gyration = g_measure.calculate_radius_gyration(
+            molecule=conformer.molecule,
+        )
+        max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
+        if radius_gyration > max_diameter:
+            raise ValueError(
+                f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
+            )
+
+        # This is matched to the existing analysis code. I recommend
+        # generalising in the future.
+        ff_targets = force_field.get_targets()
+        torsions = (
+            "ton"
+            if ff_targets["torsions"][0].torsion_k.value_in_unit(
+                openmm.unit.kilojoules_per_mole
+            )
+            > 0
+            else "toff"
+        )
+
+        c2r0 = None
+        c3r0 = None
+        clr0 = None
+        for bt in ff_targets["bonds"]:
+            cp = (bt.class1, bt.class2)
+            if "6P8" in name:
+                if ("b", "n") in (cp, tuple(reversed(cp))):
+                    c3r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+                if ("b", "m") in (cp, tuple(reversed(cp))):
+                    clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+            else:
+                if ("a", "c") in (cp, tuple(reversed(cp))):
+                    c2r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+                if ("b", "n") in (cp, tuple(reversed(cp))):
+                    clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+                elif ("b", "m") in (cp, tuple(reversed(cp))):
+                    clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+
+        c2angle = None
+        c3angle = None
+        clangle = None
+        for at in ff_targets["angles"]:
+            cp = (at.class1, at.class2, at.class3)
+            if "6P8" in name:
+                if ("b", "n", "b") in (cp, tuple(reversed(cp))):
+                    c3angle = at.angle.value_in_unit(openmm.unit.degrees)
+                if ("b", "m", "b") in (cp, tuple(reversed(cp))):
+                    clangle = at.angle.value_in_unit(openmm.unit.degrees)
+            else:
+                if ("b", "a", "c") in (cp, tuple(reversed(cp))):
+                    c2angle = at.angle.value_in_unit(openmm.unit.degrees)
+                if ("b", "n", "b") in (cp, tuple(reversed(cp))):
+                    clangle = at.angle.value_in_unit(openmm.unit.degrees)
+                elif ("b", "m", "b") in (cp, tuple(reversed(cp))):
+                    clangle = at.angle.value_in_unit(openmm.unit.degrees)
+
+        force_field_dict = {
+            "ff_id": force_field.get_identifier(),
+            "torsions": torsions,
+            "vdws": "von",
+            "clbb_bead1": "",
+            "clbb_bead2": "",
+            "c2bb_bead1": "",
+            "c2bb_bead2": "",
+            "c2r0": c2r0,
+            "c2angle": c2angle,
+            "c3r0": c3r0,
+            "c3angle": c3angle,
+            "clr0": clr0,
+            "clangle": clangle,
+        }
+        res_dict = {
+            "optimised": True,
+            "fin_energy_kjmol": fin_energy,
+            "fin_energy_decomp": energy_decomp,
+            "opt_pore_data": opt_pore_data,
+            "lig_shape_measures": lig_shape_measures,
+            "node_shape_measures": node_shape_measures,
+            "bond_data": bond_data,
+            "angle_data": angle_data,
+            "dihedral_data": dihedral_data,
+            "min_b2b_distance": min_b2b_distance,
+            "radius_gyration": radius_gyration,
+            "max_diameter": max_diameter,
+            "force_field_dict": force_field_dict,
+        }
+        with open(output_file, "w") as f:
+            json.dump(res_dict, f, indent=4)
 
 
 def angle_str(num=None, unit=True):
