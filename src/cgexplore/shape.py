@@ -742,17 +742,18 @@ class ShapeMeasure:
                     for i in line.rstrip().split("]")[1].split(" ")
                     if i.strip()
                 ]
-                for idx, symb in enumerate(line):
+                for idx, symb in enumerate(values):
                     label_idx_map[symb] = idx
                 break
-            values = [i.strip() for i in line.rstrip().split(",")]
+            float_values = [i.strip() for i in line.rstrip().split(",")]
 
         if values is None:
             logging.info("no shapes found due to overlapping atoms")
             shapes = {}
         else:
             shapes = {
-                i: float(values[1 + label_idx_map[i]]) for i in label_idx_map
+                i: float(float_values[1 + label_idx_map[i]])
+                for i in label_idx_map
             }
 
         return shapes

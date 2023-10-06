@@ -64,7 +64,7 @@ def main():
     # Non-ditopic populations.
     populations = {
         "3p4": {
-            "t": cage_3p4_topologies,
+            "topologies": cage_3p4_topologies,
             "c2": tritopic,
             "cl": tetratopic,
             "fflibrary": forcefieldlibrary,
