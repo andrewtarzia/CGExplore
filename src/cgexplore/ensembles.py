@@ -44,10 +44,10 @@ class Ensemble:
         self._base_molecule = base_molecule
         self._molecule_num_atoms = base_molecule.get_num_atoms()
         self._base_mol_path = base_mol_path
-        self._base_molecule.write(self._base_mol_path)
         self._conformer_xyz = conformer_xyz
         self._data_json = data_json
         if overwrite:
+            self._base_molecule.write(self._base_mol_path)
             if os.path.exists(self._conformer_xyz):
                 os.remove(self._conformer_xyz)
             if os.path.exists(self._data_json):

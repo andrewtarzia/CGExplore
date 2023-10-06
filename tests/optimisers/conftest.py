@@ -29,7 +29,6 @@ from .case_data import CaseData
             ),
             force_field=Forcefield(
                 identifier="testff",
-                output_dir=".",
                 prefix="testffprefix",
                 present_beads=(
                     CgBead(
@@ -132,7 +131,6 @@ from .case_data import CaseData
             ),
             force_field=Forcefield(
                 identifier="testff",
-                output_dir=".",
                 prefix="testffprefix",
                 present_beads=(
                     CgBead(

@@ -1,6 +1,3 @@
-import os
-import pathlib
-
 import numpy as np
 import pytest
 import stk
@@ -32,9 +29,6 @@ from .case_data import CaseData
             ),
             force_field=Forcefield(
                 identifier=name,
-                output_dir=pathlib.Path(
-                    os.path.dirname(os.path.realpath(__file__))
-                ),
                 prefix="assigned_tests",
                 present_beads=(
                     CgBead(
@@ -157,9 +151,6 @@ from .case_data import CaseData
             ),
             force_field=Forcefield(
                 identifier=name,
-                output_dir=pathlib.Path(
-                    os.path.dirname(os.path.realpath(__file__))
-                ),
                 prefix="assigned_tests",
                 present_beads=(
                     CgBead(
