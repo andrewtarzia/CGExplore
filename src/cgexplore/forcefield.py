@@ -492,9 +492,17 @@ class Forcefield:
     def get_vdw_bond_cutoff(self) -> int:
         return self._vdw_bond_cutoff
 
+    def get_targets(self) -> dict:
+        return {
+            "bonds": self._bond_targets,
+            "angles": self._angle_targets,
+            "torsions": self._torsion_targets,
+            "nonbondeds": self._nonbonded_targets,
+        }
+
     def write_human_readable(self, output_dir) -> None:
         with open(
-            output_dir / f"{self._prefix}_{self._identifier}.txt", "w"
+            output_dir / f"ffhr_{self._prefix}_{self._identifier}.txt", "w"
         ) as f:
             f.write(f"prefix: {self._prefix}\n")
             f.write(f"identifier: {self._identifier}\n")
