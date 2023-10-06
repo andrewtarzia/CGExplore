@@ -78,31 +78,11 @@ def optimise_cage(
         platform=platform,
     )
 
-    logging.info(f"optimisation of {name}")
-    conformer = run_optimisation(
-        assigned_system=AssignedSystem(
-            molecule=temp_molecule,
-            force_field_terms=assigned_system.force_field_terms,
-            system_xml=assigned_system.system_xml,
-            topology_xml=assigned_system.topology_xml,
-            bead_set=assigned_system.bead_set,
-            vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
-        ),
-        name=name,
-        file_suffix="opt1",
-        output_dir=output_dir,
-        # max_iterations=50,
-        platform=platform,
-    )
-    ensemble.add_conformer(conformer=conformer, source="opt1")
-
-    # Run optimisations of series of conformers with shifted out
-    # building blocks.
-    logging.info(f"optimisation of shifted structures of {name}")
-    for test_molecule in yield_shifted_models(temp_molecule, force_field):
+    try:
+        logging.info(f"optimisation of {name}")
         conformer = run_optimisation(
             assigned_system=AssignedSystem(
-                molecule=test_molecule,
+                molecule=temp_molecule,
                 force_field_terms=assigned_system.force_field_terms,
                 system_xml=assigned_system.system_xml,
                 topology_xml=assigned_system.topology_xml,
@@ -110,12 +90,42 @@ def optimise_cage(
                 vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
             ),
             name=name,
-            file_suffix="sopt",
+            file_suffix="opt1",
             output_dir=output_dir,
             # max_iterations=50,
             platform=platform,
         )
-        ensemble.add_conformer(conformer=conformer, source="shifted")
+        ensemble.add_conformer(conformer=conformer, source="opt1")
+    except openmm.OpenMMException as error:
+        if "Particle coordinate is NaN. " not in str(error):
+            raise error
+
+    # Run optimisations of series of conformers with shifted out
+    # building blocks.
+    logging.info(f"optimisation of shifted structures of {name}")
+    for test_molecule in yield_shifted_models(
+        temp_molecule, force_field, kicks=(1, 2, 3, 4)
+    ):
+        try:
+            conformer = run_optimisation(
+                assigned_system=AssignedSystem(
+                    molecule=test_molecule,
+                    force_field_terms=assigned_system.force_field_terms,
+                    system_xml=assigned_system.system_xml,
+                    topology_xml=assigned_system.topology_xml,
+                    bead_set=assigned_system.bead_set,
+                    vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+                ),
+                name=name,
+                file_suffix="sopt",
+                output_dir=output_dir,
+                # max_iterations=50,
+                platform=platform,
+            )
+            ensemble.add_conformer(conformer=conformer, source="shifted")
+        except openmm.OpenMMException as error:
+            if "Particle coordinate is NaN. " not in str(error):
+                raise error
 
     # Collect and optimise structures nearby in phase space.
     # logging.info(f"optimisation of nearby structures of {name}")
@@ -327,11 +337,7 @@ def build_populations(
         popn_dict = populations[population]
         popn_iterator = itertools.product(
             popn_dict["topologies"],
-            tuple(
-                popn_dict["fflibrary"].yield_forcefields(
-                    output_path=calculation_output
-                )
-            ),
+            tuple(popn_dict["fflibrary"].yield_forcefields()),
         )
         for cage_topo_str, force_field in popn_iterator:
             c2_precursor = popn_dict["c2"]
@@ -341,6 +347,9 @@ def build_populations(
                 f"{c2_precursor.get_name()}_"
                 f"f{force_field.get_identifier()}"
             )
+
+            # Write out force field.
+            force_field.write_human_readable(calculation_output)
 
             # Optimise building blocks.
             c2_name = (

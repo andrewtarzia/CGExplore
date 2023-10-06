@@ -492,6 +492,7 @@ def shift_beads(
 def yield_shifted_models(
     molecule: stk.Molecule,
     force_field: Forcefield,
+    kicks: tuple[int],
 ) -> Iterator[stk.Molecule]:
     """
     Yield conformers with atom positions of particular beads shifted.
@@ -504,6 +505,9 @@ def yield_shifted_models(
         force_field:
             Defines the force field.
 
+        kicks:
+            Defines the kicks in Angstrom to apply.
+
     Yields:
 
         An stk molecule.
@@ -511,5 +515,5 @@ def yield_shifted_models(
     """
     for bead in force_field.get_present_beads():
         atom_number = periodic_table()[bead.element_string]
-        for kick in (1, 2, 3, 4):
+        for kick in kicks:
             yield shift_beads(molecule, atom_number, kick)
