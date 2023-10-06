@@ -55,7 +55,7 @@ o_bead = CgBead(
     coordination=2,
 )
 
-kjmol = openmm.unit.kilojoule / openmm.unit.mole
+kjmol = openmm.unit.kilojoules_per_mole
 
 
 @pytest.fixture(

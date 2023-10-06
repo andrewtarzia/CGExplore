@@ -63,7 +63,7 @@ from .case_data import CaseData
                         ),
                         torsion_k=openmm.unit.Quantity(
                             value=50,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         torsion_n=1.0,
                     ),
@@ -74,7 +74,7 @@ from .case_data import CaseData
                         "Ag",
                         epsilon=openmm.unit.Quantity(
                             value=10.0,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         sigma=openmm.unit.Quantity(
                             value=1.0, unit=openmm.unit.angstrom
@@ -86,7 +86,7 @@ from .case_data import CaseData
                         "Ba",
                         epsilon=openmm.unit.Quantity(
                             value=10.0,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         sigma=openmm.unit.Quantity(
                             value=1.0, unit=openmm.unit.angstrom
@@ -98,7 +98,7 @@ from .case_data import CaseData
                         "Pb",
                         epsilon=openmm.unit.Quantity(
                             value=2.0,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         sigma=openmm.unit.Quantity(
                             value=2.0, unit=openmm.unit.angstrom
@@ -219,7 +219,7 @@ from .case_data import CaseData
                         ),
                         torsion_k=openmm.unit.Quantity(
                             value=50,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         torsion_n=1.0,
                     ),
@@ -230,7 +230,7 @@ from .case_data import CaseData
                         "Ag",
                         epsilon=openmm.unit.Quantity(
                             value=10.0,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         sigma=openmm.unit.Quantity(
                             value=1.0, unit=openmm.unit.angstrom
@@ -242,7 +242,7 @@ from .case_data import CaseData
                         "Ba",
                         epsilon=openmm.unit.Quantity(
                             value=10.0,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         sigma=openmm.unit.Quantity(
                             value=1.0, unit=openmm.unit.angstrom
@@ -254,7 +254,7 @@ from .case_data import CaseData
                         "Pb",
                         epsilon=openmm.unit.Quantity(
                             value=2.0,
-                            unit=openmm.unit.kilojoule / openmm.unit.mole,
+                            unit=openmm.unit.kilojoules_per_mole,
                         ),
                         sigma=openmm.unit.Quantity(
                             value=2.0, unit=openmm.unit.angstrom

@@ -209,7 +209,7 @@ class AssignedSystem:
                             openmm.unit.radian
                         ),
                         k=assigned_force.torsion_k.value_in_unit(
-                            openmm.unit.kilojoule / openmm.unit.mole
+                            openmm.unit.kilojoules_per_mole
                         ),
                     )
                 except AttributeError:
@@ -239,7 +239,7 @@ class AssignedSystem:
                                 openmm.unit.nanometer
                             ),
                             assigned_force.epsilon.value_in_unit(
-                                openmm.unit.kilojoule / openmm.unit.mole
+                                openmm.unit.kilojoules_per_mole
                             ),
                         ],
                     )
