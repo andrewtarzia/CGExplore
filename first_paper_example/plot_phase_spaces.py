@@ -30,7 +30,6 @@ from analysis import (
     rg_str,
     stoich_map,
     topology_labels,
-    write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
 from matplotlib.lines import Line2D
@@ -87,8 +86,8 @@ def phase_space_2(all_data, figure_output):
                 elif tor == "toff":
                     tor_colour = "#CA1551"
 
-                node_measure = float(kinetic_data["sv_n_dist"])
-                ligand_measure = float(kinetic_data["sv_n_dist"])
+                node_measure = float(kinetic_data["sv_n_dist"].iloc[0])
+                ligand_measure = float(kinetic_data["sv_n_dist"].iloc[0])
                 if node_measure is None:
                     shape_measure = ligand_measure
                 elif ligand_measure is None:
@@ -98,13 +97,15 @@ def phase_space_2(all_data, figure_output):
                 bb_data[(bb_pair, tor)] = {
                     "energy_per_bb": epb,
                     "topology": tstr,
-                    "pore": float(kinetic_data["pore"]),
-                    "radius_gyration": float(kinetic_data["radius_gyration"]),
+                    "pore": float(kinetic_data["pore"].iloc[0]),
+                    "radius_gyration": float(
+                        kinetic_data["radius_gyration"].iloc[0]
+                    ),
                     "shape_measure": shape_measure,
                     "cltitle": str(kinetic_data["cltitle"].iloc[0]),
-                    "clangle": float(kinetic_data["clangle"]),
-                    "c2angle": float(kinetic_data["c2angle"]),
-                    "c3angle": float(kinetic_data["c3angle"]),
+                    "clangle": float(kinetic_data["clangle"].iloc[0]),
+                    "c2angle": float(kinetic_data["c2angle"].iloc[0]),
+                    "c3angle": float(kinetic_data["c3angle"].iloc[0]),
                     "cmap": colour_choice,
                     "torsionmap": tor_colour,
                 }
@@ -297,11 +298,11 @@ def phase_space_6p8(all_data, figure_output):
     vdata = all_data[all_data["vdws"] == "von"]
     fig, ax = plt.subplots(figsize=(8, 2))
     bbs = (
-        ("4C1m0400b00003C1n0100b0000", 1),
-        ("4C1m0300b00003C1n0500b0000", 2),
-        ("4C1m0200b00003C1n0600b0000", 3),
-        ("4C1m0100b00003C1n0700b0000", 4),
-        ("4C1m0000b00003C1n0700b0000", 5),
+        ("4C1m1b13C1n1b1f9", 1),
+        ("4C1m1b13C1n1b1f28", 2),
+        ("4C1m1b13C1n1b1f32", 3),
+        ("4C1m1b13C1n1b1f36", 4),
+        ("4C1m1b13C1n1b1f35", 5),
     )
     for bb_pair, idex in bbs:
         bbd = vdata[vdata["bbpair"] == bb_pair]
@@ -332,6 +333,7 @@ def phase_space_6p8(all_data, figure_output):
 
 
 def phase_space_3(all_data, figure_output):
+    raise NotImplementedError()
     logging.info("doing phase space 3")
 
     fig, axs = plt.subplots(
@@ -530,7 +532,6 @@ def main():
         output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    write_out_mapping(all_data)
 
     phase_space_2(low_e_data, figure_output)
     phase_space_6p8(low_e_data, figure_output)

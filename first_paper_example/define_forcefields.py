@@ -158,9 +158,9 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
             class1="b",
             class2="m",
             class3="b",
-            eclass1="Pd",
-            eclass2="Pb",
-            eclass3="Pd",
+            eclass1="Pb",
+            eclass2="Pd",
+            eclass3="Pb",
             angles=(
                 openmm.unit.Quantity(value=50, unit=openmm.unit.degrees),
                 openmm.unit.Quantity(value=60, unit=openmm.unit.degrees),

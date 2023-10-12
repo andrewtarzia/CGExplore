@@ -95,8 +95,8 @@ class TargetPyramidAngle(TargetAngle):
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"{self.class1}{self.class3}{self.class3}, "
-            f"{self.eclass1}{self.eclass3}{self.eclass3}, "
+            f"{self.class1}{self.class2}{self.class3}, "
+            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
             f"{self.angle.in_units_of(openmm.unit.degrees)}, "
             f"{self.opposite_angle.in_units_of(openmm.unit.degrees)}, "
             f"{self.angle_k.in_units_of(angle_k_unit())}, "
