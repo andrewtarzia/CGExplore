@@ -30,7 +30,6 @@ from analysis import (
     isomer_energy,
     stoich_map,
     topology_labels,
-    write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
 
@@ -908,7 +907,6 @@ def main():
         output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    write_out_mapping(all_data)
 
     bite_angle_relationship(all_data, figure_output)
     angle_map(low_e_data, figure_output)
