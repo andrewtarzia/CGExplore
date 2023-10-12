@@ -30,7 +30,6 @@ from analysis import (
     shape_threshold,
     target_shapes,
     topology_labels,
-    write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
 from matplotlib.patches import Patch
@@ -1036,7 +1035,6 @@ def main():
         output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    write_out_mapping(all_data)
 
     flexshapeeffect_per_shape(low_e_data, figure_output)
     shape_topology(low_e_data, figure_output)
