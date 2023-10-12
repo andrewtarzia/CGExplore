@@ -27,9 +27,9 @@ The code can be installed following these steps:
 ```
 pip install .
 ```
-or for development,
+or for development, use [just](https://github.com/casey/just) to install a dev environment with:
 ```
-pip install -e .
+just dev
 ```
 
 6. Install `OpenMM` [docs](https://openmm.org/):
