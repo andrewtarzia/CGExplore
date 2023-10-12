@@ -12,7 +12,7 @@ Author: Andrew Tarzia
 from cgexplore.beads import CgBead
 
 
-def core_bead():
+def core_bead() -> CgBead:
     return CgBead(
         element_string="Ag",
         bead_class="c",
@@ -21,7 +21,7 @@ def core_bead():
     )
 
 
-def arm_bead():
+def arm_bead() -> CgBead:
     return CgBead(
         element_string="Ba",
         bead_class="a",
@@ -30,7 +30,7 @@ def arm_bead():
     )
 
 
-def binder_bead():
+def binder_bead() -> CgBead:
     return CgBead(
         element_string="Pb",
         bead_class="b",
@@ -39,7 +39,7 @@ def binder_bead():
     )
 
 
-def trigonal_bead():
+def trigonal_bead() -> CgBead:
     return CgBead(
         element_string="C",
         bead_class="n",
@@ -48,7 +48,7 @@ def trigonal_bead():
     )
 
 
-def tetragonal_bead():
+def tetragonal_bead() -> CgBead:
     return CgBead(
         element_string="Pd",
         bead_class="m",
