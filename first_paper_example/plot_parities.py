@@ -21,8 +21,8 @@ from analysis import (
     convert_tors,
     data_to_array,
     get_lowest_energy_data,
-    topology_labels,
     get_paired_cage_name,
+    topology_labels,
 )
 from env_set import calculations, figures, outputdata
 
