@@ -23,7 +23,6 @@ from analysis import (
     isomer_energy,
     mapshape_to_topology,
     topology_labels,
-    write_out_mapping,
 )
 from cgexplore.utilities import check_directory
 from cgexplore.visualisation import Pymol
@@ -182,6 +181,8 @@ def fig2_a(
         "zoom_string": "custom",
     }
 
+    raise NotImplementedError("naming convention has changed")
+
     structure_names = (
         "2P4_4C1m0400b0000_2C1c0000a0000",
         "3P6_4C1m0400b0000_2C1c0000a0400",
@@ -235,6 +236,8 @@ def fig2_cd(
         "vdw": 0,
         "zoom_string": "custom",
     }
+
+    raise NotImplementedError("naming convention has changed")
 
     structure_names = (
         "4P6_3C1n0400b0000_2C1c0000a0000",
@@ -296,6 +299,8 @@ def expt_fig_cases(
         "zoom_string": "custom",
     }
 
+    raise NotImplementedError("naming convention has changed")
+
     structure_names = (
         "2P3_3C1n0400b0000_2C1c0000a0700",
         "4P6_3C1n0400b0000_2C1c0000a01400",
@@ -348,6 +353,8 @@ def expt_fig_CC_cases(
         "vdw": 0,
         "zoom_string": "custom",
     }
+
+    raise NotImplementedError("naming convention has changed")
 
     structure_names = (
         "2P3_3C1n0700b0000_2C1c0000a0400",
@@ -458,6 +465,7 @@ def si_ar_fig_gen(
     struct_output,
     struct_figure_output,
 ):
+    raise NotImplementedError("naming convention has changed")
     si_ar_fig(
         all_data=all_data,
         structure_names=(
@@ -765,6 +773,7 @@ def si_shape_fig(
     struct_output,
     struct_figure_output,
 ):
+    raise NotImplementedError("naming convention has changed")
     structure_names = (
         # ("12P24_4C1m0000b0000_2C1c0000a0200", "ton"),
         # ("12P24_4C1m0000b0000_2C1c0000a01200", "toff"),
@@ -1147,12 +1156,7 @@ def check_odd_outcomes(
         )
 
 
-def generate_movies(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+def generate_movies(figure_output):
     logging.info("running generate_movies")
     vss_output = figure_output / "vss_figures"
     # astr = "a0{0..18}00"
@@ -1221,8 +1225,8 @@ def main():
         output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    write_out_mapping(all_data)
 
+    raise NotImplementedError("naming convention has changed")
     generate_images_of_all(
         low_e_data,
         struct_output,
