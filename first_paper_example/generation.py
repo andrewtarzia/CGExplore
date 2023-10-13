@@ -23,8 +23,10 @@ from cgexplore.generation_utilities import (
     run_constrained_optimisation,
     run_optimisation,
     run_soft_md_cycle,
+    yield_near_models,
     yield_shifted_models,
 )
+from define_forcefields import get_neighbour_library
 
 logging.basicConfig(
     level=logging.INFO,
@@ -119,26 +121,33 @@ def optimise_cage(
                 raise error
 
     # Collect and optimise structures nearby in phase space.
-    # logging.info(f"optimisation of nearby structures of {name}")
-    logging.info("optimisation of nearby structures turned off for now")
-    # for test_molecule in yield_near_models(
-    #     molecule=molecule,
-    #     name=name,
-    #     output_dir=output_dir,
-    # ):
-    #     conformer = run_optimisation(
-    #         assigned_system=AssignedSystem(
-    #             molecule=test_molecule,
-    #             force_field_terms=assigned_system.force_field_terms,
-    #         ),
-    #         name=name,
-    #         file_suffix="nopt",
-    #         output_dir=output_dir,
-    #         force_field=force_field,
-    #         # max_iterations=50,
-    #         platform=platform,
-    #     )
-    #     ensemble.add_conformer(conformer=conformer, source="nearby_opt")
+    logging.info(f"optimisation of nearby structures of {name}")
+    neighbour_library = get_neighbour_library(
+        ffnum=int(force_field.get_identifier()),
+        fftype=force_field.get_prefix(),
+    )
+    for test_molecule in yield_near_models(
+        molecule=molecule,
+        name=name,
+        output_dir=output_dir,
+        neighbour_library=neighbour_library,
+    ):
+        conformer = run_optimisation(
+            assigned_system=AssignedSystem(
+                molecule=test_molecule,
+                force_field_terms=assigned_system.force_field_terms,
+                system_xml=assigned_system.system_xml,
+                topology_xml=assigned_system.topology_xml,
+                bead_set=assigned_system.bead_set,
+                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+            ),
+            name=name,
+            file_suffix="nopt",
+            output_dir=output_dir,
+            # max_iterations=50,
+            platform=platform,
+        )
+        ensemble.add_conformer(conformer=conformer, source="nearby_opt")
 
     logging.info(f"soft MD run of {name}")
     num_steps = 20000
