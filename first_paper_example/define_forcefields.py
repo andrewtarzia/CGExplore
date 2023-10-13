@@ -723,3 +723,57 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
     )
 
     return forcefieldlibrary
+
+
+def neighbour_2p3_library(ffnum: int) -> list[int, ...]:
+    new_nums = []
+    # Change bnb angle.
+    new_nums.append(ffnum - 14)
+    new_nums.append(ffnum + 14)
+    # Change bac angle.
+    new_nums.append(ffnum - 2)
+    new_nums.append(ffnum + 2)
+    # Change torsion, even is ton.
+    if ffnum % 2 == 0:
+        new_nums.append(ffnum + 1)
+    elif ffnum % 2 != 0:
+        new_nums.append(ffnum - 1)
+    return new_nums
+
+
+def neighbour_2p4_library(ffnum: int) -> list[int, ...]:
+    new_nums = []
+    # Change bmb angle.
+    new_nums.append(ffnum - 10)
+    new_nums.append(ffnum + 10)
+    # Change bac angle.
+    new_nums.append(ffnum - 2)
+    new_nums.append(ffnum + 2)
+    # Change torsion, even is ton.
+    if ffnum % 2 == 0:
+        new_nums.append(ffnum + 1)
+    elif ffnum % 2 != 0:
+        new_nums.append(ffnum - 1)
+    return new_nums
+
+
+def neighbour_3p4_library(ffnum: int) -> list[int, ...]:
+    new_nums = []
+    # Change bmb angle.
+    new_nums.append(ffnum - 1)
+    new_nums.append(ffnum + 1)
+    # Change bnb angle.
+    new_nums.append(ffnum - 5)
+    new_nums.append(ffnum + 5)
+    return new_nums
+
+
+def get_neighbour_library(ffnum: int, fftype: str) -> list[int, ...]:
+    if fftype == "2p3":
+        return neighbour_2p3_library(ffnum)
+    elif fftype == "2p4":
+        return neighbour_2p4_library(ffnum)
+    elif fftype == "3p4":
+        return neighbour_3p4_library(ffnum)
+    else:
+        raise ValueError(f"{fftype} not known")
