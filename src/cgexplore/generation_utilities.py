@@ -410,9 +410,10 @@ def yield_near_models(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path | str,
+    neighbour_library: list,
 ) -> Iterator[stk.Molecule]:
     """
-    Yield structures of cage models with neighbouring force field IDs.
+    Yield structures of cage models with neighbouring force field parameters.
 
     Keywords:
 
@@ -425,6 +426,10 @@ def yield_near_models(
         output_dir:
             Directory with optimisation outputs saved.
 
+        neighbour_library:
+            IDs of force fields with nearby parameters, defined in
+            `define_forcefields.py`.
+
     Returns:
 
         An stk molecule.
@@ -432,20 +437,16 @@ def yield_near_models(
     """
 
     ff_name = [i for i in name.split("_") if "f" in i][-1]
-    ff_num = int(ff_name[1:])
-    ff_range = 10
 
-    for ff_shift in range(1, ff_range):
-        for ff_option in (ff_num - ff_shift, ff_num + ff_shift):
-            if ff_option < 0:
-                continue
-            new_name = name.replace(ff_name, f"f{ff_option}")
-            new_fina_mol_file = os.path.join(
-                output_dir, f"{new_name}_final.mol"
-            )
-            if os.path.exists(new_fina_mol_file):
-                logging.info(f"found neigh: {new_fina_mol_file}")
-                yield molecule.with_structure_from_file(new_fina_mol_file)
+    for new_ff_id in neighbour_library:
+        if new_ff_id < 0:
+            continue
+
+        new_name = name.replace(ff_name, f"f{new_ff_id}")
+        new_fina_mol_file = os.path.join(output_dir, f"{new_name}_final.mol")
+        if os.path.exists(new_fina_mol_file):
+            logging.info(f"found neigh: {new_fina_mol_file}")
+            yield molecule.with_structure_from_file(new_fina_mol_file)
 
 
 def shift_beads(
@@ -476,7 +477,7 @@ def shift_beads(
     centroid = molecule.get_centroid()
 
     new_pos_mat = []
-    for atom, pos in zip(molecule.get_atoms(), old_pos_mat):
+    for atom, pos in zip(molecule.get_atoms(), old_pos_mat, strict=True):
         if atom.get_atomic_number() == atomic_number:
             c_v = centroid - pos
             c_v = c_v / np.linalg.norm(c_v)
