@@ -30,7 +30,6 @@ from analysis import (
     isomer_energy,
     stoich_map,
     topology_labels,
-    write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
 
@@ -58,7 +57,7 @@ def nobiteangle_relationship(all_data, figure_output):
             sharey=True,
             figsize=(8, 12),
         )
-        for ax, t_angle in zip(axs, clangles):
+        for ax, t_angle in zip(axs, clangles, strict=True):
             clan_data = filt_data[filt_data["clangle"] == t_angle]
             clan_output = {}
             for run_number in clan_data["run_number"]:
@@ -67,8 +66,10 @@ def nobiteangle_relationship(all_data, figure_output):
                     continue
                 xs = list(plot_data["c3angle"])
                 ys = list(plot_data["energy_per_bb"])
-                xs, ys = zip(*sorted(zip(xs, ys)))
-                clan_output[run_number] = {x: y for x, y in zip(xs, ys)}
+                xs, ys = zip(*sorted(zip(xs, ys, strict=True)), strict=True)
+                clan_output[run_number] = {
+                    x: y for x, y in zip(xs, ys, strict=True)
+                }
 
             if len(clan_output) == 0:
                 continue
@@ -147,7 +148,7 @@ def bite_angle_relationship(all_data, figure_output):
             figsize=(8, 12),
         )
 
-        for ax, t_angle in zip(axs, clangles):
+        for ax, t_angle in zip(axs, clangles, strict=True):
             clan_data = filt_data[filt_data["clangle"] == t_angle]
             for tors in cmap:
                 tor_data = clan_data[clan_data["torsions"] == tors]
@@ -163,8 +164,12 @@ def bite_angle_relationship(all_data, figure_output):
                     # ]
                     xs = list(plot_data["c2angle"])
                     ys = list(plot_data["energy_per_bb"])
-                    xs, ys = zip(*sorted(zip(xs, ys)))
-                    tors_output[run_number] = {x: y for x, y in zip(xs, ys)}
+                    xs, ys = zip(
+                        *sorted(zip(xs, ys, strict=True)), strict=True
+                    )
+                    tors_output[run_number] = {
+                        x: y for x, y in zip(xs, ys, strict=True)
+                    }
 
                 if len(tors_output) == 0:
                     continue
@@ -275,9 +280,9 @@ def selectivity_map(all_data, figure_output):
             figsize=(16, 10),
         )
 
-        for r_axs, tors in zip(axs, ("ton", "toff")):
+        for r_axs, tors in zip(axs, ("ton", "toff"), strict=True):
             tordata = all_data[all_data["torsions"] == tors]
-            for clangle, ax in zip(clangles, r_axs):
+            for clangle, ax in zip(clangles, r_axs, strict=True):
                 cdata = tordata[tordata["clangle"] == clangle]
                 for tstr in topology_order:
                     xvalues = []
@@ -370,7 +375,7 @@ def draw_pie(colours, xpos, ypos, size, ax):
         markers = []
         previous = 0
         # calculate the points of the pie pieces
-        for color, ratio in zip(colours, ratios):
+        for color, ratio in zip(colours, ratios, strict=True):
             this = 2 * np.pi * ratio + previous
             x = [0] + np.cos(np.linspace(previous, this, 100)).tolist() + [0]
             y = [0] + np.sin(np.linspace(previous, this, 100)).tolist() + [0]
@@ -433,11 +438,7 @@ def selfsort_map(all_data, figure_output):
     logging.info("running selfsort_map")
 
     cols_to_map = ["clangle", "c2angle"]
-    cols_to_iter = [
-        "torsions",
-        "vdws",
-        "cltitle",
-    ]
+    cols_to_iter = ["torsions", "vdws", "cltitle"]
 
     io1 = sorted(set(all_data[cols_to_iter[0]]))
     io2 = sorted(set(all_data[cols_to_iter[1]]))
@@ -524,11 +525,7 @@ def kinetic_selfsort_map(all_data, figure_output):
     logging.info("running kinetic_selfsort_map")
 
     cols_to_map = ["clangle", "c2angle"]
-    cols_to_iter = [
-        "torsions",
-        "vdws",
-        "cltitle",
-    ]
+    cols_to_iter = ["torsions", "vdws", "cltitle"]
 
     io1 = sorted(set(all_data[cols_to_iter[0]]))
     io2 = sorted(set(all_data[cols_to_iter[1]]))
@@ -638,7 +635,7 @@ def angle_map(all_data, figure_output):
             flat_axs = axs.flatten()
 
         tdata = all_data[all_data["topology"] == tstr]
-        for ax, tor in zip(flat_axs, tor_tests):
+        for ax, tor in zip(flat_axs, tor_tests, strict=True):
             pdata = tdata[tdata["torsions"] == tor]
             if tstr == "6P8":
                 x = pdata["c3angle"]
@@ -707,7 +704,7 @@ def angle_map_4p6(all_data, figure_output):
         flat_axs = (ax,)
 
         tdata = all_data[all_data["topology"] == tstr]
-        for ax, tor in zip(flat_axs, tor_tests):
+        for ax, tor in zip(flat_axs, tor_tests, strict=True):
             pdata = tdata[tdata["torsions"] == tor]
             x = pdata["c2angle"]
             y = pdata["clangle"]
@@ -769,7 +766,7 @@ def pd_4p82_figure(all_data, figure_output):
     flat_axs = axs.flatten()
 
     tdata = all_data[all_data["topology"] == tstr]
-    for ax, tor in zip(flat_axs, tor_tests):
+    for ax, tor in zip(flat_axs, tor_tests, strict=True):
         pdata = tdata[tdata["torsions"] == tor]
 
         x = pdata["c2angle"]
@@ -908,7 +905,6 @@ def main():
         output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    write_out_mapping(all_data)
 
     bite_angle_relationship(all_data, figure_output)
     angle_map(low_e_data, figure_output)

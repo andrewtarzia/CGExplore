@@ -44,10 +44,10 @@ class Ensemble:
         self._base_molecule = base_molecule
         self._molecule_num_atoms = base_molecule.get_num_atoms()
         self._base_mol_path = base_mol_path
-        self._base_molecule.write(self._base_mol_path)
         self._conformer_xyz = conformer_xyz
         self._data_json = data_json
         if overwrite:
+            self._base_molecule.write(self._base_mol_path)
             if os.path.exists(self._conformer_xyz):
                 os.remove(self._conformer_xyz)
             if os.path.exists(self._data_json):
@@ -161,13 +161,23 @@ class Ensemble:
             conf_energy = self._data[confid]["total energy"][0]
             if conf_energy < min_energy:
                 min_energy = conf_energy
-                min_energy_conformerid = confid
+                min_energy_conformerid = confid  # type: ignore[assignment]
 
         return self.get_conformer(min_energy_conformerid)
 
-    def get_conformer(self, conf_id: int) -> Conformer:
+    def get_conformer(self, conf_id: int | str) -> Conformer:
         if conf_id not in self._data:
-            raise ValueError(f"conformer {conf_id} not found in ensemble.")
+            if str(conf_id) not in self._data:
+                raise ValueError(
+                    f"conformer {conf_id} not found in ensemble "
+                    f"({self._data_json})."
+                    "Strict handling of `conf_id` is coming."
+                    "Current types: "
+                    f"{list(type(i) for i in self._data.keys())}"
+                )
+            else:
+                conf_id = str(conf_id)
+
         conf_lines = self._trajectory[int(conf_id)]
         extracted_id = int(conf_lines[1].strip().split()[1])
         if extracted_id != int(conf_id):
@@ -183,14 +193,14 @@ class Ensemble:
                 f"base molecule ({self._molecule_num_atoms})"
             )
 
-        conf_data = self._data[conf_id]
+        conf_data = self._data[conf_id]  # type: ignore[index]
         source = conf_data["source"]
         energy_decomp = {i: conf_data[i] for i in conf_data if i != "source"}
         return Conformer(
             molecule=(
                 self._base_molecule.with_position_matrix(np.array(new_pos_mat))
             ),
-            conformer_id=conf_id,
+            conformer_id=int(conf_id),
             energy_decomposition=energy_decomp,
             source=source,
         )

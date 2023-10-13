@@ -30,7 +30,6 @@ from analysis import (
     shape_threshold,
     target_shapes,
     topology_labels,
-    write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
 from matplotlib.patches import Patch
@@ -233,7 +232,7 @@ def shape_topology(all_data, figure_output):
 
             c_column = f"{shape_type}_{target_shape}"
 
-            for ax, tor in zip(flat_axs, tor_tests):
+            for ax, tor in zip(flat_axs, tor_tests, strict=True):
                 pdata = tdata[tdata["torsions"] == tor]
 
                 lowevalues = []
@@ -424,7 +423,7 @@ def shape_input_relationships(all_data, figure_output):
 
             c_column = f"{shape_type}_{target_shape}"
 
-            for ax, tor in zip(flat_axs, tor_tests):
+            for ax, tor in zip(flat_axs, tor_tests, strict=True):
                 pdata = tdata[tdata["torsions"] == tor]
                 if tstr == "6P8":
                     ax.set_xlabel(angle_str(3), fontsize=16)
@@ -1036,7 +1035,6 @@ def main():
         output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    write_out_mapping(all_data)
 
     flexshapeeffect_per_shape(low_e_data, figure_output)
     shape_topology(low_e_data, figure_output)

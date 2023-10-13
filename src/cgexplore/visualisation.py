@@ -86,7 +86,7 @@ class Pymol:
         lstring = ""
         cstring = ""
         lnames = []
-        for sf, col in zip(structure_files, show_colours):
+        for sf, col in zip(structure_files, show_colours, strict=True):
             lstring += f"load {sf}\n"
             lname = str(sf.name).replace(".mol", "")
             lnames.append(lname)

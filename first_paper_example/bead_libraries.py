@@ -9,82 +9,49 @@ Author: Andrew Tarzia
 
 """
 
-from cgexplore.beads import produce_bead_library
+from cgexplore.beads import CgBead
 
 
-def bond_k():
-    return 1e5
-
-
-def angle_k():
-    return 1e2
-
-
-def core_2c_beads():
-    return produce_bead_library(
-        type_prefix="c",
+def core_bead() -> CgBead:
+    return CgBead(
         element_string="Ag",
-        angles=(180,),
-        bond_rs=(2,),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
+        bead_class="c",
+        bead_type="c1",
         coordination=2,
     )
 
 
-def arm_2c_beads():
-    return produce_bead_library(
-        type_prefix="a",
+def arm_bead() -> CgBead:
+    return CgBead(
         element_string="Ba",
-        bond_rs=(1,),
-        angles=range(90, 181, 5),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
+        bead_class="a",
+        bead_type="a1",
         coordination=2,
     )
 
 
-def binder_beads():
-    return produce_bead_library(
-        type_prefix="b",
+def binder_bead() -> CgBead:
+    return CgBead(
         element_string="Pb",
-        bond_rs=(1,),
-        angles=(180,),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
+        bead_class="b",
+        bead_type="b1",
         coordination=2,
     )
 
 
-def beads_3c():
-    return produce_bead_library(
-        type_prefix="n",
+def trigonal_bead() -> CgBead:
+    return CgBead(
         element_string="C",
-        bond_rs=(2,),
-        angles=(50, 60, 70, 80, 90, 100, 110, 120),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
+        bead_class="n",
+        bead_type="n1",
         coordination=3,
     )
 
 
-def beads_4c():
-    return produce_bead_library(
-        type_prefix="m",
+def tetragonal_bead() -> CgBead:
+    return CgBead(
         element_string="Pd",
-        bond_rs=(2,),
-        angles=(50, 60, 70, 80, 90),
-        bond_ks=(bond_k(),),
-        angle_ks=(angle_k(),),
-        sigma=1,
-        epsilon=10.0,
+        bead_class="m",
+        bead_type="m1",
         coordination=4,
     )

@@ -13,25 +13,239 @@ import json
 import logging
 import os
 
-import matplotlib.pyplot as plt
 import numpy as np
+import openmm
 import pandas as pd
-from bead_libraries import (
-    arm_2c_beads,
-    beads_3c,
-    beads_4c,
-    core_2c_beads,
+from cgexplore.geom import GeomMeasure
+from cgexplore.pore import PoreMeasure
+from cgexplore.shape import (
+    ShapeMeasure,
+    get_shape_molecule_ligands,
+    get_shape_molecule_nodes,
+    known_shape_vectors,
 )
-from cgexplore.beads import get_cgbead_from_string
-from cgexplore.shape import known_shape_vectors
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
+from cgexplore.torsions import TargetTorsion
+from env_set import shape_path
 from topologies import cage_topology_options
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+
+
+def get_paired_cage_name(cage_name):
+    """
+    Get new FF number from a cage number based on ton vs toff.
+
+    """
+
+    ff_num = int(cage_name.split("_")[-1].split("f")[1])
+    new_ff_num = ff_num + 1
+    new_name = cage_name.replace(f"f{ff_num}", f"f{new_ff_num}")
+    return new_name
+
+
+def analyse_cage(
+    conformer,
+    name,
+    output_dir,
+    force_field,
+    node_element,
+    ligand_element,
+):
+    output_file = os.path.join(output_dir, f"{name}_res.json")
+    shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
+    shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
+
+    if not os.path.exists(output_file):
+        logging.info(f"analysing {name}")
+
+        energy_decomp = {}
+        for component in conformer.energy_decomposition:
+            component_tup = conformer.energy_decomposition[component]
+            if component == "total energy":
+                energy_decomp[f"{component}_{component_tup[1]}"] = float(
+                    component_tup[0]
+                )
+            else:
+                just_name = component.split("'")[1]
+                key = f"{just_name}_{component_tup[1]}"
+                value = float(component_tup[0])
+                if key in energy_decomp:
+                    energy_decomp[key] += value
+                else:
+                    energy_decomp[key] = value
+        fin_energy = energy_decomp["total energy_kJ/mol"]
+        try:
+            assert (
+                sum(
+                    energy_decomp[i]
+                    for i in energy_decomp
+                    if "total energy" not in i
+                )
+                == fin_energy
+            )
+        except AssertionError:
+            raise AssertionError(
+                "energy decompisition does not sum to total energy for"
+                f" {name}: {energy_decomp}"
+            )
+
+        n_shape_mol = get_shape_molecule_nodes(
+            constructed_molecule=conformer.molecule,
+            name=name,
+            element=node_element,
+            topo_expected=node_expected_topologies(),
+        )
+        l_shape_mol = get_shape_molecule_ligands(
+            constructed_molecule=conformer.molecule,
+            name=name,
+            element=ligand_element,
+            topo_expected=ligand_expected_topologies(),
+        )
+        if n_shape_mol is None:
+            node_shape_measures = None
+        else:
+            n_shape_mol.write(shape_molfile1)
+            node_shape_measures = ShapeMeasure(
+                output_dir=(output_dir / f"{name}_nshape"),
+                shape_path=shape_path(),
+                shape_string=None,
+            ).calculate(n_shape_mol)
+
+        if l_shape_mol is None:
+            lig_shape_measures = None
+        else:
+            lig_shape_measures = ShapeMeasure(
+                output_dir=(output_dir / f"{name}_lshape"),
+                shape_path=shape_path(),
+                shape_string=None,
+            ).calculate(l_shape_mol)
+            l_shape_mol.write(shape_molfile2)
+
+        opt_pore_data = PoreMeasure().calculate_min_distance(
+            conformer.molecule
+        )
+
+        # Always want to extract target torions if present.
+        g_measure = GeomMeasure(
+            target_torsions=(
+                TargetTorsion(
+                    search_string=("b", "a", "c", "a", "b"),
+                    search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
+                    measured_atom_ids=[0, 1, 3, 4],
+                    phi0=openmm.unit.Quantity(
+                        value=180, unit=openmm.unit.degrees
+                    ),
+                    torsion_k=openmm.unit.Quantity(
+                        value=0,
+                        unit=openmm.unit.kilojoules_per_mole,
+                    ),
+                    torsion_n=1,
+                ),
+            )
+        )
+        bond_data = g_measure.calculate_bonds(conformer.molecule)
+        angle_data = g_measure.calculate_angles(conformer.molecule)
+        dihedral_data = g_measure.calculate_torsions(
+            molecule=conformer.molecule,
+            absolute=True,
+        )
+        min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
+        radius_gyration = g_measure.calculate_radius_gyration(
+            molecule=conformer.molecule,
+        )
+        max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
+        if radius_gyration > max_diameter:
+            raise ValueError(
+                f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
+            )
+
+        # This is matched to the existing analysis code. I recommend
+        # generalising in the future.
+        ff_targets = force_field.get_targets()
+        if "6P8" in name:
+            torsions = "toff"
+        else:
+            torsions = (
+                "ton"
+                if ff_targets["torsions"][0].torsion_k.value_in_unit(
+                    openmm.unit.kilojoules_per_mole
+                )
+                > 0
+                else "toff"
+            )
+
+        c2r0 = None
+        c3r0 = None
+        clr0 = None
+        for bt in ff_targets["bonds"]:
+            cp = (bt.class1, bt.class2)
+            if "6P8" in name:
+                if ("b", "n") in (cp, tuple(reversed(cp))):
+                    c3r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+                if ("b", "m") in (cp, tuple(reversed(cp))):
+                    clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+            else:
+                if ("a", "c") in (cp, tuple(reversed(cp))):
+                    c2r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+                if ("b", "n") in (cp, tuple(reversed(cp))):
+                    clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+                elif ("b", "m") in (cp, tuple(reversed(cp))):
+                    clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
+
+        c2angle = None
+        c3angle = None
+        clangle = None
+        for at in ff_targets["angles"]:
+            cp = (at.class1, at.class2, at.class3)
+            if "6P8" in name:
+                if ("b", "n", "b") in (cp, tuple(reversed(cp))):
+                    c3angle = at.angle.value_in_unit(openmm.unit.degrees)
+                if ("b", "m", "b") in (cp, tuple(reversed(cp))):
+                    clangle = at.angle.value_in_unit(openmm.unit.degrees)
+            else:
+                if ("b", "a", "c") in (cp, tuple(reversed(cp))):
+                    c2angle = at.angle.value_in_unit(openmm.unit.degrees)
+                if ("b", "n", "b") in (cp, tuple(reversed(cp))):
+                    clangle = at.angle.value_in_unit(openmm.unit.degrees)
+                elif ("b", "m", "b") in (cp, tuple(reversed(cp))):
+                    clangle = at.angle.value_in_unit(openmm.unit.degrees)
+
+        force_field_dict = {
+            "ff_id": force_field.get_identifier(),
+            "torsions": torsions,
+            "vdws": "von",
+            "clbb_bead1": "",
+            "clbb_bead2": "",
+            "c2bb_bead1": "",
+            "c2bb_bead2": "",
+            "c2r0": c2r0,
+            "c2angle": c2angle,
+            "c3r0": c3r0,
+            "c3angle": c3angle,
+            "clr0": clr0,
+            "clangle": clangle,
+        }
+        res_dict = {
+            "optimised": True,
+            "source": conformer.source,
+            "fin_energy_kjmol": fin_energy,
+            "fin_energy_decomp": energy_decomp,
+            "opt_pore_data": opt_pore_data,
+            "lig_shape_measures": lig_shape_measures,
+            "node_shape_measures": node_shape_measures,
+            "bond_data": bond_data,
+            "angle_data": angle_data,
+            "dihedral_data": dihedral_data,
+            "min_b2b_distance": min_b2b_distance,
+            "radius_gyration": radius_gyration,
+            "max_diameter": max_diameter,
+            "force_field_dict": force_field_dict,
+        }
+        with open(output_file, "w") as f:
+            json.dump(res_dict, f, indent=4)
 
 
 def angle_str(num=None, unit=True):
@@ -411,31 +625,6 @@ def mapshape_to_topology(mode, from_shape=False):
             }
 
 
-def collate_cage_vector_from_bb(data, test_bb):
-    tbb_dict = {}
-    for cage in data:
-        if test_bb in cage:
-            cage_dict = data[cage]
-            for sv in cage_dict["shape_vector"]:
-                if "FourPlusSix2" in cage:
-                    svb = sv + "b"
-                else:
-                    svb = sv
-                tbb_dict[svb] = cage_dict["shape_vector"][sv]
-    return tbb_dict
-
-
-def get_shape_vector(shape_dictionary):
-    shape_vector = {}
-    for i in target_shapes():
-        if i in shape_dictionary:
-            shape_vector[i] = shape_dictionary[i][0]
-        if i + "b" in shape_dictionary:
-            shape_vector[i + "b"] = shape_dictionary[i + "b"][0]
-
-    return shape_vector
-
-
 def get_present_beads(c2_bbname):
     wtopo = c2_bbname[3:]
     present_beads_names = []
@@ -495,25 +684,6 @@ def get_sv_dist(row, mode):
     return cosine_similarity
 
 
-def is_persistent(row):
-    raise NotImplementedError()
-
-    n_vector_distance = get_sv_dist(row, mode="n")
-    l_vector_distance = get_sv_dist(row, mode="l")
-
-    pore = float(row["pore"])
-    if pore > 1:
-        if n_vector_distance is None:
-            return True
-        elif n_vector_distance < 1:
-            if l_vector_distance is None:
-                return True
-            elif l_vector_distance < 1:
-                return True
-
-    return False
-
-
 def data_to_array(json_files, output_dir):
     output_csv = output_dir / "all_array.csv"
     geom_json = output_dir / "all_geom.json"
@@ -538,81 +708,38 @@ def data_to_array(json_files, output_dir):
         row = {}
 
         name = str(j_file.name).replace("_res.json", "")
+        (t_str, clbb_name, c2bb_name, ff_name) = name.split("_")
 
-        (
-            t_str,
-            clbb_name,
-            c2bb_name,
-            torsions,
-            vdws,
-            run_number,
-        ) = name.split("_")
-
-        row["cage_name"] = f"{t_str}_{clbb_name}_{c2bb_name}"
+        row["cage_name"] = f"{t_str}_{clbb_name}_{c2bb_name}_{ff_name}"
         row["clbb_name"] = clbb_name
         row["c2bb_name"] = c2bb_name
         row["topology"] = t_str
-        row["torsions"] = torsions
-        row["vdws"] = vdws
-        row["run_number"] = run_number
+        row["ff_name"] = ff_name
+        row["torsions"] = res_dict["force_field_dict"]["torsions"]
+        row["vdws"] = res_dict["force_field_dict"]["vdws"]
+        row["run_number"] = 0
 
-        present_c2_beads = get_present_beads(c2bb_name)
-        present_cl_beads = get_present_beads(clbb_name)
-        row["clbb_b1"] = present_cl_beads[0]
-        row["clbb_b2"] = present_cl_beads[1]
-        row["c2bb_b1"] = present_c2_beads[0]
-        row["c2bb_b2"] = present_c2_beads[1]
-
-        cl_bead_libs = beads_3c().copy()
-        cl_bead_libs.update(beads_4c())
         row["cltopo"] = int(clbb_name[0])
-        clangle = get_cgbead_from_string(
-            present_cl_beads[0],
-            cl_bead_libs,
-        ).angle_centered
-
-        row["bbpair"] = clbb_name + c2bb_name
-        row["optimised"] = res_dict["optimised"]
-        # row["mdexploded"] = res_dict["mdexploded"]
-        # row["mdfailed"] = res_dict["mdfailed"]
-
         if t_str in cage_topology_options(
             "2p3"
         ) or t_str in cage_topology_options("2p4"):
             cltitle = "3C1" if row["cltopo"] == 3 else "4C1"
-            row["c2r0"] = get_cgbead_from_string(
-                present_c2_beads[0],
-                core_2c_beads(),
-            ).bond_r
-            row["c2angle"] = get_cgbead_from_string(
-                present_c2_beads[1],
-                arm_2c_beads(),
-            ).angle_centered
-            row["target_bite_angle"] = (
-                get_cgbead_from_string(
-                    present_c2_beads[1],
-                    arm_2c_beads(),
-                ).angle_centered
-                - 90
-            ) * 2
+            row["c2r0"] = res_dict["force_field_dict"]["c2r0"]
+            row["c2angle"] = res_dict["force_field_dict"]["c2angle"]
+            row["target_bite_angle"] = (row["c2angle"] - 90) * 2
 
         elif t_str in cage_topology_options("3p4"):
             cltitle = "4C1"
-            row["c3r0"] = get_cgbead_from_string(
-                present_c2_beads[0],
-                cl_bead_libs,
-            ).bond_r
-            row["c3angle"] = get_cgbead_from_string(
-                present_c2_beads[0],
-                cl_bead_libs,
-            ).angle_centered
+            row["c3r0"] = res_dict["force_field_dict"]["c3r0"]
+            row["c3angle"] = res_dict["force_field_dict"]["c3angle"]
 
         row["cltitle"] = cltitle
-        row["clr0"] = get_cgbead_from_string(
-            present_cl_beads[0],
-            cl_bead_libs,
-        ).bond_r
-        row["clangle"] = clangle
+        row["clr0"] = res_dict["force_field_dict"]["clr0"]
+        row["clangle"] = res_dict["force_field_dict"]["clangle"]
+
+        row["bbpair"] = clbb_name + c2bb_name + ff_name
+        row["optimised"] = res_dict["optimised"]
+        row["source"] = res_dict["source"]
 
         if row["optimised"]:
             row["strain_energy"] = res_dict["fin_energy_kjmol"]
@@ -643,65 +770,6 @@ def data_to_array(json_files, output_dir):
                 res_dict["opt_pore_data"]["min_distance"]
                 / res_dict["radius_gyration"]
             )
-
-            # trajectory_data = res_dict["trajectory"]
-            # if trajectory_data is None:
-            #     row["pore_dynamics"] = None
-            #     row["structure_dynamics"] = None
-            #     row["node_shape_dynamics"] = None
-            #     row["lig_shape_dynamics"] = None
-            # else:
-            #     list_of_rgs = [
-            #         rd["radius_gyration"]
-            #         for rd in trajectory_data.values()
-            #     ]
-            #     list_of_pores = [
-            #         rd["pore_data"]["min_distance"]
-            #         for rd in trajectory_data.values()
-            #     ]
-            #     row["structure_dynamics"] = np.std(
-            #         list_of_rgs
-            #     ) / np.mean(list_of_rgs)
-            #     row["pore_dynamics"] = np.std(list_of_pores) / np.mean(
-            #         list_of_pores
-            #     )
-
-            #     list_of_node_sv_cosdists = []
-            #     list_of_lig_sv_cosdists = []
-            #     for rd in trajectory_data.values():
-            #         rd_series = pd.Series(dtype="object")
-            #         rd_series["topology"] = row["topology"]
-            #         r_node_shape_vector = rd["node_shape_measures"]
-            #         r_lig_shape_vector = rd["lig_shape_measures"]
-            #         if r_node_shape_vector is not None:
-            #             for sv in r_node_shape_vector:
-            #                 rd_series[f"n_{sv}"] = r_node_shape_vector[
-            #                     sv
-            #                 ]
-            #         if r_lig_shape_vector is not None:
-            #             for sv in r_lig_shape_vector:
-            #                 rd_series[f"l_{sv}"] = r_lig_shape_vector[
-            #                     sv
-            #                 ]
-            #         list_of_node_sv_cosdists.append(
-            #             get_sv_dist(rd_series, mode="n")
-            #         )
-            #         list_of_lig_sv_cosdists.append(
-            #             get_sv_dist(rd_series, mode="l")
-            #         )
-
-            #     if list_of_node_sv_cosdists[0] is None:
-            #         row["node_shape_dynamics"] = None
-            #     else:
-            #         row["node_shape_dynamics"] = np.std(
-            #             list_of_node_sv_cosdists
-            #         )
-            #     if list_of_lig_sv_cosdists[0] is None:
-            #         row["lig_shape_dynamics"] = None
-            #     else:
-            #         row["lig_shape_dynamics"] = np.std(
-            #             list_of_lig_sv_cosdists
-            #         )
 
             bond_data = res_dict["bond_data"]
             angle_data = res_dict["angle_data"]
@@ -744,205 +812,6 @@ def data_to_array(json_files, output_dir):
         json.dump(geom_data, f, indent=4)
 
     return input_array
-
-
-def shape_vector_cluster(all_data, c2bb, c3bb, figure_output):
-    print(all_data.head())
-    print(all_data.columns)
-    print(all_data.iloc[1])
-    raise SystemExit()
-    fig, ax = plt.subplots(figsize=(8, 5))
-
-    if c3bb is None and c2bb is None:
-        raise ValueError("atleast one c2bb, or c3bb should be not None")
-    elif c3bb is None:
-        bb_data = {
-            i: all_data[i] for i in all_data if all_data[i]["c2bb"] == c2bb
-        }
-        list_of_test_bbs = set([i["c3bb"] for i in bb_data.values()])
-    elif c2bb is None:
-        bb_data = {
-            i: all_data[i] for i in all_data if all_data[i]["c3bb"] == c3bb
-        }
-        list_of_test_bbs = set([i["c2bb"] for i in bb_data.values()])
-    logging.info(f"trimmed to {len(bb_data)} points")
-    logging.info(f"with {len(list_of_test_bbs)} test building blocks")
-
-    shape_array = {}
-    target_row_names = set()
-    color_map = shapetarget_to_colormap()
-    min_of_each_shape_plot = {i: None for i in target_shapes()}
-    for test_bb in list_of_test_bbs:
-        tbb_dict = {}
-        for cage in bb_data:
-            if test_bb in cage:
-                cage_dict = bb_data[cage]
-                for sv in cage_dict["shape_vector"]:
-                    if "FourPlusSix2" in cage:
-                        svb = sv + "b"
-                    else:
-                        svb = sv
-                    tbb_dict[svb] = cage_dict["shape_vector"][sv]
-                    target_row_names.add(svb)
-                    if sv in target_shapes():
-                        if min_of_each_shape_plot[sv] is None:
-                            min_of_each_shape_plot[sv] = (
-                                test_bb,
-                                cage_dict["shape_vector"][sv],
-                            )
-                        elif (
-                            cage_dict["shape_vector"][sv]
-                            < min_of_each_shape_plot[sv][1]
-                        ):
-                            min_of_each_shape_plot[sv] = (
-                                test_bb,
-                                cage_dict["shape_vector"][sv],
-                            )
-
-        shape_array[test_bb] = tbb_dict
-
-    data_array = pd.DataFrame.from_dict(
-        shape_array,
-        orient="index",
-    ).reset_index()
-
-    # Separating out the features
-    x = data_array.loc[:, target_row_names].values
-    # Standardizing the features
-    x = StandardScaler().fit_transform(x)
-    pca = PCA(n_components=2)
-    pcs = pca.fit_transform(x)
-    pc_df = pd.DataFrame(
-        data=pcs,
-        columns=["pc1", "pc2"],
-    )
-    # pcindexed_df = pd.concat(
-    #     [pc_df, data_array[["index"]]],
-    #     axis=1,
-    # )
-    ax.scatter(
-        pc_df["pc1"],
-        pc_df["pc2"],
-        c="grey",
-        edgecolor="none",
-        s=30,
-        alpha=1.0,
-    )
-
-    # # Initialize the class object
-    # kmeans = KMeans(n_clusters=len(target_row_names))
-
-    # # predict the labels of clusters.
-    # label = kmeans.fit_predict(pc_df)
-
-    # # Getting unique labels
-    # centroids = kmeans.cluster_centers_
-    # u_labels = np.unique(label)
-
-    # # plotting the results:
-    # for i in u_labels:
-    #     ax.scatter(
-    #         pcs[label == i, 0],
-    #         pcs[label == i, 1],
-    #         label=i,
-    #         s=20,
-    #     )
-    # ax.scatter(
-    #     centroids[:, 0],
-    #     centroids[:, 1],
-    #     s=40,
-    #     color="white",
-    #     edgecolor="k",
-    # )
-
-    # cluster_map = pd.DataFrame()
-    # cluster_map["data_index"] = pc_df.index.values
-    # cluster_map["cluster"] = kmeans.labels_
-
-    for shape in min_of_each_shape_plot:
-        min_c3bb, sv = min_of_each_shape_plot[shape]
-        logging.info(
-            f"for {shape}, A(!) min bb pair: {c2bb}/{min_c3bb} "
-            f"with value {sv}"
-        )
-        data_index = data_array.index[data_array["index"] == min_c3bb].tolist()
-        ax.scatter(
-            pcs[data_index[0], 0],
-            pcs[data_index[0], 1],
-            c=color_map[shape],
-            label=shape,
-            marker="D",
-            edgecolor="k",
-            s=50,
-        )
-
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("principal component 1", fontsize=16)
-    ax.set_ylabel("principal component 2", fontsize=16)
-    ax.set_title(f"PCA: {c2bb}/{c3bb}", fontsize=16)
-    ax.legend(ncol=4, fontsize=16)
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, f"cluster_{c2bb}_{c3bb}.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def write_out_mapping(all_data):
-    bite_angle_map = {}
-    clangle_map = {}
-    clr0_map = {}
-    c2r0_map = {}
-
-    for t_angle in set(list(all_data["clangle"])):
-        clan_data = all_data[all_data["clangle"] == t_angle]
-
-        for clbb in set(sorted(clan_data["clbb_b1"])):
-            clangle_map[clbb] = t_angle
-
-        for c1_opt in sorted(set(clan_data["c2r0"])):
-            test_data = clan_data[clan_data["c2r0"] == c1_opt]
-            for c2_opt in sorted(set(test_data["clr0"])):
-                plot_data = test_data[test_data["clr0"] == c2_opt]
-
-                for clbb in set(sorted(plot_data["clbb_b1"])):
-                    clr0_map[clbb] = c2_opt
-
-                c2r0_map[plot_data.iloc[0]["c2bb_b1"]] = c1_opt
-                for bid, ba in zip(
-                    list(plot_data["c2bb_b2"]),
-                    list(plot_data["target_bite_angle"]),
-                ):
-                    bite_angle_map[bid] = ba
-
-    properties = [
-        "energy_per_bb",
-        "pore",
-        "min_b2b_distance",
-        "radius_gyration",
-        "max_diameter",
-        "rg_md",
-        "pore_md",
-        "pore_rg",
-        "HarmonicBondForce_kJ/mol",
-        "HarmonicAngleForce_kJ/mol",
-        "CustomNonbondedForce_kJ/mol",
-        "PeriodicTorsionForce_kJ/mol",
-        # "structure_dynamics",
-        # "pore_dynamics",
-        # "node_shape_dynamics",
-        # "lig_shape_dynamics",
-        "sv_n_dist",
-        "sv_l_dist",
-    ]
-    logging.info(f"\nclangles: {clangle_map}\n")
-    logging.info(f"\nclr0s: {clr0_map}\n")
-    logging.info(f"\nbite_angles: {bite_angle_map}\n")
-    logging.info(f"\nc2r0s: {c2r0_map}\n")
-    logging.info(f"available properties:\n {properties}\n")
 
 
 def get_lowest_energy_data(all_data, output_dir):

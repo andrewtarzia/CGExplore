@@ -72,6 +72,7 @@ class FourC1Arm(Precursor):
             bead.bead_type: bead,
             abead1.bead_type: abead1,
         }
+
         factories = (stk.BromoFactory(placers=(0, 1)),)
         four_c_bb = stk.BuildingBlock(
             smiles=f"[Br][{bead.element_string}]([Br])([Br])[Br]",
@@ -97,15 +98,17 @@ class FourC1Arm(Precursor):
                 repeating_unit="AAAA",
             ),
         )
-
-        new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=(f"[{bead.element_string}][{abead1.element_string}]"),
-            bonders=(1,),
-            deleters=(),
+        new_fgs = (
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(f"[{bead.element_string}][{abead1.element_string}]"),
+                bonders=(1,),
+                deleters=(),
+            ),
         )
+
         self._building_block = stk.BuildingBlock.init_from_molecule(
             molecule=const_mol,
-            functional_groups=(new_fgs,),
+            functional_groups=new_fgs,
         )
 
 
@@ -156,7 +159,7 @@ class ThreeC1Arm(Precursor):
             position_matrix=np.array(
                 [
                     [-2, 0, 0],
-                    [0, 0, 0],
+                    [0, 0, 0.5],
                     [-1.2, 1, 0],
                     [-1.2, -1, 0],
                 ]

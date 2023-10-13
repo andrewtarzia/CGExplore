@@ -43,6 +43,7 @@ def energy_parity(all_data, dupl_data, figure_output):
     }
 
     fig, ax = plt.subplots(figsize=(8, 5))
+    count_ = 0
     for idx, row in dupl_data.iterrows():
         index_name = str(row["index"])
         tstr = str(row["topology"])
@@ -61,6 +62,7 @@ def energy_parity(all_data, dupl_data, figure_output):
                 s=60,
                 alpha=0.8,
             )
+            count_ += 1
         else:
             ax.scatter(
                 orig_energy,
@@ -81,6 +83,7 @@ def energy_parity(all_data, dupl_data, figure_output):
     ax.axvline(x=isomer_energy(), c="k", ls="--", lw=2, alpha=0.2)
     ax.set_xscale("log")
     ax.set_yscale("log")
+    ax.set_title(f"{count_} (of {len(dupl_data)}) far examples", fontsize=16)
 
     legend_elements = []
     for tstr in cmap:

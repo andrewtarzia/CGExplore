@@ -23,7 +23,6 @@ from analysis import (
     isomer_energy,
     mapshape_to_topology,
     topology_labels,
-    write_out_mapping,
 )
 from cgexplore.utilities import check_directory
 from cgexplore.visualisation import Pymol
@@ -182,6 +181,8 @@ def fig2_a(
         "zoom_string": "custom",
     }
 
+    raise NotImplementedError("naming convention has changed")
+
     structure_names = (
         "2P4_4C1m0400b0000_2C1c0000a0000",
         "3P6_4C1m0400b0000_2C1c0000a0400",
@@ -198,7 +199,7 @@ def fig2_a(
         figsize=(16, 4),
     )
 
-    for sname, ax in zip(structure_names, axs):
+    for sname, ax in zip(structure_names, axs, strict=True):
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -236,6 +237,8 @@ def fig2_cd(
         "zoom_string": "custom",
     }
 
+    raise NotImplementedError("naming convention has changed")
+
     structure_names = (
         "4P6_3C1n0400b0000_2C1c0000a0000",
         "4P6_3C1n0500b0000_2C1c0000a0100",
@@ -258,7 +261,7 @@ def fig2_cd(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for sname, ax in zip(structure_names, flat_axs, strict=True):
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -296,6 +299,8 @@ def expt_fig_cases(
         "zoom_string": "custom",
     }
 
+    raise NotImplementedError("naming convention has changed")
+
     structure_names = (
         "2P3_3C1n0400b0000_2C1c0000a0700",
         "4P6_3C1n0400b0000_2C1c0000a01400",
@@ -311,7 +316,7 @@ def expt_fig_cases(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for sname, ax in zip(structure_names, flat_axs, strict=True):
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -349,6 +354,8 @@ def expt_fig_CC_cases(
         "zoom_string": "custom",
     }
 
+    raise NotImplementedError("naming convention has changed")
+
     structure_names = (
         "2P3_3C1n0700b0000_2C1c0000a0400",
         "4P6_3C1n0700b0000_2C1c0000a0400",
@@ -363,7 +370,7 @@ def expt_fig_CC_cases(
         figsize=(16, 8),
     )
 
-    for fax, tor in zip(axs, ("ton", "toff")):
+    for fax, tor in zip(axs, ("ton", "toff"), strict=True):
         tor_data = all_data[all_data["torsions"] == tor]
         for sname, ax in zip(structure_names, fax):
             tdata = tor_data[tor_data["cage_name"] == sname]
@@ -422,7 +429,9 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs)):
+    for i, (sname, ax) in enumerate(
+        zip(structure_names, flat_axs, strict=True)
+    ):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
@@ -458,6 +467,7 @@ def si_ar_fig_gen(
     struct_output,
     struct_figure_output,
 ):
+    raise NotImplementedError("naming convention has changed")
     si_ar_fig(
         all_data=all_data,
         structure_names=(
@@ -765,6 +775,7 @@ def si_shape_fig(
     struct_output,
     struct_figure_output,
 ):
+    raise NotImplementedError("naming convention has changed")
     structure_names = (
         # ("12P24_4C1m0000b0000_2C1c0000a0200", "ton"),
         # ("12P24_4C1m0000b0000_2C1c0000a01200", "toff"),
@@ -826,7 +837,7 @@ def si_shape_fig(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for sname, ax in zip(structure_names, flat_axs, strict=True):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
@@ -1036,7 +1047,9 @@ def webapp_csv(
                     )
                     flat_axs = axs.flatten()
 
-                for sindx, ax in zip(sorted(index_energies.keys()), flat_axs):
+                for sindx, ax in zip(
+                    sorted(index_energies.keys()), flat_axs, strict=True
+                ):
                     add_structure_to_ax(
                         ax=ax,
                         struct_name=sindx,
@@ -1147,12 +1160,7 @@ def check_odd_outcomes(
         )
 
 
-def generate_movies(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+def generate_movies(figure_output):
     logging.info("running generate_movies")
     vss_output = figure_output / "vss_figures"
     # astr = "a0{0..18}00"
@@ -1221,8 +1229,8 @@ def main():
         output_dir=data_output,
     )
     logging.info(f"there are {len(all_data)} collected data")
-    write_out_mapping(all_data)
 
+    raise NotImplementedError("naming convention has changed")
     generate_images_of_all(
         low_e_data,
         struct_output,

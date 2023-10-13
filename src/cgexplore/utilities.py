@@ -16,7 +16,7 @@ import pathlib
 
 import numpy as np
 import stk
-from rdkit.Chem import AllChem as rdkit
+from openmm import openmm
 from scipy.spatial.distance import euclidean
 
 logging.basicConfig(
@@ -136,43 +136,6 @@ def read_lib(lib_file):
     return lib
 
 
-def get_all_angles(molecule: stk.Molecule) -> list:
-    paths = rdkit.FindAllPathsOfLengthN(
-        mol=molecule.to_rdkit_mol(),
-        length=3,
-        useBonds=False,
-        useHs=True,
-    )
-    angles = []
-    for atom_ids in paths:
-        atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
-        atom1 = atoms[0]
-        atom2 = atoms[1]
-        atom3 = atoms[2]
-        angles.append((atom1, atom2, atom3))
-
-    return angles
-
-
-def get_all_torsions(molecule: stk.Molecule) -> list:
-    paths = rdkit.FindAllPathsOfLengthN(
-        mol=molecule.to_rdkit_mol(),
-        length=4,
-        useBonds=False,
-        useHs=True,
-    )
-    torsions = []
-    for atom_ids in paths:
-        atoms = list(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
-        atom1 = atoms[0]
-        atom2 = atoms[1]
-        atom3 = atoms[2]
-        atom4 = atoms[3]
-        torsions.append((atom1, atom2, atom3, atom4))
-
-    return torsions
-
-
 def get_dihedral(
     pt1: np.ndarray,
     pt2: np.ndarray,
@@ -216,3 +179,13 @@ def get_dihedral(
     x = np.dot(v, w)
     y = np.dot(np.cross(b1, v), w)
     return np.degrees(np.arctan2(y, x))
+
+
+def custom_excluded_volume_force() -> openmm.CustomNonbondedForce:
+    energy_expression = "epsilon*((sigma)/(r))^12;"
+    energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
+    energy_expression += "sigma = 0.5*(sigma1+sigma2);"
+    custom_force = openmm.CustomNonbondedForce(energy_expression)
+    custom_force.addPerParticleParameter("sigma")
+    custom_force.addPerParticleParameter("epsilon")
+    return custom_force

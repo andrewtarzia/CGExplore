@@ -12,13 +12,11 @@ class CaseData:
     def __init__(
         self,
         molecule: stk.Molecule,
-        custom_torsion_set,
-        present_torsions,
-        bead_set,
+        force_field,
+        xml_string,
         name: str,
     ) -> None:
         self.molecule = molecule
-        self.custom_torsion_set = custom_torsion_set
-        self.bead_set = bead_set
-        self.present_torsions = present_torsions
+        self.force_field = force_field
+        self.xml_string = xml_string
         self.name = name

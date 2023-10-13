@@ -29,11 +29,11 @@ from analysis import (
     data_to_array,
     eb_str,
     get_lowest_energy_data,
+    get_paired_cage_name,
     isomer_energy,
     pore_str,
     rg_str,
     topology_labels,
-    write_out_mapping,
 )
 from cgexplore.utilities import convert_pyramid_angle
 from env_set import calculations, figures, outputdata
@@ -49,12 +49,13 @@ def identity_distributions(all_data, figure_output):
 
     fig, ax = plt.subplots(figsize=(16, 5))
 
-    categories = {i: 0 for i in topology_labels(short="+")}
+    categories = {i: 0 for i in topology_labels(short="P")}
     count1 = all_data["topology"].value_counts()
 
     for tstr, count in count1.items():
-        categories[convert_topo(tstr)] = count
+        categories[tstr] = count
 
+    categories = {convert_topo(i): categories[i] for i in categories}
     num_cages = len(all_data)
 
     ax.bar(
@@ -69,7 +70,6 @@ def identity_distributions(all_data, figure_output):
     )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("cage identity", fontsize=16)
     ax.set_ylabel("count", fontsize=16)
     ax.set_title(f"total cages: {num_cages}", fontsize=16)
     # ax.set_yscale("log")
@@ -111,7 +111,7 @@ def geom_distributions(all_data, geom_data, figure_output):
             "xlabel": r"$nb$ or $mb$ bond length",
             "units": r"$\mathrm{\AA}$",
             "column": "clr0",
-            "label_options": ("Pd_Pb", "C_Pb"),
+            "label_options": ("Pb_Pd", "C_Pb"),
         },
         "c2angle": {
             "measure": "angles",
@@ -132,14 +132,14 @@ def geom_distributions(all_data, geom_data, figure_output):
             "xlabel": r"$ac$ bond length",
             "units": r"$\mathrm{\AA}$",
             "column": "c2r0",
-            "label_options": ("Ba_Ag",),
+            "label_options": ("Ag_Ba",),
         },
         "c2bonder": {
             "measure": "bonds",
             "xlabel": r"$ba$ bond length [$\mathrm{\AA}$]",
             "units": None,
             "column": None,
-            "label_options": ("Pb_Ba",),
+            "label_options": ("Ba_Pb",),
         },
     }
 
@@ -158,7 +158,7 @@ def geom_distributions(all_data, geom_data, figure_output):
             figsize=(16, 5),
         )
         flat_axs = axs.flatten()
-        for ax, tors in zip(flat_axs, ("ton", "toff")):
+        for ax, tors in zip(flat_axs, ("ton", "toff"), strict=True):
             tor_frame = vdw_frame[vdw_frame["torsions"] == tors]
 
             for i, tstr in enumerate(tcmap):
@@ -190,16 +190,7 @@ def geom_distributions(all_data, geom_data, figure_output):
                                 if pd.isna(observed):
                                     continue
 
-                                # For some comparisons, need to use
-                                # matching rules.
-                                if comp == "clr0":
-                                    new_target = (target + 1) / 2
-                                    value = observed - new_target
-                                elif comp == "c2r0":
-                                    new_target = (target + 1) / 2
-                                    value = observed - new_target
-                                else:
-                                    value = observed - target
+                                value = observed - target
 
                                 # If it is possible, this checks if it
                                 # matches the opposite angle in
@@ -350,6 +341,7 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
     for ax, col in zip(
         flat_axs,
         ("rtoffvon", "rtonvoff", "rtoffvoff"),
+        strict=True,
     ):
         for tstr in tcmap:
             if tstr in ("6P8",) and col in ("rtoffvon", "rtonvoff"):
@@ -439,8 +431,11 @@ def single_value_distributions(all_data, figure_output):
             "xtitle": r"$R_{\mathrm{g}}$ / $D$",
             "xlim": (0, 0.6),
         },
-        "pore_md": {"xtitle": "pore size / $D$", "xlim": (0, 0.5)},
-        "pore_rg": {"xtitle": "pore size / R_g", "xlim": (0, 1.2)},
+        "pore_md": {"xtitle": r"pore size / $D$", "xlim": (0, 0.5)},
+        "pore_rg": {
+            "xtitle": r"pore size / $R_{\mathrm{g}}$",
+            "xlim": (0, 1.2),
+        },
     }
 
     topologies = topology_labels(short="P")
@@ -554,7 +549,7 @@ def single_value_distributions(all_data, figure_output):
             #     alpha=0.2,
             #     label=,
             # )
-        ax.legend(*zip(*labels), fontsize=16, ncols=4)
+        ax.legend(*zip(*labels, strict=True), fontsize=16, ncols=4)
         ax.set_xlim(-0.5, max(ylines) + 2.0)
 
         fig.tight_layout()
@@ -568,7 +563,7 @@ def single_value_distributions(all_data, figure_output):
 
 
 def plot_sorted(bb_data, color_map, figure_output):
-    fig, ax = plt.subplots(figsize=(8, 3))
+    fig, ax = plt.subplots(figsize=(8, 3.5))
     max_ = 6
 
     # for ax, cltitle in zip(axs, ("3C1", "4C1")):
@@ -605,7 +600,7 @@ def plot_sorted(bb_data, color_map, figure_output):
     # ax.set_title(f"{cltitle}", fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
-    ax.set_ylabel(r"% selected", fontsize=16)
+    ax.set_ylabel(r"% with single species", fontsize=16)
     ax.set_xlim(0, max_ + 0.1)
     ax.set_ylim(0, None)
 
@@ -702,7 +697,7 @@ def plot_clangle(cl_data, color_map, figure_output):
     clangles = sorted([int(i) for i in cl_data.keys()])
     fig, axs = plt.subplots(ncols=2, sharey=True, figsize=(16, 5))
 
-    for ax, cltitle in zip(axs, ("3C1", "4C1")):
+    for ax, cltitle in zip(axs, ("3C1", "4C1"), strict=True):
         for clangle in clangles:
             data = cl_data[str(clangle)]
             if cltitle == "3C1":
@@ -758,10 +753,7 @@ def plot_clangle(cl_data, color_map, figure_output):
             orientation="vertical",
         )
         cbar.ax.tick_params(labelsize=16)
-        cbar.set_label(
-            r"% selected",
-            fontsize=16,
-        )
+        cbar.set_label(r"% with single species", fontsize=16)
 
         # ax.set_title(f"{cltitle}", fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
@@ -809,8 +801,8 @@ def plot_average(bb_data, color_map, figure_output):
         )
         ax.fill_between(
             xs,
-            [i - j for i, j in zip(ys, yerrs)],
-            [i + j for i, j in zip(ys, yerrs)],
+            [i - j for i, j in zip(ys, yerrs, strict=True)],
+            [i + j for i, j in zip(ys, yerrs, strict=True)],
             facecolor=color_map[(tor, cltitle)],
             alpha=0.2,
         )
@@ -843,6 +835,8 @@ def mixed_distributions(all_data, figure_output):
         ("toff", "4C1"): "#7A8B99",
     }
 
+    cltitles = ("3C1", "4C1")
+
     bbs = set(trim["bbpair"])
     bb_data = {}
     cl_data = {}
@@ -851,12 +845,12 @@ def mixed_distributions(all_data, figure_output):
             continue
         bbd = trim[trim["bbpair"] == bb_pair]
 
-        for tor, cltitle in color_map:
+        for cltitle in cltitles:
             data = bbd[bbd["cltitle"] == cltitle]
             if len(data) == 0:
                 continue
 
-            data = data[data["torsions"] == tor]
+            tor = set(data["torsions"]).pop()
             energies = {
                 str(row["topology"]): float(row["energy_per_bb"])
                 for i, row in data.iterrows()
@@ -889,7 +883,7 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
     )
     flat_axs = axs.flatten()
 
-    for ax, tstr in zip(flat_axs, topologies):
+    for ax, tstr in zip(flat_axs, topologies, strict=True):
         tdata = data[data["topology"] == tstr]
         topology_data[tstr] = {}
 
@@ -1024,21 +1018,20 @@ def plot_topology_pore_flex(data, figure_output):
     xticks = {}
     for i, tstr in enumerate(topologies):
         tdata = data[data["topology"] == tstr]
-
-        cage_names = set(tdata["cage_name"])
+        ton_data = tdata[tdata["torsions"] == "ton"]
+        cage_names = set(ton_data["cage_name"])
 
         differences = []
         stable_differences = []
         for cage_name in cage_names:
-            cdata = tdata[tdata["cage_name"] == cage_name]
-            ton_energy = float(
-                cdata[cdata["torsions"] == "ton"]["energy_per_bb"]
-            )
-            toff_energy = float(
-                cdata[cdata["torsions"] == "toff"]["energy_per_bb"]
-            )
-            ton_pore = float(cdata[cdata["torsions"] == "ton"]["pore"])
-            toff_pore = float(cdata[cdata["torsions"] == "toff"]["pore"])
+            cdata = ton_data[ton_data["cage_name"] == cage_name]
+            pair_name = get_paired_cage_name(cage_name)
+            pdata = tdata[tdata["cage_name"] == pair_name]
+
+            ton_energy = float(cdata["energy_per_bb"].iloc[0])
+            toff_energy = float(pdata["energy_per_bb"].iloc[0])
+            ton_pore = float(cdata["pore"].iloc[0])
+            toff_pore = float(pdata["pore"].iloc[0])
             rel_difference = (ton_pore - toff_pore) / toff_pore
 
             differences.append(rel_difference)
@@ -1138,10 +1131,7 @@ def flexeffect_per_property(all_data, figure_output):
         figure_output=figure_output,
     )
     plot_topology_flex(topology_data, figure_output)
-    plot_topology_pore_flex(
-        data=trim,
-        figure_output=figure_output,
-    )
+    plot_topology_pore_flex(data=trim, figure_output=figure_output)
 
 
 def correlation_matrix(all_data, figure_output):
@@ -1248,7 +1238,7 @@ def energy_correlation_matrix(all_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    for ax, tstr in zip(flat_axs, topologies):
+    for ax, tstr in zip(flat_axs, topologies, strict=True):
         tdata = trim[trim["topology"] == tstr]
         targ_data = tdata[target_cols].copy()
 
@@ -1312,207 +1302,43 @@ def check_same_energy(e1, e2):
     return np.isclose(e1, e2, atol=1e-1, rtol=0)
 
 
-def opt_outcome_distributions(
-    all_data,
-    calculation_output,
-    figure_output,
-):
-    raise NotImplementedError()
+def opt_outcome_distributions(all_data, figure_output):
     logging.info("running opt_outcome_distributions")
 
-    energies_file = calculation_output / "step_energies.json"
+    fig, ax = plt.subplots(figsize=(16, 5))
 
-    if os.path.exists(energies_file):
-        with open(energies_file, "r") as f:
-            output = json.load(f)
-    else:
-        # out_files = calculation_output.glob("*o3_omm.out")
-        output = {}
-        for i, row in all_data.iterrows():
-            cage_idx = str(row["index"])
-            o1d_file = calculation_output / f"{cage_idx}_o1d_omm.out"
-            o2_file = calculation_output / f"{cage_idx}_o2_omm.out"
-            o2opt_file = calculation_output / f"{cage_idx}_o2opt_omm.out"
-            o3_file = calculation_output / f"{cage_idx}_o3_omm.out"
-            res_file = calculation_output / f"{cage_idx}_res.json"
+    categories = {
+        "opt1": 0,
+        "shifted": 0,
+        "nearby_opt": 0,
+        "smd": 0,
+    }
+    count1 = all_data["source"].value_counts()
 
-            min_o1d_energy = get_min_energy_from_omm_out(o1d_file)
-            min_o2_energy = get_min_energy_from_omm_out(o2_file)
-            min_o2opt_energy = get_min_energy_from_omm_out(o2opt_file)
-            min_o3_energy = get_min_energy_from_omm_out(o3_file)
+    for source, count in count1.items():
+        categories[source] = count
 
-            with open(res_file, "r") as f:
-                res_data = json.load(f)
+    num_cages = len(all_data)
 
-            output[cage_idx] = {
-                "optimised": res_data["optimised"],
-                "mdexploded": res_data["mdexploded"],
-                "mdfailed": res_data["mdfailed"],
-                "min_o1d_energy": min_o1d_energy,
-                "min_o2_energy": min_o2_energy,
-                "min_o2opt_energy": min_o2opt_energy,
-                "min_o3_energy": min_o3_energy,
-                "final_energy": res_data["fin_energy_kjmol"],
-            }
-
-        with open(energies_file, "w") as f:
-            json.dump(output, f, indent=4)
-
-    num_run = 0
-    num_optimised = 0
-    num_mdexploded = 0
-    num_mdfailed = 0
-    num_mdexploded_and_low_e = 0
-    num_mdfailed_and_low_e = 0
-    num_mdfailed_and_opt = 0
-    num_mdexploded_and_opt = 0
-    num_mdfailed_and_mdexploded = 0
-    exploded_idxs = []
-    failed_idxs = []
-    o1_same_o3 = 0
-    o2opt_same_o3 = 0
-    o2_same_o2opt = 0
-    o1_is_min = 0
-    o2_is_min = 0
-    o2opt_is_min = 0
-    o3_is_min = 0
-    o3_lt_final = 0
-    for cageidx in output:
-        num_run += 1
-        if output[cageidx]["optimised"]:
-            num_optimised += 1
-            if output[cageidx]["mdexploded"]:
-                num_mdexploded_and_opt += 1
-            if output[cageidx]["mdfailed"]:
-                num_mdfailed_and_opt += 1
-
-        if output[cageidx]["mdexploded"]:
-            num_mdexploded += 1
-            exploded_idxs.append(cageidx)
-            if output[cageidx]["final_energy"] < isomer_energy():
-                num_mdexploded_and_low_e += 1
-
-        if output[cageidx]["mdfailed"]:
-            num_mdfailed += 1
-            failed_idxs.append(cageidx)
-            if output[cageidx]["final_energy"] < isomer_energy():
-                num_mdfailed_and_low_e += 1
-
-        if output[cageidx]["mdexploded"] and output[cageidx]["mdfailed"]:
-            num_mdfailed_and_mdexploded += 1
-
-        if check_same_energy(
-            output[cageidx]["min_o1d_energy"],
-            output[cageidx]["min_o3_energy"],
-        ):
-            o1_same_o3 += 1
-        if check_same_energy(
-            output[cageidx]["min_o2opt_energy"],
-            output[cageidx]["min_o3_energy"],
-        ):
-            o2opt_same_o3 += 1
-        if check_same_energy(
-            output[cageidx]["min_o2opt_energy"],
-            output[cageidx]["min_o2_energy"],
-        ):
-            o2_same_o2opt += 1
-
-        if output[cageidx]["min_o2_energy"] is None:
-            min_energy = min(
-                [
-                    output[cageidx]["min_o1d_energy"],
-                    output[cageidx]["min_o2opt_energy"],
-                    output[cageidx]["min_o3_energy"],
-                ]
-            )
-        else:
-            min_energy = min(
-                [
-                    output[cageidx]["min_o1d_energy"],
-                    output[cageidx]["min_o2_energy"],
-                    output[cageidx]["min_o2opt_energy"],
-                    output[cageidx]["min_o3_energy"],
-                ]
-            )
-
-        if check_same_energy(output[cageidx]["min_o1d_energy"], min_energy):
-            o1_is_min += 1
-        if check_same_energy(output[cageidx]["min_o2_energy"], min_energy):
-            o2_is_min += 1
-        if check_same_energy(output[cageidx]["min_o2opt_energy"], min_energy):
-            o2opt_is_min += 1
-        if check_same_energy(output[cageidx]["min_o3_energy"], min_energy):
-            o3_is_min += 1
-
-        try:
-            if (
-                output[cageidx]["min_o2_energy"]
-                < output[cageidx]["min_o2opt_energy"]
-            ) and not np.isclose(
-                output[cageidx]["min_o2opt_energy"],
-                output[cageidx]["min_o2_energy"],
-                atol=1e-1,
-                rtol=0,
-            ):
-                if output[cageidx]["final_energy"] < isomer_energy() * 10:
-                    print(
-                        cageidx,
-                        output[cageidx]["min_o2opt_energy"],
-                        output[cageidx]["min_o2_energy"],
-                        output[cageidx]["min_o3_energy"],
-                        output[cageidx]["final_energy"],
-                        output[cageidx]["mdexploded"],
-                        output[cageidx]["mdfailed"],
-                    )
-        except TypeError:
-            pass
-
-        if output[cageidx]["min_o3_energy"] < output[cageidx][
-            "final_energy"
-        ] and not np.isclose(
-            output[cageidx]["min_o3_energy"],
-            output[cageidx]["final_energy"],
-            atol=1e-1,
-            rtol=0,
-        ):
-            # print(
-            #     cageidx,
-            #     output[cageidx]["min_o1d_energy"],
-            #     output[cageidx]["min_o2_energy"],
-            #     output[cageidx]["min_o2opt_energy"],
-            #     output[cageidx]["min_o3_energy"],
-            #     output[cageidx]["final_energy"],
-            #     np.isclose(
-            #         output[cageidx]["min_o3_energy"],
-            #         output[cageidx]["final_energy"],
-            #         atol=1e-1,
-            #         rtol=0,
-            #     ),
-            # )
-            o3_lt_final += 1
-
-    logging.info(f"sequences run: {num_run}")
-    logging.info(f"optimised: {num_optimised}")
-    logging.info(f"MD exploded: {num_mdexploded}")
-    logging.info(f"MD failed: {num_mdfailed}")
-    logging.info(f"MD exploded + low E: {num_mdexploded_and_low_e}")
-    logging.info(f"MD failed + low E: {num_mdfailed_and_low_e}")
-    logging.info(f"MD exploded and optimised: {num_mdexploded_and_opt}")
-    logging.info(f"MD failed and optimised: {num_mdfailed_and_opt}")
-    logging.info(f"MD exploded and MD failed: {num_mdfailed_and_mdexploded}")
-    logging.info(f"failed cages: {failed_idxs}")
-    logging.info(f"exploded cages: {exploded_idxs}")
-
-    print(
-        o1_same_o3,
-        o1_is_min,
-        o2opt_is_min,
-        o2_is_min,
-        o3_is_min,
-        o3_lt_final,
+    ax.bar(
+        categories.keys(),
+        categories.values(),
+        color="teal",
+        edgecolor="teal",
+        lw=2,
     )
 
-    raise SystemExit("Use the new step energies file.")
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_ylabel("count", fontsize=16)
+    ax.set_title(f"total cages: {num_cages}", fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(figure_output, "opt_source_counts.pdf"),
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 def main():
@@ -1538,23 +1364,18 @@ def main():
     logging.info(f"there are {len(all_data)} collected data")
     opt_data = all_data[all_data["optimised"]]
     logging.info(f"there are {len(opt_data)} successfully opted")
-    write_out_mapping(all_data)
 
     with open(data_output / "all_geom.json", "r") as f:
         geom_data = json.load(f)
 
+    identity_distributions(all_data, figure_output)
+    mixed_distributions(low_e_data, figure_output)
+    single_value_distributions(low_e_data, figure_output)
     geom_distributions(all_data, geom_data, figure_output)
     flexeffect_per_property(low_e_data, figure_output)
     correlation_matrix(low_e_data, figure_output)
     energy_correlation_matrix(low_e_data, figure_output)
-    identity_distributions(all_data, figure_output)
-    mixed_distributions(low_e_data, figure_output)
-    single_value_distributions(low_e_data, figure_output)
-    opt_outcome_distributions(
-        all_data,
-        calculation_output,
-        figure_output,
-    )
+    opt_outcome_distributions(all_data, figure_output)
     raise SystemExit()
 
     rmsd_distributions(all_data, calculation_output, figure_output)

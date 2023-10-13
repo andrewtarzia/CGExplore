@@ -21,8 +21,8 @@ from analysis import (
     convert_tors,
     data_to_array,
     get_lowest_energy_data,
+    get_paired_cage_name,
     topology_labels,
-    write_out_mapping,
 )
 from env_set import calculations, figures, outputdata
 
@@ -48,16 +48,17 @@ def parity_1(all_data, figure_output):
 
         tdata = vdata[vdata["topology"] == tstr]
         data1 = tdata[tdata["torsions"] == "ton"]
-        data2 = tdata[tdata["torsions"] == "toff"]
 
-        out_data = data1.merge(
-            data2,
-            on="cage_name",
-        )
+        diffdata = []
+        for idx, row in data1.iterrows():
+            d1_energy = float(row["energy_per_bb"])
+            cage_name = str(row["cage_name"])
+            pair_name = get_paired_cage_name(cage_name)
+            d2_row = tdata[tdata["cage_name"] == pair_name]
+            d2_energy = float(d2_row["energy_per_bb"].iloc[0])
 
-        ydata = list(out_data["energy_per_bb_x"])
-        xdata = list(out_data["energy_per_bb_y"])
-        diffdata = [y - x for x, y, in zip(xdata, ydata)]
+            diffdata.append(d1_energy - d2_energy)
+
         xpos = tcpos[tstr]
 
         parts = ax.violinplot(
@@ -117,7 +118,7 @@ def parity_2(all_data, geom_data, figure_output):
     flat_axs = axs.flatten()
 
     # vmax = 10
-    for ax, tstr in zip(flat_axs, topologies):
+    for ax, tstr in zip(flat_axs, topologies, strict=True):
         # fig, axs = plt.subplots(
         #     nrows=1,
         #     ncols=2,
@@ -127,7 +128,7 @@ def parity_2(all_data, geom_data, figure_output):
         # )
         # flat_axs = axs.flatten()
         topo_frame = all_data[all_data["topology"] == tstr]
-        # for tors, ax in zip(("ton", "toff"), flat_axs):
+        # for tors, ax in zip(("ton", "toff"), flat_axs, strict=True):
         for tors in ("ton", "toff"):
             tor_frame = topo_frame[topo_frame["torsions"] == tors]
 
@@ -150,7 +151,7 @@ def parity_2(all_data, geom_data, figure_output):
                             energies.append(energy)
 
             comp_values = {i: [] for i in sorted(set(target_c2s))}
-            for i, j in zip(target_c2s, measured_c2):
+            for i, j in zip(target_c2s, measured_c2, strict=True):
                 comp_values[i].append(j)
 
             # ax.errorbar(
@@ -245,7 +246,6 @@ def parity_2(all_data, geom_data, figure_output):
         bbox_inches="tight",
     )
     plt.close()
-    raise SystemExit()
 
 
 def pore_b2b_distance(all_data, figure_output):
@@ -298,7 +298,6 @@ def main():
         all_data=all_data,
         output_dir=data_output,
     )
-    write_out_mapping(all_data)
 
     parity_1(low_e_data, figure_output)
     parity_2(low_e_data, geom_data, figure_output)
