@@ -118,7 +118,7 @@ def parity_2(all_data, geom_data, figure_output):
     flat_axs = axs.flatten()
 
     # vmax = 10
-    for ax, tstr in zip(flat_axs, topologies):
+    for ax, tstr in zip(flat_axs, topologies, strict=True):
         # fig, axs = plt.subplots(
         #     nrows=1,
         #     ncols=2,
@@ -128,7 +128,7 @@ def parity_2(all_data, geom_data, figure_output):
         # )
         # flat_axs = axs.flatten()
         topo_frame = all_data[all_data["topology"] == tstr]
-        # for tors, ax in zip(("ton", "toff"), flat_axs):
+        # for tors, ax in zip(("ton", "toff"), flat_axs, strict=True):
         for tors in ("ton", "toff"):
             tor_frame = topo_frame[topo_frame["torsions"] == tors]
 
@@ -151,7 +151,7 @@ def parity_2(all_data, geom_data, figure_output):
                             energies.append(energy)
 
             comp_values = {i: [] for i in sorted(set(target_c2s))}
-            for i, j in zip(target_c2s, measured_c2):
+            for i, j in zip(target_c2s, measured_c2, strict=True):
                 comp_values[i].append(j)
 
             # ax.errorbar(

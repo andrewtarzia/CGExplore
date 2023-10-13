@@ -22,7 +22,6 @@ def test_angles(molecule):
         print(key)
         assert key in angles
         for angle, test in zip(
-            sorted(molecule.angle_dict[key]),
-            sorted(angles[key]),
+            sorted(molecule.angle_dict[key]), sorted(angles[key]), strict=True
         ):
             assert np.isclose(angle, test, atol=1e-3, rtol=0)

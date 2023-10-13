@@ -33,7 +33,7 @@ def test_present_nonbondeds(molecule):
             print(present_terms)
             assert len(present_terms) == len(molecule.present_nonbondeds[i])
             for test, present in zip(
-                present_terms, molecule.present_nonbondeds[i]
+                present_terms, molecule.present_nonbondeds[i], strict=True
             ):
                 assert test.atom_id == present.atom_id
                 assert test.bead_class == present.bead_class

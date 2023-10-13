@@ -34,12 +34,14 @@ def test_present_bonds(molecule):
             present_terms = assigned_system.force_field_terms["bond"]
             print(present_terms)
             assert len(present_terms) == len(molecule.present_bonds[i])
-            for test, present in zip(present_terms, molecule.present_bonds[i]):
+            for test, present in zip(
+                present_terms, molecule.present_bonds[i], strict=True
+            ):
                 assert test.atom_names == present.atom_names
                 if present.atoms is None:
                     assert test.atoms is None
                 else:
-                    for a1, a2 in zip(test.atoms, present.atoms):
+                    for a1, a2 in zip(test.atoms, present.atoms, strict=True):
                         is_equivalent_atom(a1, a2)
                 assert test.atom_ids == present.atom_ids
                 assert test.bond_r == present.bond_r

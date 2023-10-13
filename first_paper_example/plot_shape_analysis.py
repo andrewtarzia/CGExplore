@@ -232,7 +232,7 @@ def shape_topology(all_data, figure_output):
 
             c_column = f"{shape_type}_{target_shape}"
 
-            for ax, tor in zip(flat_axs, tor_tests):
+            for ax, tor in zip(flat_axs, tor_tests, strict=True):
                 pdata = tdata[tdata["torsions"] == tor]
 
                 lowevalues = []
@@ -423,7 +423,7 @@ def shape_input_relationships(all_data, figure_output):
 
             c_column = f"{shape_type}_{target_shape}"
 
-            for ax, tor in zip(flat_axs, tor_tests):
+            for ax, tor in zip(flat_axs, tor_tests, strict=True):
                 pdata = tdata[tdata["torsions"] == tor]
                 if tstr == "6P8":
                     ax.set_xlabel(angle_str(3), fontsize=16)

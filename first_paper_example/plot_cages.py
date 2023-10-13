@@ -199,7 +199,7 @@ def fig2_a(
         figsize=(16, 4),
     )
 
-    for sname, ax in zip(structure_names, axs):
+    for sname, ax in zip(structure_names, axs, strict=True):
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -261,7 +261,7 @@ def fig2_cd(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for sname, ax in zip(structure_names, flat_axs, strict=True):
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -316,7 +316,7 @@ def expt_fig_cases(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for sname, ax in zip(structure_names, flat_axs, strict=True):
         tdata = ton[ton["cage_name"] == sname]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
@@ -370,7 +370,7 @@ def expt_fig_CC_cases(
         figsize=(16, 8),
     )
 
-    for fax, tor in zip(axs, ("ton", "toff")):
+    for fax, tor in zip(axs, ("ton", "toff"), strict=True):
         tor_data = all_data[all_data["torsions"] == tor]
         for sname, ax in zip(structure_names, fax):
             tdata = tor_data[tor_data["cage_name"] == sname]
@@ -429,7 +429,9 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs)):
+    for i, (sname, ax) in enumerate(
+        zip(structure_names, flat_axs, strict=True)
+    ):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
@@ -835,7 +837,7 @@ def si_shape_fig(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for sname, ax in zip(structure_names, flat_axs, strict=True):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
@@ -1045,7 +1047,9 @@ def webapp_csv(
                     )
                     flat_axs = axs.flatten()
 
-                for sindx, ax in zip(sorted(index_energies.keys()), flat_axs):
+                for sindx, ax in zip(
+                    sorted(index_energies.keys()), flat_axs, strict=True
+                ):
                     add_structure_to_ax(
                         ax=ax,
                         struct_name=sindx,

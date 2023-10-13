@@ -32,5 +32,6 @@ def test_torsions(molecule):
         for torsion, test in zip(
             sorted(molecule.torsion_dict[key]),
             sorted(torsions[key]),
+            strict=True,
         ):
             assert np.isclose(torsion, test, atol=1e-3, rtol=0)

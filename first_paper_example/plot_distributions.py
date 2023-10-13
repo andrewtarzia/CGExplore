@@ -158,7 +158,7 @@ def geom_distributions(all_data, geom_data, figure_output):
             figsize=(16, 5),
         )
         flat_axs = axs.flatten()
-        for ax, tors in zip(flat_axs, ("ton", "toff")):
+        for ax, tors in zip(flat_axs, ("ton", "toff"), strict=True):
             tor_frame = vdw_frame[vdw_frame["torsions"] == tors]
 
             for i, tstr in enumerate(tcmap):
@@ -341,6 +341,7 @@ def rmsd_distributions(all_data, calculation_dir, figure_output):
     for ax, col in zip(
         flat_axs,
         ("rtoffvon", "rtonvoff", "rtoffvoff"),
+        strict=True,
     ):
         for tstr in tcmap:
             if tstr in ("6P8",) and col in ("rtoffvon", "rtonvoff"):
@@ -430,8 +431,11 @@ def single_value_distributions(all_data, figure_output):
             "xtitle": r"$R_{\mathrm{g}}$ / $D$",
             "xlim": (0, 0.6),
         },
-        "pore_md": {"xtitle": "pore size / $D$", "xlim": (0, 0.5)},
-        "pore_rg": {"xtitle": "pore size / R_g", "xlim": (0, 1.2)},
+        "pore_md": {"xtitle": r"pore size / $D$", "xlim": (0, 0.5)},
+        "pore_rg": {
+            "xtitle": r"pore size / $R_{\mathrm{g}}$",
+            "xlim": (0, 1.2),
+        },
     }
 
     topologies = topology_labels(short="P")
@@ -545,7 +549,7 @@ def single_value_distributions(all_data, figure_output):
             #     alpha=0.2,
             #     label=,
             # )
-        ax.legend(*zip(*labels), fontsize=16, ncols=4)
+        ax.legend(*zip(*labels, strict=True), fontsize=16, ncols=4)
         ax.set_xlim(-0.5, max(ylines) + 2.0)
 
         fig.tight_layout()
@@ -559,7 +563,7 @@ def single_value_distributions(all_data, figure_output):
 
 
 def plot_sorted(bb_data, color_map, figure_output):
-    fig, ax = plt.subplots(figsize=(8, 3))
+    fig, ax = plt.subplots(figsize=(8, 3.5))
     max_ = 6
 
     # for ax, cltitle in zip(axs, ("3C1", "4C1")):
@@ -596,7 +600,7 @@ def plot_sorted(bb_data, color_map, figure_output):
     # ax.set_title(f"{cltitle}", fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
-    ax.set_ylabel(r"% selected", fontsize=16)
+    ax.set_ylabel(r"% with single species", fontsize=16)
     ax.set_xlim(0, max_ + 0.1)
     ax.set_ylim(0, None)
 
@@ -693,7 +697,7 @@ def plot_clangle(cl_data, color_map, figure_output):
     clangles = sorted([int(i) for i in cl_data.keys()])
     fig, axs = plt.subplots(ncols=2, sharey=True, figsize=(16, 5))
 
-    for ax, cltitle in zip(axs, ("3C1", "4C1")):
+    for ax, cltitle in zip(axs, ("3C1", "4C1"), strict=True):
         for clangle in clangles:
             data = cl_data[str(clangle)]
             if cltitle == "3C1":
@@ -749,10 +753,7 @@ def plot_clangle(cl_data, color_map, figure_output):
             orientation="vertical",
         )
         cbar.ax.tick_params(labelsize=16)
-        cbar.set_label(
-            r"% selected",
-            fontsize=16,
-        )
+        cbar.set_label(r"% with single species", fontsize=16)
 
         # ax.set_title(f"{cltitle}", fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
@@ -800,8 +801,8 @@ def plot_average(bb_data, color_map, figure_output):
         )
         ax.fill_between(
             xs,
-            [i - j for i, j in zip(ys, yerrs)],
-            [i + j for i, j in zip(ys, yerrs)],
+            [i - j for i, j in zip(ys, yerrs, strict=True)],
+            [i + j for i, j in zip(ys, yerrs, strict=True)],
             facecolor=color_map[(tor, cltitle)],
             alpha=0.2,
         )
@@ -882,7 +883,7 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
     )
     flat_axs = axs.flatten()
 
-    for ax, tstr in zip(flat_axs, topologies):
+    for ax, tstr in zip(flat_axs, topologies, strict=True):
         tdata = data[data["topology"] == tstr]
         topology_data[tstr] = {}
 
@@ -1237,7 +1238,7 @@ def energy_correlation_matrix(all_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    for ax, tstr in zip(flat_axs, topologies):
+    for ax, tstr in zip(flat_axs, topologies, strict=True):
         tdata = trim[trim["topology"] == tstr]
         targ_data = tdata[target_cols].copy()
 

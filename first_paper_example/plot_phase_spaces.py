@@ -387,7 +387,7 @@ def phase_space_3(all_data, figure_output):
                 data[(bbtitle, tors)][topo_str] = 0
             data[(bbtitle, tors)][topo_str] += 1
 
-    for ax, (bbtitle, torsion) in zip(flat_axs, data):
+    for ax, (bbtitle, torsion) in zip(flat_axs, data, strict=True):
         coords = data[(bbtitle, torsion)]
         bars = ax.bar(
             [convert_topo(i) for i in coords.keys()],
@@ -432,7 +432,7 @@ def phase_space_5(all_data, figure_output):
         if len(cdata) == 0:
             continue
 
-        for ax, tor in zip(axs, ("ton", "toff")):
+        for ax, tor in zip(axs, ("ton", "toff"), strict=True):
             findata = cdata[cdata["torsions"] == tor]
             xvalues = list(findata["energy_per_bb"])
             yvalues = list(findata["sv_n_dist"])
@@ -440,7 +440,7 @@ def phase_space_5(all_data, figure_output):
             to_plot_x = []
             to_plot_y = []
             to_plot_l = []
-            for x, y, lval in zip(xvalues, yvalues, lvalues):
+            for x, y, lval in zip(xvalues, yvalues, lvalues, strict=True):
                 if pd.isna(x) or pd.isna(y):
                     continue
                 to_plot_x.append(x)

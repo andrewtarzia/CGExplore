@@ -24,5 +24,6 @@ def test_bonds(molecule):
         for length, test in zip(
             sorted(molecule.length_dict[key]),
             sorted(lengths[key]),
+            strict=True,
         ):
             assert np.isclose(length, test, atol=1e-3, rtol=0)

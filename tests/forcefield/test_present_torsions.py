@@ -34,7 +34,7 @@ def test_present_torsions(molecule):
             print(present_terms)
             assert len(present_terms) == len(molecule.present_torsions[i])
             for test, present in zip(
-                present_terms, molecule.present_torsions[i]
+                present_terms, molecule.present_torsions[i], strict=True
             ):
                 assert test.atom_names == present.atom_names
                 assert test.atom_ids == present.atom_ids
