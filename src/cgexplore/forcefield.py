@@ -141,6 +141,7 @@ class Forcefield:
         self._torsion_targets = torsion_targets
         self._nonbonded_targets = nonbonded_targets
         self._vdw_bond_cutoff = vdw_bond_cutoff
+        self._hrprefix = "ffhr"
 
     def _assign_bond_terms(self, molecule: stk.Molecule) -> tuple:
         bonds = list(molecule.get_bonds())
@@ -500,10 +501,11 @@ class Forcefield:
             "nonbondeds": self._nonbonded_targets,
         }
 
+    def get_hr_file_name(self) -> str:
+        return f"{self._hrprefix}_{self._prefix}_{self._identifier}.txt"
+
     def write_human_readable(self, output_dir) -> None:
-        with open(
-            output_dir / f"ffhr_{self._prefix}_{self._identifier}.txt", "w"
-        ) as f:
+        with open(output_dir / self.get_hr_file_name(), "w") as f:
             f.write(f"prefix: {self._prefix}\n")
             f.write(f"identifier: {self._identifier}\n")
             f.write(f"vdw bond cut off: {self._vdw_bond_cutoff}\n")
