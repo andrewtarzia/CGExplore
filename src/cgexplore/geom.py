@@ -114,6 +114,7 @@ class GeomMeasure:
         self,
         molecule: stk.Molecule,
         absolute: bool,
+        as_search_string: bool = False,
     ) -> dict[str, list[float]]:
         if self._target_torsions is None:
             return {}
@@ -129,17 +130,25 @@ class GeomMeasure:
                     tuple(reversed(target_torsion.search_estring)),
                 ):
                     continue
-                torsion_type_option1 = "_".join(
-                    tuple(
-                        estrings[i] for i in target_torsion.measured_atom_ids
+
+                # Check if you want the search string as key, or only the
+                # measured atoms.
+                if as_search_string:
+                    torsion_type_option1 = "_".join(estrings)
+                    torsion_type_option2 = "_".join(reversed(estrings))
+                else:
+                    torsion_type_option1 = "_".join(
+                        tuple(
+                            estrings[i]
+                            for i in target_torsion.measured_atom_ids
+                        )
                     )
-                )
-                torsion_type_option2 = "_".join(
-                    tuple(
-                        estrings[i]
-                        for i in reversed(target_torsion.measured_atom_ids)
+                    torsion_type_option2 = "_".join(
+                        tuple(
+                            estrings[i]
+                            for i in reversed(target_torsion.measured_atom_ids)
+                        )
                     )
-                )
 
                 if torsion_type_option1 in torsions:
                     key_string = torsion_type_option1
@@ -169,6 +178,7 @@ class GeomMeasure:
 
                 if absolute:
                     torsion_value = abs(torsion_value)
+
                 torsions[key_string].append(torsion_value)
 
         return torsions
