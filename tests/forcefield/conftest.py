@@ -5,7 +5,7 @@ from cgexplore.angles import Angle, PyramidAngleRange, TargetAngleRange
 from cgexplore.beads import CgBead
 from cgexplore.bonds import Bond, TargetBondRange
 from cgexplore.forcefield import ForceFieldLibrary
-from cgexplore.molecule_construction.topologies import FourC1Arm
+from cgexplore.molecule_construction import FourC1Arm
 from cgexplore.nonbonded import Nonbonded, TargetNonbondedRange
 from cgexplore.torsions import TargetTorsionRange, Torsion
 from openmm import openmm
