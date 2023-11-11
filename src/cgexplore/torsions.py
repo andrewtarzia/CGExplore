@@ -11,7 +11,7 @@ Author: Andrew Tarzia
 
 import itertools
 import logging
-import typing
+from collections import abc
 from dataclasses import dataclass
 
 import stk
@@ -88,7 +88,7 @@ class FoundTorsion:
 def find_torsions(
     molecule: stk.Molecule,
     chain_length: int,
-) -> typing.Iterator[FoundTorsion]:
+) -> abc.Iterator[FoundTorsion]:
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=chain_length,

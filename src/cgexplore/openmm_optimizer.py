@@ -1,11 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
 """
 Module for CG OpenMM optimizer.
-
-Author: Andrew Tarzia
 
 Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 
@@ -14,7 +11,7 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 import logging
 import pathlib
 import time
-import typing
+from collections import abc
 
 import numpy as np
 import pandas as pd
@@ -66,7 +63,7 @@ class OMMTrajectory:
     def get_base_molecule(self) -> stk.Molecule:
         return self._base_molecule
 
-    def yield_conformers(self) -> typing.Iterator[Timestep]:
+    def yield_conformers(self) -> abc.Iterator[Timestep]:
         num_atoms = self._base_molecule.get_num_atoms()
         start_trigger = "MODEL"
         triggered = False
@@ -123,7 +120,7 @@ class CGOMMOptimizer:
         fileprefix: str,
         output_dir: pathlib.Path,
         max_iterations: int | None = None,
-        atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
+        atom_constraints: abc.Iterable[tuple[int, int]] | None = None,
         platform: str | None = None,
     ) -> None:
         self._fileprefix = fileprefix
@@ -386,7 +383,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         traj_freq: float,
         random_seed: int | None = None,
         max_iterations: int | None = None,
-        atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
+        atom_constraints: abc.Iterable[tuple[int, int]] | None = None,
         platform: str | None = None,
     ) -> None:
         self._fileprefix = fileprefix

@@ -1,17 +1,14 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
 """
 Module for handling angles.
 
-Author: Andrew Tarzia
-
 """
 
 import itertools
 import logging
-import typing
+from collections import abc
 from dataclasses import dataclass
 
 import stk
@@ -148,7 +145,7 @@ class FoundAngle:
     atom_ids: tuple[int, ...]
 
 
-def find_angles(molecule: stk.Molecule) -> typing.Iterator[FoundAngle]:
+def find_angles(molecule: stk.Molecule) -> abc.Iterator[FoundAngle]:
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=3,

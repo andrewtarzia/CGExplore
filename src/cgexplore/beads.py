@@ -1,11 +1,8 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
 """
 Module for beads.
-
-Author: Andrew Tarzia
 
 """
 
@@ -167,10 +164,3 @@ def bead_library_check(bead_library: tuple[CgBead]) -> None:
                     f"you used a bead ({bead_class}) twice in your "
                     f"library: {counts}"
                 )
-
-    used_strings = tuple(i.element_string for i in bead_library)
-    for string in used_strings:
-        if string not in periodic_table():
-            raise ValueError(
-                f"you used a bead not available in PoreMapper: {string}"
-            )

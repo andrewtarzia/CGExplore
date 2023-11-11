@@ -11,7 +11,7 @@ Author: Andrew Tarzia
 
 import json
 import os
-import typing
+from collections import abc
 from dataclasses import dataclass
 
 import numpy as np
@@ -106,7 +106,7 @@ class Ensemble:
                 trajectory[int(conf_id)] = conf_lines
         return trajectory
 
-    def _yield_from_xyz(self) -> typing.Iterator[Conformer]:
+    def _yield_from_xyz(self) -> abc.Iterator[Conformer]:
         num_atoms = self._molecule_num_atoms
         new_pos_mat: list = []
 
@@ -140,7 +140,7 @@ class Ensemble:
                     conformer_id=conf_id,
                 )
 
-    def yield_conformers(self) -> typing.Iterator[Conformer]:
+    def yield_conformers(self) -> abc.Iterator[Conformer]:
         for conf_id in self._trajectory:
             yield self.get_conformer(conf_id)
 
