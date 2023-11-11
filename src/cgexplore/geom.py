@@ -1,32 +1,41 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
 """
 Module for geometry analysis.
 
-Author: Andrew Tarzia
-
 """
 
-import typing
-from collections import defaultdict
+from collections import abc, defaultdict
 
 import numpy as np
 import stk
 from rdkit.Chem import AllChem as rdkit
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import cdist, pdist
 
 from .torsions import find_torsions
 from .utilities import angle_between, get_atom_distance, get_dihedral
 
 
 class GeomMeasure:
-    def __init__(self, target_torsions: typing.Iterable | None = None) -> None:
+    def __init__(self, target_torsions: abc.Iterable | None = None) -> None:
         if target_torsions is None:
             self._target_torsions = None
         else:
             self._target_torsions = tuple(target_torsions)
+
+    def calculate_min_distance(
+        self,
+        molecule: stk.Molecule,
+    ) -> dict[str, float]:
+        pair_dists = cdist(
+            molecule.get_position_matrix(),
+            molecule.get_centroid().reshape(1, 3),
+        )
+        min_distance = np.min(pair_dists.flatten())
+        return {
+            "min_distance": min_distance,
+        }
 
     def _get_paths(
         self,

@@ -17,7 +17,6 @@ import numpy as np
 import openmm
 import pandas as pd
 from cgexplore.geom import GeomMeasure
-from cgexplore.pore import PoreMeasure
 from cgexplore.shape import (
     ShapeMeasure,
     get_shape_molecule_ligands,
@@ -124,10 +123,6 @@ def analyse_cage(
             ).calculate(l_shape_mol)
             l_shape_mol.write(shape_molfile2)
 
-        opt_pore_data = PoreMeasure().calculate_min_distance(
-            conformer.molecule
-        )
-
         # Always want to extract target torions if present.
         g_measure = GeomMeasure(
             target_torsions=(
@@ -146,6 +141,7 @@ def analyse_cage(
                 ),
             )
         )
+        opt_pore_data = g_measure.calculate_min_distance(conformer.molecule)
         bond_data = g_measure.calculate_bonds(conformer.molecule)
         angle_data = g_measure.calculate_angles(conformer.molecule)
         dihedral_data = g_measure.calculate_torsions(
