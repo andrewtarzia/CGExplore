@@ -17,7 +17,7 @@ import openmm
 import stk
 from analysis import analyse_cage
 from cgexplore.assigned_system import AssignedSystem
-from cgexplore.ensembles import Ensemble
+from cgexplore.ensembles import Conformer, Ensemble
 from cgexplore.generation_utilities import (
     optimise_ligand,
     run_constrained_optimisation,
@@ -40,8 +40,23 @@ def optimise_cage(
     output_dir,
     force_field,
     platform,
+    database,
 ):
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
+    # Do not rerun if database entry exists.
+    if database.has_molecule(key=name):
+        final_molecule = database.get_molecule(key=name)
+        final_molecule.write(fina_mol_file)
+        return Conformer(
+            molecule=final_molecule,
+            energy_decomposition=database.get_property(
+                key=name,
+                property_key="energy_decomposition",
+                ensure_type=dict,
+            ),
+        )
+
+    # Do not rerun if final mol exists.
     if os.path.exists(fina_mol_file):
         ensemble = Ensemble(
             base_molecule=molecule,
@@ -49,6 +64,16 @@ def optimise_cage(
             conformer_xyz=os.path.join(output_dir, f"{name}_ensemble.xyz"),
             data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
             overwrite=False,
+        )
+        conformer = ensemble.get_lowest_e_conformer()
+        database.add_molecule(molecule=conformer.molecule, key=name)
+        database.add_properties(
+            key=name,
+            property_dict={
+                "energy_decomposition": conformer.energy_decomposition,
+                "source": conformer.source,
+                "optimised": True,
+            },
         )
         return ensemble.get_lowest_e_conformer()
 
@@ -217,6 +242,16 @@ def optimise_cage(
         f" with energy: {min_energy} kJ.mol-1"
     )
 
+    # Add to atomlite database.
+    database.add_molecule(molecule=min_energy_conformer.molecule, key=name)
+    database.add_properties(
+        key=name,
+        property_dict={
+            "energy_decomposition": conformer.energy_decomposition,
+            "source": conformer.source,
+            "optimised": True,
+        },
+    )
     min_energy_conformer.molecule.write(fina_mol_file)
     return min_energy_conformer
 
@@ -229,6 +264,7 @@ def build_populations(
     node_element,
     ligand_element,
     platform,
+    database,
 ):
     count = 0
     for population in populations:
@@ -290,6 +326,7 @@ def build_populations(
                 output_dir=calculation_output,
                 force_field=force_field,
                 platform=platform,
+                database=database,
             )
             if conformer is not None:
                 conformer.molecule.write(
@@ -304,6 +341,7 @@ def build_populations(
                 force_field=force_field,
                 node_element=node_element,
                 ligand_element=ligand_element,
+                database=database,
             )
 
         logging.info(f"{count} {population} cages built.")
