@@ -13,7 +13,7 @@ Author: Andrew Tarzia
 import numpy as np
 import stk
 
-from ..beads import CgBead
+from .beads import CgBead
 
 
 class Precursor:
