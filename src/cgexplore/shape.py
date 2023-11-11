@@ -40,6 +40,57 @@ def test_shape_mol(
         )
 
 
+def fill_position_matrix_molecule(
+    molecule: stk.Molecule,
+    element: str,
+    old_position_matrix: np.ndarray,
+) -> tuple[list, list]:
+    position_matrix = []
+    atoms: list[stk.Atom] = []
+
+    target_anum = periodic_table()[element]
+    for atom in molecule.get_atoms():
+        atomic_number = atom.get_atomic_number()  # type: ignore[union-attr]
+        if atomic_number == target_anum:
+            new_atom = stk.Atom(
+                id=len(atoms),
+                atomic_number=atom.get_atomic_number(),
+                charge=atom.get_charge(),
+            )
+            atoms.append(new_atom)
+            position_matrix.append(old_position_matrix[atom.get_id()])
+
+    return position_matrix, atoms
+
+
+def get_shape_molecule_byelement(
+    molecule: stk.Molecule,
+    name: str,
+    element: str,
+    topo_expected: dict[str, int],
+) -> stk.Molecule | None:
+    splits = name.split("_")
+    topo_str = splits[0]
+    if topo_str not in topo_expected:
+        return None
+
+    old_position_matrix = molecule.get_position_matrix()
+
+    position_matrix, atoms = fill_position_matrix_molecule(
+        molecule=molecule,
+        element=element,
+        old_position_matrix=old_position_matrix,
+    )
+
+    test_shape_mol(topo_expected, atoms, name, topo_str)
+    subset_molecule = stk.BuildingBlock.init(
+        atoms=atoms,
+        bonds=(),
+        position_matrix=np.array(position_matrix),
+    )
+    return subset_molecule
+
+
 def fill_position_matrix(
     constructed_molecule: stk.ConstructedMolecule,
     target_bb: stk.Molecule,

@@ -19,8 +19,7 @@ import pandas as pd
 from cgexplore.geom import GeomMeasure
 from cgexplore.shape import (
     ShapeMeasure,
-    get_shape_molecule_ligands,
-    get_shape_molecule_nodes,
+    get_shape_molecule_byelement,
     known_shape_vectors,
 )
 from cgexplore.torsions import TargetTorsion
@@ -52,7 +51,10 @@ def analyse_cage(
     force_field,
     node_element,
     ligand_element,
+    database,
 ):
+    logging.warning("currently not using databasing for analysis.")
+
     output_file = os.path.join(output_dir, f"{name}_res.json")
     shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
     shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
@@ -91,14 +93,14 @@ def analyse_cage(
                 f" {name}: {energy_decomp}"
             )
 
-        n_shape_mol = get_shape_molecule_nodes(
-            constructed_molecule=conformer.molecule,
+        n_shape_mol = get_shape_molecule_byelement(
+            molecule=conformer.molecule,
             name=name,
             element=node_element,
             topo_expected=node_expected_topologies(),
         )
-        l_shape_mol = get_shape_molecule_ligands(
-            constructed_molecule=conformer.molecule,
+        l_shape_mol = get_shape_molecule_byelement(
+            molecule=conformer.molecule,
             name=name,
             element=ligand_element,
             topo_expected=ligand_expected_topologies(),
@@ -344,16 +346,6 @@ def topology_labels(short):
         )
 
 
-def convert_prop(prop_str):
-    raise NotImplementedError("check convert propr")
-    return {
-        "energy_per_bb": "E_b [eV]",
-        "sv_n_dist": "node shape similarity",
-        "sv_l_dist": "lig. shape similarity",
-        "both_sv_n_dist": "shape similarity",
-    }[prop_str]
-
-
 def convert_outcome(topo_str):
     return {
         "mixed": "mixed",
@@ -363,14 +355,6 @@ def convert_outcome(topo_str):
         "all": "all",
         "unstable": "unstable",
         "not": "not",
-    }[topo_str]
-
-
-def convert_connectivity(topo_str):
-    raise SystemExit("decide how to do this.")
-    return {
-        "3C1": "3-c",
-        "4C1": "4-c",
     }[topo_str]
 
 
@@ -458,14 +442,6 @@ def stoich_map(tstr):
     }[tstr]
 
 
-def cltype_to_colormap():
-    raise SystemExit("cltype_to_colormap, if this is used, fix")
-    return {
-        "3C1": "#06AED5",
-        "4C1": "#086788",
-    }
-
-
 def cltypetopo_to_colormap():
     return {
         "3C1": {
@@ -498,29 +474,6 @@ def cltypetopo_to_colormap():
     }
 
 
-def shapevertices_to_colormap():
-    raise SystemExit("shapevertices_to_colormap, if this is used, fix")
-    return {
-        4: "#06AED5",
-        5: "#086788",
-        6: "#DD1C1A",
-        8: "#320E3B",
-        3: "#6969B3",
-    }
-
-
-def shapelabels_to_colormap():
-    raise SystemExit("shapelabels_to_colormap, if this is used, fix")
-    return {
-        "3": "#F9A03F",
-        "4": "#0B2027",
-        "5": "#86626E",
-        "6": "#CA1551",
-        "8": "#345995",
-        "b": "#7A8B99",
-    }
-
-
 def target_shapes():
     return (
         "CU-8",
@@ -536,25 +489,6 @@ def target_shapes():
         "TP-3",
         "mvOC-3",
     )
-
-
-def target_shapes_by_cltype(cltype):
-    raise SystemExit("target_shapes_by_cltype, if this is used, fix")
-    if cltype == "4C1":
-        return ("OC-6b", "TP-3", "SP-4", "OC-6")
-    elif cltype == "3C1":
-        return ("TBPY-5", "T-4", "T-4b", "TPR-6", "CU-8")
-
-
-def shapetarget_to_colormap():
-    raise SystemExit("shapetarget_to_colormap, if this is used, fix")
-    return {
-        "CU-8": "#06AED5",
-        "OC-6": "#086788",
-        "TBPY-5": "#DD1C1A",
-        "T-4": "#320E3B",
-        "TPR-6": "#CE7B91",
-    }
 
 
 def map_cltype_to_topology():
@@ -808,35 +742,3 @@ def data_to_array(json_files, output_dir):
         json.dump(geom_data, f, indent=4)
 
     return input_array
-
-
-def get_lowest_energy_data(all_data, output_dir):
-    logging.info("defining low energy array")
-    output_csv = output_dir / "lowe_array.csv"
-
-    if os.path.exists(output_csv):
-        input_array = pd.read_csv(output_csv)
-        input_array = input_array.loc[
-            :, ~input_array.columns.str.contains("^Unnamed")
-        ]
-        return input_array
-
-    lowe_array = pd.DataFrame()
-    grouped_data = all_data.groupby(["cage_name"])
-    for system in set(all_data["cage_name"]):
-        logging.info(f"checking {system}")
-        rows = grouped_data.get_group(system)
-        for tors in ("ton", "toff"):
-            trows = rows[rows["torsions"] == tors]
-            if len(trows) == 0:
-                continue
-            final_row = trows[
-                trows["energy_per_bb"] == trows["energy_per_bb"].min()
-            ]
-            # Get lowest energy row, and add to new dict.
-            lowe_array = pd.concat([lowe_array, final_row.iloc[[0]]])
-
-    lowe_array.reset_index()
-    lowe_array.to_csv(output_csv, index=False)
-
-    return lowe_array
