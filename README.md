@@ -23,7 +23,7 @@ The code can be installed following these steps:
  conda activate NAME
  ```
 
-5. From `CGExplore` directory, install pip environment:
+4. From `CGExplore` directory, install pip environment:
 ```
 pip install .
 ```
@@ -32,7 +32,7 @@ or for development, use [just](https://github.com/casey/just) to install a dev e
 just dev
 ```
 
-6. Install `OpenMM` [docs](https://openmm.org/):
+5. Install `OpenMM` [docs](https://openmm.org/):
  ```
 mamba install openmm
 ```
@@ -41,7 +41,7 @@ or
 conda install -c conda-forge openmm
 ```
 
-7. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
+6. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
 ```
 mamba install openmmtools
 ```
@@ -51,7 +51,7 @@ conda config --add channels omnia --add channels conda-forge
 conda install openmmtools
 ```
 
-8. Update directory structure in `env_set.py` if using example code.
+7. Update directory structure in `env_set.py` if using example code.
 
 The library implements some analysis that uses:
 

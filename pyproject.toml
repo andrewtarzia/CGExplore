@@ -15,6 +15,7 @@ dependencies = [
   "scikit-learn",
   "stk",
   "stko",
+  "atomlite",
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]
@@ -24,7 +25,6 @@ readme = "README.md"
 dev = [
   "black",
   "ruff",
-  "moldoc",
   "mypy",
   "pip-tools",
   "pytest",
@@ -83,9 +83,8 @@ module = [
   "pandas.*",
   "stk.*",
   "mchammer.*",
-  "pore_mapper.*",
-  "pywindow.*",
   "openmmtools.*",
-  "openmm.*"
+  "openmm.*",
+  "atomlite.*",
 ]
 ignore_missing_imports = true

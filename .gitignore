@@ -131,3 +131,4 @@ dmypy.json
 # Version.
 src/cgexplore/_version.py
 testff_iterations.json
+.vscode
