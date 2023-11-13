@@ -38,12 +38,12 @@ from .case_data import CaseData
                 )
             ),
             length_dict={
-                "C_C": [2.0],
-                "C_N": [1.0, 1.0],
+                ("C", "C"): [2.0],
+                ("C", "N"): [1.0, 1.0],
             },
             angle_dict={
-                "C_N_C": [90.0],
-                "N_C_C": [90.0],
+                ("C", "N", "C"): [90.0],
+                ("N", "C", "C"): [90.0],
             },
             torsion_dict={"C_N_C_C": [0.0]},
             radius_gyration=0.968,
@@ -64,12 +64,12 @@ from .case_data import CaseData
             ),
             geommeasure=GeomMeasure(),
             length_dict={
-                "C_C": [2.0],
-                "C_N": [1.5, 0.5],
+                ("C", "C"): [2.0],
+                ("C", "N"): [1.5, 0.5],
             },
             angle_dict={
-                "C_N_C": [180.0],
-                "N_C_C": [180.0],
+                ("C", "N", "C"): [180.0],
+                ("N", "C", "C"): [180.0],
             },
             torsion_dict={},
             radius_gyration=1.4306,
@@ -106,12 +106,12 @@ from .case_data import CaseData
                 )
             ),
             length_dict={
-                "C_C": [2.0],
-                "C_O": [1.0, 1.0],
+                ("C", "C"): [2.0],
+                ("C", "O"): [1.0, 1.0],
             },
             angle_dict={
-                "C_O_C": [90.0],
-                "O_C_C": [90.0],
+                ("C", "O", "C"): [90.0],
+                ("O", "C", "C"): [90.0],
             },
             torsion_dict={"C_O_C_C": [30.0]},
             radius_gyration=0.9854,
@@ -148,12 +148,12 @@ from .case_data import CaseData
                 )
             ),
             length_dict={
-                "C_C": [2.0],
-                "C_O": [1.0, 1.0],
+                ("C", "C"): [2.0],
+                ("C", "O"): [1.0, 1.0],
             },
             angle_dict={
-                "C_O_C": [90.0],
-                "O_C_C": [90.0],
+                ("C", "O", "C"): [90.0],
+                ("O", "C", "C"): [90.0],
             },
             torsion_dict={"C_O_C_C": [-30.0]},
             radius_gyration=0.9854,
@@ -186,12 +186,12 @@ from .case_data import CaseData
                 )
             ),
             length_dict={
-                "C_C": [1.0, 1.0],
-                "C_O": [1.0, 1.0],
+                ("C", "C"): [1.0, 1.0],
+                ("C", "O"): [1.0, 1.0],
             },
             angle_dict={
-                "C_O_C": [180.0],
-                "C_C_O": [90.0, 90.0],
+                ("C", "O", "C"): [180.0],
+                ("C", "C", "O"): [90.0, 90.0],
             },
             torsion_dict={"C_C_O_C": [0.0, 0.0]},
             radius_gyration=1.0198,

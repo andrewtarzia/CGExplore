@@ -145,11 +145,16 @@ def analyse_cage(
         )
         opt_pore_data = g_measure.calculate_min_distance(conformer.molecule)
         bond_data = g_measure.calculate_bonds(conformer.molecule)
+        bond_data = {str("_".join(i)): bond_data[i] for i in bond_data}
         angle_data = g_measure.calculate_angles(conformer.molecule)
+        angle_data = {str("_".join(i)): angle_data[i] for i in angle_data}
         dihedral_data = g_measure.calculate_torsions(
             molecule=conformer.molecule,
             absolute=True,
         )
+        dihedral_data = {
+            str("_".join(i)): dihedral_data[i] for i in dihedral_data
+        }
         min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
             molecule=conformer.molecule,

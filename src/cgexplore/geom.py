@@ -8,17 +8,17 @@ Module for geometry analysis.
 
 from collections import abc, defaultdict
 
-import numpy as np
 import stk
+import stko
 from rdkit.Chem import AllChem as rdkit
-from scipy.spatial.distance import cdist, pdist
 
 from .torsions import find_torsions
-from .utilities import angle_between, get_atom_distance, get_dihedral
+from .utilities import get_dihedral
 
 
 class GeomMeasure:
     def __init__(self, target_torsions: abc.Iterable | None = None) -> None:
+        self._stko_analyser = stko.molecule_analysis.GeometryAnalyser()
         if target_torsions is None:
             self._target_torsions = None
         else:
@@ -28,13 +28,10 @@ class GeomMeasure:
         self,
         molecule: stk.Molecule,
     ) -> dict[str, float]:
-        pair_dists = cdist(
-            molecule.get_position_matrix(),
-            molecule.get_centroid().reshape(1, 3),
-        )
-        min_distance = np.min(pair_dists.flatten())
         return {
-            "min_distance": min_distance,
+            "min_distance": (
+                self._stko_analyser.get_min_centroid_distance(molecule)
+            ),
         }
 
     def _get_paths(
@@ -50,74 +47,19 @@ class GeomMeasure:
         )
 
     def calculate_minb2b(self, molecule: stk.Molecule) -> float:
-        pair_dists = pdist(molecule.get_position_matrix())
-        return np.min(pair_dists.flatten())
+        return self._stko_analyser.get_min_atom_atom_distance(molecule)
 
     def calculate_bonds(
         self,
         molecule: stk.Molecule,
-    ) -> dict[str, list[float]]:
-        lengths = defaultdict(list)
-        for bond in molecule.get_bonds():
-            a1id = bond.get_atom1().get_id()
-            a2id = bond.get_atom2().get_id()
-            length_type = "_".join(
-                sorted(
-                    (
-                        bond.get_atom1().__class__.__name__,
-                        bond.get_atom2().__class__.__name__,
-                    )
-                )
-            )
-            lengths[length_type].append(
-                get_atom_distance(molecule, a1id, a2id)
-            )
-
-        return lengths
+    ) -> dict[tuple[str, ...], list[float]]:
+        return self._stko_analyser.calculate_bonds(molecule)
 
     def calculate_angles(
         self,
         molecule: stk.Molecule,
-    ) -> dict[str, list[float]]:
-        pos_mat = molecule.get_position_matrix()
-        angles = defaultdict(list)
-        for a_ids in self._get_paths(molecule, 3):
-            atoms = list(molecule.get_atoms(atom_ids=[i for i in a_ids]))
-            atom1 = atoms[0]
-            atom2 = atoms[1]
-            atom3 = atoms[2]
-            angle_type_option1 = "_".join(
-                (
-                    atom1.__class__.__name__,
-                    atom2.__class__.__name__,
-                    atom3.__class__.__name__,
-                )
-            )
-            angle_type_option2 = "_".join(
-                (
-                    atom3.__class__.__name__,
-                    atom2.__class__.__name__,
-                    atom1.__class__.__name__,
-                )
-            )
-
-            vector1 = pos_mat[atom2.get_id()] - pos_mat[atom1.get_id()]
-            vector2 = pos_mat[atom2.get_id()] - pos_mat[atom3.get_id()]
-
-            if angle_type_option1 in angles:
-                angles[angle_type_option1].append(
-                    np.degrees(angle_between(vector1, vector2))
-                )
-            elif angle_type_option2 in angles:
-                angles[angle_type_option2].append(
-                    np.degrees(angle_between(vector1, vector2))
-                )
-            else:
-                angles[angle_type_option1].append(
-                    np.degrees(angle_between(vector1, vector2))
-                )
-
-        return angles
+    ) -> dict[tuple[str, ...], list[float]]:
+        return self._stko_analyser.calculate_angles(molecule)
 
     def calculate_torsions(
         self,
@@ -193,13 +135,7 @@ class GeomMeasure:
         return torsions
 
     def calculate_radius_gyration(self, molecule: stk.Molecule) -> float:
-        centroid = molecule.get_centroid()
-        pos_mat = molecule.get_position_matrix()
-        vectors = pos_mat - centroid
-        distances2 = np.square(np.linalg.norm(vectors, axis=1))
-
-        rg2 = (1 / molecule.get_num_atoms()) * np.sum(distances2)
-        return np.sqrt(rg2)
+        return self._stko_analyser.get_radius_gyration(molecule)
 
     def calculate_max_diameter(self, molecule: stk.Molecule) -> float:
-        return molecule.get_maximum_diameter()
+        return self._stko_analyser.get_max_diameter(molecule)

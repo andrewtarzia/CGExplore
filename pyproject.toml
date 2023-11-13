@@ -82,6 +82,7 @@ module = [
   "matplotlib.*",
   "pandas.*",
   "stk.*",
+  "stko.*",
   "mchammer.*",
   "openmmtools.*",
   "openmm.*",
