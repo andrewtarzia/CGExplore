@@ -20,6 +20,9 @@ class AtomliteDatabase:
         self._db = atomlite.Database(db_file)
 
     def get_num_entries(self) -> int:
+        """
+        Get the number of molecular entries in the database.
+        """
         return self._db.num_entries()
 
     def add_molecule(self, molecule: stk.Molecule, key: str) -> None:
@@ -57,11 +60,38 @@ class AtomliteDatabase:
         self,
         key: str,
         property_key: str,
-        ensure_type: type,
+        property_type: type,
     ) -> atomlite.Json:
-        value = self.get_entry(key).properties[property_key]
-        if not isinstance(value, ensure_type):
+        if property_type is bool:
+            value = self._db.get_bool_property(  # type: ignore[assignment]
+                key=key,
+                path=f"$.{property_key}",
+            )
+        elif property_type is float:
+            value = self._db.get_float_property(  # type: ignore[assignment]
+                key=key,
+                path=f"$.{property_key}",
+            )
+        elif property_type is str:
+            value = self._db.get_str_property(  # type: ignore[assignment]
+                key=key,
+                path=f"$.{property_key}",
+            )
+        elif property_type is int:
+            value = self._db.get_int_property(  # type: ignore[assignment]
+                key=key,
+                path=f"$.{property_key}",
+            )
+        elif property_type is dict:
+            value = self.get_entry(key).properties[  # type: ignore[assignment]
+                property_key
+            ]
+        else:
             msg = f"{property_key} has unexpected type"
+            raise RuntimeError(msg)
+
+        if value is None:
+            msg = f"{property_key} has no value"
             raise RuntimeError(msg)
 
         return value  # type: ignore[return-value]

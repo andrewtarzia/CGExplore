@@ -20,7 +20,7 @@ from .case_data import CaseData
                 {"1": 2},
                 {"1": 2},
                 {"1": 2},
-                {"1": 3, "2": 1},
+                {"1": 3, "2": {"h": "w"}},
             ],
             expected_count=3,
             name=name,
