@@ -725,7 +725,7 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
     return forcefieldlibrary
 
 
-def neighbour_2p3_library(ffnum: int) -> list[int, ...]:
+def neighbour_2p3_library(ffnum: int) -> list[int]:
     new_nums = []
     # Change bnb angle.
     new_nums.append(ffnum - 14)
@@ -741,7 +741,7 @@ def neighbour_2p3_library(ffnum: int) -> list[int, ...]:
     return new_nums
 
 
-def neighbour_2p4_library(ffnum: int) -> list[int, ...]:
+def neighbour_2p4_library(ffnum: int) -> list[int]:
     new_nums = []
     # Change bmb angle.
     new_nums.append(ffnum - 10)
@@ -757,7 +757,7 @@ def neighbour_2p4_library(ffnum: int) -> list[int, ...]:
     return new_nums
 
 
-def neighbour_3p4_library(ffnum: int) -> list[int, ...]:
+def neighbour_3p4_library(ffnum: int) -> list[int]:
     new_nums = []
     # Change bmb angle.
     new_nums.append(ffnum - 1)
@@ -768,7 +768,7 @@ def neighbour_3p4_library(ffnum: int) -> list[int, ...]:
     return new_nums
 
 
-def get_neighbour_library(ffnum: int, fftype: str) -> list[int, ...]:
+def get_neighbour_library(ffnum: int, fftype: str) -> list[int]:
     if fftype == "2p3":
         return neighbour_2p3_library(ffnum)
     elif fftype == "2p4":
