@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for handling angles.
-
-"""
+"""Module for handling angles."""
 
 import itertools
 import logging
@@ -122,9 +118,8 @@ class PyramidAngleRange:
                     unit=angle.unit,
                 )
             except AttributeError:
-                raise ForcefieldUnitError(
-                    f"{self} in angles does not have units for parameters"
-                )
+                msg = f"{self} in angles does not have units for parameters"
+                raise ForcefieldUnitError(msg)
 
             yield TargetPyramidAngle(
                 class1=self.class1,
@@ -153,7 +148,7 @@ def find_angles(molecule: stk.Molecule) -> abc.Iterator[FoundAngle]:
         useHs=True,
     )
     for atom_ids in paths:
-        atoms = tuple(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
+        atoms = tuple(molecule.get_atoms(atom_ids=list(atom_ids)))
         yield FoundAngle(
             atoms=atoms,
             atom_ids=tuple(i.get_id() for i in atoms),

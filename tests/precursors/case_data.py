@@ -2,8 +2,7 @@ from cgexplore.molecule_construction import Precursor
 
 
 class CaseData:
-    """
-    A test case.
+    """A test case.
 
     Attributes:
 

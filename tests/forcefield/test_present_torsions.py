@@ -5,8 +5,7 @@ from cgexplore.errors import ForcefieldUnitError
 
 
 def test_present_torsions(molecule):
-    """
-    Test methods toward :meth:`.ForceField._assign_torsion_terms`.
+    """Test methods toward :meth:`.ForceField._assign_torsion_terms`.
 
     Parameters:
 
@@ -14,11 +13,9 @@ def test_present_torsions(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     try:
         force_fields = tuple(molecule.force_field_library.yield_forcefields())
         for i, ff in enumerate(force_fields):

@@ -3,8 +3,7 @@ import pathlib
 
 
 def test_topology_xml_writer(molecule):
-    """
-    Test methods toward :meth:`.AssignedSystem._get_topology_xml_string`.
+    """Test methods toward :meth:`.AssignedSystem._get_topology_xml_string`.
 
     Parameters:
 
@@ -12,11 +11,9 @@ def test_topology_xml_writer(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     assigned_system = molecule.force_field.assign_terms(
         molecule=molecule.molecule,
         output_dir=pathlib.Path(os.path.dirname(os.path.realpath(__file__))),

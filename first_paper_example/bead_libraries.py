@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module containing bead libraries.
+"""Module containing bead libraries.
 
 Author: Andrew Tarzia
 

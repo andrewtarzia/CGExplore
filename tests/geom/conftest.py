@@ -34,7 +34,6 @@ from .case_data import CaseData
                         torsion_k=0,
                         torsion_n=0,
                     ),
-                    # ("C", "N", "C", "C")
                 )
             ),
             length_dict={

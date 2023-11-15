@@ -20,9 +20,7 @@ class AtomliteDatabase:
         self._db = atomlite.Database(db_file)
 
     def get_num_entries(self) -> int:
-        """
-        Get the number of molecular entries in the database.
-        """
+        """Get the number of molecular entries in the database."""
         return self._db.num_entries()
 
     def add_molecule(self, molecule: stk.Molecule, key: str) -> None:
@@ -40,7 +38,8 @@ class AtomliteDatabase:
 
     def get_entry(self, key: str) -> atomlite.Entry:
         if not self._db.has_entry(key):
-            raise RuntimeError(f"{key} not in database")
+            msg = f"{key} not in database"
+            raise RuntimeError(msg)
         return self._db.get_entry(key)  # type: ignore[return-value]
 
     def get_molecule(self, key: str) -> stk.Molecule:
@@ -83,9 +82,7 @@ class AtomliteDatabase:
                 path=f"$.{property_key}",
             )
         elif property_type is dict:
-            value = self.get_entry(key).properties[  # type: ignore[assignment]
-                property_key
-            ]
+            value = self.get_entry(key).properties[property_key]  # type: ignore[assignment]
         else:
             msg = f"{property_key} has unexpected type"
             raise RuntimeError(msg)
@@ -97,15 +94,12 @@ class AtomliteDatabase:
         return value  # type: ignore[return-value]
 
     def has_molecule(self, key: str) -> bool:
-        if self._db.has_entry(key):
-            return True
-        else:
-            return False
+        return bool(self._db.has_entry(key))
 
     def keep_if(
         self,
         column: str,
-        value: str | int | float,
+        value: str | float,
     ) -> abc.Iterator[atomlite.Entry]:
         for entry in self.get_entries():
             if entry.properties[column] == value:

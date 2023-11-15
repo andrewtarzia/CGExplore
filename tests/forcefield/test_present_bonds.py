@@ -7,8 +7,7 @@ from .utilities import is_equivalent_atom
 
 
 def test_present_bonds(molecule):
-    """
-    Test methods toward :meth:`.ForceField._assign_bond_terms`.
+    """Test methods toward :meth:`.ForceField._assign_bond_terms`.
 
     Parameters:
 
@@ -16,7 +15,6 @@ def test_present_bonds(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """

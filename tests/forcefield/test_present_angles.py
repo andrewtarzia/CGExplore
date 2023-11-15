@@ -7,8 +7,7 @@ from .utilities import is_equivalent_atom
 
 
 def test_present_angles(molecule):
-    """
-    Test methods toward :meth:`.ForceField._assign_angle_terms`.
+    """Test methods toward :meth:`.ForceField._assign_angle_terms`.
 
     Parameters:
 
@@ -16,11 +15,9 @@ def test_present_angles(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     try:
         force_fields = tuple(molecule.force_field_library.yield_forcefields())
         for i, ff in enumerate(force_fields):

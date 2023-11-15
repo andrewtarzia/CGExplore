@@ -2,8 +2,7 @@ import numpy as np
 
 
 def test_torsions(molecule):
-    """
-    Test :meth:`.GeomMeasure.calculate_torsions`.
+    """Test :meth:`.GeomMeasure.calculate_torsions`.
 
     Parameters:
 
@@ -11,11 +10,9 @@ def test_torsions(molecule):
             The molecule with torsions.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     torsions = molecule.geommeasure.calculate_torsions(
         molecule=molecule.molecule,
         absolute=False,

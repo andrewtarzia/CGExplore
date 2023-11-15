@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for geometry analysis.
-
-"""
+"""Module for geometry analysis."""
 
 from collections import abc, defaultdict
 
@@ -121,10 +117,10 @@ class GeomMeasure:
                     )
 
                 torsion_value = get_dihedral(
-                    pt1=tuple(molecule.get_atomic_positions(new_ids[0]))[0],
-                    pt2=tuple(molecule.get_atomic_positions(new_ids[1]))[0],
-                    pt3=tuple(molecule.get_atomic_positions(new_ids[2]))[0],
-                    pt4=tuple(molecule.get_atomic_positions(new_ids[3]))[0],
+                    pt1=next(iter(molecule.get_atomic_positions(new_ids[0]))),
+                    pt2=next(iter(molecule.get_atomic_positions(new_ids[1]))),
+                    pt3=next(iter(molecule.get_atomic_positions(new_ids[2]))),
+                    pt4=next(iter(molecule.get_atomic_positions(new_ids[3]))),
                 )
 
                 if absolute:

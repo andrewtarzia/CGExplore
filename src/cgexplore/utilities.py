@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Utilities module.
+"""Utilities module.
 
 Author: Andrew Tarzia
 
@@ -26,10 +24,7 @@ logging.basicConfig(
 
 
 def convert_pyramid_angle(outer_angle: float) -> float:
-    """
-    Some basic trig on square-pyramids
-
-    """
+    """Some basic trig on square-pyramids."""
     outer_angle = np.radians(outer_angle)
     # Side length, oa, does not matter.
     oa = 1
@@ -49,26 +44,22 @@ def get_atom_distance(
     atom1_id: int,
     atom2_id: int,
 ) -> float:
-    """
-    Return the distance between atom1 and atom2.
+    """Return the distance between atom1 and atom2.
 
-    Parameters
-    ----------
-    molecule : :class:`stk.Molecule`
+    Parameters:
+        molecule:
 
-    atom1_id : :class:`int`
-        The id of atom1.
+        atom1_id:
+            The id of atom1.
 
-    atom2_id : :class:`int`
-        The id of atom2.
+        atom2_id:
+            The id of atom2.
 
-    Returns
-    -------
-    :class:`float`
+    Returns:
+
         The euclidean distance between two atoms.
 
     """
-
     position_matrix = molecule.get_position_matrix()
 
     distance = euclidean(
@@ -80,8 +71,7 @@ def get_atom_distance(
 
 
 def unit_vector(vector):
-    """
-    Returns the unit vector of the vector.
+    """Returns the unit vector of the vector.
 
     https://stackoverflow.com/questions/2827393/
     angles-between-two-n-dimensional-vectors-in-python/
@@ -92,8 +82,7 @@ def unit_vector(vector):
 
 
 def angle_between(v1, v2, normal=None):
-    """
-    Returns the angle in radians between vectors 'v1' and 'v2'::
+    """Returns the angle in radians between vectors 'v1' and 'v2'::
 
         >>> angle_between((1, 0, 0), (0, 1, 0))
         1.5707963267948966
@@ -110,7 +99,6 @@ def angle_between(v1, v2, normal=None):
     cross product of the two vectors.
 
     """
-
     v1_u = unit_vector(v1)
     v2_u = unit_vector(v2)
     angle = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
@@ -123,17 +111,11 @@ def angle_between(v1, v2, normal=None):
     return angle
 
 
-def read_lib(lib_file):
-    """
-    Read lib file.
-    Returns dictionary.
-    """
-
+def read_lib(lib_file: str) -> dict:
+    """Read lib file."""
     logging.info(f"reading {lib_file}")
     with open(lib_file, "rb") as f:
-        lib = json.load(f)
-
-    return lib
+        return json.load(f)
 
 
 def get_dihedral(
@@ -142,8 +124,7 @@ def get_dihedral(
     pt3: np.ndarray,
     pt4: np.ndarray,
 ) -> float:
-    """
-    Calculate the dihedral between four points.
+    """Calculate the dihedral between four points.
 
     Uses Praxeolitic formula --> 1 sqrt, 1 cross product
     Output in range (-pi to pi).
@@ -152,7 +133,6 @@ def get_dihedral(
     coordinates-in-python
     (new_dihedral(p))
     """
-
     p0 = np.asarray(pt1)
     p1 = np.asarray(pt2)
     p2 = np.asarray(pt3)

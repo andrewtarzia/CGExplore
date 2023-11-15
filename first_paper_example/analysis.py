@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Utilities for analysis and plotting.
+"""Utilities for analysis and plotting.
 
 Author: Andrew Tarzia
 
@@ -33,15 +31,10 @@ logging.basicConfig(
 
 
 def get_paired_cage_name(cage_name):
-    """
-    Get new FF number from a cage number based on ton vs toff.
-
-    """
-
+    """Get new FF number from a cage number based on ton vs toff."""
     ff_num = int(cage_name.split("_")[-1].split("f")[1])
     new_ff_num = ff_num + 1
-    new_name = cage_name.replace(f"f{ff_num}", f"f{new_ff_num}")
-    return new_name
+    return cage_name.replace(f"f{ff_num}", f"f{new_ff_num}")
 
 
 def analyse_cage(
@@ -88,10 +81,8 @@ def analyse_cage(
                 == fin_energy
             )
         except AssertionError:
-            raise AssertionError(
-                "energy decompisition does not sum to total energy for"
-                f" {name}: {energy_decomp}"
-            )
+            msg = f"energy decompisition does not sum to total energy for {name}: {energy_decomp}"
+            raise AssertionError(msg)
 
         n_shape_mol = get_shape_molecule_byelement(
             molecule=conformer.molecule,
@@ -161,9 +152,8 @@ def analyse_cage(
         )
         max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
         if radius_gyration > max_diameter:
-            raise ValueError(
-                f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
-            )
+            msg = f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
+            raise ValueError(msg)
 
         # This is matched to the existing analysis code. I recommend
         # generalising in the future.
@@ -252,10 +242,7 @@ def analyse_cage(
 
 
 def angle_str(num=None, unit=True):
-    if unit is True:
-        un = r" [$^\circ$]"
-    else:
-        un = ""
+    un = " [$^\\circ$]" if unit is True else ""
 
     if num is None:
         return f"$x$-topic angle{un}"
@@ -266,6 +253,7 @@ def angle_str(num=None, unit=True):
             return f"tetratopic angle{un}"
         elif num == 2:
             return f"ditopic angle{un}"
+        return None
 
 
 def eb_str(no_unit=False):
@@ -276,7 +264,6 @@ def eb_str(no_unit=False):
 
 
 def pore_str():
-    # return r"min(centroid-bead) [$\mathrm{\AA}$]"
     return r"pore size [$\mathrm{\AA}$]"
 
 
@@ -402,11 +389,7 @@ def convert_vdws(vstr):
 
 
 def Xc_map(tstr):
-    """
-    Maps topology string to pyramid angle.
-
-    """
-
+    """Maps topology string to pyramid angle."""
     return {
         "2P3": 3,
         "4P6": 3,
@@ -425,11 +408,7 @@ def Xc_map(tstr):
 
 
 def stoich_map(tstr):
-    """
-    Stoichiometry maps to the number of building blocks.
-
-    """
-
+    """Stoichiometry maps to the number of building blocks."""
     return {
         "2P3": 5,
         "4P6": 10,
@@ -468,7 +447,6 @@ def cltypetopo_to_colormap():
         "mixed": {
             # "2": "#7b4173",
             # ">2": "#de9ed6",
-            # "mixed": "white",
             "mixed-2": "white",
             "mixed-3": "#8A8A8A",
             "mixed>3": "#434343",
@@ -532,21 +510,19 @@ def mapshape_to_topology(mode, from_shape=False):
                 "JETBPY-8": ("6P8",),
                 "OP-8": ("6P8",),
             }
+        return None
     else:
         if mode == "n":
             return {
-                # "2P3": "TBPY-5",
                 "4P6": "T-4",
                 "4P62": "SP-4",
                 "6P9": "TPR-6",
                 "8P12": "CU-8",
-                # "2P4": "OC-6b",
                 "3P6": "TP-3",
                 "4P8": "SP-4",
                 "4P82": "T-4",
                 "6P12": "OC-6",
                 "8P16": "SAPR-8",
-                # "12P24": "",
                 "6P8": "OC-6",
             }
 
@@ -558,21 +534,21 @@ def mapshape_to_topology(mode, from_shape=False):
                 "2P4": "SP-4",
                 "6P8": "CU-8",
             }
+        return None
 
 
 def get_present_beads(c2_bbname):
     wtopo = c2_bbname[3:]
-    present_beads_names = []
     break_strs = [i for i in wtopo if not i.isnumeric()]
     if len(break_strs) != 2:
-        raise ValueError(f"Too many beads found in {c2_bbname}")
+        msg = f"Too many beads found in {c2_bbname}"
+        raise ValueError(msg)
 
     broken_string = wtopo.split(break_strs[0])[1]
     bead1name, bead2name = broken_string.split(break_strs[1])
     bead1name = break_strs[0] + bead1name
     bead2name = break_strs[1] + bead2name
-    present_beads_names = (bead1name, bead2name)
-    return present_beads_names
+    return (bead1name, bead2name)
 
 
 def node_expected_topologies():
@@ -608,15 +584,14 @@ def get_sv_dist(row, mode):
         return None
 
     if tshape[-1] == "b":
-        raise ValueError("I removed all uses of `shape`b label, check.")
+        msg = "I removed all uses of `shape`b label, check."
+        raise ValueError(msg)
 
     known_sv = known_shape_vectors()[tshape]
     current_sv = {i: float(row[f"{mode}_{i}"]) for i in known_sv}
     a = np.array([known_sv[i] for i in known_sv])
     b = np.array([current_sv[i] for i in known_sv])
-    cosine_similarity = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
-    return cosine_similarity
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
 def data_to_array(json_files, output_dir):
@@ -625,10 +600,9 @@ def data_to_array(json_files, output_dir):
 
     if os.path.exists(output_csv):
         input_array = pd.read_csv(output_csv)
-        input_array = input_array.loc[
+        return input_array.loc[
             :, ~input_array.columns.str.contains("^Unnamed")
         ]
-        return input_array
 
     input_dict = {}
     geom_data = {}
@@ -637,7 +611,7 @@ def data_to_array(json_files, output_dir):
     count = 0
     for j_file in json_files:
         logging.info(f"arraying {j_file.name} ({count}/{len_jsons})")
-        with open(j_file, "r") as f:
+        with open(j_file) as f:
             res_dict = json.load(f)
 
         row = {}

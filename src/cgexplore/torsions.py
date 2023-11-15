@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for handling torsions.
+"""Module for handling torsions.
 
 Author: Andrew Tarzia
 
@@ -48,7 +46,7 @@ class TargetTorsion:
             f"{self.__class__.__name__}("
             f'{"".join(self.search_string)}, '
             f'{"".join(self.search_estring)}, '
-            f"{str(self.measured_atom_ids)}, "
+            f"{self.measured_atom_ids!s}, "
             f"{self.phi0.in_units_of(openmm.unit.degrees)}, "
             f"{self.torsion_k.in_units_of(openmm.unit.kilojoules_per_mole)}, "
             f"{self.torsion_n}, "
@@ -96,7 +94,7 @@ def find_torsions(
         useHs=True,
     )
     for atom_ids in paths:
-        atoms = tuple(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
+        atoms = tuple(molecule.get_atoms(atom_ids=list(atom_ids)))
         yield FoundTorsion(
             atoms=atoms,
             atom_ids=tuple(i.get_id() for i in atoms),

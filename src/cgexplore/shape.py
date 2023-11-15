@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for shape analysis.
+"""Module for shape analysis.
 
 Author: Andrew Tarzia
 
@@ -34,10 +32,8 @@ def test_shape_mol(
 ) -> None:
     num_atoms = len(atoms)
     if num_atoms != topo_expected[topo_str]:
-        raise ValueError(
-            f"{topo_str} needs {topo_expected[topo_str]} atoms, "
-            f"not {num_atoms}; name={name}"
-        )
+        msg = f"{topo_str} needs {topo_expected[topo_str]} atoms, not {num_atoms}; name={name}"
+        raise ValueError(msg)
 
 
 def fill_position_matrix_molecule(
@@ -83,12 +79,11 @@ def get_shape_molecule_byelement(
     )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
-    subset_molecule = stk.BuildingBlock.init(
+    return stk.BuildingBlock.init(
         atoms=atoms,
         bonds=(),
         position_matrix=np.array(position_matrix),
     )
-    return subset_molecule
 
 
 def fill_position_matrix(
@@ -107,9 +102,7 @@ def fill_position_matrix(
             and ai.get_building_block_atom() is not None
         ):
             ai_atom = ai.get_building_block_atom()
-            ai_atomic_number = (
-                ai_atom.get_atomic_number()  # type: ignore[union-attr]
-            )
+            ai_atomic_number = ai_atom.get_atomic_number()  # type: ignore[union-attr]
             if ai_atomic_number == target_anum:
                 a = ai.get_atom()
                 new_atom = stk.Atom(
@@ -145,12 +138,11 @@ def get_shape_molecule_nodes(
     )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
-    subset_molecule = stk.BuildingBlock.init(
+    return stk.BuildingBlock.init(
         atoms=atoms,
         bonds=(),
         position_matrix=np.array(position_matrix),
     )
-    return subset_molecule
 
 
 def get_shape_molecule_ligands(
@@ -176,21 +168,19 @@ def get_shape_molecule_ligands(
     )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
-    subset_molecule = stk.BuildingBlock.init(
+    return stk.BuildingBlock.init(
         atoms=atoms,
         bonds=(),
         position_matrix=np.array(position_matrix),
     )
-    return subset_molecule
 
 
 class ShapeMeasure:
-    """
-    Uses Shape [1]_ to calculate the shape of coordinates.
+    """Uses Shape [1]_ to calculate the shape of coordinates.
 
-    References
-    ----------
-    .. [1] http://www.ee.ub.edu/
+    References:
+
+        .. [1] http://www.ee.ub.edu/
 
     """
 
@@ -206,11 +196,9 @@ class ShapeMeasure:
         if shape_string is None:
             self._shape_dict = self.reference_shape_dict()
         else:
-            self._shape_dict = {
-                shape_string: self.reference_shape_dict()[shape_string]
-            }
+            self._shape_dict = {shape_string: self.reference_shape_dict()[shape_string]}
         self._num_vertex_options = tuple(
-            set(int(self._shape_dict[i]["vertices"]) for i in self._shape_dict)
+            {int(self._shape_dict[i]["vertices"]) for i in self._shape_dict}
         )
 
     def reference_shape_dict(self) -> dict[str, dict]:
@@ -483,9 +471,7 @@ class ShapeMeasure:
                 "code": "4",
                 "vertices": "9",
                 "label": "JTC-9",
-                "shape": (
-                    "Triangular cupola (J3) = trivacant cuboctahedron " "C3v"
-                ),
+                "shape": ("Triangular cupola (J3) = trivacant cuboctahedron " "C3v"),
             },
             "JCCU-9": {
                 "code": "5",
@@ -504,8 +490,7 @@ class ShapeMeasure:
                 "vertices": "9",
                 "label": "JCSAPR-9",
                 "shape": (
-                    "Capped sq. antiprism (Gyroelongated square "
-                    "pyramid J10) C4v"
+                    "Capped sq. antiprism (Gyroelongated square " "pyramid J10) C4v"
                 ),
             },
             "CSAPR-9": {
@@ -578,9 +563,7 @@ class ShapeMeasure:
                 "code": "6",
                 "vertices": "10",
                 "label": "JBCCU-10",
-                "shape": (
-                    "Bicapped cube (Elongated square bipyramid J15) D4h"
-                ),
+                "shape": ("Bicapped cube (Elongated square bipyramid J15) D4h"),
             },
             "JBCSAPR-10": {
                 "code": "7",
@@ -650,8 +633,7 @@ class ShapeMeasure:
                 "vertices": "11",
                 "label": "JCPPR-11",
                 "shape": (
-                    "Capped pent. Prism (Elongated pentagonal pyramid "
-                    "J9) C5v"
+                    "Capped pent. Prism (Elongated pentagonal pyramid " "J9) C5v"
                 ),
             },
             "JCPAPR-11": {
@@ -721,9 +703,7 @@ class ShapeMeasure:
                 "code": "8",
                 "vertices": "12",
                 "label": "ACOC-12",
-                "shape": (
-                    "Anticuboctahedron (Triangular orthobicupola J27) " "D3h"
-                ),
+                "shape": ("Anticuboctahedron (Triangular orthobicupola J27) " "D3h"),
             },
             "IC-12": {
                 "code": "9",
@@ -776,12 +756,8 @@ class ShapeMeasure:
         }
 
     def _collect_all_shape_values(self, output_file: str) -> dict:
-        """
-        Collect shape values from output.
-
-        """
-
-        with open(output_file, "r") as f:
+        """Collect shape values from output."""
+        with open(output_file) as f:
             lines = f.readlines()
 
         label_idx_map = {}
@@ -803,8 +779,7 @@ class ShapeMeasure:
             shapes = {}
         else:
             shapes = {
-                i: float(float_values[1 + label_idx_map[i]])
-                for i in label_idx_map
+                i: float(float_values[1 + label_idx_map[i]]) for i in label_idx_map
             }
 
         return shapes
@@ -814,20 +789,14 @@ class ShapeMeasure:
         input_file: str,
         structure_string: str,
     ) -> None:
-        """
-        Write input file for shape.
-
-        """
+        """Write input file for shape."""
         num_vertices = len(structure_string.split("\n")) - 2
 
         possible_shapes = self._get_possible_shapes(num_vertices)
         shape_numbers = tuple(i["code"] for i in possible_shapes)
 
         title = "$shape run by Andrew Tarzia - central atom=0 always.\n"
-        if num_vertices == 12:
-            fix_perm = r"%fixperm 0\n"
-        else:
-            fix_perm = "\n"
+        fix_perm = "%fixperm 0\\n" if num_vertices == 12 else "\n"
         size_of_poly = f"{num_vertices} 0\n"
         codes = " ".join(shape_numbers) + "\n"
 
@@ -837,11 +806,7 @@ class ShapeMeasure:
             f.write(string)
 
     def _run_calculation(self, structure_string: str) -> dict:
-        """
-        Calculate the shape of a molecule.
-
-        """
-
+        """Calculate the shape of a molecule."""
         input_file = "shp.dat"
         std_out = "shp.out"
         output_file = "shp.tab"
@@ -913,17 +878,12 @@ class ShapeMeasure:
             pos_mat = molecule.get_position_matrix()
             for a in molecule.get_atoms():
                 c = pos_mat[a.get_id()]
-                structure_string += (
-                    f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
-                )
+                structure_string += f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
                 num_centroids += 1
 
             if num_centroids not in self._num_vertex_options:
-                raise ValueError(
-                    f"you gave {num_centroids} vertices, but expected "
-                    "to calculate shapes with "
-                    f"{self._num_vertex_options} options"
-                )
+                msg = f"you gave {num_centroids} vertices, but expected to calculate shapes with {self._num_vertex_options} options"
+                raise ValueError(msg)
 
             shapes = self._run_calculation(structure_string)
 
@@ -946,9 +906,7 @@ class ShapeMeasure:
         init_dir = os.getcwd()
         try:
             os.chdir(output_dir)
-            centroids = self._get_centroids(
-                constructed_molecule, target_atmnums
-            )
+            centroids = self._get_centroids(constructed_molecule, target_atmnums)
             structure_string = "shape run by AT\n"
             num_centroids = 0
             for c in centroids:
@@ -956,11 +914,8 @@ class ShapeMeasure:
                 num_centroids += 1
 
             if num_centroids not in self._num_vertex_options:
-                raise ValueError(
-                    f"you gave {num_centroids} vertices, but expected "
-                    "to calculate shapes with "
-                    f"{self._num_vertex_options} options"
-                )
+                msg = f"you gave {num_centroids} vertices, but expected to calculate shapes with {self._num_vertex_options} options"
+                raise ValueError(msg)
 
             shapes = self._run_calculation(structure_string)
 
@@ -971,8 +926,7 @@ class ShapeMeasure:
 
 
 def known_shape_vectors() -> dict[str, dict]:
-    """
-    Printed from shape_map.py output.
+    """Printed from shape_map.py output.
 
     May not include all of them, only included ones I deemed relevant.
 

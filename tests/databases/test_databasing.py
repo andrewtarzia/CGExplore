@@ -7,10 +7,7 @@ from cgexplore.databases import AtomliteDatabase
 
 
 def test_databasing(molecule):
-    """
-    Test :class:`.AtomliteDatabase`.
-    """
-
+    """Test :class:`.AtomliteDatabase`."""
     path = os.path.join(
         os.path.dirname(os.path.realpath(__file__)),
         "test.db",

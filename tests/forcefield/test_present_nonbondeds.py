@@ -5,8 +5,7 @@ from cgexplore.errors import ForcefieldUnitError
 
 
 def test_present_nonbondeds(molecule):
-    """
-    Test methods toward :meth:`.ForceField._assign_nonbonded_terms`.
+    """Test methods toward :meth:`.ForceField._assign_nonbonded_terms`.
 
     Parameters:
 
@@ -14,7 +13,6 @@ def test_present_nonbondeds(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
