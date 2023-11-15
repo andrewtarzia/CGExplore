@@ -196,7 +196,9 @@ class ShapeMeasure:
         if shape_string is None:
             self._shape_dict = self.reference_shape_dict()
         else:
-            self._shape_dict = {shape_string: self.reference_shape_dict()[shape_string]}
+            self._shape_dict = {
+                shape_string: self.reference_shape_dict()[shape_string]
+            }
         self._num_vertex_options = tuple(
             {int(self._shape_dict[i]["vertices"]) for i in self._shape_dict}
         )
@@ -471,7 +473,9 @@ class ShapeMeasure:
                 "code": "4",
                 "vertices": "9",
                 "label": "JTC-9",
-                "shape": ("Triangular cupola (J3) = trivacant cuboctahedron " "C3v"),
+                "shape": (
+                    "Triangular cupola (J3) = trivacant cuboctahedron " "C3v"
+                ),
             },
             "JCCU-9": {
                 "code": "5",
@@ -490,7 +494,8 @@ class ShapeMeasure:
                 "vertices": "9",
                 "label": "JCSAPR-9",
                 "shape": (
-                    "Capped sq. antiprism (Gyroelongated square " "pyramid J10) C4v"
+                    "Capped sq. antiprism (Gyroelongated square "
+                    "pyramid J10) C4v"
                 ),
             },
             "CSAPR-9": {
@@ -563,7 +568,9 @@ class ShapeMeasure:
                 "code": "6",
                 "vertices": "10",
                 "label": "JBCCU-10",
-                "shape": ("Bicapped cube (Elongated square bipyramid J15) D4h"),
+                "shape": (
+                    "Bicapped cube (Elongated square bipyramid J15) D4h"
+                ),
             },
             "JBCSAPR-10": {
                 "code": "7",
@@ -633,7 +640,8 @@ class ShapeMeasure:
                 "vertices": "11",
                 "label": "JCPPR-11",
                 "shape": (
-                    "Capped pent. Prism (Elongated pentagonal pyramid " "J9) C5v"
+                    "Capped pent. Prism (Elongated pentagonal pyramid "
+                    "J9) C5v"
                 ),
             },
             "JCPAPR-11": {
@@ -703,7 +711,9 @@ class ShapeMeasure:
                 "code": "8",
                 "vertices": "12",
                 "label": "ACOC-12",
-                "shape": ("Anticuboctahedron (Triangular orthobicupola J27) " "D3h"),
+                "shape": (
+                    "Anticuboctahedron (Triangular orthobicupola J27) " "D3h"
+                ),
             },
             "IC-12": {
                 "code": "9",
@@ -779,7 +789,8 @@ class ShapeMeasure:
             shapes = {}
         else:
             shapes = {
-                i: float(float_values[1 + label_idx_map[i]]) for i in label_idx_map
+                i: float(float_values[1 + label_idx_map[i]])
+                for i in label_idx_map
             }
 
         return shapes
@@ -878,7 +889,9 @@ class ShapeMeasure:
             pos_mat = molecule.get_position_matrix()
             for a in molecule.get_atoms():
                 c = pos_mat[a.get_id()]
-                structure_string += f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
+                structure_string += (
+                    f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
+                )
                 num_centroids += 1
 
             if num_centroids not in self._num_vertex_options:
@@ -906,7 +919,9 @@ class ShapeMeasure:
         init_dir = os.getcwd()
         try:
             os.chdir(output_dir)
-            centroids = self._get_centroids(constructed_molecule, target_atmnums)
+            centroids = self._get_centroids(
+                constructed_molecule, target_atmnums
+            )
             structure_string = "shape run by AT\n"
             num_centroids = 0
             for c in centroids:
