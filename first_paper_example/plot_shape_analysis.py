@@ -266,10 +266,15 @@ def shape_topology(all_data, figure_output):
                     linewidth=2,
                     density=False,
                     histtype="stepfilled",
-                    label=(f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"),
+                    label=(
+                        f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"
+                    ),
                 )
                 ax.set_title(
-                    (f"{convert_topo(tstr)}: " f"{convert_tors(tor, num=False)}"),
+                    (
+                        f"{convert_topo(tstr)}: "
+                        f"{convert_tors(tor, num=False)}"
+                    ),
                     fontsize=16,
                 )
                 ax.set_xlabel(target_shape, fontsize=16)
@@ -350,10 +355,15 @@ def shape_topology_main(all_data, figure_output):
                     linewidth=1,
                     density=False,
                     histtype="stepfilled",
-                    label=(f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"),
+                    label=(
+                        f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"
+                    ),
                 )
                 ax.set_title(
-                    (f"{convert_topo(tstr)}: " f"{convert_tors(tor, num=False)}"),
+                    (
+                        f"{convert_topo(tstr)}: "
+                        f"{convert_tors(tor, num=False)}"
+                    ),
                     fontsize=16,
                 )
                 ax.set_xlabel(target_shape, fontsize=16)
@@ -466,7 +476,10 @@ def shape_input_relationships(all_data, figure_output):
                 )
 
                 ax.set_title(
-                    (f"{convert_topo(tstr)}: " f"{convert_tors(tor, num=False)}"),
+                    (
+                        f"{convert_topo(tstr)}: "
+                        f"{convert_tors(tor, num=False)}"
+                    ),
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
@@ -534,8 +547,12 @@ def plot_topology_flex(data, comparison, mode, figure_output):
     fig, ax = plt.subplots(figsize=(8, 5))
 
     categories_ton = {convert_topo(i): 0 for i in data if i not in tstr_ignore}
-    categories_toff = {convert_topo(i): 0 for i in data if i not in tstr_ignore}
-    categories_subtracted = {convert_topo(i): 0 for i in data if i not in tstr_ignore}
+    categories_toff = {
+        convert_topo(i): 0 for i in data if i not in tstr_ignore
+    }
+    categories_subtracted = {
+        convert_topo(i): 0 for i in data if i not in tstr_ignore
+    }
 
     for tstr in data:
         if tstr in tstr_ignore:
@@ -609,7 +626,9 @@ def plot_topology_flex(data, comparison, mode, figure_output):
 
 
 def flexshapeeffect_per_property(all_data, figure_output):
-    msg = "there is a bug here in handling no stable cases and I do not use this"
+    msg = (
+        "there is a bug here in handling no stable cases and I do not use this"
+    )
     raise NotImplementedError(msg)
     logging.info("running effect of flexibility distributions")
 
@@ -635,7 +654,9 @@ def flexshapeeffect_per_property(all_data, figure_output):
             topology_data[tstr][tor] = {}
             for shape_type in ("n", "l"):
                 try:
-                    target_shape = mapshape_to_topology(shape_type, False)[tstr]
+                    target_shape = mapshape_to_topology(shape_type, False)[
+                        tstr
+                    ]
                 except KeyError:
                     continue
 
@@ -694,7 +715,8 @@ def plot_shape_flex(data, mode, figure_output):
                     / data[tstr]["ton"][mode][shape][0]
                 ) * 100
             categories_toff[shape_str] = (
-                data[tstr]["toff"][mode][shape][1] / data[tstr]["toff"][mode][shape][0]
+                data[tstr]["toff"][mode][shape][1]
+                / data[tstr]["toff"][mode][shape][0]
             ) * 100
 
         if tstr != "6P8":
@@ -763,9 +785,13 @@ def flexshapeeffect_per_shape(all_data, figure_output):
             for shape_type in columns:
                 topology_data[tstr][tor][shape_type] = {}
                 for column in columns[shape_type]:
-                    col_values = [i for i in tor_data[column] if not pd.isna(i)]
+                    col_values = [
+                        i for i in tor_data[column] if not pd.isna(i)
+                    ]
                     if len(col_values) > 0:
-                        shaped_values = [i for i in col_values if i < shape_threshold()]
+                        shaped_values = [
+                            i for i in col_values if i < shape_threshold()
+                        ]
                         topology_data[tstr][tor][shape_type][column] = (
                             len(col_values),
                             len(shaped_values),

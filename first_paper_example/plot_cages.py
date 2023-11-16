@@ -109,10 +109,12 @@ def visualise_low_and_high(
         high_e = tdata[tdata["energy_per_bb"] == max_e].iloc[0]
 
         logging.info(
-            f"low E: {low_e.cage_name!s}; " f"E={round(low_e.energy_per_bb, 2)}"
+            f"low E: {low_e.cage_name!s}; "
+            f"E={round(low_e.energy_per_bb, 2)}"
         )
         logging.info(
-            f"high E: {high_e.cage_name!s}; " f"E={round(high_e.energy_per_bb, 2)}"
+            f"high E: {high_e.cage_name!s}; "
+            f"E={round(high_e.energy_per_bb, 2)}"
         )
         high_e_name = str(high_e["index"])
         low_e_name = str(low_e["index"])
@@ -414,7 +416,9 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs, strict=True)):
+    for i, (sname, ax) in enumerate(
+        zip(structure_names, flat_axs, strict=True)
+    ):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
@@ -927,7 +931,8 @@ def webapp_csv(
     logging.info("running webapp_csv")
 
     github_base_url = (
-        "https://github.com/andrewtarzia/cgmodels/blob/main/" "cg_model_jul2023/"
+        "https://github.com/andrewtarzia/cgmodels/blob/main/"
+        "cg_model_jul2023/"
     )
     github_selfsort_url = github_base_url + "self_sort_outcomes/"
 
@@ -987,7 +992,9 @@ def webapp_csv(
             }
 
             mixed_energies = {
-                i: energies[i] for i in energies if energies[i] < isomer_energy()
+                i: energies[i]
+                for i in energies
+                if energies[i] < isomer_energy()
             }
 
             min_energy = min(energies.values())
@@ -1083,8 +1090,12 @@ def check_odd_outcomes(
 
         for cage_name in sorted(set(tdata["cage_name"])):
             cdata = tdata[tdata["cage_name"] == cage_name]
-            ton_energy = float(cdata[cdata["torsions"] == "ton"]["energy_per_bb"])
-            toff_energy = float(cdata[cdata["torsions"] == "toff"]["energy_per_bb"])
+            ton_energy = float(
+                cdata[cdata["torsions"] == "ton"]["energy_per_bb"]
+            )
+            toff_energy = float(
+                cdata[cdata["torsions"] == "toff"]["energy_per_bb"]
+            )
             # Ignore rounding errors in near zero cases.
             if ton_energy < 1e-1:
                 continue
@@ -1098,7 +1109,8 @@ def check_odd_outcomes(
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
                 tofflbl = f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
                 logging.info(
-                    f"for {cage_name}: ton: {ton_energy}, " f"toff: {toff_energy}"
+                    f"for {cage_name}: ton: {ton_energy}, "
+                    f"toff: {toff_energy}"
                 )
                 outcomes.append((cage_name, "ton", tonlbl))
                 outcomes.append((cage_name, "toff", tofflbl))
@@ -1134,14 +1146,16 @@ def generate_movies(figure_output):
         for clseq in sequence:
             for tors in ("ton", "toff"):
                 files = [
-                    vss_output / f"vss_{cltopo}{clseq}b00002C1c0000{i}_{tors}.png"
+                    vss_output
+                    / f"vss_{cltopo}{clseq}b00002C1c0000{i}_{tors}.png"
                     for i in astr
                 ]
                 output_file = f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.mkv"
                 logging.info(f"gen movie to {output_file}")
                 output_file = figure_output / output_file
                 concat_file = (
-                    figure_output / f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.txt"
+                    figure_output
+                    / f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.txt"
                 )
                 with open(concat_file, "w") as f:
                     for fi in files:

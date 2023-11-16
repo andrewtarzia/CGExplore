@@ -223,7 +223,10 @@ def geom_distributions(all_data, geom_data, figure_output):
                 ax.set_ylabel(cdict["xlabel"], fontsize=16)
             else:
                 ax.set_title(
-                    (f'{cdict["xlabel"]}: ' f"{convert_tors(tors,num=False)} "),
+                    (
+                        f'{cdict["xlabel"]}: '
+                        f"{convert_tors(tors,num=False)} "
+                    ),
                     fontsize=16,
                 )
                 ax.set_ylabel(
@@ -414,10 +417,13 @@ def plot_sorted(bb_data, color_map, figure_output):
         xs = []
         ys = []
         for x in np.linspace(0.01, max_, 100):
-            stable_isomers = [sum(i[j] < x for j in i) for i in data if flag in i]
+            stable_isomers = [
+                sum(i[j] < x for j in i) for i in data if flag in i
+            ]
 
             percent_sorted = (
-                len([i for i in stable_isomers if i == 1]) / len(stable_isomers)
+                len([i for i in stable_isomers if i == 1])
+                / len(stable_isomers)
             ) * 100
             xs.append(x)
             ys.append(percent_sorted)
@@ -467,13 +473,16 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
         ys_unstable = []
         ys_mixed = []
         for x in np.linspace(0.01, max_, 100):
-            stable_isomers = [sum(i[j] < x for j in i) for i in data if flag in i]
+            stable_isomers = [
+                sum(i[j] < x for j in i) for i in data if flag in i
+            ]
 
             percent_mixed = (
                 len([i for i in stable_isomers if i > 1]) / len(stable_isomers)
             ) * 100
             percent_unstable = (
-                len([i for i in stable_isomers if i == 0]) / len(stable_isomers)
+                len([i for i in stable_isomers if i == 0])
+                / len(stable_isomers)
             ) * 100
 
             xs.append(x)
@@ -486,7 +495,9 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
             c=color_map[(tor, cltitle)],
             lw=3,
             linestyle="-",
-            label=(f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, unstable"),
+            label=(
+                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, unstable"
+            ),
         )
         ax.plot(
             xs,
@@ -494,7 +505,9 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
             c=color_map[(tor, cltitle)],
             lw=3,
             linestyle="--",
-            label=(f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, mixed"),
+            label=(
+                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, mixed"
+            ),
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
@@ -532,12 +545,15 @@ def plot_clangle(cl_data, color_map, figure_output):
             ys = []
             cs = []
             for x in np.linspace(0.01, max_, 100):
-                stable_isomers = [sum(i[j] < x for j in i) for i in data if flag in i]
+                stable_isomers = [
+                    sum(i[j] < x for j in i) for i in data if flag in i
+                ]
                 if len(stable_isomers) == 0:
                     continue
 
                 percent_sorted = (
-                    len([i for i in stable_isomers if i == 1]) / len(stable_isomers)
+                    len([i for i in stable_isomers if i == 1])
+                    / len(stable_isomers)
                 ) * 100
 
                 # if percent_sorted > 5:
@@ -742,7 +758,8 @@ def plot_topology_flex(data, figure_output):
             data[tstr]["toff"][0] / data[tstr]["toff"][1]
         ) * 100
         categories_subtracted[convert_topo(tstr)] = (
-            categories_toff[convert_topo(tstr)] - categories_ton[convert_topo(tstr)]
+            categories_toff[convert_topo(tstr)]
+            - categories_ton[convert_topo(tstr)]
         ) / categories_toff[convert_topo(tstr)]
 
     ax.bar(

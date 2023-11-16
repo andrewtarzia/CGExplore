@@ -152,7 +152,9 @@ def bite_angle_relationship(all_data, figure_output):
                         continue
                     xs = list(plot_data["c2angle"])
                     ys = list(plot_data["energy_per_bb"])
-                    xs, ys = zip(*sorted(zip(xs, ys, strict=True)), strict=True)
+                    xs, ys = zip(
+                        *sorted(zip(xs, ys, strict=True)), strict=True
+                    )
                     tors_output[run_number] = dict(zip(xs, ys, strict=True))
 
                 if len(tors_output) == 0:
@@ -189,7 +191,10 @@ def bite_angle_relationship(all_data, figure_output):
                 )
 
             ax.set_title(
-                (f"{angle_str(num=Xc_map(tstr), unit=False)} = " rf"{t_angle}$^\circ$"),
+                (
+                    f"{angle_str(num=Xc_map(tstr), unit=False)} = "
+                    rf"{t_angle}$^\circ$"
+                ),
                 fontsize=16,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
@@ -213,7 +218,11 @@ def selectivity_map(all_data, figure_output):
     logging.info("running selectivity_map")
 
     bite_angles = sorted(
-        [float(i) for i in set(all_data["target_bite_angle"]) if not math.isnan(i)]
+        [
+            float(i)
+            for i in set(all_data["target_bite_angle"])
+            if not math.isnan(i)
+        ]
     )
     clangles = sorted([float(i) for i in set(all_data["clangle"])])
 
@@ -261,9 +270,13 @@ def selectivity_map(all_data, figure_output):
 
                         property_list = list(plotdata[pdict["col"]])
                         if pdict["dir"] == "<":
-                            under_cut = [i for i in property_list if i < pdict["cut"]]
+                            under_cut = [
+                                i for i in property_list if i < pdict["cut"]
+                            ]
                         elif pdict["dir"] == ">":
-                            under_cut = [i for i in property_list if i > pdict["cut"]]
+                            under_cut = [
+                                i for i in property_list if i > pdict["cut"]
+                            ]
 
                         under_count = len(under_cut)
                         xvalue = ba
@@ -399,7 +412,9 @@ def selfsort_map(all_data, figure_output):
         uo1 = sorted(set(data[cols_to_map[0]]))
         uo2 = sorted(set(data[cols_to_map[1]]))
 
-        for (i, cla), (_j, ba) in itertools.product(enumerate(uo1), enumerate(uo2)):
+        for (i, cla), (_j, ba) in itertools.product(
+            enumerate(uo1), enumerate(uo2)
+        ):
             plot_data = data[data[cols_to_map[0]] == cla]
             plot_data = plot_data[plot_data[cols_to_map[1]] == ba]
 
@@ -415,7 +430,9 @@ def selfsort_map(all_data, figure_output):
             }
 
             mixed_energies = {
-                i: energies[i] for i in energies if energies[i] < isomer_energy()
+                i: energies[i]
+                for i in energies
+                if energies[i] < isomer_energy()
             }
 
             min_energy = min(energies.values())
@@ -425,7 +442,10 @@ def selfsort_map(all_data, figure_output):
 
             else:
                 colours = sorted(
-                    [cltypetopo_to_colormap()[cltitle][i] for i in mixed_energies]
+                    [
+                        cltypetopo_to_colormap()[cltitle][i]
+                        for i in mixed_energies
+                    ]
                 )
 
             draw_pie(
@@ -470,7 +490,9 @@ def kinetic_selfsort_map(all_data, figure_output):
         uo1 = sorted(set(data[cols_to_map[0]]))
         uo2 = sorted(set(data[cols_to_map[1]]))
 
-        for (i, cla), (_j, ba) in itertools.product(enumerate(uo1), enumerate(uo2)):
+        for (i, cla), (_j, ba) in itertools.product(
+            enumerate(uo1), enumerate(uo2)
+        ):
             plot_data = data[data[cols_to_map[0]] == cla]
             plot_data = plot_data[plot_data[cols_to_map[1]] == ba]
 
@@ -486,7 +508,9 @@ def kinetic_selfsort_map(all_data, figure_output):
             }
 
             mixed_energies = {
-                i: energies[i] for i in energies if energies[i] < isomer_energy()
+                i: energies[i]
+                for i in energies
+                if energies[i] < isomer_energy()
             }
             if len(mixed_energies) == 0:
                 colours = ["white"]
@@ -501,7 +525,10 @@ def kinetic_selfsort_map(all_data, figure_output):
 
                 if len(kinetic_energies) > 1:
                     colours = sorted(
-                        [cltypetopo_to_colormap()[cltitle][i] for i in kinetic_energies]
+                        [
+                            cltypetopo_to_colormap()[cltitle][i]
+                            for i in kinetic_energies
+                        ]
                     )
                 else:
                     colours = [
