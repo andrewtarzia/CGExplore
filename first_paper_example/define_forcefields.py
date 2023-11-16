@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module containing force field definitions.
+"""Module containing force field definitions.
 
 Author: Andrew Tarzia
 
@@ -776,4 +774,5 @@ def get_neighbour_library(ffnum: int, fftype: str) -> list[int]:
     elif fftype == "3p4":
         return neighbour_3p4_library(ffnum)
     else:
-        raise ValueError(f"{fftype} not known")
+        msg = f"{fftype} not known"
+        raise ValueError(msg)
