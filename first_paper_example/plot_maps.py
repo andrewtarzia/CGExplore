@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to plot property, input maps.
+"""Script to plot property, input maps.
 
 Author: Andrew Tarzia
 
@@ -26,7 +24,6 @@ from analysis import (
     convert_tors,
     data_to_array,
     eb_str,
-    get_lowest_energy_data,
     isomer_energy,
     stoich_map,
     topology_labels,
@@ -67,9 +64,7 @@ def nobiteangle_relationship(all_data, figure_output):
                 xs = list(plot_data["c3angle"])
                 ys = list(plot_data["energy_per_bb"])
                 xs, ys = zip(*sorted(zip(xs, ys, strict=True)), strict=True)
-                clan_output[run_number] = {
-                    x: y for x, y in zip(xs, ys, strict=True)
-                }
+                clan_output[run_number] = dict(zip(xs, ys, strict=True))
 
             if len(clan_output) == 0:
                 continue
@@ -96,13 +91,10 @@ def nobiteangle_relationship(all_data, figure_output):
             ax.plot(
                 xs,
                 y_mins,
-                # zs=t_angle,
                 lw=1,
                 c="#086788",
                 alpha=1.0,
                 linestyle="--",
-                # label=f"C2 r0 {c1_opt}/CL r0 {c2_opt}",
-                # marker="o",
             )
 
             ax.set_ylabel(eb_str(), fontsize=16)
@@ -158,18 +150,10 @@ def bite_angle_relationship(all_data, figure_output):
                     plot_data = tor_data[tor_data["run_number"] == run_number]
                     if len(plot_data) == 0:
                         continue
-                    # for c2_opt in sorted(set(test_data["clr0"])):
-                    # plot_data = test_data[
-                    #     test_data["clr0"] == c2_opt
-                    # ]
                     xs = list(plot_data["c2angle"])
                     ys = list(plot_data["energy_per_bb"])
-                    xs, ys = zip(
-                        *sorted(zip(xs, ys, strict=True)), strict=True
-                    )
-                    tors_output[run_number] = {
-                        x: y for x, y in zip(xs, ys, strict=True)
-                    }
+                    xs, ys = zip(*sorted(zip(xs, ys, strict=True)), strict=True)
+                    tors_output[run_number] = dict(zip(xs, ys, strict=True))
 
                 if len(tors_output) == 0:
                     continue
@@ -196,21 +180,16 @@ def bite_angle_relationship(all_data, figure_output):
                 ax.plot(
                     xs,
                     y_mins,
-                    # zs=t_angle,
                     lw=1,
                     c=cmap[tors][0],
                     alpha=1.0,
                     linestyle="--",
-                    # label=f"C2 r0 {c1_opt}/CL r0 {c2_opt}",
                     label=f"{convert_tors(tors,num=False)}",
                     marker=cmap[tors][1],
                 )
 
             ax.set_title(
-                (
-                    f"{angle_str(num=Xc_map(tstr), unit=False)} = "
-                    rf"{t_angle}$^\circ$"
-                ),
+                (f"{angle_str(num=Xc_map(tstr), unit=False)} = " rf"{t_angle}$^\circ$"),
                 fontsize=16,
             )
             ax.tick_params(axis="both", which="major", labelsize=16)
@@ -219,7 +198,6 @@ def bite_angle_relationship(all_data, figure_output):
         ax.legend(ncol=2, fontsize=16)
         ax.set_ylim(0, 5)
         ax.set_xlim(89, 181)
-        # ax.set_yscale("log")
 
         fig.tight_layout()
         filename = f"ar_{tstr}.pdf"
@@ -235,11 +213,7 @@ def selectivity_map(all_data, figure_output):
     logging.info("running selectivity_map")
 
     bite_angles = sorted(
-        [
-            float(i)
-            for i in set(all_data["target_bite_angle"])
-            if not math.isnan(i)
-        ]
+        [float(i) for i in set(all_data["target_bite_angle"]) if not math.isnan(i)]
     )
     clangles = sorted([float(i) for i in set(all_data["clangle"])])
 
@@ -250,14 +224,6 @@ def selectivity_map(all_data, figure_output):
             "dir": "<",
             "clbl": eb_str(),
         },
-        # "pore": {"col": "pore", "cut": min_radius() * 2, "dir": "<"},
-        # "min_b2b": {
-        #     "col": "min_b2b",
-        #     "cut": min_b2b_distance(),
-        #     "dir": "<",
-        # },
-        # "sv_n_dist": {"col": "sv_n_dist", "cut": 0.9, "dir": ">"},
-        # "sv_l_dist": {"col": "sv_l_dist", "cut": 0.9, "dir": ">"},
     }
     for prop in properties:
         pdict = properties[prop]
@@ -292,19 +258,12 @@ def selectivity_map(all_data, figure_output):
                     tdata = cdata[cdata["topology"] == tstr]
                     for ba in bite_angles:
                         plotdata = tdata[tdata["target_bite_angle"] == ba]
-                        # total_count = len(plotdata)
 
                         property_list = list(plotdata[pdict["col"]])
                         if pdict["dir"] == "<":
-                            under_cut = [
-                                i for i in property_list if i < pdict["cut"]
-                            ]
-                            # order_string = "<"
+                            under_cut = [i for i in property_list if i < pdict["cut"]]
                         elif pdict["dir"] == ">":
-                            under_cut = [
-                                i for i in property_list if i > pdict["cut"]
-                            ]
-                            # order_string = ">"
+                            under_cut = [i for i in property_list if i > pdict["cut"]]
 
                         under_count = len(under_cut)
                         xvalue = ba
@@ -320,15 +279,11 @@ def selectivity_map(all_data, figure_output):
                     ax.scatter(
                         xvalues,
                         yvalues,
-                        # c=under_count / total_count,
                         c=cvalues,
-                        # vmin=0,
-                        # vmax=vcount,
                         alpha=1.0,
                         edgecolor="none",
                         s=40,
                         marker="s",
-                        # cmap="Blues",
                     )
 
                 ax.set_title(
@@ -352,13 +307,11 @@ def selectivity_map(all_data, figure_output):
 
 
 def draw_pie(colours, xpos, ypos, size, ax):
-    """
-    From:
+    """From:
     https://stackoverflow.com/questions/56337732/how-to-plot-scatter-
-    pie-chart-using-matplotlib
+    pie-chart-using-matplotlib.
 
     """
-
     num_points = len(colours)
     if num_points == 1:
         ax.scatter(
@@ -377,8 +330,8 @@ def draw_pie(colours, xpos, ypos, size, ax):
         # calculate the points of the pie pieces
         for color, ratio in zip(colours, ratios, strict=True):
             this = 2 * np.pi * ratio + previous
-            x = [0] + np.cos(np.linspace(previous, this, 100)).tolist() + [0]
-            y = [0] + np.sin(np.linspace(previous, this, 100)).tolist() + [0]
+            x = [0, *np.cos(np.linspace(previous, this, 100)).tolist(), 0]
+            y = [0, *np.sin(np.linspace(previous, this, 100)).tolist(), 0]
             xy = np.column_stack([x, y])
             previous = this
             markers.append(
@@ -404,10 +357,7 @@ def selfsort_legend(all_data, figure_output):
             if i not in (cltitle, "unstable"):
                 continue
             for j in cltypetopo_to_colormap()[i]:
-                if i == "unstable":
-                    label = "unstable"
-                else:
-                    label = convert_topo(j)
+                label = "unstable" if i == "unstable" else convert_topo(j)
                 ax.scatter(
                     None,
                     None,
@@ -419,10 +369,7 @@ def selfsort_legend(all_data, figure_output):
                     label=label,
                 )
 
-        ax.legend(
-            # ncol=5,
-            fontsize=16,
-        )
+        ax.legend(fontsize=16)
 
         fig.tight_layout()
         filename = f"ss_{cltitle}_legend.pdf"
@@ -452,9 +399,7 @@ def selfsort_map(all_data, figure_output):
         uo1 = sorted(set(data[cols_to_map[0]]))
         uo2 = sorted(set(data[cols_to_map[1]]))
 
-        for (i, cla), (j, ba) in itertools.product(
-            enumerate(uo1), enumerate(uo2)
-        ):
+        for (i, cla), (_j, ba) in itertools.product(enumerate(uo1), enumerate(uo2)):
             plot_data = data[data[cols_to_map[0]] == cla]
             plot_data = plot_data[plot_data[cols_to_map[1]] == ba]
 
@@ -470,28 +415,17 @@ def selfsort_map(all_data, figure_output):
             }
 
             mixed_energies = {
-                i: energies[i]
-                for i in energies
-                if energies[i] < isomer_energy()
+                i: energies[i] for i in energies if energies[i] < isomer_energy()
             }
 
             min_energy = min(energies.values())
 
             if min_energy > isomer_energy():
                 colours = ["white"]
-            # elif len(mixed_energies) == 0:
-            #     topo_str = list(energies.keys())[
-            #         list(energies.values()).index(min_energy)
-            #     ]
-            #     colours = [cltypetopo_to_colormap()[cltitle][topo_str]]
-            #     dists = [1]
 
             else:
                 colours = sorted(
-                    [
-                        cltypetopo_to_colormap()[cltitle][i]
-                        for i in mixed_energies
-                    ]
+                    [cltypetopo_to_colormap()[cltitle][i] for i in mixed_energies]
                 )
 
             draw_pie(
@@ -501,9 +435,6 @@ def selfsort_map(all_data, figure_output):
                 size=400,
                 ax=ax,
             )
-
-            # rect = ax.patch
-            # rect.set_alpha(0)
 
         ax.set_title(convert_tors(tor, num=False), fontsize=16)
         ax.set_ylabel(angle_str(num=int(cltitle[0])), fontsize=16)
@@ -539,9 +470,7 @@ def kinetic_selfsort_map(all_data, figure_output):
         uo1 = sorted(set(data[cols_to_map[0]]))
         uo2 = sorted(set(data[cols_to_map[1]]))
 
-        for (i, cla), (j, ba) in itertools.product(
-            enumerate(uo1), enumerate(uo2)
-        ):
+        for (i, cla), (_j, ba) in itertools.product(enumerate(uo1), enumerate(uo2)):
             plot_data = data[data[cols_to_map[0]] == cla]
             plot_data = plot_data[plot_data[cols_to_map[1]] == ba]
 
@@ -557,9 +486,7 @@ def kinetic_selfsort_map(all_data, figure_output):
             }
 
             mixed_energies = {
-                i: energies[i]
-                for i in energies
-                if energies[i] < isomer_energy()
+                i: energies[i] for i in energies if energies[i] < isomer_energy()
             }
             if len(mixed_energies) == 0:
                 colours = ["white"]
@@ -574,15 +501,12 @@ def kinetic_selfsort_map(all_data, figure_output):
 
                 if len(kinetic_energies) > 1:
                     colours = sorted(
-                        [
-                            cltypetopo_to_colormap()[cltitle][i]
-                            for i in kinetic_energies
-                        ]
+                        [cltypetopo_to_colormap()[cltitle][i] for i in kinetic_energies]
                     )
                 else:
                     colours = [
                         cltypetopo_to_colormap()[cltitle][
-                            list(kinetic_energies.keys())[0]
+                            next(iter(kinetic_energies.keys()))
                         ]
                     ]
 
@@ -860,7 +784,6 @@ def pdII_figure_bite_angle(all_data, figure_output):
             [i[0] for i in tstr_points[tstr]],
             [i[1] for i in tstr_points[tstr]],
             alpha=1.0,
-            # edgecolor="k",
             lw=3,
             marker="o",
             markeredgecolor="k",
@@ -886,7 +809,7 @@ def pdII_figure_bite_angle(all_data, figure_output):
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -900,21 +823,17 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
     logging.info(f"there are {len(all_data)} collected data")
 
     bite_angle_relationship(all_data, figure_output)
-    angle_map(low_e_data, figure_output)
-    selfsort_legend(low_e_data, figure_output)
-    selfsort_map(low_e_data, figure_output)
-    pdII_figure_bite_angle(low_e_data, figure_output)
-    pd_4p82_figure(low_e_data, figure_output)
-    angle_map_4p6(low_e_data, figure_output)
-    kinetic_selfsort_map(low_e_data, figure_output)
-    selectivity_map(low_e_data, figure_output)
+    angle_map(all_data, figure_output)
+    selfsort_legend(all_data, figure_output)
+    selfsort_map(all_data, figure_output)
+    pdII_figure_bite_angle(all_data, figure_output)
+    pd_4p82_figure(all_data, figure_output)
+    angle_map_4p6(all_data, figure_output)
+    kinetic_selfsort_map(all_data, figure_output)
+    selectivity_map(all_data, figure_output)
     nobiteangle_relationship(all_data, figure_output)
 
 

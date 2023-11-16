@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to plot parities.
+"""Script to plot parities.
 
 Author: Andrew Tarzia
 
@@ -20,7 +18,6 @@ from analysis import (
     convert_topo,
     convert_tors,
     data_to_array,
-    get_lowest_energy_data,
     get_paired_cage_name,
     topology_labels,
 )
@@ -50,7 +47,7 @@ def parity_1(all_data, figure_output):
         data1 = tdata[tdata["torsions"] == "ton"]
 
         diffdata = []
-        for idx, row in data1.iterrows():
+        for _idx, row in data1.iterrows():
             d1_energy = float(row["energy_per_bb"])
             cage_name = str(row["cage_name"])
             pair_name = get_paired_cage_name(cage_name)
@@ -62,15 +59,13 @@ def parity_1(all_data, figure_output):
         xpos = tcpos[tstr]
 
         parts = ax.violinplot(
-            [i for i in diffdata],
+            list(diffdata),
             [xpos],
-            # points=200,
             vert=True,
             widths=0.8,
             showmeans=False,
             showextrema=False,
             showmedians=False,
-            # bw_method=0.5,
         )
 
         for pc in parts["bodies"]:
@@ -85,7 +80,6 @@ def parity_1(all_data, figure_output):
         fontsize=16,
     )
     ax.set_xlim(-0.5, 11.5)
-    # ax.set_ylim(-22, 22)
     ax.set_xticks([tcpos[i] for i in tcpos])
     ax.set_xticklabels(
         [convert_topo(i) for i in tcpos],
@@ -117,16 +111,7 @@ def parity_2(all_data, geom_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    # vmax = 10
     for ax, tstr in zip(flat_axs, topologies, strict=True):
-        # fig, axs = plt.subplots(
-        #     nrows=1,
-        #     ncols=2,
-        #     sharex=True,
-        #     sharey=True,
-        #     figsize=(12, 5),
-        # )
-        # flat_axs = axs.flatten()
         topo_frame = all_data[all_data["topology"] == tstr]
         # for tors, ax in zip(("ton", "toff"), flat_axs, strict=True):
         for tors in ("ton", "toff"):
@@ -154,28 +139,8 @@ def parity_2(all_data, geom_data, figure_output):
             for i, j in zip(target_c2s, measured_c2, strict=True):
                 comp_values[i].append(j)
 
-            # ax.errorbar(
-            #     [i for i in comp_values],
-            #     [np.mean(comp_values[i]) for i in comp_values],
-            #     yerr=[np.std(comp_values[i]) for i in comp_values],
-            #     # c=energies,
-            #     # vmin=0,
-            #     # vmax=vmax,
-            #     alpha=1.0,
-            #     # ecolor="k",
-            #     elinewidth=2,
-            #     marker="o",
-            #     markerfacecolor=cmap[tors],
-            #     markeredgecolor="k",
-            #     linewidth=1,
-            #     color=cmap[tors],
-            #     markersize=6,
-            #     # cmap="Blues_r",
-            #     # rasterized=True,
-            #     label=convert_tors(tors, num=False),
-            # )
             ax.plot(
-                [i for i in comp_values],
+                list(comp_values),
                 [np.mean(comp_values[i]) for i in comp_values],
                 alpha=1.0,
                 marker="o",
@@ -187,17 +152,9 @@ def parity_2(all_data, geom_data, figure_output):
                 label=convert_tors(tors, num=False),
             )
             ax.fill_between(
-                [i for i in comp_values],
-                y1=[
-                    # np.mean(comp_values[i]) - np.min(comp_values[i])
-                    np.min(comp_values[i])
-                    for i in comp_values
-                ],
-                y2=[
-                    # np.mean(comp_values[i]) + np.max(comp_values[i])
-                    np.max(comp_values[i])
-                    for i in comp_values
-                ],
+                list(comp_values),
+                y1=[np.min(comp_values[i]) for i in comp_values],
+                y2=[np.max(comp_values[i]) for i in comp_values],
                 alpha=0.6,
                 color=cmap[tors],
                 edgecolor=(0, 0, 0, 2.0),
@@ -217,27 +174,13 @@ def parity_2(all_data, geom_data, figure_output):
         ax.set_xlabel(r"target [$^\circ$]", fontsize=16)
         ax.set_ylabel(r"observed [$^\circ$]", fontsize=16)
         ax.set_title(
-            (
-                f"{convert_topo(tstr)}"
-                # f"{convert_tors(tors, num=False)}"
-            ),
+            (f"{convert_topo(tstr)}"),
             fontsize=16,
         )
         ax.set_xlim(90, 180)
         ax.set_ylim(70, 190)
         if tstr == "2P3":
             ax.legend(fontsize=16)
-
-        # cbar_ax = fig.add_axes([1.01, 0.15, 0.02, 0.7])
-        # cmap = mpl.cm.Blues_r
-        # norm = mpl.colors.Normalize(vmin=0, vmax=vmax)
-        # cbar = fig.colorbar(
-        #     mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
-        #     cax=cbar_ax,
-        #     orientation="vertical",
-        # )
-        # cbar.ax.tick_params(labelsize=16)
-        # cbar.set_label(eb_str(), fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -257,7 +200,6 @@ def pore_b2b_distance(all_data, figure_output):
         all_data["min_b2b_distance"],
         c="gray",
         alpha=0.2,
-        # edgecolor="k",
         s=30,
         rasterized=True,
     )
@@ -277,7 +219,7 @@ def pore_b2b_distance(all_data, figure_output):
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -291,17 +233,13 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    with open(data_output / "all_geom.json", "r") as f:
+    with open(data_output / "all_geom.json") as f:
         geom_data = json.load(f)
     logging.info(f"there are {len(all_data)} collected data")
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
 
-    parity_1(low_e_data, figure_output)
-    parity_2(low_e_data, geom_data, figure_output)
-    pore_b2b_distance(low_e_data, figure_output)
+    parity_1(all_data, figure_output)
+    parity_2(all_data, geom_data, figure_output)
+    pore_b2b_distance(all_data, figure_output)
 
 
 if __name__ == "__main__":

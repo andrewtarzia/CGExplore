@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for cage generation utilities.
+"""Module for cage generation utilities.
 
 Author: Andrew Tarzia
 
@@ -52,7 +50,7 @@ def optimise_cage(
             energy_decomposition=database.get_property(
                 key=name,
                 property_key="energy_decomposition",
-                ensure_type=dict,
+                property_type=dict,
             ),
         )
 
@@ -110,13 +108,12 @@ def optimise_cage(
             name=name,
             file_suffix="opt1",
             output_dir=output_dir,
-            # max_iterations=50,
             platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="opt1")
     except openmm.OpenMMException as error:
         if "Particle coordinate is NaN. " not in str(error):
-            raise error
+            raise
 
     # Run optimisations of series of conformers with shifted out
     # building blocks.
@@ -137,13 +134,12 @@ def optimise_cage(
                 name=name,
                 file_suffix="sopt",
                 output_dir=output_dir,
-                # max_iterations=50,
                 platform=platform,
             )
             ensemble.add_conformer(conformer=conformer, source="shifted")
         except openmm.OpenMMException as error:
             if "Particle coordinate is NaN. " not in str(error):
-                raise error
+                raise
 
     # Collect and optimise structures nearby in phase space.
     logging.info(f"optimisation of nearby structures of {name}")
@@ -169,7 +165,6 @@ def optimise_cage(
             name=name,
             file_suffix="nopt",
             output_dir=output_dir,
-            # max_iterations=50,
             platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="nearby_opt")
@@ -201,16 +196,15 @@ def optimise_cage(
     )
     if soft_md_trajectory is None:
         logging.info(f"!!!!! {name} MD exploded !!!!!")
-        # md_exploded = True
-        raise ValueError("OpenMM Exception")
+        msg = "OpenMM Exception"
+        raise ValueError(msg)
 
     soft_md_data = soft_md_trajectory.get_data()
     logging.info(f"collected trajectory {len(soft_md_data)} confs long")
     # Check that the trajectory is as long as it should be.
     if len(soft_md_data) != num_steps / traj_freq:
         logging.info(f"!!!!! {name} MD failed !!!!!")
-        # md_failed = True
-        raise ValueError()
+        raise ValueError
 
     # Go through each conformer from soft MD.
     # Optimise them all.
@@ -227,7 +221,6 @@ def optimise_cage(
             name=name,
             file_suffix="smd_mdc",
             output_dir=output_dir,
-            # max_iterations=50,
             platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="smd")

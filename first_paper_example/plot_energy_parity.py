@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to plot parities.
+"""Script to plot parities.
 
 Author: Andrew Tarzia
 
@@ -18,7 +16,6 @@ from analysis import (
     convert_topo,
     data_to_array,
     eb_str,
-    get_lowest_energy_data,
     isomer_energy,
 )
 from cgexplore.utilities import check_directory
@@ -44,7 +41,7 @@ def energy_parity(all_data, dupl_data, figure_output):
 
     fig, ax = plt.subplots(figsize=(8, 5))
     count_ = 0
-    for idx, row in dupl_data.iterrows():
+    for _idx, row in dupl_data.iterrows():
         index_name = str(row["index"])
         tstr = str(row["topology"])
         orig_row = all_data[all_data["index"] == index_name]
@@ -73,7 +70,6 @@ def energy_parity(all_data, dupl_data, figure_output):
                 alpha=0.1,
             )
 
-    # ax.plot((0, 20), (0, 20), c="k", ls="--", lw=2, alpha=0.2)
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel(f"first run {eb_str()}", fontsize=16)
     ax.set_ylabel(f"second run {eb_str()}", fontsize=16)
@@ -113,7 +109,7 @@ def energy_parity(all_data, dupl_data, figure_output):
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -130,23 +126,15 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
     logging.info(f"there are {len(all_data)} collected data")
 
     dupl_all_data = data_to_array(
         json_files=dupl_calculation_output.glob("*_res.json"),
         output_dir=dupl_data_output,
     )
-    dupl_low_e_data = get_lowest_energy_data(
-        all_data=dupl_all_data,
-        output_dir=dupl_data_output,
-    )
     logging.info(f"there are {len(dupl_all_data)} collected data")
 
-    energy_parity(low_e_data, dupl_low_e_data, figure_output)
+    energy_parity(all_data, dupl_all_data, figure_output)
 
 
 if __name__ == "__main__":

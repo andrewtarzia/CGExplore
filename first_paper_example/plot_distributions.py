@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to plot distribitions.
+"""Script to plot distribitions.
 
 Author: Andrew Tarzia
 
@@ -28,7 +26,6 @@ from analysis import (
     convert_tors,
     data_to_array,
     eb_str,
-    get_lowest_energy_data,
     get_paired_cage_name,
     isomer_energy,
     pore_str,
@@ -61,10 +58,7 @@ def identity_distributions(all_data, figure_output):
     ax.bar(
         categories.keys(),
         categories.values(),
-        # color="#06AED5",
         color="teal",
-        # color="#DD1C1A",
-        # color="#320E3B",
         edgecolor="teal",
         lw=2,
     )
@@ -72,7 +66,6 @@ def identity_distributions(all_data, figure_output):
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_ylabel("count", fontsize=16)
     ax.set_title(f"total cages: {num_cages}", fontsize=16)
-    # ax.set_yscale("log")
 
     fig.tight_layout()
     fig.savefig(
@@ -161,17 +154,15 @@ def geom_distributions(all_data, geom_data, figure_output):
         for ax, tors in zip(flat_axs, ("ton", "toff"), strict=True):
             tor_frame = vdw_frame[vdw_frame["torsions"] == tors]
 
-            for i, tstr in enumerate(tcmap):
+            for _i, tstr in enumerate(tcmap):
                 if tstr in ("6P8",):
                     continue
 
                 topo_frame = tor_frame[tor_frame["topology"] == tstr]
 
                 values = []
-                # energies = []
-                for i, row in topo_frame.iterrows():
+                for _i, row in topo_frame.iterrows():
                     name = str(row["index"])
-                    # energy = float(row["energy_per_bb"])
                     if column is None:
                         target = 0
                         target_oppos = None
@@ -200,7 +191,6 @@ def geom_distributions(all_data, geom_data, figure_output):
                                     value = min((abs(ovalue), abs(value)))
 
                                 values.append(value)
-                                # energies.append(energy)
 
                 xpos = tcpos[tstr]
 
@@ -210,15 +200,13 @@ def geom_distributions(all_data, geom_data, figure_output):
                 if len(values) == 0:
                     continue
                 parts = ax.violinplot(
-                    [i for i in values],
+                    list(values),
                     [xpos],
-                    # points=200,
                     vert=True,
                     widths=0.8,
                     showmeans=False,
                     showextrema=False,
                     showmedians=False,
-                    # bw_method=0.5,
                 )
 
                 for pc in parts["bodies"]:
@@ -235,10 +223,7 @@ def geom_distributions(all_data, geom_data, figure_output):
                 ax.set_ylabel(cdict["xlabel"], fontsize=16)
             else:
                 ax.set_title(
-                    (
-                        f'{cdict["xlabel"]}: '
-                        f"{convert_tors(tors,num=False)} "
-                    ),
+                    (f'{cdict["xlabel"]}: ' f"{convert_tors(tors,num=False)} "),
                     fontsize=16,
                 )
                 ax.set_ylabel(
@@ -259,131 +244,6 @@ def geom_distributions(all_data, geom_data, figure_output):
             bbox_inches="tight",
         )
         plt.close()
-
-
-def rmsd_distributions(all_data, calculation_dir, figure_output):
-    logging.info("running rmsd_distributions")
-    raise SystemExit("if you want this, need to align MD")
-
-    tcmap = topology_labels(short="P")
-
-    rmsd_file = calculation_dir / "all_rmsds.json"
-    if os.path.exists(rmsd_file):
-        with open(rmsd_file, "r") as f:
-            data = json.load(f)
-    else:
-        data = {}
-        for tstr in tcmap:
-            tdata = {}
-            if tstr in ("6P8",):
-                search = f"*{tstr}_*toff*von*_final.mol"
-            else:
-                search = f"*{tstr}_*ton*von*_final.mol"
-
-            for o1 in calculation_dir.glob(search):
-                o1 = str(o1)
-                o2 = o1.replace("final", "opted1")
-                o3 = o1.replace("final", "opted2")
-                o4 = o1.replace("final", "opted3")
-                m1 = stk.BuildingBlock.init_from_file(o1)
-                m2 = stk.BuildingBlock.init_from_file(o2)
-                m3 = stk.BuildingBlock.init_from_file(o3)
-                m4 = stk.BuildingBlock.init_from_file(o4)
-
-                rmsd_calc = stko.RmsdCalculator(m1)
-
-                if tstr in ("6P8",):
-                    otoff_voff = o1.replace("von", "voff")
-                    mtoffvoff = stk.BuildingBlock.init_from_file(otoff_voff)
-                    tdata[o1] = {
-                        "r2": rmsd_calc.get_results(m2).get_rmsd(),
-                        "r3": rmsd_calc.get_results(m3).get_rmsd(),
-                        "r4": rmsd_calc.get_results(m4).get_rmsd(),
-                        "rtoffvon": None,
-                        "rtonvoff": None,
-                        "rtoffvoff": rmsd_calc.get_results(
-                            mtoffvoff
-                        ).get_rmsd(),
-                    }
-                else:
-                    otoff_von = o1.replace("ton", "toff")
-                    oton_voff = o1.replace("von", "voff")
-                    otoff_voff = otoff_von.replace("von", "voff")
-                    mtoffvon = stk.BuildingBlock.init_from_file(otoff_von)
-                    mtonvoff = stk.BuildingBlock.init_from_file(oton_voff)
-                    mtoffvoff = stk.BuildingBlock.init_from_file(otoff_voff)
-                    tdata[o1] = {
-                        "r2": rmsd_calc.get_results(m2).get_rmsd(),
-                        "r3": rmsd_calc.get_results(m3).get_rmsd(),
-                        "r4": rmsd_calc.get_results(m4).get_rmsd(),
-                        "rtoffvon": rmsd_calc.get_results(mtoffvon).get_rmsd(),
-                        "rtonvoff": rmsd_calc.get_results(mtonvoff).get_rmsd(),
-                        "rtoffvoff": rmsd_calc.get_results(
-                            mtoffvoff
-                        ).get_rmsd(),
-                    }
-            data[tstr] = tdata
-
-        with open(rmsd_file, "w") as f:
-            json.dump(data, f, indent=4)
-
-    tcpos = {tstr: i for i, tstr in enumerate(tcmap)}
-
-    fig, axs = plt.subplots(
-        nrows=3,
-        ncols=1,
-        sharex=True,
-        sharey=True,
-        figsize=(8, 10),
-    )
-    flat_axs = axs.flatten()
-
-    for ax, col in zip(
-        flat_axs,
-        ("rtoffvon", "rtonvoff", "rtoffvoff"),
-        strict=True,
-    ):
-        for tstr in tcmap:
-            if tstr in ("6P8",) and col in ("rtoffvon", "rtonvoff"):
-                continue
-
-            ydata = [i[col] for i in data[tstr].values()]
-            xpos = tcpos[tstr]
-            parts = ax.violinplot(
-                [i for i in ydata],
-                [xpos],
-                # points=200,
-                vert=True,
-                widths=0.8,
-                showmeans=False,
-                showextrema=False,
-                showmedians=False,
-                # bw_method=0.5,
-            )
-
-            for pc in parts["bodies"]:
-                pc.set_facecolor("#086788")
-                pc.set_edgecolor("none")
-                pc.set_alpha(1.0)
-
-        ax.plot((-1, 12), (0, 0), c="k")
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_ylabel("RMSD [A]", fontsize=16)
-        ax.set_xlim(-0.5, 11.5)
-        ax.set_title(f"{col}", fontsize=16)
-        ax.set_xticks([tcpos[i] for i in tcpos])
-        ax.set_xticklabels(
-            [convert_topo(i) for i in tcpos],
-            rotation=45,
-        )
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "all_rmsds.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
 
 
 def single_value_distributions(all_data, figure_output):
@@ -449,10 +309,7 @@ def single_value_distributions(all_data, figure_output):
 
     for tp in to_plot:
         fig, ax = plt.subplots(figsize=(16, 5))
-        if tp == "energy_per_bb_zoom":
-            column = "energy_per_bb"
-        else:
-            column = tp
+        column = "energy_per_bb" if tp == "energy_per_bb_zoom" else tp
 
         xtitle = to_plot[tp]["xtitle"]
         xlim = to_plot[tp]["xlim"]
@@ -480,26 +337,14 @@ def single_value_distributions(all_data, figure_output):
             xpos = toptions[topt][0]
             col = toptions[topt][1]
 
-            # ax.scatter(
-            #     [xpos for i in values],
-            #     [i for i in values],
-            #     c=col,
-            #     edgecolor="none",
-            #     s=30,
-            #     alpha=0.2,
-            #     rasterized=True,
-            # )
-
             parts = ax.violinplot(
                 values,
                 [xpos],
-                # points=200,
                 vert=True,
                 widths=0.8,
                 showmeans=False,
                 showextrema=False,
                 showmedians=False,
-                # bw_method=0.5,
             )
 
             for pc in parts["bodies"]:
@@ -540,15 +385,7 @@ def single_value_distributions(all_data, figure_output):
                     f"{convert_tors(tor, num=False)}",
                 )
             )
-            # ax.scatter(
-            #     None,
-            #     None,
-            #     c=col,
-            #     edgecolor="none",
-            #     s=30,
-            #     alpha=0.2,
-            #     label=,
-            # )
+
         ax.legend(*zip(*labels, strict=True), fontsize=16, ncols=4)
         ax.set_xlim(-0.5, max(ylines) + 2.0)
 
@@ -577,13 +414,10 @@ def plot_sorted(bb_data, color_map, figure_output):
         xs = []
         ys = []
         for x in np.linspace(0.01, max_, 100):
-            stable_isomers = [
-                sum(i[j] < x for j in i) for i in data if flag in i
-            ]
+            stable_isomers = [sum(i[j] < x for j in i) for i in data if flag in i]
 
             percent_sorted = (
-                len([i for i in stable_isomers if i == 1])
-                / len(stable_isomers)
+                len([i for i in stable_isomers if i == 1]) / len(stable_isomers)
             ) * 100
             xs.append(x)
             ys.append(percent_sorted)
@@ -591,13 +425,11 @@ def plot_sorted(bb_data, color_map, figure_output):
         ax.plot(
             xs,
             ys,
-            # marker="o",
             c=color_map[(tor, cltitle)],
             lw=4,
             label=f"{cltitle[0]}C: {convert_tors(tor, num=False)}",
         )
 
-    # ax.set_title(f"{cltitle}", fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
     ax.set_ylabel(r"% with single species", fontsize=16)
@@ -635,16 +467,13 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
         ys_unstable = []
         ys_mixed = []
         for x in np.linspace(0.01, max_, 100):
-            stable_isomers = [
-                sum(i[j] < x for j in i) for i in data if flag in i
-            ]
+            stable_isomers = [sum(i[j] < x for j in i) for i in data if flag in i]
 
             percent_mixed = (
                 len([i for i in stable_isomers if i > 1]) / len(stable_isomers)
             ) * 100
             percent_unstable = (
-                len([i for i in stable_isomers if i == 0])
-                / len(stable_isomers)
+                len([i for i in stable_isomers if i == 0]) / len(stable_isomers)
             ) * 100
 
             xs.append(x)
@@ -654,24 +483,18 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
         ax.plot(
             xs,
             ys_unstable,
-            # marker="o",
             c=color_map[(tor, cltitle)],
             lw=3,
             linestyle="-",
-            label=(
-                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, unstable"
-            ),
+            label=(f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, unstable"),
         )
         ax.plot(
             xs,
             ys_mixed,
-            # marker="o",
             c=color_map[(tor, cltitle)],
             lw=3,
             linestyle="--",
-            label=(
-                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, mixed"
-            ),
+            label=(f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, mixed"),
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
@@ -694,7 +517,7 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
 def plot_clangle(cl_data, color_map, figure_output):
     max_ = 6
 
-    clangles = sorted([int(i) for i in cl_data.keys()])
+    clangles = sorted([int(i) for i in cl_data])
     fig, axs = plt.subplots(ncols=2, sharey=True, figsize=(16, 5))
 
     for ax, cltitle in zip(axs, ("3C1", "4C1"), strict=True):
@@ -709,15 +532,12 @@ def plot_clangle(cl_data, color_map, figure_output):
             ys = []
             cs = []
             for x in np.linspace(0.01, max_, 100):
-                stable_isomers = [
-                    sum(i[j] < x for j in i) for i in data if flag in i
-                ]
+                stable_isomers = [sum(i[j] < x for j in i) for i in data if flag in i]
                 if len(stable_isomers) == 0:
                     continue
 
                 percent_sorted = (
-                    len([i for i in stable_isomers if i == 1])
-                    / len(stable_isomers)
+                    len([i for i in stable_isomers if i == 1]) / len(stable_isomers)
                 ) * 100
 
                 # if percent_sorted > 5:
@@ -725,14 +545,6 @@ def plot_clangle(cl_data, color_map, figure_output):
                 ys.append(clangle)
                 cs.append(percent_sorted)
 
-            # ax.plot(
-            #     xs,
-            #     ys,
-            #     # marker="o",
-            #     # c=color_map[(tor, vdw)],
-            #     lw=3,
-            #     label=f"{clangle}",
-            # )
             ax.scatter(
                 xs,
                 ys,
@@ -755,15 +567,9 @@ def plot_clangle(cl_data, color_map, figure_output):
         cbar.ax.tick_params(labelsize=16)
         cbar.set_label(r"% with single species", fontsize=16)
 
-        # ax.set_title(f"{cltitle}", fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(f"threshold {eb_str()}", fontsize=16)
-        # ax.set_ylabel(r"% sorted", fontsize=16)
         ax.set_ylabel(angle_str(num=int(cltitle[0])), fontsize=16)
-        # ax.set_xlim(0, max_ + 0.1)
-        # ax.set_ylim(0, None)
-
-    # ax.legend(fontsize=16)
 
     fig.tight_layout()
     fig.savefig(
@@ -794,7 +600,6 @@ def plot_average(bb_data, color_map, figure_output):
         ax.plot(
             xs,
             ys,
-            # marker="o",
             c=color_map[(tor, cltitle)],
             lw=3,
             label=f"{cltitle}: {convert_tors(tor, num=False)}",
@@ -908,8 +713,6 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(angle_str(num=2), fontsize=16)
         ax.set_ylabel(angle_str(num=Xc_map(tstr)), fontsize=16)
-    # ax.set_xlim(0, max_ + 0.1)
-    # ax.set_ylim(0, None)
 
     ax.legend(fontsize=16)
 
@@ -939,18 +742,13 @@ def plot_topology_flex(data, figure_output):
             data[tstr]["toff"][0] / data[tstr]["toff"][1]
         ) * 100
         categories_subtracted[convert_topo(tstr)] = (
-            categories_toff[convert_topo(tstr)]
-            - categories_ton[convert_topo(tstr)]
+            categories_toff[convert_topo(tstr)] - categories_ton[convert_topo(tstr)]
         ) / categories_toff[convert_topo(tstr)]
 
-    # color = "tab:blue"
     ax.bar(
         categories_ton.keys(),
         categories_ton.values(),
-        # color="#06AED5",
         color="#086788",
-        # color="#DD1C1A",
-        # color="#320E3B",
         edgecolor="none",
         lw=2,
         label=convert_tors("ton", num=False),
@@ -959,10 +757,7 @@ def plot_topology_flex(data, figure_output):
     ax.bar(
         categories_toff.keys(),
         categories_toff.values(),
-        # color="#06AED5",
         color="none",
-        # color="#DD1C1A",
-        # color="#320E3B",
         edgecolor="k",
         lw=2,
         label=convert_tors("toff", num=False),
@@ -970,31 +765,11 @@ def plot_topology_flex(data, figure_output):
     ax.axvline(x=4.5, linestyle="--", c="gray", lw=2)
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    # ax.tick_params(axis="y")  # , labelcolor=color)
-    # ax.set_xlabel("topology", fontsize=16)
     ax.set_ylabel(r"% accessible cages", fontsize=16)  # , color=color)
     ax.set_ylim(0, 100)
     ax.legend(fontsize=16)
     ax.set_xticks(range(len(categories_toff)))
     ax.set_xticklabels(categories_ton.keys(), rotation=45)
-
-    # ax2 = ax.twinx()
-    # color = "tab:red"
-    # for x, tstr in enumerate(categories_toff):
-    #     ax2.scatter(
-    #         x,
-    #         categories_subtracted[tstr] * 100,
-    #         s=120,
-    #         c=color,
-    #     )
-    # ax2.tick_params(axis="both", which="major", labelsize=16)
-    # ax2.tick_params(axis="y", labelcolor=color)
-    # ax2.set_ylabel(
-    #     r"% change in accessible cages",
-    #     fontsize=16,
-    #     color=color,
-    # )
-    # ax2.set_ylim(0, 100)
 
     fig.tight_layout()
     fig.savefig(
@@ -1006,10 +781,7 @@ def plot_topology_flex(data, figure_output):
 
 
 def plot_topology_pore_flex(data, figure_output):
-    color_map = {
-        "stable": "#086788",
-        "all": "#0B2027",
-    }
+    color_map = {"stable": "#086788", "all": "#0B2027"}
 
     topologies = [i for i in topology_labels(short="P") if i != "6P8"]
 
@@ -1046,13 +818,11 @@ def plot_topology_pore_flex(data, figure_output):
         parts = ax.violinplot(
             differences,
             [xpos_ - 0.2],
-            # points=200,
             vert=True,
             widths=0.3,
             showmeans=False,
             showextrema=False,
             showmedians=False,
-            # bw_method=0.5,
         )
         for pc in parts["bodies"]:
             pc.set_facecolor(color_map["all"])
@@ -1063,13 +833,11 @@ def plot_topology_pore_flex(data, figure_output):
             parts = ax.violinplot(
                 stable_differences,
                 [xpos_ + 0.2],
-                # points=200,
                 vert=True,
                 widths=0.3,
                 showmeans=False,
                 showextrema=False,
                 showmedians=False,
-                # bw_method=0.5,
             )
             for pc in parts["bodies"]:
                 pc.set_facecolor(color_map["stable"])
@@ -1082,7 +850,6 @@ def plot_topology_pore_flex(data, figure_output):
 
     ax.axhline(y=0, c="gray", linestyle="--", alpha=0.4)
 
-    # xticks = {i: sum(all_counts[i]) / 2 for i in all_counts}
     ylines = [xticks[i] + 0.5 for i in xticks][:-1]
     for yl in ylines:
         ax.axvline(x=yl, c="gray", linestyle="--", alpha=0.4)
@@ -1282,7 +1049,7 @@ def energy_correlation_matrix(all_data, figure_output):
 
 def get_min_energy_from_omm_out(outfile):
     try:
-        with open(outfile, "r") as f:
+        with open(outfile) as f:
             min_energy = 1e24
             lines = f.readlines()
             for line in lines:
@@ -1343,7 +1110,7 @@ def opt_outcome_distributions(all_data, figure_output):
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -1357,28 +1124,21 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
     logging.info(f"there are {len(all_data)} collected data")
     opt_data = all_data[all_data["optimised"]]
     logging.info(f"there are {len(opt_data)} successfully opted")
 
-    with open(data_output / "all_geom.json", "r") as f:
+    with open(data_output / "all_geom.json") as f:
         geom_data = json.load(f)
 
     identity_distributions(all_data, figure_output)
-    mixed_distributions(low_e_data, figure_output)
-    single_value_distributions(low_e_data, figure_output)
+    mixed_distributions(all_data, figure_output)
+    single_value_distributions(all_data, figure_output)
     geom_distributions(all_data, geom_data, figure_output)
-    flexeffect_per_property(low_e_data, figure_output)
-    correlation_matrix(low_e_data, figure_output)
-    energy_correlation_matrix(low_e_data, figure_output)
+    flexeffect_per_property(all_data, figure_output)
+    correlation_matrix(all_data, figure_output)
+    energy_correlation_matrix(all_data, figure_output)
     opt_outcome_distributions(all_data, figure_output)
-    raise SystemExit()
-
-    rmsd_distributions(all_data, calculation_output, figure_output)
 
 
 if __name__ == "__main__":

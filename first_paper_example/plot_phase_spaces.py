@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to plot phase spaces.
+"""Script to plot phase spaces.
 
 Author: Andrew Tarzia
 
@@ -23,7 +21,6 @@ from analysis import (
     convert_topo,
     convert_tors,
     data_to_array,
-    get_lowest_energy_data,
     isomer_energy,
     map_cltype_to_topology,
     pore_str,
@@ -70,15 +67,15 @@ def phase_space_2(all_data, figure_output):
 
             if len(kinetic_energies) == 1:
                 # Self-sorted.
-                tstr = list(kinetic_energies.keys())[0]
-                epb = list(kinetic_energies.values())[0]
+                tstr = next(iter(kinetic_energies.keys()))
+                epb = next(iter(kinetic_energies.values()))
                 kinetic_data = data[data["topology"] == tstr]
 
                 if tstr == "6P8":
                     colour_choice = "k"
-                elif "3C1" == str(bbd["cltitle"].iloc[0]):
+                elif str(bbd["cltitle"].iloc[0]) == "3C1":
                     colour_choice = "#086788"
-                elif "4C1" == str(bbd["cltitle"].iloc[0]):
+                elif str(bbd["cltitle"].iloc[0]) == "4C1":
                     colour_choice = "#F9A03F"
 
                 if tor == "ton":
@@ -218,13 +215,11 @@ def phase_space_2(all_data, figure_output):
                 parts = ax.violinplot(
                     yvalues,
                     [x],
-                    # points=200,
                     vert=True,
                     widths=0.6,
                     showmeans=False,
                     showextrema=False,
                     showmedians=False,
-                    # bw_method=0.5,
                 )
 
                 for pc in parts["bodies"]:
@@ -318,7 +313,6 @@ def phase_space_6p8(all_data, figure_output):
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    # ax.set_xlabel(clangle_str(4), fontsize=16)
     ax.set_ylabel(pore_str(), fontsize=16)
     ax.set_xticks(range(1, 6))
     ax.set_xticklabels([])
@@ -333,7 +327,7 @@ def phase_space_6p8(all_data, figure_output):
 
 
 def phase_space_3(all_data, figure_output):
-    raise NotImplementedError()
+    raise NotImplementedError
     logging.info("doing phase space 3")
 
     fig, axs = plt.subplots(
@@ -381,7 +375,7 @@ def phase_space_3(all_data, figure_output):
             elif len(mixed_energies) > 1:
                 topo_str = "mixed"
             else:
-                topo_str = list(mixed_energies.keys())[0]
+                topo_str = next(iter(mixed_energies.keys()))
 
             if topo_str not in data[(bbtitle, tors)]:
                 data[(bbtitle, tors)][topo_str] = 0
@@ -390,7 +384,7 @@ def phase_space_3(all_data, figure_output):
     for ax, (bbtitle, torsion) in zip(flat_axs, data, strict=True):
         coords = data[(bbtitle, torsion)]
         bars = ax.bar(
-            [convert_topo(i) for i in coords.keys()],
+            [convert_topo(i) for i in coords],
             coords.values(),
             color="#086788",
             edgecolor="k",
@@ -415,7 +409,8 @@ def phase_space_3(all_data, figure_output):
 
 def phase_space_5(all_data, figure_output):
     logging.info("doing ps5, shape vectors vs Energy")
-    raise NotImplementedError("if you want this, fix it.")
+    msg = "if you want this, fix it."
+    raise NotImplementedError(msg)
     tstrs = topology_labels(short="P")
     clangles = sorted(set(all_data["clangle"]))
     for tstr, clangle in itertools.product(tstrs, clangles):
@@ -468,7 +463,8 @@ def phase_space_5(all_data, figure_output):
                     zorder=-1,
                 )
             elif len(to_plot_l) != 0:
-                raise ValueError(f"{len(to_plot_l)} l != {len(to_plot_x)}")
+                msg = f"{len(to_plot_l)} l != {len(to_plot_x)}"
+                raise ValueError(msg)
 
             ax.set_title(
                 (
@@ -513,7 +509,7 @@ def phase_space_5(all_data, figure_output):
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -527,17 +523,13 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
     logging.info(f"there are {len(all_data)} collected data")
 
-    phase_space_2(low_e_data, figure_output)
-    phase_space_6p8(low_e_data, figure_output)
-    phase_space_3(low_e_data, figure_output)
-    raise SystemExit()
-    phase_space_5(low_e_data, figure_output)
+    phase_space_2(all_data, figure_output)
+    phase_space_6p8(all_data, figure_output)
+    phase_space_3(all_data, figure_output)
+    raise SystemExit
+    phase_space_5(all_data, figure_output)
 
 
 if __name__ == "__main__":

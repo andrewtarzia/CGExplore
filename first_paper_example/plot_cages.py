@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to visulize structures in matplotlib.
+"""Script to visulize structures in matplotlib.
 
 Author: Andrew Tarzia
 
@@ -19,7 +17,6 @@ import matplotlib.pyplot as plt
 from analysis import (
     convert_topo,
     data_to_array,
-    get_lowest_energy_data,
     isomer_energy,
     mapshape_to_topology,
     topology_labels,
@@ -56,7 +53,7 @@ def generate_images_of_all(
         "zoom_string": "custom",
     }
 
-    for i, row in von.iterrows():
+    for _i, row in von.iterrows():
         struct_name = str(row["index"])
         if "2P3" in struct_name:
             orient_atoms = "C"
@@ -112,12 +109,10 @@ def visualise_low_and_high(
         high_e = tdata[tdata["energy_per_bb"] == max_e].iloc[0]
 
         logging.info(
-            f"low E: {str(low_e.cage_name)}; "
-            f"E={round(low_e.energy_per_bb, 2)}"
+            f"low E: {low_e.cage_name!s}; " f"E={round(low_e.energy_per_bb, 2)}"
         )
         logging.info(
-            f"high E: {str(high_e.cage_name)}; "
-            f"E={round(high_e.energy_per_bb, 2)}"
+            f"high E: {high_e.cage_name!s}; " f"E={round(high_e.energy_per_bb, 2)}"
         )
         high_e_name = str(high_e["index"])
         low_e_name = str(low_e["index"])
@@ -138,23 +133,9 @@ def visualise_low_and_high(
             energy=max_e,
             settings=settings,
         )
-        # add_energy_to_ax(
-        #     ax=axs[0][i],
-        #     energy=min_e,
-        # )
-        # add_energy_to_ax(
-        #     ax=axs[1][i],
-        #     energy=max_e,
-        # )
+
         axs[0][i].axis("off")
         axs[1][i].axis("off")
-        # axs[1][i].text(
-        #     x=0,
-        #     y=0,
-        #     s=convert_topo(tstr),
-        #     fontsize=16,
-        #     transform=axs[1][i].transAxes,
-        # )
 
     fig.tight_layout()
     filename = "vlh.pdf"
@@ -181,7 +162,8 @@ def fig2_a(
         "zoom_string": "custom",
     }
 
-    raise NotImplementedError("naming convention has changed")
+    msg = "naming convention has changed"
+    raise NotImplementedError(msg)
 
     structure_names = (
         "2P4_4C1m0400b0000_2C1c0000a0000",
@@ -237,7 +219,8 @@ def fig2_cd(
         "zoom_string": "custom",
     }
 
-    raise NotImplementedError("naming convention has changed")
+    msg = "naming convention has changed"
+    raise NotImplementedError(msg)
 
     structure_names = (
         "4P6_3C1n0400b0000_2C1c0000a0000",
@@ -299,7 +282,8 @@ def expt_fig_cases(
         "zoom_string": "custom",
     }
 
-    raise NotImplementedError("naming convention has changed")
+    msg = "naming convention has changed"
+    raise NotImplementedError(msg)
 
     structure_names = (
         "2P3_3C1n0400b0000_2C1c0000a0700",
@@ -354,7 +338,8 @@ def expt_fig_CC_cases(
         "zoom_string": "custom",
     }
 
-    raise NotImplementedError("naming convention has changed")
+    msg = "naming convention has changed"
+    raise NotImplementedError(msg)
 
     structure_names = (
         "2P3_3C1n0700b0000_2C1c0000a0400",
@@ -429,17 +414,12 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(
-        zip(structure_names, flat_axs, strict=True)
-    ):
+    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs, strict=True)):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[ton["cage_name"] == sname[0]]
         sindex = str(tdata.iloc[0]["index"])
 
-        if titles is None:
-            title = None
-        else:
-            title = titles[i]
+        title = None if titles is None else titles[i]
 
         add_structure_to_ax(
             ax=ax,
@@ -467,7 +447,8 @@ def si_ar_fig_gen(
     struct_output,
     struct_figure_output,
 ):
-    raise NotImplementedError("naming convention has changed")
+    msg = "naming convention has changed"
+    raise NotImplementedError(msg)
     si_ar_fig(
         all_data=all_data,
         structure_names=(
@@ -775,17 +756,9 @@ def si_shape_fig(
     struct_output,
     struct_figure_output,
 ):
-    raise NotImplementedError("naming convention has changed")
+    msg = "naming convention has changed"
+    raise NotImplementedError(msg)
     structure_names = (
-        # ("12P24_4C1m0000b0000_2C1c0000a0200", "ton"),
-        # ("12P24_4C1m0000b0000_2C1c0000a01200", "toff"),
-        # ("12P24_4C1m0100b0000_2C1c0000a01500", "ton"),
-        # ("12P24_4C1m0100b0000_2C1c0000a0000", "toff"),
-        # ("12P24_4C1m0200b0000_2C1c0000a01600", "ton"),
-        # ("12P24_4C1m0200b0000_2C1c0000a0000", "toff"),
-        # ("12P24_4C1m0300b0000_2C1c0000a01200", "ton"),
-        # ("12P24_4C1m0300b0000_2C1c0000a0000", "toff"),
-        # ("12P24_4C1m0400b0000_2C1c0000a01200", "ton"),
         ("4P6_3C1n0700b0000_2C1c0000a0200", "ton"),
         ("4P6_3C1n0700b0000_2C1c0000a0200", "toff"),
         ("4P6_3C1n0700b0000_2C1c0000a0700", "ton"),
@@ -873,11 +846,7 @@ def si_shape_fig(
 
 
 def add_energy_to_ax(ax, energy):
-    if energy <= isomer_energy():
-        colorcode = "#345995"
-    else:
-        # colorcode = "#F9A03F"
-        colorcode = "#CA1551"
+    colorcode = "#345995" if energy <= isomer_energy() else "#CA1551"
 
     ax.set_title(round(energy, 1), fontsize=16, color=colorcode)
 
@@ -945,7 +914,6 @@ def generate_image(
         viz.visualise(
             [struct_file],
             orient_atoms=orient_atoms,
-            # big_colour=colorcode,
         )
     return png_file
 
@@ -959,8 +927,7 @@ def webapp_csv(
     logging.info("running webapp_csv")
 
     github_base_url = (
-        "https://github.com/andrewtarzia/cgmodels/blob/main/"
-        "cg_model_jul2023/"
+        "https://github.com/andrewtarzia/cgmodels/blob/main/" "cg_model_jul2023/"
     )
     github_selfsort_url = github_base_url + "self_sort_outcomes/"
 
@@ -1020,9 +987,7 @@ def webapp_csv(
             }
 
             mixed_energies = {
-                i: energies[i]
-                for i in energies
-                if energies[i] < isomer_energy()
+                i: energies[i] for i in energies if energies[i] < isomer_energy()
             }
 
             min_energy = min(energies.values())
@@ -1118,12 +1083,8 @@ def check_odd_outcomes(
 
         for cage_name in sorted(set(tdata["cage_name"])):
             cdata = tdata[tdata["cage_name"] == cage_name]
-            ton_energy = float(
-                cdata[cdata["torsions"] == "ton"]["energy_per_bb"]
-            )
-            toff_energy = float(
-                cdata[cdata["torsions"] == "toff"]["energy_per_bb"]
-            )
+            ton_energy = float(cdata[cdata["torsions"] == "ton"]["energy_per_bb"])
+            toff_energy = float(cdata[cdata["torsions"] == "toff"]["energy_per_bb"])
             # Ignore rounding errors in near zero cases.
             if ton_energy < 1e-1:
                 continue
@@ -1132,13 +1093,12 @@ def check_odd_outcomes(
             if toff_energy > isomer_energy() * 5:
                 continue
             if toff_energy - ton_energy > 0.001:
-                ba = int(list(cdata["target_bite_angle"])[0])
-                clangle = int(list(cdata["clangle"])[0])
+                ba = int(next(iter(cdata["target_bite_angle"])))
+                clangle = int(next(iter(cdata["clangle"])))
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
                 tofflbl = f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
                 logging.info(
-                    f"for {cage_name}: ton: {ton_energy}, "
-                    f"toff: {toff_energy}"
+                    f"for {cage_name}: ton: {ton_energy}, " f"toff: {toff_energy}"
                 )
                 outcomes.append((cage_name, "ton", tonlbl))
                 outcomes.append((cage_name, "toff", tofflbl))
@@ -1163,28 +1123,25 @@ def check_odd_outcomes(
 def generate_movies(figure_output):
     logging.info("running generate_movies")
     vss_output = figure_output / "vss_figures"
-    # astr = "a0{0..18}00"
-    astr = [f"a0{i}00" for i in range(0, 19)]
+    astr = [f"a0{i}00" for i in range(19)]
 
     for cltopo in ("3C1", "4C1"):
         if cltopo == "3C1":
-            sequence = [f"n0{i}00" for i in range(0, 8)]
+            sequence = [f"n0{i}00" for i in range(8)]
         elif cltopo == "4C1":
-            sequence = [f"m0{i}00" for i in range(0, 5)]
+            sequence = [f"m0{i}00" for i in range(5)]
 
         for clseq in sequence:
             for tors in ("ton", "toff"):
                 files = [
-                    vss_output
-                    / f"vss_{cltopo}{clseq}b00002C1c0000{i}_{tors}.png"
+                    vss_output / f"vss_{cltopo}{clseq}b00002C1c0000{i}_{tors}.png"
                     for i in astr
                 ]
                 output_file = f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.mkv"
                 logging.info(f"gen movie to {output_file}")
                 output_file = figure_output / output_file
                 concat_file = (
-                    figure_output
-                    / f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.txt"
+                    figure_output / f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.txt"
                 )
                 with open(concat_file, "w") as f:
                     for fi in files:
@@ -1196,7 +1153,6 @@ def generate_movies(figure_output):
 
                 # Make video.
                 ffmpeg_cmd = (
-                    # f"ls -v {wildcard} "
                     "ffmpeg -safe 0 -f concat "
                     f"-i {concat_file} "
                     '-vf "settb=AVTB,setpts=N/2/TB,fps=2"'
@@ -1207,7 +1163,7 @@ def generate_movies(figure_output):
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -1224,85 +1180,80 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
     logging.info(f"there are {len(all_data)} collected data")
 
-    raise NotImplementedError("naming convention has changed")
+    msg = "naming convention has changed"
+    raise NotImplementedError(msg)
     generate_images_of_all(
-        low_e_data,
+        all_data,
         struct_output,
         struct_figure_output,
     )
 
     check_odd_outcomes(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
     si_shape_fig(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
     visualise_low_and_high(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
     fig2_a(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
     fig2_cd(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
     expt_fig_cases(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
     expt_fig_CC_cases(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
     si_ar_fig_gen(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
 
     webapp_csv(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
 
     generate_movies(
-        low_e_data,
+        all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
-    raise SystemExit(
-        "want to print out problematic structures, e.g. a-a distances "
-        "of zero, or nulll angles"
-    )
+    msg = "want to print out problematic structures, e.g. a-a distances of zero, or nulll angles"
+    raise SystemExit(msg)
 
 
 if __name__ == "__main__":

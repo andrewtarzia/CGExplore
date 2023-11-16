@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to generate and optimise CG models.
+"""Script to generate and optimise CG models.
 
 Author: Andrew Tarzia
 
@@ -14,9 +12,10 @@ import sys
 
 from bead_libraries import binder_bead, tetragonal_bead, trigonal_bead
 from cgexplore.beads import bead_library_check
-from cgexplore.molecule_construction.topologies import FourC1Arm, ThreeC1Arm
+from cgexplore.databases import AtomliteDatabase
+from cgexplore.molecule_construction import FourC1Arm, ThreeC1Arm
 from define_forcefields import define_3p4_forcefield_library
-from env_set import calculations, ligands, structures
+from env_set import calculations, ligands, outputdata, structures
 from generation import build_populations
 from rdkit import RDLogger
 from topologies import cage_topology_options
@@ -30,7 +29,7 @@ RDLogger.DisableLog("rdApp.*")
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -39,6 +38,7 @@ def main():
     struct_output = structures()
     calculation_output = calculations()
     ligand_output = ligands()
+    data_output = outputdata()
 
     # Define bead libraries.
     full_bead_library = (
@@ -71,6 +71,8 @@ def main():
         },
     }
 
+    database = AtomliteDatabase(db_file=data_output / "first.db")
+
     build_populations(
         populations=populations,
         struct_output=struct_output,
@@ -79,6 +81,7 @@ def main():
         node_element="Pd",
         ligand_element="C",
         platform=None,
+        database=database,
     )
 
 
