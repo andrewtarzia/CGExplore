@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from analysis import (
     convert_topo,
     data_to_array,
+    get_paired_cage_name,
     isomer_energy,
     mapshape_to_topology,
     topology_labels,
@@ -164,9 +165,6 @@ def fig2_a(
         "zoom_string": "custom",
     }
 
-    msg = "naming convention has changed"
-    raise NotImplementedError(msg)
-
     structure_names = (
         "2P4_4C1m0400b0000_2C1c0000a0000",
         "3P6_4C1m0400b0000_2C1c0000a0400",
@@ -184,7 +182,7 @@ def fig2_a(
     )
 
     for sname, ax in zip(structure_names, axs, strict=True):
-        tdata = ton[ton["cage_name"] == sname]
+        tdata = ton[ton["cage_name"] == naming_convention_map(sname, "ton")]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
             ax=ax,
@@ -221,9 +219,6 @@ def fig2_cd(
         "zoom_string": "custom",
     }
 
-    msg = "naming convention has changed"
-    raise NotImplementedError(msg)
-
     structure_names = (
         "4P6_3C1n0400b0000_2C1c0000a0000",
         "4P6_3C1n0500b0000_2C1c0000a0100",
@@ -247,7 +242,7 @@ def fig2_cd(
     flat_axs = axs.flatten()
 
     for sname, ax in zip(structure_names, flat_axs, strict=True):
-        tdata = ton[ton["cage_name"] == sname]
+        tdata = ton[ton["cage_name"] == naming_convention_map(sname, "ton")]
         sindex = str(tdata.iloc[0]["index"])
         add_structure_to_ax(
             ax=ax,
@@ -261,122 +256,6 @@ def fig2_cd(
 
     fig.tight_layout()
     filename = "vfig2cd.pdf"
-    fig.savefig(
-        os.path.join(figure_output, filename),
-        dpi=120,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def expt_fig_cases(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
-    settings = {
-        "grid_mode": 0,
-        "rayx": 1000,
-        "rayy": 1000,
-        "stick_rad": 0.8,
-        "vdw": 0,
-        "zoom_string": "custom",
-    }
-
-    msg = "naming convention has changed"
-    raise NotImplementedError(msg)
-
-    structure_names = (
-        "2P3_3C1n0400b0000_2C1c0000a0700",
-        "4P6_3C1n0400b0000_2C1c0000a01400",
-        "8P12_3C1n0400b0000_2C1c0000a01800",
-    )
-    tor_opt = "ton"
-    ton = all_data[all_data["torsions"] == tor_opt]
-
-    fig, axs = plt.subplots(
-        ncols=3,
-        nrows=1,
-        figsize=(16, 8),
-    )
-    flat_axs = axs.flatten()
-
-    for sname, ax in zip(structure_names, flat_axs, strict=True):
-        tdata = ton[ton["cage_name"] == sname]
-        sindex = str(tdata.iloc[0]["index"])
-        add_structure_to_ax(
-            ax=ax,
-            struct_name=sindex,
-            struct_output=struct_output,
-            struct_figure_output=struct_figure_output,
-            energy=None,
-            settings=settings,
-        )
-        ax.axis("off")
-
-    fig.tight_layout()
-    filename = "expt_cases.pdf"
-    fig.savefig(
-        os.path.join(figure_output, filename),
-        dpi=120,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def expt_fig_CC_cases(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
-    settings = {
-        "grid_mode": 0,
-        "rayx": 1000,
-        "rayy": 1000,
-        "stick_rad": 0.8,
-        "vdw": 0,
-        "zoom_string": "custom",
-    }
-
-    msg = "naming convention has changed"
-    raise NotImplementedError(msg)
-
-    structure_names = (
-        "2P3_3C1n0700b0000_2C1c0000a0400",
-        "4P6_3C1n0700b0000_2C1c0000a0400",
-        "4P62_3C1n0700b0000_2C1c0000a0400",
-        "6P9_3C1n0700b0000_2C1c0000a0400",
-        "8P12_3C1n0700b0000_2C1c0000a0400",
-    )
-
-    fig, axs = plt.subplots(
-        ncols=5,
-        nrows=2,
-        figsize=(16, 8),
-    )
-
-    for fax, tor in zip(axs, ("ton", "toff"), strict=True):
-        tor_data = all_data[all_data["torsions"] == tor]
-        for sname, ax in zip(structure_names, fax):
-            tdata = tor_data[tor_data["cage_name"] == sname]
-            sindex = str(tdata.iloc[0]["index"])
-            energy = tdata["energy_per_bb"].iloc[0]
-            title = convert_topo(tdata["topology"].iloc[0])
-            add_structure_to_ax(
-                ax=ax,
-                struct_name=sindex,
-                struct_output=struct_output,
-                struct_figure_output=struct_figure_output,
-                energy=energy,
-                settings=settings,
-                title=title,
-            )
-            ax.axis("off")
-
-    fig.tight_layout()
-    filename = "expt_CC_cases.pdf"
     fig.savefig(
         os.path.join(figure_output, filename),
         dpi=120,
@@ -416,11 +295,11 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(
-        zip(structure_names, flat_axs, strict=True)
-    ):
+    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs)):
         ton = all_data[all_data["torsions"] == sname[1]]
-        tdata = ton[ton["cage_name"] == sname[0]]
+        tdata = ton[
+            ton["cage_name"] == naming_convention_map(sname[0], sname[1])
+        ]
         sindex = str(tdata.iloc[0]["index"])
 
         title = None if titles is None else titles[i]
@@ -451,8 +330,6 @@ def si_ar_fig_gen(
     struct_output,
     struct_figure_output,
 ):
-    msg = "naming convention has changed"
-    raise NotImplementedError(msg)
     si_ar_fig(
         all_data=all_data,
         structure_names=(
@@ -760,8 +637,6 @@ def si_shape_fig(
     struct_output,
     struct_figure_output,
 ):
-    msg = "naming convention has changed"
-    raise NotImplementedError(msg)
     structure_names = (
         ("4P6_3C1n0700b0000_2C1c0000a0200", "ton"),
         ("4P6_3C1n0700b0000_2C1c0000a0200", "toff"),
@@ -814,9 +689,11 @@ def si_shape_fig(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs, strict=True):
+    for sname, ax in zip(structure_names, flat_axs):
         ton = all_data[all_data["torsions"] == sname[1]]
-        tdata = ton[ton["cage_name"] == sname[0]]
+        tdata = ton[
+            ton["cage_name"] == naming_convention_map(sname[0], sname[1])
+        ]
         sindex = str(tdata.iloc[0]["index"])
         tstr = str(tdata.iloc[0]["topology"])
 
@@ -1088,14 +965,16 @@ def check_odd_outcomes(
         tdata = all_data[all_data["topology"] == tstr]
         outcomes = []
 
-        for cage_name in sorted(set(tdata["cage_name"])):
-            cdata = tdata[tdata["cage_name"] == cage_name]
-            ton_energy = float(
-                cdata[cdata["torsions"] == "ton"]["energy_per_bb"]
-            )
-            toff_energy = float(
-                cdata[cdata["torsions"] == "toff"]["energy_per_bb"]
-            )
+        ton_data = tdata[tdata["torsions"] == "ton"]
+        cage_names = set(ton_data["cage_name"])
+
+        for cage_name in sorted(cage_names):
+            cdata = ton_data[ton_data["cage_name"] == cage_name]
+            pair_name = get_paired_cage_name(cage_name)
+            pdata = tdata[tdata["cage_name"] == pair_name]
+            ton_energy = float(cdata["energy_per_bb"].iloc[0])
+            toff_energy = float(pdata["energy_per_bb"].iloc[0])
+
             # Ignore rounding errors in near zero cases.
             if ton_energy < 1e-1:
                 continue
@@ -1113,7 +992,7 @@ def check_odd_outcomes(
                     f"toff: {toff_energy}"
                 )
                 outcomes.append((cage_name, "ton", tonlbl))
-                outcomes.append((cage_name, "toff", tofflbl))
+                outcomes.append((pair_name, "toff", tofflbl))
 
         logging.info(f"{tstr}: {len(outcomes)} odd outcomes")
         if len(outcomes) == 0:
@@ -1175,6 +1054,59 @@ def generate_movies(figure_output):
                 os.system(ffmpeg_cmd)
 
 
+def naming_convention_map(old_name, tors="toff"):
+    """
+    This only applies because of the change of naming convention.
+
+    In future, users should stick to the `new` naming convention.
+
+    """
+
+    if "_f" in old_name:
+        # You do not need to convert this.
+        return old_name
+
+    tstr, bb1, bb2 = old_name.split("_")
+    if "4C1" in old_name and "3C1" in old_name:
+        bb1name = "4C1m1b1"
+        tettopic_count = [f"0{i}00" for i in range(8)].index(
+            bb1[3:].split("b")[0].split("m")[-1]
+        )
+        bb2name = "3C1n1b1"
+        tritopic_count = [f"0{i}00" for i in range(8)].index(
+            bb2[3:].split("b")[0].split("n")[-1]
+        )
+        ffid = (tritopic_count * 5) + (tettopic_count)
+    elif "4C1" in old_name:
+        bb1name = "4C1m1b1"
+        tettopic_count = [f"0{i}00" for i in range(8)].index(
+            bb1[3:].split("b")[0].split("m")[-1]
+        )
+        bb2name = "2C1c1a1"
+        ditopic_count = [f"0{i}00" for i in range(19)].index(
+            bb2[3:].split("a")[-1]
+        )
+        ffid = (ditopic_count * 5 * 2) + (tettopic_count * 2)
+        if tors == "toff":
+            ffid += 1
+    elif "3C1" in old_name:
+        bb1name = "3C1n1b1"
+        tritopic_count = [f"0{i}00" for i in range(8)].index(
+            bb1[3:].split("b")[0].split("n")[-1]
+        )
+        bb2name = "2C1c1a1"
+        ditopic_count = [f"0{i}00" for i in range(19)].index(
+            bb2[3:].split("a")[-1]
+        )
+        ffid = (ditopic_count * 8 * 2) + (tritopic_count * 2)
+        if tors == "toff":
+            ffid += 1
+
+    new_name = f"{tstr}_{bb1name}_{bb2name}_f{ffid}"
+    logging.info(f"analysing {old_name} as {new_name}")
+    return new_name
+
+
 def main():
     first_line = f"Usage: {__file__}.py"
     if len(sys.argv) != 1:
@@ -1232,25 +1164,13 @@ def main():
         struct_output,
         struct_figure_output,
     )
-    expt_fig_cases(
-        all_data,
-        figure_output,
-        struct_output,
-        struct_figure_output,
-    )
-    expt_fig_CC_cases(
-        all_data,
-        figure_output,
-        struct_output,
-        struct_figure_output,
-    )
     si_ar_fig_gen(
         all_data,
         figure_output,
         struct_output,
         struct_figure_output,
     )
-
+    raise SystemExit("not implemented from here.")
     webapp_csv(
         all_data,
         figure_output,
