@@ -11,7 +11,6 @@ import os
 import pathlib
 from dataclasses import dataclass
 
-import numpy as np
 import stk
 from openmm import OpenMMException, app, openmm
 

@@ -81,7 +81,10 @@ def analyse_cage(
                 == fin_energy
             )
         except AssertionError:
-            msg = f"energy decompisition does not sum to total energy for {name}: {energy_decomp}"
+            msg = (
+                f"energy decompisition does not sum to total energy for {name}"
+                f": {energy_decomp}"
+            )
             raise AssertionError(msg)
 
         n_shape_mol = get_shape_molecule_byelement(

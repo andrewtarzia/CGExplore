@@ -74,7 +74,10 @@ class OMMTrajectory:
             for line in f.readlines():
                 if end_trigger in line:
                     if len(new_pos_mat) != num_atoms:
-                        msg = f"num atoms ({num_atoms}) does not match size of collected position matrix ({len(new_pos_mat)})."
+                        msg = (
+                            f"num atoms ({num_atoms}) does not match size of "
+                            f"collected position matrix ({len(new_pos_mat)})."
+                        )
                         raise ValueError(msg)
 
                     yield Timestep(

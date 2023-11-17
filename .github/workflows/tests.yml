@@ -26,7 +26,7 @@ jobs:
           cache: "pip"
       - run: "pip install -e '.[dev]'"
       - run: mypy src
-  ruff-format:
+  black:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
@@ -35,7 +35,7 @@ jobs:
           python-version: "3.11"
           cache: "pip"
       - run: "pip install -e '.[dev]'"
-      - run: ruff format --check .
+      - run: black --check .
   pytest:
     # https://ericmjl.github.io/blog/2021/12/30/better-conda-environments-on-github-actions/
     runs-on: ubuntu-22.04

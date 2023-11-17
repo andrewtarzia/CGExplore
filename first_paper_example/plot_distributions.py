@@ -17,8 +17,6 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import stk
-import stko
 from analysis import (
     Xc_map,
     angle_str,

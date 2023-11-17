@@ -227,7 +227,10 @@ class Forcefield:
                             target_angle.angle_k, openmm.unit.Quantity
                         )
                     except AssertionError:
-                        msg = f"{target_angle} in angles does not have units for parameters"
+                        msg = (
+                            f"{target_angle} in angles does not have units for"
+                            " parameters"
+                        )
                         raise ForcefieldUnitError(msg)
 
                     central_bead = cgbeads[1]
@@ -263,7 +266,10 @@ class Forcefield:
                             target_angle.angle_k, openmm.unit.Quantity
                         )
                     except AssertionError:
-                        msg = f"{target_angle} in angles does not have units for parameters"
+                        msg = (
+                            f"{target_angle} in angles does not have units for"
+                            " parameters"
+                        )
                         raise ForcefieldUnitError(msg)
 
                     central_bead = cgbeads[1]

@@ -56,7 +56,6 @@ def get_atom_distance(
             The id of atom2.
 
     Returns:
-
         The euclidean distance between two atoms.
 
     """

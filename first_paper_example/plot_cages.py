@@ -1196,8 +1196,6 @@ def main():
     )
     logging.info(f"there are {len(all_data)} collected data")
 
-    msg = "naming convention has changed"
-    raise NotImplementedError(msg)
     generate_images_of_all(
         all_data,
         struct_output,
@@ -1266,8 +1264,6 @@ def main():
         struct_output,
         struct_figure_output,
     )
-    msg = "want to print out problematic structures, e.g. a-a distances of zero, or nulll angles"
-    raise SystemExit(msg)
 
 
 if __name__ == "__main__":

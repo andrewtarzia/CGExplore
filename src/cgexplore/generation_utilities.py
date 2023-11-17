@@ -392,7 +392,7 @@ def yield_near_models(
     output_dir: pathlib.Path | str,
     neighbour_library: list,
 ) -> Iterator[stk.Molecule]:
-    """Yield structures of cage models with neighbouring force field parameters.
+    """Yield structures of models with neighbouring force field parameters.
 
     Keywords:
 

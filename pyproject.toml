@@ -24,6 +24,7 @@ readme = "README.md"
 [project.optional-dependencies]
 dev = [
   "ruff",
+  "black",
   "mypy",
   "pip-tools",
   "pytest",
@@ -46,10 +47,12 @@ where = [
   "src",
 ]
 
+[tool.black]
+line-length = 79
 
 [tool.ruff]
 line-length = 79
-select = ["I"]
+extend-select = ["I"]
 ignore = ["ANN101", "COM812", "ISC001"]
 
 [tool.ruff.lint.pydocstyle]

@@ -123,7 +123,10 @@ class Ensemble:
                     new_pos_mat.append([x, y, z])
 
                 if len(new_pos_mat) != num_atoms:
-                    msg = f"num atoms ({num_atoms}) does not match size of collected position matrix ({len(new_pos_mat)})."
+                    msg = (
+                        f"num atoms ({num_atoms}) does not match size of "
+                        f"collected position matrix ({len(new_pos_mat)})."
+                    )
                     raise ValueError(msg)
                 yield Conformer(
                     molecule=(
@@ -163,7 +166,11 @@ class Ensemble:
     def get_conformer(self, conf_id: int | str) -> Conformer:
         if conf_id not in self._data:
             if str(conf_id) not in self._data:
-                msg = f"conformer {conf_id} not found in ensemble ({self._data_json}).Strict handling of `conf_id` is coming.Current types: {[type(i) for i in self._data]}"
+                msg = (
+                    f"conformer {conf_id} not found in ensemble "
+                    f"({self._data_json}). Strict handling of `conf_id` is "
+                    f"coming. Current types: {[type(i) for i in self._data]}"
+                )
                 raise ValueError(msg)
             else:
                 conf_id = str(conf_id)
@@ -179,7 +186,10 @@ class Ensemble:
             if i != ""
         ]
         if len(new_pos_mat) != self._molecule_num_atoms:
-            msg = f"Num atoms ({len(new_pos_mat)}) in xyz does not match base molecule ({self._molecule_num_atoms})"
+            msg = (
+                f"Num atoms ({len(new_pos_mat)}) in xyz does"
+                f" not match base molecule ({self._molecule_num_atoms})"
+            )
             raise ValueError(msg)
 
         conf_data = self._data[conf_id]  # type: ignore[index]

@@ -157,5 +157,8 @@ def bead_library_check(bead_library: tuple[CgBead]) -> None:
                 i.bead_type for i in bead_library if i.bead_class == bead_class
             }
             if len(bead_types) == 1:
-                msg = f"you used a bead ({bead_class}) twice in your library: {counts}"
+                msg = (
+                    f"you used a bead ({bead_class}) twice in your library: "
+                    f"{counts}"
+                )
                 raise ValueError(msg)

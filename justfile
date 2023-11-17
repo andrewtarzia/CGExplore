@@ -17,7 +17,7 @@ check:
   (set -x; ruff . )
 
   echo
-  ( set -x; ruff format --check . )
+  ( set -x; black --check . )
 
   echo
   ( set -x; mypy src )
@@ -29,5 +29,5 @@ check:
 
 # Auto-fix code issues.
 fix:
-  ruff format .
+  black .
   ruff --fix .

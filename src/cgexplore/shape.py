@@ -32,7 +32,10 @@ def test_shape_mol(
 ) -> None:
     num_atoms = len(atoms)
     if num_atoms != topo_expected[topo_str]:
-        msg = f"{topo_str} needs {topo_expected[topo_str]} atoms, not {num_atoms}; name={name}"
+        msg = (
+            f"{topo_str} needs {topo_expected[topo_str]} atoms, not "
+            f"{num_atoms}; name={name}"
+        )
         raise ValueError(msg)
 
 
@@ -179,7 +182,6 @@ class ShapeMeasure:
     """Uses Shape [1]_ to calculate the shape of coordinates.
 
     References:
-
         .. [1] http://www.ee.ub.edu/
 
     """
@@ -895,7 +897,10 @@ class ShapeMeasure:
                 num_centroids += 1
 
             if num_centroids not in self._num_vertex_options:
-                msg = f"you gave {num_centroids} vertices, but expected to calculate shapes with {self._num_vertex_options} options"
+                msg = (
+                    f"you gave {num_centroids} vertices, but expected to "
+                    f"calculate shapes with {self._num_vertex_options} options"
+                )
                 raise ValueError(msg)
 
             shapes = self._run_calculation(structure_string)
@@ -929,7 +934,10 @@ class ShapeMeasure:
                 num_centroids += 1
 
             if num_centroids not in self._num_vertex_options:
-                msg = f"you gave {num_centroids} vertices, but expected to calculate shapes with {self._num_vertex_options} options"
+                msg = (
+                    f"you gave {num_centroids} vertices, but expected to "
+                    f"calculate shapes with {self._num_vertex_options} options"
+                )
                 raise ValueError(msg)
 
             shapes = self._run_calculation(structure_string)
