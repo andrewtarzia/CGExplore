@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for handling nobonded interactions.
+"""Module for handling nobonded interactions.
 
 Author: Andrew Tarzia
 

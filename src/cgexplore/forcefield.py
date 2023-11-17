@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for containing forcefields.
+"""Module for containing forcefields.
 
 Author: Andrew Tarzia
 
@@ -18,7 +16,13 @@ import numpy as np
 import stk
 from openmm import openmm
 
-from .angles import Angle, TargetAngle, find_angles
+from .angles import (
+    Angle,
+    CosineAngle,
+    TargetAngle,
+    TargetCosineAngle,
+    find_angles,
+)
 from .assigned_system import AssignedSystem
 from .beads import CgBead, get_cgbead_from_element
 from .bonds import Bond, TargetBond
@@ -148,11 +152,11 @@ class Forcefield:
         bond_terms = []
         for bond in bonds:
             atoms = (bond.get_atom1(), bond.get_atom2())
-            atom_estrings = list(i.__class__.__name__ for i in atoms)
-            cgbeads = list(
+            atom_estrings = [i.__class__.__name__ for i in atoms]
+            cgbeads = [
                 get_cgbead_from_element(i, self.get_bead_set())
                 for i in atom_estrings
-            )
+            ]
             cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
 
             for target_term in self._bond_targets:
@@ -165,9 +169,8 @@ class Forcefield:
                     assert isinstance(target_term.bond_r, openmm.unit.Quantity)
                     assert isinstance(target_term.bond_k, openmm.unit.Quantity)
                 except AssertionError:
-                    raise ForcefieldUnitError(
-                        f"{target_term} in bonds does not have units"
-                    )
+                    msg = f"{target_term} in bonds does not have units"
+                    raise ForcefieldUnitError(msg)
 
                 bond_terms.append(
                     Bond(
@@ -191,14 +194,12 @@ class Forcefield:
         pyramid_angles: dict[str, list] = {}
         octahedral_angles: dict[str, list] = {}
         for found_angle in find_angles(molecule):
-            atom_estrings = list(
-                i.__class__.__name__ for i in found_angle.atoms
-            )
+            atom_estrings = [i.__class__.__name__ for i in found_angle.atoms]
             try:
-                cgbeads = list(
+                cgbeads = [
                     get_cgbead_from_element(i, self.get_bead_set())
                     for i in atom_estrings
-                )
+                ]
             except KeyError:
                 logging.info(
                     f"Angle not assigned ({found_angle}; {atom_estrings})."
@@ -217,40 +218,77 @@ class Forcefield:
                 ):
                     continue
 
-                try:
-                    assert isinstance(target_angle.angle, openmm.unit.Quantity)
-                    assert isinstance(
-                        target_angle.angle_k, openmm.unit.Quantity
-                    )
-                except AssertionError:
-                    raise ForcefieldUnitError(
-                        f"{target_angle} in angles does not have"
-                        " units for parameters"
-                    )
+                if isinstance(target_angle, TargetAngle):
+                    try:
+                        assert isinstance(
+                            target_angle.angle, openmm.unit.Quantity
+                        )
+                        assert isinstance(
+                            target_angle.angle_k, openmm.unit.Quantity
+                        )
+                    except AssertionError:
+                        msg = (
+                            f"{target_angle} in angles does not have units for"
+                            " parameters"
+                        )
+                        raise ForcefieldUnitError(msg)
 
-                central_bead = cgbeads[1]
-                central_atom = list(found_angle.atoms)[1]
-                central_name = f"{atom_estrings[1]}{central_atom.get_id()+1}"
-                actual_angle = Angle(
-                    atoms=found_angle.atoms,
-                    atom_names=tuple(
-                        f"{i.__class__.__name__}" f"{i.get_id()+1}"
-                        for i in found_angle.atoms
-                    ),
-                    atom_ids=found_angle.atom_ids,
-                    angle=target_angle.angle,
-                    angle_k=target_angle.angle_k,
-                    force="HarmonicAngleForce",
-                )
-                if central_bead.coordination == 4:
-                    if central_name not in pyramid_angles:
-                        pyramid_angles[central_name] = []
-                    pyramid_angles[central_name].append(actual_angle)
-                elif central_bead.coordination == 6:
-                    if central_name not in octahedral_angles:
-                        octahedral_angles[central_name] = []
-                    octahedral_angles[central_name].append(actual_angle)
-                else:
+                    central_bead = cgbeads[1]
+                    central_atom = list(found_angle.atoms)[1]
+                    central_name = (
+                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                    )
+                    actual_angle = Angle(
+                        atoms=found_angle.atoms,
+                        atom_names=tuple(
+                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            for i in found_angle.atoms
+                        ),
+                        atom_ids=found_angle.atom_ids,
+                        angle=target_angle.angle,
+                        angle_k=target_angle.angle_k,
+                        force="HarmonicAngleForce",
+                    )
+                    if central_bead.coordination == 4:
+                        if central_name not in pyramid_angles:
+                            pyramid_angles[central_name] = []
+                        pyramid_angles[central_name].append(actual_angle)
+                    elif central_bead.coordination == 6:
+                        if central_name not in octahedral_angles:
+                            octahedral_angles[central_name] = []
+                        octahedral_angles[central_name].append(actual_angle)
+                    else:
+                        angle_terms.append(actual_angle)
+
+                elif isinstance(target_angle, TargetCosineAngle):
+                    try:
+                        assert isinstance(
+                            target_angle.angle_k, openmm.unit.Quantity
+                        )
+                    except AssertionError:
+                        msg = (
+                            f"{target_angle} in angles does not have units for"
+                            " parameters"
+                        )
+                        raise ForcefieldUnitError(msg)
+
+                    central_bead = cgbeads[1]
+                    central_atom = list(found_angle.atoms)[1]
+                    central_name = (
+                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                    )
+                    actual_angle = CosineAngle(
+                        atoms=found_angle.atoms,
+                        atom_names=tuple(
+                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            for i in found_angle.atoms
+                        ),
+                        atom_ids=found_angle.atom_ids,
+                        n=target_angle.n,
+                        b=target_angle.b,
+                        angle_k=target_angle.angle_k,
+                        force="CosinePeriodicAngleForce",
+                    )
                     angle_terms.append(actual_angle)
 
         # For four coordinate systems, apply standard angle theta to
@@ -352,16 +390,16 @@ class Forcefield:
 
         # Iterate over the different path lengths, and find all torsions
         # for that lengths.
-        path_lengths = set(len(i.search_string) for i in self._torsion_targets)
+        path_lengths = {len(i.search_string) for i in self._torsion_targets}
         for pl in path_lengths:
             for found_torsion in find_torsions(molecule, pl):
-                atom_estrings = list(
+                atom_estrings = [
                     i.__class__.__name__ for i in found_torsion.atoms
-                )
-                cgbeads = list(
+                ]
+                cgbeads = [
                     get_cgbead_from_element(i, self.get_bead_set())
                     for i in atom_estrings
-                )
+                ]
                 cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
                 for target_torsion in self._torsion_targets:
                     if target_torsion.search_string not in (
@@ -378,9 +416,10 @@ class Forcefield:
                             target_torsion.torsion_k, openmm.unit.Quantity
                         )
                     except AssertionError:
-                        raise ForcefieldUnitError(
+                        msg = (
                             f"{target_torsion} in torsions does not have units"
                         )
+                        raise ForcefieldUnitError(msg)
 
                     torsion_terms.append(
                         Torsion(
@@ -420,9 +459,8 @@ class Forcefield:
                         target_term.epsilon, openmm.unit.Quantity
                     )
                 except AssertionError:
-                    raise ForcefieldUnitError(
-                        f"{target_term} in nonbondeds does not have units"
-                    )
+                    msg = f"{target_term} in nonbondeds does not have units"
+                    raise ForcefieldUnitError(msg)
 
                 nonbonded_terms.append(
                     Nonbonded(
@@ -450,18 +488,11 @@ class Forcefield:
             "nonbonded": self._assign_nonbonded_terms(molecule),
         }
 
-        # possible_constraints = ()
         # if isinstance(molecule, stk.ConstructedMolecule):
         #     for bond_info in molecule.get_bond_infos():
         #         if bond_info.get_building_block_id() is not None:
-        #             bond = bond_info.get_bond()
         #             possible_constraints += (
-        #                 (
-        #                     bond.get_atom1().get_id(),
-        #                     bond.get_atom2().get_id(),
         #                 ),
-        #             )
-        # print(len(possible_constraints))
 
         return AssignedSystem(
             molecule=molecule,

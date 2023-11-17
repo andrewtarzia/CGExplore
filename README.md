@@ -23,7 +23,7 @@ The code can be installed following these steps:
  conda activate NAME
  ```
 
-5. From `CGExplore` directory, install pip environment:
+4. From `CGExplore` directory, install pip environment:
 ```
 pip install .
 ```
@@ -32,7 +32,7 @@ or for development, use [just](https://github.com/casey/just) to install a dev e
 just dev
 ```
 
-6. Install `OpenMM` [docs](https://openmm.org/):
+5. Install `OpenMM` [docs](https://openmm.org/):
  ```
 mamba install openmm
 ```
@@ -41,7 +41,7 @@ or
 conda install -c conda-forge openmm
 ```
 
-7. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
+6. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
 ```
 mamba install openmmtools
 ```
@@ -51,7 +51,7 @@ conda config --add channels omnia --add channels conda-forge
 conda install openmmtools
 ```
 
-8. Update directory structure in `env_set.py` if using example code.
+7. Update directory structure in `env_set.py` if using example code.
 
 The library implements some analysis that uses:
 
@@ -60,7 +60,7 @@ The library implements some analysis that uses:
 # Usage
 
 * The directory `cgexplore` contains the actual source code for the package. **Warning**: This package is still very much underdevelopment and many changes are expected.
-* The directory `first_paper_example` contains the code to generate the cages and data for DOI: XX. This series of examples uses the classes and tools in `CGExplore`.
+* The directory `first_paper_example` contains the code to generate the cages and data for DOI: [10.1039/D3SC03991A](https://doi.org/10.1039/D3SC03991A). This series of examples uses the classes and tools in `CGExplore`. I would no longer recommend using it as a perfect example as many changes, including using databasing have been introduced without optimising these scripts. [This testing repository is a good example](https://github.com/andrewtarzia/cg_model_test/blob/main/cg_model_test.py).
   * `generate_XX.py` generates cage structures for different topology sets
   * `env_set.py` sets a specific environment for file outputs
   * `plot_XX.py` produces images and figures, and performs analysis

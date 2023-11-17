@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for pymol visualisation.
+"""Module for pymol visualisation.
 
 Author: Andrew Tarzia
 
@@ -22,7 +20,7 @@ class Pymol:
         file_prefix: str,
         pymol_path: pathlib.Path,
         settings: dict | None = None,
-    ):
+    ) -> None:
         self._output_dir = output_dir
         self._file_prefix = file_prefix
         self._pymol = pymol_path
@@ -134,5 +132,4 @@ class Pymol:
             orient_atoms=orient_atoms,
             big_colour=big_colour,
         )
-        os.system(f"{self._pymol} {pml_file}")
-        return None
+        os.system(f"{self._pymol} -c -q {pml_file}")

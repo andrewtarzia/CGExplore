@@ -2,8 +2,7 @@ import stk
 
 
 class CaseData:
-    """
-    A test case.
+    """A test case.
 
     Attributes:
 

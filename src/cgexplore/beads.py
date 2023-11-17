@@ -1,13 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for beads.
-
-Author: Andrew Tarzia
-
-"""
+"""Module for beads."""
 
 import logging
 from collections import Counter
@@ -42,7 +35,8 @@ def get_cgbead_from_element(
         bead = bead_set[i]
         if bead.element_string == estring:
             return bead
-    raise ValueError(f"{estring} not found in {bead_set}")
+    msg = f"{estring} not found in {bead_set}"
+    raise ValueError(msg)
 
 
 def periodic_table() -> dict[str, int]:
@@ -159,18 +153,12 @@ def bead_library_check(bead_library: tuple[CgBead]) -> None:
     for bead_class in counts:
         if counts[bead_class] > 1:
             # Check if they are different classes.
-            bead_types = set(
+            bead_types = {
                 i.bead_type for i in bead_library if i.bead_class == bead_class
-            )
+            }
             if len(bead_types) == 1:
-                raise ValueError(
-                    f"you used a bead ({bead_class}) twice in your "
-                    f"library: {counts}"
+                msg = (
+                    f"you used a bead ({bead_class}) twice in your library: "
+                    f"{counts}"
                 )
-
-    used_strings = tuple(i.element_string for i in bead_library)
-    for string in used_strings:
-        if string not in periodic_table():
-            raise ValueError(
-                f"you used a bead not available in PoreMapper: {string}"
-            )
+                raise ValueError(msg)

@@ -1,14 +1,14 @@
 import os
 import pathlib
 
+from cgexplore.angles import Angle, CosineAngle
 from cgexplore.errors import ForcefieldUnitError
 
 from .utilities import is_equivalent_atom
 
 
 def test_present_angles(molecule):
-    """
-    Test methods toward :meth:`.ForceField._assign_angle_terms`.
+    """Test methods toward :meth:`.ForceField._assign_angle_terms`.
 
     Parameters:
 
@@ -16,11 +16,9 @@ def test_present_angles(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     try:
         force_fields = tuple(molecule.force_field_library.yield_forcefields())
         for i, ff in enumerate(force_fields):
@@ -45,9 +43,13 @@ def test_present_angles(molecule):
                     for a1, a2 in zip(test.atoms, present.atoms, strict=True):
                         is_equivalent_atom(a1, a2)
                 assert test.atom_ids == present.atom_ids
-                assert test.angle == present.angle
                 assert test.angle_k == present.angle_k
                 assert test.force == present.force
+                if isinstance(test, Angle):
+                    assert test.angle == present.angle
+                if isinstance(test, CosineAngle):
+                    assert test.n == present.n
+                    assert test.b == present.b
 
     except ForcefieldUnitError:
         assert molecule.num_forcefields == 0

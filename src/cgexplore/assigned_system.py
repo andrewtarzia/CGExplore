@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for system classes with assigned terms.
+"""Module for system classes with assigned terms.
 
 Author: Andrew Tarzia
 
@@ -18,7 +16,10 @@ from openmm import OpenMMException, app, openmm
 
 from .beads import CgBead, get_cgbead_from_element
 from .errors import ForcefieldUnavailableError, ForcefieldUnitError
-from .utilities import custom_excluded_volume_force
+from .utilities import (
+    cosine_periodic_angle_force,
+    custom_excluded_volume_force,
+)
 
 
 @dataclass(frozen=True)
@@ -123,16 +124,16 @@ class AssignedSystem:
             "HarmonicAngleForce": openmm.HarmonicAngleForce(),
             "PeriodicTorsionForce": openmm.PeriodicTorsionForce(),
             "custom-excl-vol": custom_excluded_volume_force(),
+            "CosinePeriodicAngleForce": cosine_periodic_angle_force(),
         }
         if force_type not in available:
-            raise ForcefieldUnavailableError(
-                f"{force_type} not in {available.keys()}"
-            )
+            msg = f"{force_type} not in {available.keys()}"
+            raise ForcefieldUnavailableError(msg)
         return available[force_type]
 
     def _add_bonds(self, system: openmm.System) -> openmm.System:
         forces = self.force_field_terms["bond"]
-        force_types = set(i.force for i in forces)
+        force_types = {i.force for i in forces}
         for force_type in force_types:
             force_function = self._available_forces(force_type)
             system.addForce(force_function)
@@ -153,15 +154,14 @@ class AssignedSystem:
                         ),
                     )
                 except AttributeError:
-                    raise ForcefieldUnitError(
-                        f"{assigned_force} in bonds does not have units"
-                    )
+                    msg = f"{assigned_force} in bonds does not have units"
+                    raise ForcefieldUnitError(msg)
 
         return system
 
     def _add_angles(self, system: openmm.System) -> openmm.System:
         forces = self.force_field_terms["angle"]
-        force_types = set(i.force for i in forces)
+        force_types = {i.force for i in forces}
         for force_type in force_types:
             force_function = self._available_forces(force_type)
             system.addForce(force_function)
@@ -169,29 +169,53 @@ class AssignedSystem:
                 if assigned_force.force != force_type:
                     continue
                 try:
-                    force_function.addAngle(
-                        particle1=assigned_force.atom_ids[0],
-                        particle2=assigned_force.atom_ids[1],
-                        particle3=assigned_force.atom_ids[2],
-                        angle=assigned_force.angle.value_in_unit(
-                            openmm.unit.radian
-                        ),
-                        k=assigned_force.angle_k.value_in_unit(
-                            openmm.unit.kilojoule
-                            / openmm.unit.mole
-                            / openmm.unit.radian**2
-                        ),
-                    )
+                    if force_type == "CosinePeriodicAngleForce":
+                        print(
+                            [
+                                assigned_force.angle_k.value_in_unit(
+                                    openmm.unit.kilojoule / openmm.unit.mole
+                                ),
+                                assigned_force.n,
+                                assigned_force.b,
+                            ],
+                        )
+                        force_function.addAngle(
+                            assigned_force.atom_ids[0],
+                            assigned_force.atom_ids[1],
+                            assigned_force.atom_ids[2],
+                            # Order is important here!
+                            [
+                                assigned_force.angle_k.value_in_unit(
+                                    openmm.unit.kilojoule / openmm.unit.mole
+                                ),
+                                assigned_force.n,
+                                assigned_force.b,
+                                (-1) ** assigned_force.n,
+                            ],
+                        )
+                    elif force_type == "HarmonicAngleForce":
+                        force_function.addAngle(
+                            particle1=assigned_force.atom_ids[0],
+                            particle2=assigned_force.atom_ids[1],
+                            particle3=assigned_force.atom_ids[2],
+                            angle=assigned_force.angle.value_in_unit(
+                                openmm.unit.radian
+                            ),
+                            k=assigned_force.angle_k.value_in_unit(
+                                openmm.unit.kilojoule
+                                / openmm.unit.mole
+                                / openmm.unit.radian**2
+                            ),
+                        )
                 except AttributeError:
-                    raise ForcefieldUnitError(
-                        f"{assigned_force} in angles does not have units"
-                    )
+                    msg = f"{assigned_force} in angles does not have units"
+                    raise ForcefieldUnitError(msg)
 
         return system
 
     def _add_torsions(self, system: openmm.System) -> openmm.System:
         forces = self.force_field_terms["torsion"]
-        force_types = set(i.force for i in forces)
+        force_types = {i.force for i in forces}
         for force_type in force_types:
             force_function = self._available_forces(force_type)
             system.addForce(force_function)
@@ -213,19 +237,18 @@ class AssignedSystem:
                         ),
                     )
                 except AttributeError:
-                    raise ForcefieldUnitError(
-                        f"{assigned_force} in torsions does not have units"
-                    )
+                    msg = f"{assigned_force} in torsions does not have units"
+                    raise ForcefieldUnitError(msg)
 
         return system
 
     def _add_nonbondeds(self, system: openmm.System) -> openmm.System:
-        exclusion_bonds = list(
+        exclusion_bonds = [
             (i.get_atom1().get_id(), i.get_atom2().get_id())
             for i in self.molecule.get_bonds()
-        )
+        ]
         forces = self.force_field_terms["nonbonded"]
-        force_types = set(i.force for i in forces)
+        force_types = {i.force for i in forces}
         for force_type in force_types:
             force_function = self._available_forces(force_type)
             system.addForce(force_function)
@@ -245,9 +268,8 @@ class AssignedSystem:
                     )
 
                 except AttributeError:
-                    raise ForcefieldUnitError(
-                        f"{assigned_force} in nonbondeds does not have units"
-                    )
+                    msg = f"{assigned_force} in nonbondeds does not have units"
+                    raise ForcefieldUnitError(msg)
 
             try:
                 # This method MUST be after terms are assigned.
@@ -256,9 +278,8 @@ class AssignedSystem:
                     self.vdw_bond_cutoff,
                 )
             except OpenMMException:
-                raise ForcefieldUnitError(
-                    f"{force_type} is missing a definition for a particle."
-                )
+                msg = f"{force_type} is missing a definition for a particle."
+                raise ForcefieldUnitError(msg)
 
         return system
 
@@ -266,12 +287,11 @@ class AssignedSystem:
         system = self._add_bonds(system)
         system = self._add_angles(system)
         system = self._add_torsions(system)
-        system = self._add_nonbondeds(system)
-        return system
+        return self._add_nonbondeds(system)
 
     def get_openmm_system(self) -> openmm.System:
         if os.path.exists(self.system_xml):
-            with open(self.system_xml, "r") as f:
+            with open(self.system_xml) as f:
                 return openmm.XmlSerializer.deserialize(f.read())
 
         self._write_topology_xml(self.molecule)

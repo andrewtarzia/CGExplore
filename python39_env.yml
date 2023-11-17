@@ -160,4 +160,3 @@ dependencies:
       - typing-extensions==4.3.0
       - vabene==0.0.5
       - wcwidth==0.2.5
-prefix: /home/atarzia/miniconda3/envs/cgexplore

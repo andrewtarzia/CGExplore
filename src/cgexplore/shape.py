@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for shape analysis.
+"""Module for shape analysis.
 
 Author: Andrew Tarzia
 
@@ -34,10 +32,61 @@ def test_shape_mol(
 ) -> None:
     num_atoms = len(atoms)
     if num_atoms != topo_expected[topo_str]:
-        raise ValueError(
-            f"{topo_str} needs {topo_expected[topo_str]} atoms, "
-            f"not {num_atoms}; name={name}"
+        msg = (
+            f"{topo_str} needs {topo_expected[topo_str]} atoms, not "
+            f"{num_atoms}; name={name}"
         )
+        raise ValueError(msg)
+
+
+def fill_position_matrix_molecule(
+    molecule: stk.Molecule,
+    element: str,
+    old_position_matrix: np.ndarray,
+) -> tuple[list, list]:
+    position_matrix = []
+    atoms: list[stk.Atom] = []
+
+    target_anum = periodic_table()[element]
+    for atom in molecule.get_atoms():
+        atomic_number = atom.get_atomic_number()  # type: ignore[union-attr]
+        if atomic_number == target_anum:
+            new_atom = stk.Atom(
+                id=len(atoms),
+                atomic_number=atom.get_atomic_number(),
+                charge=atom.get_charge(),
+            )
+            atoms.append(new_atom)
+            position_matrix.append(old_position_matrix[atom.get_id()])
+
+    return position_matrix, atoms
+
+
+def get_shape_molecule_byelement(
+    molecule: stk.Molecule,
+    name: str,
+    element: str,
+    topo_expected: dict[str, int],
+) -> stk.Molecule | None:
+    splits = name.split("_")
+    topo_str = splits[0]
+    if topo_str not in topo_expected:
+        return None
+
+    old_position_matrix = molecule.get_position_matrix()
+
+    position_matrix, atoms = fill_position_matrix_molecule(
+        molecule=molecule,
+        element=element,
+        old_position_matrix=old_position_matrix,
+    )
+
+    test_shape_mol(topo_expected, atoms, name, topo_str)
+    return stk.BuildingBlock.init(
+        atoms=atoms,
+        bonds=(),
+        position_matrix=np.array(position_matrix),
+    )
 
 
 def fill_position_matrix(
@@ -56,9 +105,7 @@ def fill_position_matrix(
             and ai.get_building_block_atom() is not None
         ):
             ai_atom = ai.get_building_block_atom()
-            ai_atomic_number = (
-                ai_atom.get_atomic_number()  # type: ignore[union-attr]
-            )
+            ai_atomic_number = ai_atom.get_atomic_number()  # type: ignore[union-attr]
             if ai_atomic_number == target_anum:
                 a = ai.get_atom()
                 new_atom = stk.Atom(
@@ -94,12 +141,11 @@ def get_shape_molecule_nodes(
     )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
-    subset_molecule = stk.BuildingBlock.init(
+    return stk.BuildingBlock.init(
         atoms=atoms,
         bonds=(),
         position_matrix=np.array(position_matrix),
     )
-    return subset_molecule
 
 
 def get_shape_molecule_ligands(
@@ -125,21 +171,18 @@ def get_shape_molecule_ligands(
     )
 
     test_shape_mol(topo_expected, atoms, name, topo_str)
-    subset_molecule = stk.BuildingBlock.init(
+    return stk.BuildingBlock.init(
         atoms=atoms,
         bonds=(),
         position_matrix=np.array(position_matrix),
     )
-    return subset_molecule
 
 
 class ShapeMeasure:
-    """
-    Uses Shape [1]_ to calculate the shape of coordinates.
+    """Uses Shape [1]_ to calculate the shape of coordinates.
 
-    References
-    ----------
-    .. [1] http://www.ee.ub.edu/
+    References:
+        .. [1] http://www.ee.ub.edu/
 
     """
 
@@ -159,7 +202,7 @@ class ShapeMeasure:
                 shape_string: self.reference_shape_dict()[shape_string]
             }
         self._num_vertex_options = tuple(
-            set(int(self._shape_dict[i]["vertices"]) for i in self._shape_dict)
+            {int(self._shape_dict[i]["vertices"]) for i in self._shape_dict}
         )
 
     def reference_shape_dict(self) -> dict[str, dict]:
@@ -725,12 +768,8 @@ class ShapeMeasure:
         }
 
     def _collect_all_shape_values(self, output_file: str) -> dict:
-        """
-        Collect shape values from output.
-
-        """
-
-        with open(output_file, "r") as f:
+        """Collect shape values from output."""
+        with open(output_file) as f:
             lines = f.readlines()
 
         label_idx_map = {}
@@ -763,20 +802,14 @@ class ShapeMeasure:
         input_file: str,
         structure_string: str,
     ) -> None:
-        """
-        Write input file for shape.
-
-        """
+        """Write input file for shape."""
         num_vertices = len(structure_string.split("\n")) - 2
 
         possible_shapes = self._get_possible_shapes(num_vertices)
         shape_numbers = tuple(i["code"] for i in possible_shapes)
 
         title = "$shape run by Andrew Tarzia - central atom=0 always.\n"
-        if num_vertices == 12:
-            fix_perm = r"%fixperm 0\n"
-        else:
-            fix_perm = "\n"
+        fix_perm = "%fixperm 0\\n" if num_vertices == 12 else "\n"
         size_of_poly = f"{num_vertices} 0\n"
         codes = " ".join(shape_numbers) + "\n"
 
@@ -786,11 +819,7 @@ class ShapeMeasure:
             f.write(string)
 
     def _run_calculation(self, structure_string: str) -> dict:
-        """
-        Calculate the shape of a molecule.
-
-        """
-
+        """Calculate the shape of a molecule."""
         input_file = "shp.dat"
         std_out = "shp.out"
         output_file = "shp.tab"
@@ -868,11 +897,11 @@ class ShapeMeasure:
                 num_centroids += 1
 
             if num_centroids not in self._num_vertex_options:
-                raise ValueError(
-                    f"you gave {num_centroids} vertices, but expected "
-                    "to calculate shapes with "
-                    f"{self._num_vertex_options} options"
+                msg = (
+                    f"you gave {num_centroids} vertices, but expected to "
+                    f"calculate shapes with {self._num_vertex_options} options"
                 )
+                raise ValueError(msg)
 
             shapes = self._run_calculation(structure_string)
 
@@ -905,11 +934,11 @@ class ShapeMeasure:
                 num_centroids += 1
 
             if num_centroids not in self._num_vertex_options:
-                raise ValueError(
-                    f"you gave {num_centroids} vertices, but expected "
-                    "to calculate shapes with "
-                    f"{self._num_vertex_options} options"
+                msg = (
+                    f"you gave {num_centroids} vertices, but expected to "
+                    f"calculate shapes with {self._num_vertex_options} options"
                 )
+                raise ValueError(msg)
 
             shapes = self._run_calculation(structure_string)
 
@@ -920,8 +949,7 @@ class ShapeMeasure:
 
 
 def known_shape_vectors() -> dict[str, dict]:
-    """
-    Printed from shape_map.py output.
+    """Printed from shape_map.py output.
 
     May not include all of them, only included ones I deemed relevant.
 

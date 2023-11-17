@@ -2,8 +2,7 @@ import numpy as np
 
 
 def test_angles(molecule):
-    """
-    Test :meth:`.GeomMeasure.calculate_angles`.
+    """Test :meth:`.GeomMeasure.calculate_angles`.
 
     Parameters:
 
@@ -11,11 +10,9 @@ def test_angles(molecule):
             The molecule with angles.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     angles = molecule.geommeasure.calculate_angles(molecule.molecule)
     print(angles, molecule.angle_dict)
     for key in molecule.angle_dict:

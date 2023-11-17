@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to plot phase spaces.
+"""Script to plot phase spaces.
 
 Author: Andrew Tarzia
 
@@ -24,7 +22,6 @@ from analysis import (
     convert_tors,
     data_to_array,
     eb_str,
-    get_lowest_energy_data,
     isomer_energy,
     mapshape_to_topology,
     shape_threshold,
@@ -237,7 +234,7 @@ def shape_topology(all_data, figure_output):
 
                 lowevalues = []
                 values = []
-                for i, row in pdata.iterrows():
+                for _i, row in pdata.iterrows():
                     dist = float(row[c_column])
 
                     if pd.isna(dist):
@@ -251,7 +248,6 @@ def shape_topology(all_data, figure_output):
                     continue
                 ax.hist(
                     values,
-                    # edata["energy_per_bb"],
                     bins=np.linspace(xmin, xmax, width),
                     color="#086788",
                     alpha=1.0,
@@ -263,7 +259,6 @@ def shape_topology(all_data, figure_output):
                 )
                 ax.hist(
                     lowevalues,
-                    # edata["energy_per_bb"],
                     bins=np.linspace(xmin, xmax, width),
                     color="#F9A03F",
                     alpha=1.0,
@@ -328,7 +323,7 @@ def shape_topology_main(all_data, figure_output):
 
                 lowevalues = []
                 values = []
-                for i, row in pdata.iterrows():
+                for _i, row in pdata.iterrows():
                     dist = float(row[c_column])
 
                     if pd.isna(dist):
@@ -342,7 +337,6 @@ def shape_topology_main(all_data, figure_output):
                     continue
                 ax.hist(
                     values,
-                    # edata["energy_per_bb"],
                     bins=np.linspace(xmin, xmax, width),
                     color="#086788",
                     alpha=1.0,
@@ -354,7 +348,6 @@ def shape_topology_main(all_data, figure_output):
                 )
                 ax.hist(
                     lowevalues,
-                    # edata["energy_per_bb"],
                     bins=np.linspace(xmin, xmax, width),
                     color="#F9A03F",
                     alpha=1.0,
@@ -441,7 +434,7 @@ def shape_input_relationships(all_data, figure_output):
                 xdata = []
                 ydata = []
                 cdata = []
-                for i, row in pdata.iterrows():
+                for _i, row in pdata.iterrows():
                     dist = float(row[c_column])
 
                     if pd.isna(dist):
@@ -585,10 +578,7 @@ def plot_topology_flex(data, comparison, mode, figure_output):
     ax.bar(
         categories_ton.keys(),
         categories_ton.values(),
-        # color="#06AED5",
         color="#086788",
-        # color="#DD1C1A",
-        # color="#320E3B",
         edgecolor="none",
         lw=2,
         label=convert_tors("ton", num=False),
@@ -597,10 +587,7 @@ def plot_topology_flex(data, comparison, mode, figure_output):
     ax.bar(
         categories_toff.keys(),
         categories_toff.values(),
-        # color="#06AED5",
         color="none",
-        # color="#DD1C1A",
-        # color="#320E3B",
         edgecolor="k",
         lw=2,
         label=convert_tors("toff", num=False),
@@ -620,7 +607,6 @@ def plot_topology_flex(data, comparison, mode, figure_output):
 
     ax.set_title(title, fontsize=16)
     ax.tick_params(axis="both", which="major", labelsize=16)
-    # ax.set_xlabel("topology", fontsize=16)
     ax.set_ylabel(ylabl, fontsize=16)
     ax.set_ylim(0, 105)
     ax.legend(fontsize=16)
@@ -640,10 +626,10 @@ def plot_topology_flex(data, comparison, mode, figure_output):
 
 
 def flexshapeeffect_per_property(all_data, figure_output):
-    raise NotImplementedError(
-        "there is a bug here in handling no stable cases and I do not "
-        "use this"
+    msg = (
+        "there is a bug here in handling no stable cases and I do not use this"
     )
+    raise NotImplementedError(msg)
     logging.info("running effect of flexibility distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -737,10 +723,7 @@ def plot_shape_flex(data, mode, figure_output):
             ax.bar(
                 categories_ton.keys(),
                 categories_ton.values(),
-                # color="#06AED5",
                 color="#086788",
-                # color="#DD1C1A",
-                # color="#320E3B",
                 edgecolor="none",
                 lw=2,
                 label=convert_tors("ton", num=False),
@@ -749,17 +732,13 @@ def plot_shape_flex(data, mode, figure_output):
         ax.bar(
             categories_toff.keys(),
             categories_toff.values(),
-            # color="#06AED5",
             color="none",
-            # color="#DD1C1A",
-            # color="#320E3B",
             edgecolor="k",
             lw=2,
             label=convert_tors("toff", num=False),
         )
 
         ax.tick_params(axis="both", which="major", labelsize=16)
-        # ax.set_xlabel("topology", fontsize=16)
         ax.set_ylabel(ylabl, fontsize=16)
         ax.set_ylim(0, 105)
         ax.legend(fontsize=16)
@@ -793,7 +772,7 @@ def flexshapeeffect_per_shape(all_data, figure_output):
         "n": [i for i in all_data.columns if i[:2] == "n_"],
         "l": [i for i in all_data.columns if i[:2] == "l_"],
     }
-    topologies = [i for i in topology_labels(short="P")]
+    topologies = list(topology_labels(short="P"))
 
     topology_data = {}
     for tstr in topologies:
@@ -850,7 +829,6 @@ def shape_persistence_map(all_data, figure_output):
 
             ax.hist(
                 edata["sv_n_dist"],
-                # edata["energy_per_bb"],
                 bins=np.linspace(xmin, xmax, num_bins),
                 color="#086788",
                 alpha=1.0,
@@ -860,7 +838,6 @@ def shape_persistence_map(all_data, figure_output):
             )
             ax.hist(
                 edata["sv_l_dist"],
-                # edata["energy_per_bb"],
                 bins=np.linspace(xmin, xmax, num_bins),
                 color="#F9A03F",
                 alpha=0.8,
@@ -914,10 +891,7 @@ def shape_summary(all_data, figure_output):
         xlabls.append(convert_topo(tstr))
         tdata = trim[trim["topology"] == tstr]
         for shape_type in ("n", "l"):
-            if tstr == "6P8":
-                tor_tests = ("toff",)
-            else:
-                tor_tests = ("ton", "toff")
+            tor_tests = ("toff",) if tstr == "6P8" else ("ton", "toff")
 
             try:
                 target_shape = mapshape_to_topology(shape_type, False)[tstr]
@@ -927,10 +901,8 @@ def shape_summary(all_data, figure_output):
             c_column = f"{shape_type}_{target_shape}"
 
             if shape_type == "n":
-                # marker = "o"
                 ax = axs[0]
             elif shape_type == "l":
-                # marker = "o"
                 ax = axs[1]
 
             for tor in tor_tests:
@@ -945,7 +917,7 @@ def shape_summary(all_data, figure_output):
 
                 lowevalues = []
                 values = []
-                for i, row in pdata.iterrows():
+                for _i, row in pdata.iterrows():
                     dist = float(row[c_column])
 
                     if pd.isna(dist):
@@ -964,27 +936,14 @@ def shape_summary(all_data, figure_output):
                         c_column,
                         tp,
                     )
-                    # ax.scatter(
-                    #     # xpos[-1] - shift,
-                    #     [xpos[-1] for i in lowevalues],
-                    #     # tp,
-                    #     [i for i in lowevalues],
-                    #     color="gray",
-                    #     marker=marker,
-                    #     alpha=0.1,
-                    #     edgecolor="none",
-                    #     s=20,
-                    # )
                     parts = ax.violinplot(
                         lowevalues,
                         [xpos[-1] - shift],
-                        # points=200,
                         vert=True,
                         widths=0.18,
                         showmeans=True,
                         showextrema=True,
                         showmedians=True,
-                        # bw_method=0.5,
                     )
 
                     for pc in parts["bodies"]:
@@ -998,7 +957,6 @@ def shape_summary(all_data, figure_output):
         ax.set_xticks(xpos)
         ax.set_xticklabels(xlabls, rotation=45)
         ax.tick_params(axis="both", which="major", labelsize=16)
-        # ax.set_xlabel("num. building blocks", fontsize=16)
         ax.set_ylabel(
             (f"$s$ ({eb_str(True)} < {isomer_energy()}" " kJmol$^{-1}$)"),
             fontsize=16,
@@ -1016,7 +974,7 @@ def shape_summary(all_data, figure_output):
 
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -1030,22 +988,18 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
     logging.info(f"there are {len(all_data)} collected data")
 
-    flexshapeeffect_per_shape(low_e_data, figure_output)
-    shape_topology(low_e_data, figure_output)
-    shape_topology_main(low_e_data, figure_output)
-    shape_input_relationships(low_e_data, figure_output)
-    shape_summary(low_e_data, figure_output)
-    raise SystemExit()
-    flexshapeeffect_per_property(low_e_data, figure_output)
-    shape_vector_distributions(low_e_data, figure_output)
-    shape_persistence_map(low_e_data, figure_output)
-    shape_similarities(low_e_data, figure_output)
+    flexshapeeffect_per_shape(all_data, figure_output)
+    shape_topology(all_data, figure_output)
+    shape_topology_main(all_data, figure_output)
+    shape_input_relationships(all_data, figure_output)
+    shape_summary(all_data, figure_output)
+    raise SystemExit
+    flexshapeeffect_per_property(all_data, figure_output)
+    shape_vector_distributions(all_data, figure_output)
+    shape_persistence_map(all_data, figure_output)
+    shape_similarities(all_data, figure_output)
 
 
 if __name__ == "__main__":

@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for structure generation utilities.
+"""Module for structure generation utilities.
 
 Author: Andrew Tarzia
 
@@ -40,8 +38,7 @@ def optimise_ligand(
     force_field: Forcefield,
     platform: str | None,
 ) -> stk.Molecule:
-    """
-    Optimise a building block.
+    """Optimise a building block.
 
     Keywords:
 
@@ -64,7 +61,6 @@ def optimise_ligand(
             out of the box.
 
     Returns:
-
         An stk molecule.
 
     """
@@ -97,8 +93,7 @@ def soften_force_field(
     angle_ff_scale: float,
     new_name: str,
 ) -> AssignedSystem:
-    """
-    Soften force field by scaling parameters and turning off torsions.
+    """Soften force field by scaling parameters and turning off torsions.
 
     Keywords:
 
@@ -115,11 +110,9 @@ def soften_force_field(
             New name for system xml.
 
     Returns:
-
         New assigned system.
 
     """
-
     new_force_field_terms = {
         "bond": tuple(
             Bond(
@@ -178,8 +171,7 @@ def run_soft_md_cycle(
     traj_freq: float,
     platform: str,
 ) -> OMMTrajectory | None:
-    """
-    Run MD exploration with soft potentials.
+    """Run MD exploration with soft potentials.
 
     Keywords:
 
@@ -234,11 +226,9 @@ def run_soft_md_cycle(
             out of the box.
 
     Returns:
-
         An OMMTrajectory containing the data and conformers.
 
     """
-
     soft_assigned_system = soften_force_field(
         assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
@@ -275,8 +265,7 @@ def run_constrained_optimisation(
     max_iterations: int,
     platform: str,
 ) -> stk.Molecule:
-    """
-    Run optimisation with constraints and softened potentials.
+    """Run optimisation with constraints and softened potentials.
 
     Keywords:
 
@@ -306,11 +295,9 @@ def run_constrained_optimisation(
             out of the box.
 
     Returns:
-
         An stk molecule.
 
     """
-
     soft_assigned_system = soften_force_field(
         assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
@@ -335,8 +322,7 @@ def run_constrained_optimisation(
         platform=platform,
     )
     logging.info(f"optimising with {len(intra_bb_bonds)} constraints")
-    opt_molecule = constrained_opt.optimize(soft_assigned_system)
-    return opt_molecule
+    return constrained_opt.optimize(soft_assigned_system)
 
 
 def run_optimisation(
@@ -348,8 +334,7 @@ def run_optimisation(
     max_iterations: int | None = None,
     ensemble: Ensemble | None = None,
 ) -> Conformer:
-    """
-    Run optimisation.
+    """Run optimisation.
 
     Keywords:
 
@@ -381,11 +366,9 @@ def run_optimisation(
             Ensemble to get the conformer id from.
 
     Returns:
-
         A Conformer.
 
     """
-
     opt = CGOMMOptimizer(
         fileprefix=f"{name}_{file_suffix}",
         output_dir=output_dir,
@@ -394,10 +377,7 @@ def run_optimisation(
     )
     molecule = opt.optimize(assigned_system)
     energy_decomp = opt.read_final_energy_decomposition()
-    if ensemble is None:
-        confid = None
-    else:
-        confid = ensemble.get_num_conformers()
+    confid = None if ensemble is None else ensemble.get_num_conformers()
 
     return Conformer(
         molecule=molecule,
@@ -412,8 +392,7 @@ def yield_near_models(
     output_dir: pathlib.Path | str,
     neighbour_library: list,
 ) -> Iterator[stk.Molecule]:
-    """
-    Yield structures of cage models with neighbouring force field parameters.
+    """Yield structures of models with neighbouring force field parameters.
 
     Keywords:
 
@@ -431,11 +410,9 @@ def yield_near_models(
             `define_forcefields.py`.
 
     Returns:
-
         An stk molecule.
 
     """
-
     ff_name = [i for i in name.split("_") if "f" in i][-1]
 
     for new_ff_id in neighbour_library:
@@ -454,8 +431,7 @@ def shift_beads(
     atomic_number: int,
     kick: float,
 ) -> stk.Molecule:
-    """
-    Shift beads away from cage centroid.
+    """Shift beads away from cage centroid.
 
     Keywords:
 
@@ -469,7 +445,6 @@ def shift_beads(
             Scale determining size of manipulation.
 
     Returns:
-
         An stk molecule.
 
     """
@@ -487,7 +462,7 @@ def shift_beads(
             new_pos = pos
         new_pos_mat.append(new_pos)
 
-    return molecule.with_position_matrix(np.array((new_pos_mat)))
+    return molecule.with_position_matrix(np.array(new_pos_mat))
 
 
 def yield_shifted_models(
@@ -495,8 +470,7 @@ def yield_shifted_models(
     force_field: Forcefield,
     kicks: tuple[int],
 ) -> Iterator[stk.Molecule]:
-    """
-    Yield conformers with atom positions of particular beads shifted.
+    """Yield conformers with atom positions of particular beads shifted.
 
     Keywords:
 
@@ -510,7 +484,6 @@ def yield_shifted_models(
             Defines the kicks in Angstrom to apply.
 
     Yields:
-
         An stk molecule.
 
     """

@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Utilities for analysis and plotting.
+"""Utilities for analysis and plotting.
 
 Author: Andrew Tarzia
 
@@ -17,11 +15,9 @@ import numpy as np
 import openmm
 import pandas as pd
 from cgexplore.geom import GeomMeasure
-from cgexplore.pore import PoreMeasure
 from cgexplore.shape import (
     ShapeMeasure,
-    get_shape_molecule_ligands,
-    get_shape_molecule_nodes,
+    get_shape_molecule_byelement,
     known_shape_vectors,
 )
 from cgexplore.torsions import TargetTorsion
@@ -35,15 +31,10 @@ logging.basicConfig(
 
 
 def get_paired_cage_name(cage_name):
-    """
-    Get new FF number from a cage number based on ton vs toff.
-
-    """
-
+    """Get new FF number from a cage number based on ton vs toff."""
     ff_num = int(cage_name.split("_")[-1].split("f")[1])
     new_ff_num = ff_num + 1
-    new_name = cage_name.replace(f"f{ff_num}", f"f{new_ff_num}")
-    return new_name
+    return cage_name.replace(f"f{ff_num}", f"f{new_ff_num}")
 
 
 def analyse_cage(
@@ -53,7 +44,10 @@ def analyse_cage(
     force_field,
     node_element,
     ligand_element,
+    database,
 ):
+    logging.warning("currently not using databasing for analysis.")
+
     output_file = os.path.join(output_dir, f"{name}_res.json")
     shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
     shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
@@ -87,19 +81,20 @@ def analyse_cage(
                 == fin_energy
             )
         except AssertionError:
-            raise AssertionError(
-                "energy decompisition does not sum to total energy for"
-                f" {name}: {energy_decomp}"
+            msg = (
+                f"energy decompisition does not sum to total energy for {name}"
+                f": {energy_decomp}"
             )
+            raise AssertionError(msg)
 
-        n_shape_mol = get_shape_molecule_nodes(
-            constructed_molecule=conformer.molecule,
+        n_shape_mol = get_shape_molecule_byelement(
+            molecule=conformer.molecule,
             name=name,
             element=node_element,
             topo_expected=node_expected_topologies(),
         )
-        l_shape_mol = get_shape_molecule_ligands(
-            constructed_molecule=conformer.molecule,
+        l_shape_mol = get_shape_molecule_byelement(
+            molecule=conformer.molecule,
             name=name,
             element=ligand_element,
             topo_expected=ligand_expected_topologies(),
@@ -124,10 +119,6 @@ def analyse_cage(
             ).calculate(l_shape_mol)
             l_shape_mol.write(shape_molfile2)
 
-        opt_pore_data = PoreMeasure().calculate_min_distance(
-            conformer.molecule
-        )
-
         # Always want to extract target torions if present.
         g_measure = GeomMeasure(
             target_torsions=(
@@ -146,21 +137,26 @@ def analyse_cage(
                 ),
             )
         )
+        opt_pore_data = g_measure.calculate_min_distance(conformer.molecule)
         bond_data = g_measure.calculate_bonds(conformer.molecule)
+        bond_data = {str("_".join(i)): bond_data[i] for i in bond_data}
         angle_data = g_measure.calculate_angles(conformer.molecule)
+        angle_data = {str("_".join(i)): angle_data[i] for i in angle_data}
         dihedral_data = g_measure.calculate_torsions(
             molecule=conformer.molecule,
             absolute=True,
         )
+        dihedral_data = {
+            str("_".join(i)): dihedral_data[i] for i in dihedral_data
+        }
         min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
             molecule=conformer.molecule,
         )
         max_diameter = g_measure.calculate_max_diameter(conformer.molecule)
         if radius_gyration > max_diameter:
-            raise ValueError(
-                f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
-            )
+            msg = f"{name} Rg ({radius_gyration}) > maxD ({max_diameter})"
+            raise ValueError(msg)
 
         # This is matched to the existing analysis code. I recommend
         # generalising in the future.
@@ -249,10 +245,7 @@ def analyse_cage(
 
 
 def angle_str(num=None, unit=True):
-    if unit is True:
-        un = r" [$^\circ$]"
-    else:
-        un = ""
+    un = " [$^\\circ$]" if unit is True else ""
 
     if num is None:
         return f"$x$-topic angle{un}"
@@ -263,6 +256,7 @@ def angle_str(num=None, unit=True):
             return f"tetratopic angle{un}"
         elif num == 2:
             return f"ditopic angle{un}"
+        return None
 
 
 def eb_str(no_unit=False):
@@ -273,7 +267,6 @@ def eb_str(no_unit=False):
 
 
 def pore_str():
-    # return r"min(centroid-bead) [$\mathrm{\AA}$]"
     return r"pore size [$\mathrm{\AA}$]"
 
 
@@ -348,16 +341,6 @@ def topology_labels(short):
         )
 
 
-def convert_prop(prop_str):
-    raise NotImplementedError("check convert propr")
-    return {
-        "energy_per_bb": "E_b [eV]",
-        "sv_n_dist": "node shape similarity",
-        "sv_l_dist": "lig. shape similarity",
-        "both_sv_n_dist": "shape similarity",
-    }[prop_str]
-
-
 def convert_outcome(topo_str):
     return {
         "mixed": "mixed",
@@ -367,14 +350,6 @@ def convert_outcome(topo_str):
         "all": "all",
         "unstable": "unstable",
         "not": "not",
-    }[topo_str]
-
-
-def convert_connectivity(topo_str):
-    raise SystemExit("decide how to do this.")
-    return {
-        "3C1": "3-c",
-        "4C1": "4-c",
     }[topo_str]
 
 
@@ -417,11 +392,7 @@ def convert_vdws(vstr):
 
 
 def Xc_map(tstr):
-    """
-    Maps topology string to pyramid angle.
-
-    """
-
+    """Maps topology string to pyramid angle."""
     return {
         "2P3": 3,
         "4P6": 3,
@@ -440,11 +411,7 @@ def Xc_map(tstr):
 
 
 def stoich_map(tstr):
-    """
-    Stoichiometry maps to the number of building blocks.
-
-    """
-
+    """Stoichiometry maps to the number of building blocks."""
     return {
         "2P3": 5,
         "4P6": 10,
@@ -460,14 +427,6 @@ def stoich_map(tstr):
         "12P24": 36,
         "6P8": 14,
     }[tstr]
-
-
-def cltype_to_colormap():
-    raise SystemExit("cltype_to_colormap, if this is used, fix")
-    return {
-        "3C1": "#06AED5",
-        "4C1": "#086788",
-    }
 
 
 def cltypetopo_to_colormap():
@@ -491,7 +450,6 @@ def cltypetopo_to_colormap():
         "mixed": {
             # "2": "#7b4173",
             # ">2": "#de9ed6",
-            # "mixed": "white",
             "mixed-2": "white",
             "mixed-3": "#8A8A8A",
             "mixed>3": "#434343",
@@ -499,29 +457,6 @@ def cltypetopo_to_colormap():
         "unstable": {
             "unstable": "white",
         },
-    }
-
-
-def shapevertices_to_colormap():
-    raise SystemExit("shapevertices_to_colormap, if this is used, fix")
-    return {
-        4: "#06AED5",
-        5: "#086788",
-        6: "#DD1C1A",
-        8: "#320E3B",
-        3: "#6969B3",
-    }
-
-
-def shapelabels_to_colormap():
-    raise SystemExit("shapelabels_to_colormap, if this is used, fix")
-    return {
-        "3": "#F9A03F",
-        "4": "#0B2027",
-        "5": "#86626E",
-        "6": "#CA1551",
-        "8": "#345995",
-        "b": "#7A8B99",
     }
 
 
@@ -540,25 +475,6 @@ def target_shapes():
         "TP-3",
         "mvOC-3",
     )
-
-
-def target_shapes_by_cltype(cltype):
-    raise SystemExit("target_shapes_by_cltype, if this is used, fix")
-    if cltype == "4C1":
-        return ("OC-6b", "TP-3", "SP-4", "OC-6")
-    elif cltype == "3C1":
-        return ("TBPY-5", "T-4", "T-4b", "TPR-6", "CU-8")
-
-
-def shapetarget_to_colormap():
-    raise SystemExit("shapetarget_to_colormap, if this is used, fix")
-    return {
-        "CU-8": "#06AED5",
-        "OC-6": "#086788",
-        "TBPY-5": "#DD1C1A",
-        "T-4": "#320E3B",
-        "TPR-6": "#CE7B91",
-    }
 
 
 def map_cltype_to_topology():
@@ -597,21 +513,19 @@ def mapshape_to_topology(mode, from_shape=False):
                 "JETBPY-8": ("6P8",),
                 "OP-8": ("6P8",),
             }
+        return None
     else:
         if mode == "n":
             return {
-                # "2P3": "TBPY-5",
                 "4P6": "T-4",
                 "4P62": "SP-4",
                 "6P9": "TPR-6",
                 "8P12": "CU-8",
-                # "2P4": "OC-6b",
                 "3P6": "TP-3",
                 "4P8": "SP-4",
                 "4P82": "T-4",
                 "6P12": "OC-6",
                 "8P16": "SAPR-8",
-                # "12P24": "",
                 "6P8": "OC-6",
             }
 
@@ -623,21 +537,21 @@ def mapshape_to_topology(mode, from_shape=False):
                 "2P4": "SP-4",
                 "6P8": "CU-8",
             }
+        return None
 
 
 def get_present_beads(c2_bbname):
     wtopo = c2_bbname[3:]
-    present_beads_names = []
     break_strs = [i for i in wtopo if not i.isnumeric()]
     if len(break_strs) != 2:
-        raise ValueError(f"Too many beads found in {c2_bbname}")
+        msg = f"Too many beads found in {c2_bbname}"
+        raise ValueError(msg)
 
     broken_string = wtopo.split(break_strs[0])[1]
     bead1name, bead2name = broken_string.split(break_strs[1])
     bead1name = break_strs[0] + bead1name
     bead2name = break_strs[1] + bead2name
-    present_beads_names = (bead1name, bead2name)
-    return present_beads_names
+    return (bead1name, bead2name)
 
 
 def node_expected_topologies():
@@ -673,15 +587,14 @@ def get_sv_dist(row, mode):
         return None
 
     if tshape[-1] == "b":
-        raise ValueError("I removed all uses of `shape`b label, check.")
+        msg = "I removed all uses of `shape`b label, check."
+        raise ValueError(msg)
 
     known_sv = known_shape_vectors()[tshape]
     current_sv = {i: float(row[f"{mode}_{i}"]) for i in known_sv}
     a = np.array([known_sv[i] for i in known_sv])
     b = np.array([current_sv[i] for i in known_sv])
-    cosine_similarity = np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
-
-    return cosine_similarity
+    return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
 def data_to_array(json_files, output_dir):
@@ -690,10 +603,9 @@ def data_to_array(json_files, output_dir):
 
     if os.path.exists(output_csv):
         input_array = pd.read_csv(output_csv)
-        input_array = input_array.loc[
+        return input_array.loc[
             :, ~input_array.columns.str.contains("^Unnamed")
         ]
-        return input_array
 
     input_dict = {}
     geom_data = {}
@@ -702,7 +614,7 @@ def data_to_array(json_files, output_dir):
     count = 0
     for j_file in json_files:
         logging.info(f"arraying {j_file.name} ({count}/{len_jsons})")
-        with open(j_file, "r") as f:
+        with open(j_file) as f:
             res_dict = json.load(f)
 
         row = {}
@@ -812,35 +724,3 @@ def data_to_array(json_files, output_dir):
         json.dump(geom_data, f, indent=4)
 
     return input_array
-
-
-def get_lowest_energy_data(all_data, output_dir):
-    logging.info("defining low energy array")
-    output_csv = output_dir / "lowe_array.csv"
-
-    if os.path.exists(output_csv):
-        input_array = pd.read_csv(output_csv)
-        input_array = input_array.loc[
-            :, ~input_array.columns.str.contains("^Unnamed")
-        ]
-        return input_array
-
-    lowe_array = pd.DataFrame()
-    grouped_data = all_data.groupby(["cage_name"])
-    for system in set(all_data["cage_name"]):
-        logging.info(f"checking {system}")
-        rows = grouped_data.get_group(system)
-        for tors in ("ton", "toff"):
-            trows = rows[rows["torsions"] == tors]
-            if len(trows) == 0:
-                continue
-            final_row = trows[
-                trows["energy_per_bb"] == trows["energy_per_bb"].min()
-            ]
-            # Get lowest energy row, and add to new dict.
-            lowe_array = pd.concat([lowe_array, final_row.iloc[[0]]])
-
-    lowe_array.reset_index()
-    lowe_array.to_csv(output_csv, index=False)
-
-    return lowe_array

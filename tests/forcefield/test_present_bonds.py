@@ -7,8 +7,7 @@ from .utilities import is_equivalent_atom
 
 
 def test_present_bonds(molecule):
-    """
-    Test methods toward :meth:`.ForceField._assign_bond_terms`.
+    """Test methods toward :meth:`.ForceField._assign_bond_terms`.
 
     Parameters:
 
@@ -16,12 +15,12 @@ def test_present_bonds(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
     try:
         force_fields = tuple(molecule.force_field_library.yield_forcefields())
+
         for i, ff in enumerate(force_fields):
             assigned_system = ff.assign_terms(
                 molecule=molecule.molecule,

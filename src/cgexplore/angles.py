@@ -1,17 +1,10 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for handling angles.
-
-Author: Andrew Tarzia
-
-"""
+"""Module for handling angles."""
 
 import itertools
 import logging
-import typing
+from collections import abc
 from dataclasses import dataclass
 
 import stk
@@ -36,6 +29,17 @@ class Angle:
     atom_names: tuple[str, ...]
     atom_ids: tuple[int, ...]
     angle: openmm.unit.Quantity
+    angle_k: openmm.unit.Quantity
+    atoms: tuple[stk.Atom, ...] | None
+    force: str | None
+
+
+@dataclass
+class CosineAngle:
+    atom_names: tuple[str, ...]
+    atom_ids: tuple[int, ...]
+    n: int
+    b: int
     angle_k: openmm.unit.Quantity
     atoms: tuple[stk.Atom, ...] | None
     force: str | None
@@ -105,6 +109,56 @@ class TargetPyramidAngle(TargetAngle):
 
 
 @dataclass
+class TargetCosineAngle:
+    class1: str
+    class2: str
+    class3: str
+    eclass1: str
+    eclass2: str
+    eclass3: str
+    n: float
+    b: float
+    angle_k: openmm.unit.Quantity
+
+    def human_readable(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.class1}{self.class2}{self.class3}, "
+            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
+            f"{self.n}, {self.b}, "
+            f"{self.angle_k.in_units_of(angle_k_unit())}, "
+            ")"
+        )
+
+
+@dataclass
+class TargetCosineAngleRange:
+    class1: str
+    class2: str
+    class3: str
+    eclass1: str
+    eclass2: str
+    eclass3: str
+    ns: tuple[float]
+    bs: tuple[float]
+    angle_ks: tuple[openmm.unit.Quantity]
+
+    def yield_angles(self):
+        for n, b, k in itertools.product(self.ns, self.bs, self.angle_ks):
+            yield TargetCosineAngle(
+                class1=self.class1,
+                class2=self.class2,
+                class3=self.class3,
+                eclass1=self.eclass1,
+                eclass2=self.eclass2,
+                eclass3=self.eclass3,
+                n=n,
+                b=b,
+                angle_k=k,
+            )
+
+
+@dataclass
 class PyramidAngleRange:
     class1: str
     class2: str
@@ -125,9 +179,8 @@ class PyramidAngleRange:
                     unit=angle.unit,
                 )
             except AttributeError:
-                raise ForcefieldUnitError(
-                    f"{self} in angles does not have units for parameters"
-                )
+                msg = f"{self} in angles does not have units for parameters"
+                raise ForcefieldUnitError(msg)
 
             yield TargetPyramidAngle(
                 class1=self.class1,
@@ -148,7 +201,7 @@ class FoundAngle:
     atom_ids: tuple[int, ...]
 
 
-def find_angles(molecule: stk.Molecule) -> typing.Iterator[FoundAngle]:
+def find_angles(molecule: stk.Molecule) -> abc.Iterator[FoundAngle]:
     paths = rdkit.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=3,
@@ -156,7 +209,7 @@ def find_angles(molecule: stk.Molecule) -> typing.Iterator[FoundAngle]:
         useHs=True,
     )
     for atom_ids in paths:
-        atoms = tuple(molecule.get_atoms(atom_ids=[i for i in atom_ids]))
+        atoms = tuple(molecule.get_atoms(atom_ids=list(atom_ids)))
         yield FoundAngle(
             atoms=atoms,
             atom_ids=tuple(i.get_id() for i in atoms),

@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for ensemble and trajectory classes.
+"""Module for ensemble and trajectory classes.
 
 Author: Andrew Tarzia
 
@@ -11,7 +9,7 @@ Author: Andrew Tarzia
 
 import json
 import os
-import typing
+from collections import abc
 from dataclasses import dataclass
 
 import numpy as np
@@ -95,7 +93,7 @@ class Ensemble:
     def load_trajectory(self) -> dict[int, list[str]]:
         num_atoms = self._molecule_num_atoms
         trajectory = {}
-        with open(self._conformer_xyz, "r") as f:
+        with open(self._conformer_xyz) as f:
             lines = f.readlines()
             conformer_starts = range(0, len(lines), num_atoms + 2)
             for cs in conformer_starts:
@@ -106,11 +104,11 @@ class Ensemble:
                 trajectory[int(conf_id)] = conf_lines
         return trajectory
 
-    def _yield_from_xyz(self) -> typing.Iterator[Conformer]:
+    def _yield_from_xyz(self) -> abc.Iterator[Conformer]:
         num_atoms = self._molecule_num_atoms
         new_pos_mat: list = []
 
-        with open(self._conformer_xyz, "r") as f:
+        with open(self._conformer_xyz) as f:
             lines = f.readlines()
             conformer_starts = range(0, len(lines), num_atoms + 2)
 
@@ -125,11 +123,11 @@ class Ensemble:
                     new_pos_mat.append([x, y, z])
 
                 if len(new_pos_mat) != num_atoms:
-                    raise ValueError(
-                        f"num atoms ({num_atoms}) does not match "
-                        "size of collected position matrix "
-                        f"({len(new_pos_mat)})."
+                    msg = (
+                        f"num atoms ({num_atoms}) does not match size of "
+                        f"collected position matrix ({len(new_pos_mat)})."
                     )
+                    raise ValueError(msg)
                 yield Conformer(
                     molecule=(
                         self._base_molecule.with_position_matrix(
@@ -140,7 +138,7 @@ class Ensemble:
                     conformer_id=conf_id,
                 )
 
-    def yield_conformers(self) -> typing.Iterator[Conformer]:
+    def yield_conformers(self) -> abc.Iterator[Conformer]:
         for conf_id in self._trajectory:
             yield self.get_conformer(conf_id)
 
@@ -168,30 +166,31 @@ class Ensemble:
     def get_conformer(self, conf_id: int | str) -> Conformer:
         if conf_id not in self._data:
             if str(conf_id) not in self._data:
-                raise ValueError(
+                msg = (
                     f"conformer {conf_id} not found in ensemble "
-                    f"({self._data_json})."
-                    "Strict handling of `conf_id` is coming."
-                    "Current types: "
-                    f"{list(type(i) for i in self._data.keys())}"
+                    f"({self._data_json}). Strict handling of `conf_id` is "
+                    f"coming. Current types: {[type(i) for i in self._data]}"
                 )
+                raise ValueError(msg)
             else:
                 conf_id = str(conf_id)
 
         conf_lines = self._trajectory[int(conf_id)]
         extracted_id = int(conf_lines[1].strip().split()[1])
         if extracted_id != int(conf_id):
-            raise ValueError(f"Asked for {conf_id}, got {extracted_id}")
+            msg = f"Asked for {conf_id}, got {extracted_id}"
+            raise ValueError(msg)
         new_pos_mat = [
             [float(j) for j in i.strip().split()[1:]]
             for i in conf_lines[2:]
             if i != ""
         ]
         if len(new_pos_mat) != self._molecule_num_atoms:
-            raise ValueError(
-                f"Num atoms ({len(new_pos_mat)}) in xyz does not match "
-                f"base molecule ({self._molecule_num_atoms})"
+            msg = (
+                f"Num atoms ({len(new_pos_mat)}) in xyz does"
+                f" not match base molecule ({self._molecule_num_atoms})"
             )
+            raise ValueError(msg)
 
         conf_data = self._data[conf_id]  # type: ignore[index]
         source = conf_data["source"]
@@ -213,7 +212,7 @@ class Ensemble:
 
     def load_data(self) -> dict[int, dict]:
         try:
-            with open(self._data_json, "r") as f:
+            with open(self._data_json) as f:
                 return json.load(f)
         except FileNotFoundError:
             return {}

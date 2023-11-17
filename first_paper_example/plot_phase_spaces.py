@@ -1,35 +1,27 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Script to plot phase spaces.
+"""Script to plot phase spaces.
 
 Author: Andrew Tarzia
 
 """
 
-import itertools
 import logging
 import os
 import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from analysis import (
     angle_str,
-    convert_prop,
     convert_topo,
     convert_tors,
     data_to_array,
-    get_lowest_energy_data,
     isomer_energy,
-    map_cltype_to_topology,
     pore_str,
     rg_str,
     stoich_map,
-    topology_labels,
 )
 from env_set import calculations, figures, outputdata
 from matplotlib.lines import Line2D
@@ -70,15 +62,15 @@ def phase_space_2(all_data, figure_output):
 
             if len(kinetic_energies) == 1:
                 # Self-sorted.
-                tstr = list(kinetic_energies.keys())[0]
-                epb = list(kinetic_energies.values())[0]
+                tstr = next(iter(kinetic_energies.keys()))
+                epb = next(iter(kinetic_energies.values()))
                 kinetic_data = data[data["topology"] == tstr]
 
                 if tstr == "6P8":
                     colour_choice = "k"
-                elif "3C1" == str(bbd["cltitle"].iloc[0]):
+                elif str(bbd["cltitle"].iloc[0]) == "3C1":
                     colour_choice = "#086788"
-                elif "4C1" == str(bbd["cltitle"].iloc[0]):
+                elif str(bbd["cltitle"].iloc[0]) == "4C1":
                     colour_choice = "#F9A03F"
 
                 if tor == "ton":
@@ -218,13 +210,11 @@ def phase_space_2(all_data, figure_output):
                 parts = ax.violinplot(
                     yvalues,
                     [x],
-                    # points=200,
                     vert=True,
                     widths=0.6,
                     showmeans=False,
                     showextrema=False,
                     showmedians=False,
-                    # bw_method=0.5,
                 )
 
                 for pc in parts["bodies"]:
@@ -318,7 +308,6 @@ def phase_space_6p8(all_data, figure_output):
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    # ax.set_xlabel(clangle_str(4), fontsize=16)
     ax.set_ylabel(pore_str(), fontsize=16)
     ax.set_xticks(range(1, 6))
     ax.set_xticklabels([])
@@ -332,188 +321,9 @@ def phase_space_6p8(all_data, figure_output):
     plt.close()
 
 
-def phase_space_3(all_data, figure_output):
-    raise NotImplementedError()
-    logging.info("doing phase space 3")
-
-    fig, axs = plt.subplots(
-        nrows=2,
-        ncols=2,
-        sharey=True,
-        figsize=(16, 10),
-    )
-    flat_axs = axs.flatten()
-
-    topologies = map_cltype_to_topology()
-
-    vdata = all_data[all_data["vdws"] == "von"]
-    groups = vdata.groupby(["bbpair"])
-    data = {
-        ("3C1", "toff"): {i: 0 for i in topologies["3C1"]},
-        ("3C1", "ton"): {i: 0 for i in topologies["3C1"]},
-        ("4C1", "toff"): {i: 0 for i in topologies["4C1"]},
-        ("4C1", "ton"): {i: 0 for i in topologies["4C1"]},
-    }
-
-    for gid, dfi in groups:
-        bbtitle = gid[:3]
-        if "mixed" not in data[(bbtitle, "toff")]:
-            data[(bbtitle, "toff")]["mixed"] = 0
-        if "mixed" not in data[(bbtitle, "ton")]:
-            data[(bbtitle, "ton")]["mixed"] = 0
-        if "unstable" not in data[(bbtitle, "toff")]:
-            data[(bbtitle, "toff")]["unstable"] = 0
-        if "unstable" not in data[(bbtitle, "ton")]:
-            data[(bbtitle, "ton")]["unstable"] = 0
-
-        for tors in ("ton", "toff"):
-            fin_data = dfi[dfi["torsions"] == tors]
-            if "6P8" in set(fin_data["topology"]):
-                continue
-            mixed_energies = {
-                str(row["topology"]): float(row["energy_per_bb"])
-                for i, row in fin_data.iterrows()
-                if float(row["energy_per_bb"]) < isomer_energy()
-            }
-
-            if len(mixed_energies) == 0:
-                topo_str = "unstable"
-            elif len(mixed_energies) > 1:
-                topo_str = "mixed"
-            else:
-                topo_str = list(mixed_energies.keys())[0]
-
-            if topo_str not in data[(bbtitle, tors)]:
-                data[(bbtitle, tors)][topo_str] = 0
-            data[(bbtitle, tors)][topo_str] += 1
-
-    for ax, (bbtitle, torsion) in zip(flat_axs, data, strict=True):
-        coords = data[(bbtitle, torsion)]
-        bars = ax.bar(
-            [convert_topo(i) for i in coords.keys()],
-            coords.values(),
-            color="#086788",
-            edgecolor="k",
-        )
-
-        ax.bar_label(bars, padding=2, fontsize=16)
-
-        title = f"{convert_tors(torsion, num=False)}"
-        ax.set_title(title, fontsize=16)
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_ylabel("count", fontsize=16)
-        ax.set_ylim(0, 140)
-
-    fig.tight_layout()
-    fig.savefig(
-        os.path.join(figure_output, "ps_3.pdf"),
-        dpi=720,
-        bbox_inches="tight",
-    )
-    plt.close()
-
-
-def phase_space_5(all_data, figure_output):
-    logging.info("doing ps5, shape vectors vs Energy")
-    raise NotImplementedError("if you want this, fix it.")
-    tstrs = topology_labels(short="P")
-    clangles = sorted(set(all_data["clangle"]))
-    for tstr, clangle in itertools.product(tstrs, clangles):
-        fig, axs = plt.subplots(
-            nrows=1,
-            ncols=2,
-            sharex=True,
-            sharey=True,
-            figsize=(16, 5),
-        )
-
-        tdata = all_data[all_data["topology"] == tstr]
-        cdata = tdata[tdata["clangle"] == clangle]
-        if len(cdata) == 0:
-            continue
-
-        for ax, tor in zip(axs, ("ton", "toff"), strict=True):
-            findata = cdata[cdata["torsions"] == tor]
-            xvalues = list(findata["energy_per_bb"])
-            yvalues = list(findata["sv_n_dist"])
-            lvalues = list(findata["sv_l_dist"])
-            to_plot_x = []
-            to_plot_y = []
-            to_plot_l = []
-            for x, y, lval in zip(xvalues, yvalues, lvalues, strict=True):
-                if pd.isna(x) or pd.isna(y):
-                    continue
-                to_plot_x.append(x)
-                to_plot_y.append(y)
-                if pd.isna(lval):
-                    continue
-                to_plot_l.append(lval)
-
-            ax.scatter(
-                to_plot_x,
-                to_plot_y,
-                c="#086788",
-                edgecolor="none",
-                s=50,
-                alpha=1,
-            )
-            if len(to_plot_l) == len(to_plot_x):
-                ax.scatter(
-                    to_plot_x,
-                    to_plot_l,
-                    c="white",
-                    edgecolor="k",
-                    s=60,
-                    alpha=1,
-                    zorder=-1,
-                )
-            elif len(to_plot_l) != 0:
-                raise ValueError(f"{len(to_plot_l)} l != {len(to_plot_x)}")
-
-            ax.set_title(
-                (
-                    f"{convert_topo(tstr)}: "
-                    f"{convert_tors(tor, num=False)}: {clangle}"
-                ),
-                fontsize=16,
-            )
-            ax.tick_params(axis="both", which="major", labelsize=16)
-            ax.set_xlabel(convert_prop("energy_per_bb"), fontsize=16)
-            ax.set_ylabel(convert_prop("both_sv_n_dist"), fontsize=16)
-            ax.set_ylim(0.0, 1.05)
-
-        ax.scatter(
-            None,
-            None,
-            c="#086788",
-            edgecolor="none",
-            s=50,
-            alpha=1,
-            label="node",
-        )
-        ax.scatter(
-            None,
-            None,
-            c="white",
-            edgecolor="k",
-            s=60,
-            alpha=1,
-            label="ligand",
-        )
-        ax.legend(fontsize=16)
-
-        fig.tight_layout()
-        fig.savefig(
-            os.path.join(figure_output, f"ps_5_{tstr}_{clangle}.pdf"),
-            dpi=720,
-            bbox_inches="tight",
-        )
-        plt.close()
-
-
 def main():
     first_line = f"Usage: {__file__}.py"
-    if not len(sys.argv) == 1:
+    if len(sys.argv) != 1:
         logging.info(f"{first_line}")
         sys.exit()
     else:
@@ -527,17 +337,10 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    low_e_data = get_lowest_energy_data(
-        all_data=all_data,
-        output_dir=data_output,
-    )
     logging.info(f"there are {len(all_data)} collected data")
 
-    phase_space_2(low_e_data, figure_output)
-    phase_space_6p8(low_e_data, figure_output)
-    phase_space_3(low_e_data, figure_output)
-    raise SystemExit()
-    phase_space_5(low_e_data, figure_output)
+    phase_space_2(all_data, figure_output)
+    phase_space_6p8(all_data, figure_output)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 def test_functional_groups(precursor):
-    """
-    Test :class:`.Precursor`.
+    """Test :class:`.Precursor`.
 
     Parameters:
 
@@ -8,11 +7,9 @@ def test_functional_groups(precursor):
             The precursor.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     fgs = list(
         precursor.precursor.get_building_block().get_functional_groups()
     )

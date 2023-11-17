@@ -1,11 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Module for CG OpenMM optimizer.
-
-Author: Andrew Tarzia
+"""Module for CG OpenMM optimizer.
 
 Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 
@@ -14,7 +9,7 @@ Inspired by https://bitbucket.org/4dnucleome/md_soft/src/master/
 import logging
 import pathlib
 import time
-import typing
+from collections import abc
 
 import numpy as np
 import pandas as pd
@@ -66,7 +61,7 @@ class OMMTrajectory:
     def get_base_molecule(self) -> stk.Molecule:
         return self._base_molecule
 
-    def yield_conformers(self) -> typing.Iterator[Timestep]:
+    def yield_conformers(self) -> abc.Iterator[Timestep]:
         num_atoms = self._base_molecule.get_num_atoms()
         start_trigger = "MODEL"
         triggered = False
@@ -75,15 +70,15 @@ class OMMTrajectory:
         new_pos_mat: list = []
         atom_trigger = "HETATM"
 
-        with open(self._traj_path, "r") as f:
+        with open(self._traj_path) as f:
             for line in f.readlines():
                 if end_trigger in line:
                     if len(new_pos_mat) != num_atoms:
-                        raise ValueError(
-                            f"num atoms ({num_atoms}) does not match "
-                            "size of collected position matrix "
-                            f"({len(new_pos_mat)})."
+                        msg = (
+                            f"num atoms ({num_atoms}) does not match size of "
+                            f"collected position matrix ({len(new_pos_mat)})."
                         )
+                        raise ValueError(msg)
 
                     yield Timestep(
                         molecule=(
@@ -100,12 +95,11 @@ class OMMTrajectory:
                     model_number = int(line.strip().split()[-1])
                     triggered = True
 
-                if triggered:
-                    if atom_trigger in line:
-                        x = float(line[30:38])
-                        y = float(line[38:46])
-                        z = float(line[46:54])
-                        new_pos_mat.append([x, y, z])
+                if triggered and atom_trigger in line:
+                    x = float(line[30:38])
+                    y = float(line[38:46])
+                    z = float(line[46:54])
+                    new_pos_mat.append([x, y, z])
 
     def __str__(self) -> str:
         return (
@@ -123,7 +117,7 @@ class CGOMMOptimizer:
         fileprefix: str,
         output_dir: pathlib.Path,
         max_iterations: int | None = None,
-        atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
+        atom_constraints: abc.Iterable[tuple[int, int]] | None = None,
         platform: str | None = None,
     ) -> None:
         self._fileprefix = fileprefix
@@ -156,8 +150,7 @@ class CGOMMOptimizer:
         self._integrator = openmm.VerletIntegrator(time_step)
 
     def _group_forces(self, system: openmm.System) -> dict:
-        """
-        Method to group forces.
+        """Method to group forces.
 
         From https://github.com/XiaojuanHu/CTPOL_MD/pull/4/files
 
@@ -171,7 +164,6 @@ class CGOMMOptimizer:
         `
 
         """
-
         forcegroups = {}
         for i in range(system.getNumForces()):
             force = system.getForce(i)
@@ -184,13 +176,11 @@ class CGOMMOptimizer:
         context: openmm.Context,
         forcegroups: dict,
     ) -> dict:
-        """
-        Method to decompose energies.
+        """Method to decompose energies.
 
         From https://github.com/XiaojuanHu/CTPOL_MD/pull/4/files
 
         """
-
         energies = {}
         for f, i in forcegroups.items():
             energies[(i, f.__class__.__name__)] = context.getState(
@@ -274,7 +264,7 @@ class CGOMMOptimizer:
                 unit=openmm.unit.kilojoules_per_mole,
             )
         }
-        for idd in egroups.keys():
+        for idd in egroups:
             energy_decomp[idd] = egroups[idd]
             energy_decomp["tot_energy"] += egroups[idd]
 
@@ -328,8 +318,7 @@ class CGOMMOptimizer:
     ) -> stk.Molecule:
         state = simulation.context.getState(getPositions=True, getEnergy=True)
         positions = state.getPositions(asNumpy=True)
-        molecule = molecule.with_position_matrix(positions * 10)
-        return molecule
+        return molecule.with_position_matrix(positions * 10)
 
     def calculate_energy(self, assigned_system: AssignedSystem) -> float:
         simulation, _ = self._setup_simulation(assigned_system)
@@ -386,7 +375,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         traj_freq: float,
         random_seed: int | None = None,
         max_iterations: int | None = None,
-        atom_constraints: typing.Iterable[tuple[int, int]] | None = None,
+        atom_constraints: abc.Iterable[tuple[int, int]] | None = None,
         platform: str | None = None,
     ) -> None:
         self._fileprefix = fileprefix
@@ -430,7 +419,6 @@ class CGOMMDynamics(CGOMMOptimizer):
             self._properties = None
 
         # Default integrator.
-        # logging.info("better integrator?")
         self._integrator = openmm.LangevinIntegrator(
             self._temperature,
             self._friction,

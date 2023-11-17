@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 # Distributed under the terms of the MIT License.
 
-"""
-Classes of topologies of precursors.
+"""Classes of topologies of precursors.
 
 Author: Andrew Tarzia
 
@@ -13,7 +11,7 @@ Author: Andrew Tarzia
 import numpy as np
 import stk
 
-from ..beads import CgBead
+from .beads import CgBead
 
 
 class Precursor:
@@ -21,7 +19,7 @@ class Precursor:
         self._bead_set: dict[str, CgBead]
         self._building_block: stk.BuildingBlock
         self._name: str
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def get_bead_set(self) -> dict[str, CgBead]:
         return self._bead_set

@@ -1,6 +1,5 @@
 def test_fflibrary(molecule):
-    """
-    Test methods toward :meth:`.ForceFieldLibrary`.
+    """Test methods toward :meth:`.ForceFieldLibrary`.
 
     Parameters:
 
@@ -8,11 +7,9 @@ def test_fflibrary(molecule):
             The molecule.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
-
     if molecule.num_forcefields > 0:
         force_fields = tuple(molecule.force_field_library.yield_forcefields())
         print(molecule.force_field_library)

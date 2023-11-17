@@ -3,8 +3,7 @@ import stk
 
 
 def test_building_block(precursor):
-    """
-    Test :meth:`.Precursor.get_building_block`.
+    """Test :meth:`.Precursor.get_building_block`.
 
     Parameters:
 
@@ -12,7 +11,6 @@ def test_building_block(precursor):
             The precursor.
 
     Returns:
-
         None : :class:`NoneType`
 
     """
