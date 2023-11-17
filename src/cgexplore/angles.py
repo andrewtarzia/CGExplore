@@ -35,6 +35,17 @@ class Angle:
 
 
 @dataclass
+class CosineAngle:
+    atom_names: tuple[str, ...]
+    atom_ids: tuple[int, ...]
+    n: int
+    b: int
+    angle_k: openmm.unit.Quantity
+    atoms: tuple[stk.Atom, ...] | None
+    force: str | None
+
+
+@dataclass
 class TargetAngle:
     class1: str
     class2: str
@@ -95,6 +106,56 @@ class TargetPyramidAngle(TargetAngle):
             f"{self.angle_k.in_units_of(angle_k_unit())}, "
             ")"
         )
+
+
+@dataclass
+class TargetCosineAngle:
+    class1: str
+    class2: str
+    class3: str
+    eclass1: str
+    eclass2: str
+    eclass3: str
+    n: float
+    b: float
+    angle_k: openmm.unit.Quantity
+
+    def human_readable(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.class1}{self.class2}{self.class3}, "
+            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
+            f"{self.n}, {self.b}, "
+            f"{self.angle_k.in_units_of(angle_k_unit())}, "
+            ")"
+        )
+
+
+@dataclass
+class TargetCosineAngleRange:
+    class1: str
+    class2: str
+    class3: str
+    eclass1: str
+    eclass2: str
+    eclass3: str
+    ns: tuple[float]
+    bs: tuple[float]
+    angle_ks: tuple[openmm.unit.Quantity]
+
+    def yield_angles(self):
+        for n, b, k in itertools.product(self.ns, self.bs, self.angle_ks):
+            yield TargetCosineAngle(
+                class1=self.class1,
+                class2=self.class2,
+                class3=self.class3,
+                eclass1=self.eclass1,
+                eclass2=self.eclass2,
+                eclass3=self.eclass3,
+                n=n,
+                b=b,
+                angle_k=k,
+            )
 
 
 @dataclass

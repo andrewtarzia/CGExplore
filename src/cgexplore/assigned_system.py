@@ -11,12 +11,16 @@ import os
 import pathlib
 from dataclasses import dataclass
 
+import numpy as np
 import stk
 from openmm import OpenMMException, app, openmm
 
 from .beads import CgBead, get_cgbead_from_element
 from .errors import ForcefieldUnavailableError, ForcefieldUnitError
-from .utilities import custom_excluded_volume_force
+from .utilities import (
+    cosine_periodic_angle_force,
+    custom_excluded_volume_force,
+)
 
 
 @dataclass(frozen=True)
@@ -121,6 +125,7 @@ class AssignedSystem:
             "HarmonicAngleForce": openmm.HarmonicAngleForce(),
             "PeriodicTorsionForce": openmm.PeriodicTorsionForce(),
             "custom-excl-vol": custom_excluded_volume_force(),
+            "CosinePeriodicAngleForce": cosine_periodic_angle_force(),
         }
         if force_type not in available:
             msg = f"{force_type} not in {available.keys()}"
@@ -165,19 +170,44 @@ class AssignedSystem:
                 if assigned_force.force != force_type:
                     continue
                 try:
-                    force_function.addAngle(
-                        particle1=assigned_force.atom_ids[0],
-                        particle2=assigned_force.atom_ids[1],
-                        particle3=assigned_force.atom_ids[2],
-                        angle=assigned_force.angle.value_in_unit(
-                            openmm.unit.radian
-                        ),
-                        k=assigned_force.angle_k.value_in_unit(
-                            openmm.unit.kilojoule
-                            / openmm.unit.mole
-                            / openmm.unit.radian**2
-                        ),
-                    )
+                    if force_type == "CosinePeriodicAngleForce":
+                        print(
+                            [
+                                assigned_force.angle_k.value_in_unit(
+                                    openmm.unit.kilojoule / openmm.unit.mole
+                                ),
+                                assigned_force.n,
+                                assigned_force.b,
+                            ],
+                        )
+                        force_function.addAngle(
+                            assigned_force.atom_ids[0],
+                            assigned_force.atom_ids[1],
+                            assigned_force.atom_ids[2],
+                            # Order is important here!
+                            [
+                                assigned_force.angle_k.value_in_unit(
+                                    openmm.unit.kilojoule / openmm.unit.mole
+                                ),
+                                assigned_force.n,
+                                assigned_force.b,
+                                (-1) ** assigned_force.n,
+                            ],
+                        )
+                    elif force_type == "HarmonicAngleForce":
+                        force_function.addAngle(
+                            particle1=assigned_force.atom_ids[0],
+                            particle2=assigned_force.atom_ids[1],
+                            particle3=assigned_force.atom_ids[2],
+                            angle=assigned_force.angle.value_in_unit(
+                                openmm.unit.radian
+                            ),
+                            k=assigned_force.angle_k.value_in_unit(
+                                openmm.unit.kilojoule
+                                / openmm.unit.mole
+                                / openmm.unit.radian**2
+                            ),
+                        )
                 except AttributeError:
                     msg = f"{assigned_force} in angles does not have units"
                     raise ForcefieldUnitError(msg)

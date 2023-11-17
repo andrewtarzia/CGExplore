@@ -16,7 +16,13 @@ import numpy as np
 import stk
 from openmm import openmm
 
-from .angles import Angle, TargetAngle, find_angles
+from .angles import (
+    Angle,
+    CosineAngle,
+    TargetAngle,
+    TargetCosineAngle,
+    find_angles,
+)
 from .assigned_system import AssignedSystem
 from .beads import CgBead, get_cgbead_from_element
 from .bonds import Bond, TargetBond
@@ -212,38 +218,71 @@ class Forcefield:
                 ):
                     continue
 
-                try:
-                    assert isinstance(target_angle.angle, openmm.unit.Quantity)
-                    assert isinstance(
-                        target_angle.angle_k, openmm.unit.Quantity
-                    )
-                except AssertionError:
-                    msg = f"{target_angle} in angles does not have units for parameters"
-                    raise ForcefieldUnitError(msg)
+                if isinstance(target_angle, TargetAngle):
+                    try:
+                        assert isinstance(
+                            target_angle.angle, openmm.unit.Quantity
+                        )
+                        assert isinstance(
+                            target_angle.angle_k, openmm.unit.Quantity
+                        )
+                    except AssertionError:
+                        msg = f"{target_angle} in angles does not have units for parameters"
+                        raise ForcefieldUnitError(msg)
 
-                central_bead = cgbeads[1]
-                central_atom = list(found_angle.atoms)[1]
-                central_name = f"{atom_estrings[1]}{central_atom.get_id()+1}"
-                actual_angle = Angle(
-                    atoms=found_angle.atoms,
-                    atom_names=tuple(
-                        f"{i.__class__.__name__}" f"{i.get_id()+1}"
-                        for i in found_angle.atoms
-                    ),
-                    atom_ids=found_angle.atom_ids,
-                    angle=target_angle.angle,
-                    angle_k=target_angle.angle_k,
-                    force="HarmonicAngleForce",
-                )
-                if central_bead.coordination == 4:
-                    if central_name not in pyramid_angles:
-                        pyramid_angles[central_name] = []
-                    pyramid_angles[central_name].append(actual_angle)
-                elif central_bead.coordination == 6:
-                    if central_name not in octahedral_angles:
-                        octahedral_angles[central_name] = []
-                    octahedral_angles[central_name].append(actual_angle)
-                else:
+                    central_bead = cgbeads[1]
+                    central_atom = list(found_angle.atoms)[1]
+                    central_name = (
+                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                    )
+                    actual_angle = Angle(
+                        atoms=found_angle.atoms,
+                        atom_names=tuple(
+                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            for i in found_angle.atoms
+                        ),
+                        atom_ids=found_angle.atom_ids,
+                        angle=target_angle.angle,
+                        angle_k=target_angle.angle_k,
+                        force="HarmonicAngleForce",
+                    )
+                    if central_bead.coordination == 4:
+                        if central_name not in pyramid_angles:
+                            pyramid_angles[central_name] = []
+                        pyramid_angles[central_name].append(actual_angle)
+                    elif central_bead.coordination == 6:
+                        if central_name not in octahedral_angles:
+                            octahedral_angles[central_name] = []
+                        octahedral_angles[central_name].append(actual_angle)
+                    else:
+                        angle_terms.append(actual_angle)
+
+                elif isinstance(target_angle, TargetCosineAngle):
+                    try:
+                        assert isinstance(
+                            target_angle.angle_k, openmm.unit.Quantity
+                        )
+                    except AssertionError:
+                        msg = f"{target_angle} in angles does not have units for parameters"
+                        raise ForcefieldUnitError(msg)
+
+                    central_bead = cgbeads[1]
+                    central_atom = list(found_angle.atoms)[1]
+                    central_name = (
+                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                    )
+                    actual_angle = CosineAngle(
+                        atoms=found_angle.atoms,
+                        atom_names=tuple(
+                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            for i in found_angle.atoms
+                        ),
+                        atom_ids=found_angle.atom_ids,
+                        n=target_angle.n,
+                        b=target_angle.b,
+                        angle_k=target_angle.angle_k,
+                        force="CosinePeriodicAngleForce",
+                    )
                     angle_terms.append(actual_angle)
 
         # For four coordinate systems, apply standard angle theta to

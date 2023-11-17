@@ -1,7 +1,13 @@
 import numpy as np
 import pytest
 import stk
-from cgexplore.angles import Angle, PyramidAngleRange, TargetAngleRange
+from cgexplore.angles import (
+    Angle,
+    CosineAngle,
+    PyramidAngleRange,
+    TargetAngleRange,
+    TargetCosineAngleRange,
+)
 from cgexplore.beads import CgBead
 from cgexplore.bonds import Bond, TargetBondRange
 from cgexplore.forcefield import ForceFieldLibrary
@@ -1997,6 +2003,260 @@ kjmol = openmm.unit.kilojoules_per_mole
             present_nonbondeds=([]),
             present_torsions=([]),
             library_string="",
+            name=name,
+        ),
+        # Working trigonal planar complex.
+        lambda name: CaseData(
+            molecule=stk.BuildingBlock(
+                smiles="[C][N][C]",
+                position_matrix=np.array(([1, 0, 0], [0.5, 0, 0], [2, 0, 0])),
+            ),
+            force_field_library=ForceFieldLibrary(
+                bead_library=(c_bead, n_bead, c_bead),
+                vdw_bond_cutoff=2,
+                prefix="testuff",
+            ),
+            bond_ranges=(
+                TargetBondRange(
+                    class1="c",
+                    class2="n",
+                    eclass1="Ba",
+                    eclass2="Pb",
+                    bond_rs=(
+                        openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                    ),
+                    bond_ks=(
+                        openmm.unit.Quantity(
+                            value=1e5,
+                            unit=kjmol / openmm.unit.nanometer**2,
+                        ),
+                    ),
+                ),
+            ),
+            angle_ranges=(
+                TargetCosineAngleRange(
+                    class1="c",
+                    class2="n",
+                    class3="c",
+                    eclass1="C",
+                    eclass2="N",
+                    eclass3="C",
+                    ns=(3,),
+                    bs=(-1, 1),
+                    angle_ks=(
+                        openmm.unit.Quantity(
+                            value=1e2,
+                            unit=kjmol / openmm.unit.radian**2,
+                        ),
+                    ),
+                ),
+            ),
+            torsion_ranges=(),
+            nonbonded_ranges=(
+                TargetNonbondedRange(
+                    "c",
+                    "C",
+                    epsilons=(openmm.unit.Quantity(value=10.0, unit=kjmol),),
+                    sigmas=(
+                        openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                    ),
+                    force="custom-excl-vol",
+                ),
+                TargetNonbondedRange(
+                    "n",
+                    "N",
+                    epsilons=(openmm.unit.Quantity(value=10.0, unit=kjmol),),
+                    sigmas=(
+                        openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                    ),
+                    force="custom-excl-vol",
+                ),
+            ),
+            num_forcefields=2,
+            present_bonds=(
+                (
+                    Bond(
+                        atom_names=("C1", "N2"),
+                        atom_ids=(0, 1),
+                        bond_r=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        bond_k=openmm.unit.Quantity(
+                            value=100000.0,
+                            unit=kjmol / openmm.unit.nanometer**2,
+                        ),
+                        atoms=(stk.C(0), stk.N(1)),
+                        force="HarmonicBondForce",
+                    ),
+                    Bond(
+                        atom_names=("N2", "C3"),
+                        atom_ids=(1, 2),
+                        bond_r=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        bond_k=openmm.unit.Quantity(
+                            value=100000.0,
+                            unit=kjmol / openmm.unit.nanometer**2,
+                        ),
+                        atoms=(stk.N(1), stk.C(2)),
+                        force="HarmonicBondForce",
+                    ),
+                ),
+                (
+                    Bond(
+                        atom_names=("C1", "N2"),
+                        atom_ids=(0, 1),
+                        bond_r=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        bond_k=openmm.unit.Quantity(
+                            value=100000.0,
+                            unit=kjmol / openmm.unit.nanometer**2,
+                        ),
+                        atoms=(stk.C(0), stk.N(1)),
+                        force="HarmonicBondForce",
+                    ),
+                    Bond(
+                        atom_names=("N2", "C3"),
+                        atom_ids=(1, 2),
+                        bond_r=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        bond_k=openmm.unit.Quantity(
+                            value=100000.0,
+                            unit=kjmol / openmm.unit.nanometer**2,
+                        ),
+                        atoms=(stk.N(1), stk.C(2)),
+                        force="HarmonicBondForce",
+                    ),
+                ),
+            ),
+            present_angles=(
+                (
+                    CosineAngle(
+                        atom_names=("C1", "N2", "C3"),
+                        atom_ids=(0, 1, 2),
+                        n=3,
+                        b=-1,
+                        angle_k=openmm.unit.Quantity(
+                            value=100.0, unit=kjmol / openmm.unit.radian**2
+                        ),
+                        atoms=(stk.C(0), stk.N(1), stk.C(2)),
+                        force="CosinePeriodicAngleForce",
+                    ),
+                ),
+                (
+                    CosineAngle(
+                        atom_names=("C1", "N2", "C3"),
+                        atom_ids=(0, 1, 2),
+                        n=3,
+                        b=1,
+                        angle_k=openmm.unit.Quantity(
+                            value=100.0, unit=kjmol / openmm.unit.radian**2
+                        ),
+                        atoms=(stk.C(0), stk.N(1), stk.C(2)),
+                        force="CosinePeriodicAngleForce",
+                    ),
+                ),
+            ),
+            present_nonbondeds=(
+                (
+                    Nonbonded(
+                        atom_id=0,
+                        bead_class="c",
+                        bead_element="C",
+                        sigma=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
+                        force="custom-excl-vol",
+                    ),
+                    Nonbonded(
+                        atom_id=1,
+                        bead_class="n",
+                        bead_element="N",
+                        sigma=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
+                        force="custom-excl-vol",
+                    ),
+                    Nonbonded(
+                        atom_id=2,
+                        bead_class="c",
+                        bead_element="C",
+                        sigma=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
+                        force="custom-excl-vol",
+                    ),
+                ),
+                (
+                    Nonbonded(
+                        atom_id=0,
+                        bead_class="c",
+                        bead_element="C",
+                        sigma=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
+                        force="custom-excl-vol",
+                    ),
+                    Nonbonded(
+                        atom_id=1,
+                        bead_class="n",
+                        bead_element="N",
+                        sigma=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
+                        force="custom-excl-vol",
+                    ),
+                    Nonbonded(
+                        atom_id=2,
+                        bead_class="c",
+                        bead_element="C",
+                        sigma=openmm.unit.Quantity(
+                            value=1.0, unit=openmm.unit.angstrom
+                        ),
+                        epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
+                        force="custom-excl-vol",
+                    ),
+                ),
+            ),
+            present_torsions=((), ()),
+            library_string=(
+                "ForceFieldLibrary(\n"
+                "  bead_library=(CgBead(element_string='C', bead_type='c1', be"
+                "ad_class='c', coordination=2), CgBead(element_string='N', bea"
+                "d_type='n1', bead_class='n', coordination=2), CgBead(element_"
+                "string='C', bead_type='c1', bead_class='c', coordination=2)),"
+                "\n"
+                "  bond_ranges=(TargetBondRange(class1='c', class2='n', eclass"
+                "1='Ba', eclass2='Pb', bond_rs=(Quantity(value=1.0, unit=angst"
+                "rom),), bond_ks=(Quantity(value=100000.0, unit=kilojoule/(nan"
+                "ometer**2*mole)),)),),\n"
+                "  angle_ranges=(TargetCosineAngleRange(class1='c', class2='n'"
+                ", class3='c', eclass1='C', eclass2='N', eclass3='C', ns=(3,),"
+                " bs=(-1, 1), angle_ks=(Quantity(value=100.0, unit=kilojoule/("
+                "mole*radian**2)),)),),\n"
+                "  torsion_ranges=(),\n"
+                "  nonbonded_ranges=(TargetNonbondedRange(bead_class='c', bead"
+                "_element='C', sigmas=(Quantity(value=1.0, unit=angstrom),), e"
+                "psilons=(Quantity(value=10.0, unit=kilojoule/mole),), force='"
+                "custom-excl-vol'), TargetNonbondedRange(bead_class='n', bead_"
+                "element='N', sigmas=(Quantity(value=1.0, unit=angstrom),), ep"
+                "silons=(Quantity(value=10.0, unit=kilojoule/mole),), force='c"
+                "ustom-excl-vol'))\n"
+                ")"
+            ),
             name=name,
         ),
     )
