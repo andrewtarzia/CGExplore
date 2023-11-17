@@ -131,5 +131,15 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
+          name: uff-plot
+          path: uff_angle_test.png
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: uff2-plot
+          path: uff_angle_test2.png
+
+      - uses: actions/upload-artifact@v3
+        with:
           name: rt-plot
           path: random_test.png
