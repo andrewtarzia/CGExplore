@@ -132,4 +132,4 @@ class Pymol:
             orient_atoms=orient_atoms,
             big_colour=big_colour,
         )
-        os.system(f"{self._pymol} {pml_file}")
+        os.system(f"{self._pymol} -c -q {pml_file}")
