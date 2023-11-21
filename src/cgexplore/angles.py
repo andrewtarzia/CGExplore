@@ -32,6 +32,7 @@ class Angle:
     angle_k: openmm.unit.Quantity
     atoms: tuple[stk.Atom, ...] | None
     force: str | None
+    funct: int = 0
 
 
 @dataclass
@@ -214,3 +215,54 @@ def find_angles(molecule: stk.Molecule) -> abc.Iterator[FoundAngle]:
             atoms=atoms,
             atom_ids=tuple(i.get_id() for i in atoms),
         )
+
+
+@dataclass
+class TargetMartiniAngle:
+    class1: str
+    class2: str
+    class3: str
+    eclass1: str
+    eclass2: str
+    eclass3: str
+    funct: int
+    angle: openmm.unit.Quantity
+    angle_k: openmm.unit.Quantity
+
+    def human_readable(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.class1}{self.class2}{self.class3}, "
+            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
+            f"{self.funct}, "
+            f"{self.angle.in_units_of(openmm.unit.degrees)}, "
+            f"{self.angle_k.in_units_of(angle_k_unit())}, "
+            ")"
+        )
+
+
+@dataclass
+class MartiniAngleRange:
+    class1: str
+    class2: str
+    class3: str
+    eclass1: str
+    eclass2: str
+    eclass3: str
+    funct: int
+    angles: tuple[openmm.unit.Quantity]
+    angle_ks: tuple[openmm.unit.Quantity]
+
+    def yield_angles(self):
+        for angle, k in itertools.product(self.angles, self.angle_ks):
+            yield TargetMartiniAngle(
+                class1=self.class1,
+                class2=self.class2,
+                class3=self.class3,
+                eclass1=self.eclass1,
+                eclass2=self.eclass2,
+                eclass3=self.eclass3,
+                funct=self.funct,
+                angle=angle,
+                angle_k=k,
+            )

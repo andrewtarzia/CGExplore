@@ -32,6 +32,7 @@ class Bond:
     bond_k: openmm.unit.Quantity
     atoms: tuple[stk.Atom, ...] | None
     force: str | None
+    funct: int = 0
 
 
 @dataclass
@@ -70,6 +71,51 @@ class TargetBondRange:
                 class2=self.class2,
                 eclass1=self.eclass1,
                 eclass2=self.eclass2,
+                bond_k=k,
+                bond_r=r,
+            )
+
+
+@dataclass
+class TargetMartiniBond:
+    class1: str
+    class2: str
+    eclass1: str
+    eclass2: str
+    funct: int
+    bond_r: openmm.unit.Quantity
+    bond_k: openmm.unit.Quantity
+
+    def human_readable(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f"{self.class1}{self.class2}, "
+            f"{self.eclass1}{self.eclass2}, "
+            f"{self.funct},"
+            f"{self.bond_r.in_units_of(openmm.unit.angstrom)}, "
+            f"{self.bond_k.in_units_of(bond_k_unit())}, "
+            ")"
+        )
+
+
+@dataclass
+class MartiniBondRange:
+    class1: str
+    class2: str
+    eclass1: str
+    eclass2: str
+    funct: int
+    bond_rs: tuple[openmm.unit.Quantity]
+    bond_ks: tuple[openmm.unit.Quantity]
+
+    def yield_bonds(self):
+        for r, k in itertools.product(self.bond_rs, self.bond_ks):
+            yield TargetMartiniBond(
+                class1=self.class1,
+                class2=self.class2,
+                eclass1=self.eclass1,
+                eclass2=self.eclass2,
+                funct=self.funct,
                 bond_k=k,
                 bond_r=r,
             )
