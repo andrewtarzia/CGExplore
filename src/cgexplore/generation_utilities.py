@@ -22,7 +22,7 @@ from .assigned_system import AssignedSystem
 from .beads import periodic_table
 from .bonds import Bond
 from .ensembles import Conformer, Ensemble
-from .forcefield import Forcefield
+from .forcefield import ForceField
 from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer, OMMTrajectory
 
 logging.basicConfig(
@@ -35,7 +35,7 @@ def optimise_ligand(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path,
-    force_field: Forcefield,
+    force_field: ForceField,
     platform: str | None,
 ) -> stk.Molecule:
     """Optimise a building block.
@@ -467,7 +467,7 @@ def shift_beads(
 
 def yield_shifted_models(
     molecule: stk.Molecule,
-    force_field: Forcefield,
+    force_field: ForceField,
     kicks: tuple[int],
 ) -> Iterator[stk.Molecule]:
     """Yield conformers with atom positions of particular beads shifted.

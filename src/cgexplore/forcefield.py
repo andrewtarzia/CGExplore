@@ -21,14 +21,20 @@ from .angles import (
     CosineAngle,
     TargetAngle,
     TargetCosineAngle,
+    TargetMartiniAngle,
     find_angles,
 )
-from .assigned_system import AssignedSystem
+from .assigned_system import AssignedSystem, ForcedSystem, MartiniSystem
 from .beads import CgBead, get_cgbead_from_element
-from .bonds import Bond, TargetBond
-from .errors import ForcefieldUnitError
+from .bonds import Bond, TargetBond, TargetMartiniBond
+from .errors import ForceFieldUnitError
 from .nonbonded import Nonbonded, TargetNonbonded
-from .torsions import TargetTorsion, Torsion, find_torsions
+from .torsions import (
+    TargetMartiniTorsion,
+    TargetTorsion,
+    Torsion,
+    find_torsions,
+)
 from .utilities import angle_between, convert_pyramid_angle
 
 logging.basicConfig(
@@ -64,9 +70,8 @@ class ForceFieldLibrary:
     def add_nonbonded_range(self, nonbonded_range: tuple) -> None:
         self._nonbonded_ranges += (nonbonded_range,)
 
-    def yield_forcefields(self):
+    def _get_iterations(self) -> list:
         iterations = []
-
         for bond_range in self._bond_ranges:
             iterations.append(tuple(bond_range.yield_bonds()))
 
@@ -78,6 +83,10 @@ class ForceFieldLibrary:
 
         for nonbonded_range in self._nonbonded_ranges:
             iterations.append(tuple(nonbonded_range.yield_nonbondeds()))
+        return iterations
+
+    def yield_forcefields(self):
+        iterations = self._get_iterations()
 
         for i, parameter_set in enumerate(itertools.product(*iterations)):
             bond_terms = tuple(
@@ -99,7 +108,7 @@ class ForceFieldLibrary:
                 i for i in parameter_set if "Nonbonded" in i.__class__.__name__
             )
 
-            yield Forcefield(
+            yield ForceField(
                 identifier=str(i),
                 prefix=self._prefix,
                 present_beads=self._bead_library,
@@ -125,18 +134,38 @@ class ForceFieldLibrary:
         return str(self)
 
 
-class Forcefield:
+class ForceField:
     def __init__(
         self,
         identifier: str,
         prefix: str,
         present_beads: tuple[CgBead, ...],
-        bond_targets: tuple[TargetBond, ...],
-        angle_targets: tuple[TargetAngle, ...],
-        torsion_targets: tuple[TargetTorsion, ...],
+        bond_targets: tuple[TargetBond | TargetMartiniBond, ...],
+        angle_targets: tuple[TargetAngle | TargetMartiniAngle, ...],
+        torsion_targets: tuple[TargetTorsion | TargetMartiniTorsion, ...],
         nonbonded_targets: tuple[TargetNonbonded, ...],
         vdw_bond_cutoff: int,
     ) -> None:
+        # Check if you should use MartiniForceField.
+        for bt in bond_targets:
+            if isinstance(bt, TargetMartiniBond):
+                raise TypeError(
+                    f"{bt} is Martini type, probably use "
+                    "MartiniForceFieldLibrary/MartiniForceField"
+                )
+        for at in angle_targets:
+            if isinstance(at, TargetMartiniAngle):
+                raise TypeError(
+                    f"{at} is Martini type, probably use "
+                    "MartiniForceFieldLibrary/MartiniForceField"
+                )
+        for tt in torsion_targets:
+            if isinstance(tt, TargetMartiniTorsion):
+                raise TypeError(
+                    f"{tt} is Martini type, probably use "
+                    "MartiniForceFieldLibrary/MartiniForceField"
+                )
+
         self._identifier = identifier
         self._prefix = prefix
         self._present_beads = present_beads
@@ -148,6 +177,9 @@ class Forcefield:
         self._hrprefix = "ffhr"
 
     def _assign_bond_terms(self, molecule: stk.Molecule) -> tuple:
+        found = set()
+        assigned = set()
+
         bonds = list(molecule.get_bonds())
         bond_terms = []
         for bond in bonds:
@@ -157,20 +189,30 @@ class Forcefield:
                 get_cgbead_from_element(i, self.get_bead_set())
                 for i in atom_estrings
             ]
-            cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
-
+            cgbead_string = tuple(i.bead_type for i in cgbeads)
+            found.add(cgbead_string)
+            found.add(tuple(reversed(cgbead_string)))
             for target_term in self._bond_targets:
-                if (target_term.class1, target_term.class2) not in (
+                if (target_term.type1, target_term.type2) not in (
                     cgbead_string,
                     tuple(reversed(cgbead_string)),
                 ):
                     continue
+                assigned.add(cgbead_string)
+                assigned.add(tuple(reversed(cgbead_string)))
                 try:
                     assert isinstance(target_term.bond_r, openmm.unit.Quantity)
                     assert isinstance(target_term.bond_k, openmm.unit.Quantity)
                 except AssertionError:
                     msg = f"{target_term} in bonds does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
+
+                if "Martini" in target_term.__class__.__name__:
+                    force = "MartiniDefinedBond"
+                    funct = target_term.funct
+                else:
+                    force = "HarmonicBondForce"
+                    funct = 0
 
                 bond_terms.append(
                     Bond(
@@ -182,15 +224,26 @@ class Forcefield:
                         atom_ids=tuple(i.get_id() for i in atoms),
                         bond_k=target_term.bond_k,
                         bond_r=target_term.bond_r,
-                        force="HarmonicBondForce",
+                        force=force,
+                        funct=funct,
                     )
                 )
+
+        logging.info(
+            "unassigned bond terms: "
+            f"{sorted((i for i in found if i not in assigned))}"
+        )
         return tuple(bond_terms)
 
-    def _assign_angle_terms(self, molecule: stk.Molecule) -> tuple:
-        angle_terms = []
+    def _assign_angle_terms(
+        self,
+        molecule: stk.Molecule,
+    ) -> tuple[Angle | CosineAngle, ...]:
+        angle_terms: list[Angle | CosineAngle] = []
         pos_mat = molecule.get_position_matrix()
 
+        found = set()
+        assigned = set()
         pyramid_angles: dict[str, list] = {}
         octahedral_angles: dict[str, list] = {}
         for found_angle in find_angles(molecule):
@@ -205,12 +258,14 @@ class Forcefield:
                     f"Angle not assigned ({found_angle}; {atom_estrings})."
                 )
 
-            cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
+            cgbead_string = tuple(i.bead_type for i in cgbeads)
+            found.add(cgbead_string)
+            found.add(tuple(reversed(cgbead_string)))
             for target_angle in self._angle_targets:
                 search_string = (
-                    target_angle.class1,
-                    target_angle.class2,
-                    target_angle.class3,
+                    target_angle.type1,
+                    target_angle.type2,
+                    target_angle.type3,
                 )
                 if search_string not in (
                     cgbead_string,
@@ -218,6 +273,8 @@ class Forcefield:
                 ):
                     continue
 
+                assigned.add(cgbead_string)
+                assigned.add(tuple(reversed(cgbead_string)))
                 if isinstance(target_angle, TargetAngle):
                     try:
                         assert isinstance(
@@ -231,7 +288,7 @@ class Forcefield:
                             f"{target_angle} in angles does not have units for"
                             " parameters"
                         )
-                        raise ForcefieldUnitError(msg)
+                        raise ForceFieldUnitError(msg)
 
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
@@ -270,24 +327,59 @@ class Forcefield:
                             f"{target_angle} in angles does not have units for"
                             " parameters"
                         )
-                        raise ForcefieldUnitError(msg)
+                        raise ForceFieldUnitError(msg)
 
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
                         f"{atom_estrings[1]}{central_atom.get_id()+1}"
                     )
-                    actual_angle = CosineAngle(
+                    angle_terms.append(
+                        CosineAngle(
+                            atoms=found_angle.atoms,
+                            atom_names=tuple(
+                                f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                                for i in found_angle.atoms
+                            ),
+                            atom_ids=found_angle.atom_ids,
+                            n=target_angle.n,
+                            b=target_angle.b,
+                            angle_k=target_angle.angle_k,
+                            force="CosinePeriodicAngleForce",
+                        )
+                    )
+
+                elif isinstance(target_angle, TargetMartiniAngle):
+                    try:
+                        assert isinstance(
+                            target_angle.angle, openmm.unit.Quantity
+                        )
+                        assert isinstance(
+                            target_angle.angle_k, openmm.unit.Quantity
+                        )
+                    except AssertionError:
+                        msg = (
+                            f"{target_angle} in angles does not have units for"
+                            " parameters"
+                        )
+                        raise ForceFieldUnitError(msg)
+
+                    central_bead = cgbeads[1]
+                    central_atom = list(found_angle.atoms)[1]
+                    central_name = (
+                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                    )
+                    actual_angle = Angle(
                         atoms=found_angle.atoms,
                         atom_names=tuple(
                             f"{i.__class__.__name__}" f"{i.get_id()+1}"
                             for i in found_angle.atoms
                         ),
                         atom_ids=found_angle.atom_ids,
-                        n=target_angle.n,
-                        b=target_angle.b,
+                        angle=target_angle.angle,
                         angle_k=target_angle.angle_k,
-                        force="CosinePeriodicAngleForce",
+                        force="MartiniDefinedAngle",
+                        funct=target_angle.funct,
                     )
                     angle_terms.append(actual_angle)
 
@@ -380,6 +472,11 @@ class Forcefield:
                         force="HarmonicAngleForce",
                     ),
                 )
+
+        logging.info(
+            "unassigned angle terms: "
+            f"{sorted((i for i in found if i not in assigned))}"
+        )
         return tuple(angle_terms)
 
     def _assign_torsion_terms(
@@ -387,6 +484,8 @@ class Forcefield:
         molecule: stk.Molecule,
     ) -> tuple:
         torsion_terms = []
+        found = set()
+        assigned = set()
 
         # Iterate over the different path lengths, and find all torsions
         # for that lengths.
@@ -400,7 +499,9 @@ class Forcefield:
                     get_cgbead_from_element(i, self.get_bead_set())
                     for i in atom_estrings
                 ]
-                cgbead_string = tuple(i.bead_type[0] for i in cgbeads)
+                cgbead_string = tuple(i.bead_type for i in cgbeads)
+                found.add(cgbead_string)
+                found.add(tuple(reversed(cgbead_string)))
                 for target_torsion in self._torsion_targets:
                     if target_torsion.search_string not in (
                         cgbead_string,
@@ -408,6 +509,8 @@ class Forcefield:
                     ):
                         continue
 
+                    assigned.add(cgbead_string)
+                    assigned.add(tuple(reversed(cgbead_string)))
                     try:
                         assert isinstance(
                             target_torsion.phi0, openmm.unit.Quantity
@@ -419,7 +522,14 @@ class Forcefield:
                         msg = (
                             f"{target_torsion} in torsions does not have units"
                         )
-                        raise ForcefieldUnitError(msg)
+                        raise ForceFieldUnitError(msg)
+
+                    if "Martini" in target_torsion.__class__.__name__:
+                        force = "MartiniDefinedTorsion"
+                        funct = target_torsion.funct
+                    else:
+                        force = "PeriodicTorsionForce"
+                        funct = 0
 
                     torsion_terms.append(
                         Torsion(
@@ -435,9 +545,15 @@ class Forcefield:
                             phi0=target_torsion.phi0,
                             torsion_n=target_torsion.torsion_n,
                             torsion_k=target_torsion.torsion_k,
-                            force="PeriodicTorsionForce",
+                            force=force,
+                            funct=funct,
                         )
                     )
+
+        logging.info(
+            "unassigned torsion terms: "
+            f"{sorted((i for i in found if i not in assigned))}"
+        )
         return tuple(torsion_terms)
 
     def _assign_nonbonded_terms(
@@ -460,7 +576,7 @@ class Forcefield:
                     )
                 except AssertionError:
                     msg = f"{target_term} in nonbondeds does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
 
                 nonbonded_terms.append(
                     Nonbonded(
@@ -480,7 +596,7 @@ class Forcefield:
         molecule: stk.Molecule,
         name: str,
         output_dir: pathlib.Path,
-    ) -> AssignedSystem:
+    ) -> ForcedSystem:
         assigned_terms = {
             "bond": self._assign_bond_terms(molecule),
             "angle": self._assign_angle_terms(molecule),
@@ -573,3 +689,127 @@ class Forcefield:
 
     def __repr__(self) -> str:
         return str(self)
+
+
+class MartiniForceFieldLibrary(ForceFieldLibrary):
+    def __init__(
+        self,
+        bead_library: tuple[CgBead],
+        vdw_bond_cutoff: int,
+        prefix: str,
+    ) -> None:
+        self._bead_library = bead_library
+        self._vdw_bond_cutoff = vdw_bond_cutoff
+        self._prefix = prefix
+        self._bond_ranges: tuple = ()
+        self._angle_ranges: tuple = ()
+        self._torsion_ranges: tuple = ()
+        self._constraints: tuple = ()
+
+    def _get_iterations(self) -> list:
+        iterations = []
+        for bond_range in self._bond_ranges:
+            iterations.append(tuple(bond_range.yield_bonds()))
+
+        for angle_range in self._angle_ranges:
+            iterations.append(tuple(angle_range.yield_angles()))
+
+        for torsion_range in self._torsion_ranges:
+            iterations.append(tuple(torsion_range.yield_torsions()))
+
+        return iterations
+
+    def yield_forcefields(self):
+        iterations = self._get_iterations()
+
+        for i, parameter_set in enumerate(itertools.product(*iterations)):
+            bond_terms = tuple(
+                i for i in parameter_set if "Bond" in i.__class__.__name__
+            )
+            angle_terms = tuple(
+                i
+                for i in parameter_set
+                if "Angle" in i.__class__.__name__
+                # and "Pyramid" not in i.__class__.__name__
+            )
+            torsion_terms = tuple(
+                i
+                for i in parameter_set
+                if "Torsion" in i.__class__.__name__
+                # if len(i.search_string) == 4
+            )
+            yield MartiniForceField(
+                identifier=str(i),
+                prefix=self._prefix,
+                present_beads=self._bead_library,
+                bond_targets=bond_terms,
+                angle_targets=angle_terms,
+                torsion_targets=torsion_terms,
+                constraints=self._constraints,
+                vdw_bond_cutoff=self._vdw_bond_cutoff,
+            )
+
+    def __str__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(\n"
+            f"  bead_library={self._bead_library},\n"
+            f"  bond_ranges={self._bond_ranges},\n"
+            f"  angle_ranges={self._angle_ranges},\n"
+            f"  torsion_ranges={self._torsion_ranges},\n"
+            "\n)"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
+class MartiniForceField(ForceField):
+    def __init__(
+        self,
+        identifier: str,
+        prefix: str,
+        present_beads: tuple[CgBead, ...],
+        bond_targets: tuple[TargetBond | TargetMartiniBond, ...],
+        angle_targets: tuple[TargetAngle | TargetMartiniAngle, ...],
+        torsion_targets: tuple[TargetTorsion | TargetMartiniTorsion, ...],
+        constraints: tuple[tuple],
+        vdw_bond_cutoff: int,
+    ) -> None:
+        self._identifier = identifier
+        self._prefix = prefix
+        self._present_beads = present_beads
+        self._bond_targets = bond_targets
+        self._angle_targets = angle_targets
+        self._torsion_targets = torsion_targets
+        self._vdw_bond_cutoff = vdw_bond_cutoff
+        self._constraints = constraints
+        self._hrprefix = "mffhr"
+
+    def assign_terms(
+        self,
+        molecule: stk.Molecule,
+        name: str,
+        output_dir: pathlib.Path,
+    ) -> ForcedSystem:
+        assigned_terms = {
+            "bond": self._assign_bond_terms(molecule),
+            "angle": self._assign_angle_terms(molecule),
+            "torsion": self._assign_torsion_terms(molecule),
+            "nonbonded": (),
+            "constraints": self._constraints,
+        }
+
+        return MartiniSystem(
+            molecule=molecule,
+            force_field_terms=assigned_terms,
+            system_xml=(
+                output_dir
+                / f"{name}_{self._prefix}_{self._identifier}_syst.xml"
+            ),
+            topology_itp=(
+                output_dir
+                / f"{name}_{self._prefix}_{self._identifier}_topo.itp"
+            ),
+            bead_set=self.get_bead_set(),
+            vdw_bond_cutoff=self._vdw_bond_cutoff,
+        )

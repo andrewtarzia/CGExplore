@@ -16,7 +16,7 @@ import pandas as pd
 import stk
 from openmm import app, openmm
 
-from .assigned_system import AssignedSystem
+from .assigned_system import ForcedSystem
 from .ensembles import Timestep
 from .utilities import get_atom_distance
 
@@ -219,7 +219,7 @@ class CGOMMOptimizer:
 
     def _setup_simulation(
         self,
-        assigned_system: AssignedSystem,
+        assigned_system: ForcedSystem,
     ) -> tuple[app.Simulation, openmm.System]:
         system = assigned_system.get_openmm_system()
         topology = assigned_system.get_openmm_topology()
@@ -320,7 +320,7 @@ class CGOMMOptimizer:
         positions = state.getPositions(asNumpy=True)
         return molecule.with_position_matrix(positions * 10)
 
-    def calculate_energy(self, assigned_system: AssignedSystem) -> float:
+    def calculate_energy(self, assigned_system: ForcedSystem) -> float:
         simulation, _ = self._setup_simulation(assigned_system)
         return self._get_energy(simulation)
 
@@ -340,7 +340,7 @@ class CGOMMOptimizer:
             decomposition[force] = (value, unit)
         return decomposition
 
-    def optimize(self, assigned_system: AssignedSystem) -> stk.Molecule:
+    def optimize(self, assigned_system: ForcedSystem) -> stk.Molecule:
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
         self._output_string += (
@@ -514,7 +514,7 @@ class CGOMMDynamics(CGOMMOptimizer):
             traj_freq=self._traj_freq,
         )
 
-    def run_dynamics(self, assigned_system: AssignedSystem) -> OMMTrajectory:
+    def run_dynamics(self, assigned_system: ForcedSystem) -> OMMTrajectory:
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
         self._output_string += (

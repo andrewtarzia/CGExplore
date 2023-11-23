@@ -30,6 +30,7 @@ class Torsion:
     torsion_k: openmm.unit.Quantity
     torsion_n: int
     force: str | None
+    funct: int = 0
 
 
 @dataclass
@@ -40,6 +41,7 @@ class TargetTorsion:
     phi0: openmm.unit.Quantity
     torsion_k: openmm.unit.Quantity
     torsion_n: int
+    funct: int = 0
 
     def human_readable(self) -> str:
         return (
@@ -99,3 +101,53 @@ def find_torsions(
             atoms=atoms,
             atom_ids=tuple(i.get_id() for i in atoms),
         )
+
+
+@dataclass
+class TargetMartiniTorsion:
+    search_string: tuple[str, ...]
+    search_estring: tuple[str, ...]
+    measured_atom_ids: tuple[int, int, int, int]
+    phi0: openmm.unit.Quantity
+    torsion_k: openmm.unit.Quantity
+    torsion_n: int
+    funct: int
+
+    def human_readable(self) -> str:
+        return (
+            f"{self.__class__.__name__}("
+            f'{"".join(self.search_string)}, '
+            f'{"".join(self.search_estring)}, '
+            f"{self.measured_atom_ids!s}, "
+            f"{self.funct},"
+            f"{self.phi0.in_units_of(openmm.unit.degrees)}, "
+            f"{self.torsion_k.in_units_of(openmm.unit.kilojoules_per_mole)}, "
+            f"{self.torsion_n}, "
+            ")"
+        )
+
+
+@dataclass
+class MartiniTorsionRange:
+    search_string: tuple[str, ...]
+    search_estring: tuple[str, ...]
+    measured_atom_ids: tuple[int, int, int, int]
+    phi0s: tuple[openmm.unit.Quantity]
+    torsion_ks: tuple[openmm.unit.Quantity]
+    torsion_ns: tuple[int]
+    funct: int
+
+    def yield_torsions(self):
+        raise NotImplementedError("handle torsions")
+        for phi0, k, n in itertools.product(
+            self.phi0s, self.torsion_ks, self.torsion_ns
+        ):
+            yield TargetMartiniTorsion(
+                search_string=self.search_string,
+                search_estring=self.search_estring,
+                measured_atom_ids=self.measured_atom_ids,
+                phi0=phi0,
+                torsion_k=k,
+                torsion_n=n,
+                funct=self.funct,
+            )

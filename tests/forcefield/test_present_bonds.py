@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-from cgexplore.errors import ForcefieldUnitError
+from cgexplore.errors import ForceFieldUnitError
 
 from .utilities import is_equivalent_atom
 
@@ -47,5 +47,5 @@ def test_present_bonds(molecule):
                 assert test.bond_k == present.bond_k
                 assert test.force == present.force
 
-    except ForcefieldUnitError:
+    except ForceFieldUnitError:
         assert molecule.num_forcefields == 0

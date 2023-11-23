@@ -96,6 +96,9 @@ class AtomliteDatabase:
     def has_molecule(self, key: str) -> bool:
         return bool(self._db.has_entry(key))
 
+    def remove_entry(self, key: str) -> None:
+        self._db.remove_entries(keys=key)
+
     def keep_if(
         self,
         column: str,

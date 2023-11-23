@@ -2,7 +2,7 @@ import os
 import pathlib
 
 from cgexplore.angles import Angle, CosineAngle
-from cgexplore.errors import ForcefieldUnitError
+from cgexplore.errors import ForceFieldUnitError
 
 from .utilities import is_equivalent_atom
 
@@ -51,5 +51,5 @@ def test_present_angles(molecule):
                     assert test.n == present.n
                     assert test.b == present.b
 
-    except ForcefieldUnitError:
+    except ForceFieldUnitError:
         assert molecule.num_forcefields == 0
