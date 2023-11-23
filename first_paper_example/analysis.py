@@ -123,7 +123,7 @@ def analyse_cage(
         g_measure = GeomMeasure(
             target_torsions=(
                 TargetTorsion(
-                    search_string=("b", "a", "c", "a", "b"),
+                    search_string=("b1", "a1", "c1", "a1", "b1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
                     measured_atom_ids=[0, 1, 3, 4],
                     phi0=openmm.unit.Quantity(
@@ -177,36 +177,36 @@ def analyse_cage(
         c3r0 = None
         clr0 = None
         for bt in ff_targets["bonds"]:
-            cp = (bt.class1, bt.class2)
+            cp = (bt.type1, bt.type2)
             if "6P8" in name:
-                if ("b", "n") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1") in (cp, tuple(reversed(cp))):
                     c3r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
-                if ("b", "m") in (cp, tuple(reversed(cp))):
+                if ("b1", "m1") in (cp, tuple(reversed(cp))):
                     clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
             else:
-                if ("a", "c") in (cp, tuple(reversed(cp))):
+                if ("a1", "c1") in (cp, tuple(reversed(cp))):
                     c2r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
-                if ("b", "n") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1") in (cp, tuple(reversed(cp))):
                     clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
-                elif ("b", "m") in (cp, tuple(reversed(cp))):
+                elif ("b1", "m1") in (cp, tuple(reversed(cp))):
                     clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
 
         c2angle = None
         c3angle = None
         clangle = None
         for at in ff_targets["angles"]:
-            cp = (at.class1, at.class2, at.class3)
+            cp = (at.type1, at.type2, at.type3)
             if "6P8" in name:
-                if ("b", "n", "b") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1", "b1") in (cp, tuple(reversed(cp))):
                     c3angle = at.angle.value_in_unit(openmm.unit.degrees)
-                if ("b", "m", "b") in (cp, tuple(reversed(cp))):
+                if ("b1", "m1", "b1") in (cp, tuple(reversed(cp))):
                     clangle = at.angle.value_in_unit(openmm.unit.degrees)
             else:
-                if ("b", "a", "c") in (cp, tuple(reversed(cp))):
+                if ("b1", "a1", "c1") in (cp, tuple(reversed(cp))):
                     c2angle = at.angle.value_in_unit(openmm.unit.degrees)
-                if ("b", "n", "b") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1", "b1") in (cp, tuple(reversed(cp))):
                     clangle = at.angle.value_in_unit(openmm.unit.degrees)
-                elif ("b", "m", "b") in (cp, tuple(reversed(cp))):
+                elif ("b1", "m1", "b1") in (cp, tuple(reversed(cp))):
                     clangle = at.angle.value_in_unit(openmm.unit.degrees)
 
         force_field_dict = {

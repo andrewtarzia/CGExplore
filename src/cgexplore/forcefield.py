@@ -193,7 +193,7 @@ class ForceField:
             found.add(cgbead_string)
             found.add(tuple(reversed(cgbead_string)))
             for target_term in self._bond_targets:
-                if (target_term.class1, target_term.class2) not in (
+                if (target_term.type1, target_term.type2) not in (
                     cgbead_string,
                     tuple(reversed(cgbead_string)),
                 ):
@@ -263,9 +263,9 @@ class ForceField:
             found.add(tuple(reversed(cgbead_string)))
             for target_angle in self._angle_targets:
                 search_string = (
-                    target_angle.class1,
-                    target_angle.class2,
-                    target_angle.class3,
+                    target_angle.type1,
+                    target_angle.type2,
+                    target_angle.type3,
                 )
                 if search_string not in (
                     cgbead_string,

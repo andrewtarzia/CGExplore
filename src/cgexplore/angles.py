@@ -48,20 +48,20 @@ class CosineAngle:
 
 @dataclass
 class TargetAngle:
-    class1: str
-    class2: str
-    class3: str
-    eclass1: str
-    eclass2: str
-    eclass3: str
+    type1: str
+    type2: str
+    type3: str
+    element1: str
+    element2: str
+    element3: str
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
 
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"{self.class1}{self.class2}{self.class3}, "
-            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
+            f"{self.type1}{self.type2}{self.type3}, "
+            f"{self.element1}{self.element2}{self.element3}, "
             f"{self.angle.in_units_of(openmm.unit.degrees)}, "
             f"{self.angle_k.in_units_of(angle_k_unit())}, "
             ")"
@@ -70,24 +70,24 @@ class TargetAngle:
 
 @dataclass
 class TargetAngleRange:
-    class1: str
-    class2: str
-    class3: str
-    eclass1: str
-    eclass2: str
-    eclass3: str
+    type1: str
+    type2: str
+    type3: str
+    element1: str
+    element2: str
+    element3: str
     angles: tuple[openmm.unit.Quantity]
     angle_ks: tuple[openmm.unit.Quantity]
 
     def yield_angles(self):
         for angle, k in itertools.product(self.angles, self.angle_ks):
             yield TargetAngle(
-                class1=self.class1,
-                class2=self.class2,
-                class3=self.class3,
-                eclass1=self.eclass1,
-                eclass2=self.eclass2,
-                eclass3=self.eclass3,
+                type1=self.type1,
+                type2=self.type2,
+                type3=self.type3,
+                element1=self.element1,
+                element2=self.element2,
+                element3=self.element3,
                 angle=angle,
                 angle_k=k,
             )
@@ -100,8 +100,8 @@ class TargetPyramidAngle(TargetAngle):
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"{self.class1}{self.class2}{self.class3}, "
-            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
+            f"{self.type1}{self.type2}{self.type3}, "
+            f"{self.element1}{self.element2}{self.element3}, "
             f"{self.angle.in_units_of(openmm.unit.degrees)}, "
             f"{self.opposite_angle.in_units_of(openmm.unit.degrees)}, "
             f"{self.angle_k.in_units_of(angle_k_unit())}, "
@@ -111,12 +111,12 @@ class TargetPyramidAngle(TargetAngle):
 
 @dataclass
 class TargetCosineAngle:
-    class1: str
-    class2: str
-    class3: str
-    eclass1: str
-    eclass2: str
-    eclass3: str
+    type1: str
+    type2: str
+    type3: str
+    element1: str
+    element2: str
+    element3: str
     n: int
     b: int
     angle_k: openmm.unit.Quantity
@@ -124,8 +124,8 @@ class TargetCosineAngle:
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"{self.class1}{self.class2}{self.class3}, "
-            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
+            f"{self.type1}{self.type2}{self.type3}, "
+            f"{self.element1}{self.element2}{self.element3}, "
             f"{self.n}, {self.b}, "
             f"{self.angle_k.in_units_of(angle_k_unit())}, "
             ")"
@@ -134,12 +134,12 @@ class TargetCosineAngle:
 
 @dataclass
 class TargetCosineAngleRange:
-    class1: str
-    class2: str
-    class3: str
-    eclass1: str
-    eclass2: str
-    eclass3: str
+    type1: str
+    type2: str
+    type3: str
+    element1: str
+    element2: str
+    element3: str
     ns: tuple[int]
     bs: tuple[int]
     angle_ks: tuple[openmm.unit.Quantity]
@@ -147,12 +147,12 @@ class TargetCosineAngleRange:
     def yield_angles(self):
         for n, b, k in itertools.product(self.ns, self.bs, self.angle_ks):
             yield TargetCosineAngle(
-                class1=self.class1,
-                class2=self.class2,
-                class3=self.class3,
-                eclass1=self.eclass1,
-                eclass2=self.eclass2,
-                eclass3=self.eclass3,
+                type1=self.type1,
+                type2=self.type2,
+                type3=self.type3,
+                element1=self.element1,
+                element2=self.element2,
+                element3=self.element3,
                 n=n,
                 b=b,
                 angle_k=k,
@@ -161,12 +161,12 @@ class TargetCosineAngleRange:
 
 @dataclass
 class PyramidAngleRange:
-    class1: str
-    class2: str
-    class3: str
-    eclass1: str
-    eclass2: str
-    eclass3: str
+    type1: str
+    type2: str
+    type3: str
+    element1: str
+    element2: str
+    element3: str
     angles: tuple[openmm.unit.Quantity]
     angle_ks: tuple[openmm.unit.Quantity]
 
@@ -184,12 +184,12 @@ class PyramidAngleRange:
                 raise ForceFieldUnitError(msg)
 
             yield TargetPyramidAngle(
-                class1=self.class1,
-                class2=self.class2,
-                class3=self.class3,
-                eclass1=self.eclass1,
-                eclass2=self.eclass2,
-                eclass3=self.eclass3,
+                type1=self.type1,
+                type2=self.type2,
+                type3=self.type3,
+                element1=self.element1,
+                element2=self.element2,
+                element3=self.element3,
                 angle=angle,
                 opposite_angle=opposite_angle,
                 angle_k=k,
@@ -219,12 +219,12 @@ def find_angles(molecule: stk.Molecule) -> abc.Iterator[FoundAngle]:
 
 @dataclass
 class TargetMartiniAngle:
-    class1: str
-    class2: str
-    class3: str
-    eclass1: str
-    eclass2: str
-    eclass3: str
+    type1: str
+    type2: str
+    type3: str
+    element1: str
+    element2: str
+    element3: str
     funct: int
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
@@ -232,8 +232,8 @@ class TargetMartiniAngle:
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
-            f"{self.class1}{self.class2}{self.class3}, "
-            f"{self.eclass1}{self.eclass2}{self.eclass3}, "
+            f"{self.type1}{self.type2}{self.type3}, "
+            f"{self.element1}{self.element2}{self.element3}, "
             f"{self.funct}, "
             f"{self.angle.in_units_of(openmm.unit.degrees)}, "
             f"{self.angle_k.in_units_of(angle_k_unit())}, "
@@ -243,12 +243,12 @@ class TargetMartiniAngle:
 
 @dataclass
 class MartiniAngleRange:
-    class1: str
-    class2: str
-    class3: str
-    eclass1: str
-    eclass2: str
-    eclass3: str
+    type1: str
+    type2: str
+    type3: str
+    element1: str
+    element2: str
+    element3: str
     funct: int
     angles: tuple[openmm.unit.Quantity]
     angle_ks: tuple[openmm.unit.Quantity]
@@ -256,12 +256,12 @@ class MartiniAngleRange:
     def yield_angles(self):
         for angle, k in itertools.product(self.angles, self.angle_ks):
             yield TargetMartiniAngle(
-                class1=self.class1,
-                class2=self.class2,
-                class3=self.class3,
-                eclass1=self.eclass1,
-                eclass2=self.eclass2,
-                eclass3=self.eclass3,
+                type1=self.type1,
+                type2=self.type2,
+                type3=self.type3,
+                element1=self.element1,
+                element2=self.element2,
+                element3=self.element3,
                 funct=self.funct,
                 angle=angle,
                 angle_k=k,

@@ -154,10 +154,10 @@ from .case_data import CaseData
                 ),
                 bond_targets=(
                     TargetBond(
-                        class1="a",
-                        class2="b",
-                        eclass1="Ba",
-                        eclass2="Pb",
+                        type1="a",
+                        type2="b",
+                        element1="Ba",
+                        element2="Pb",
                         bond_r=openmm.unit.Quantity(
                             value=1.0, unit=openmm.unit.angstrom
                         ),
@@ -171,12 +171,12 @@ from .case_data import CaseData
                 ),
                 angle_targets=(
                     TargetAngle(
-                        class1="b",
-                        class2="n",
-                        class3="b",
-                        eclass1="Pb",
-                        eclass2="C",
-                        eclass3="Pb",
+                        type1="b",
+                        type2="n",
+                        type3="b",
+                        element1="Pb",
+                        element2="C",
+                        element3="Pb",
                         angle=openmm.unit.Quantity(
                             value=70, unit=openmm.unit.degrees
                         ),
