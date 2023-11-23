@@ -146,9 +146,6 @@ def analyse_cage(
             molecule=conformer.molecule,
             absolute=True,
         )
-        dihedral_data = {
-            str("_".join(i)): dihedral_data[i] for i in dihedral_data
-        }
         min_b2b_distance = g_measure.calculate_minb2b(conformer.molecule)
         radius_gyration = g_measure.calculate_radius_gyration(
             molecule=conformer.molecule,
