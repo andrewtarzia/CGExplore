@@ -506,9 +506,6 @@ class Forcefield:
                     else:
                         force = "PeriodicTorsionForce"
                         funct = 0
-                    print(target_torsion)
-                    print(force)
-                    raise SystemExit
 
                     torsion_terms.append(
                         Torsion(
