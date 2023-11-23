@@ -9,8 +9,12 @@ import logging
 import os
 import pathlib
 
-import martini_openmm as martini
 from openmm import app, openmm
+
+try:
+    import martini_openmm as martini
+except ModuleNotFoundError:
+    pass
 
 logging.basicConfig(
     level=logging.INFO,
