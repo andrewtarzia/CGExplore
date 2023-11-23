@@ -240,8 +240,8 @@ def optimise_cage(
     database.add_properties(
         key=name,
         property_dict={
-            "energy_decomposition": conformer.energy_decomposition,
-            "source": conformer.source,
+            "energy_decomposition": min_energy_conformer.energy_decomposition,
+            "source": min_energy_conformer.source,
             "optimised": True,
         },
     )
