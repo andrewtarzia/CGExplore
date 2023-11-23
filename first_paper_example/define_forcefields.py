@@ -24,8 +24,8 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="b",
-            class2="b",
+            class1="b1",
+            class2="b1",
             eclass1="Pb",
             eclass2="Pb",
             bond_rs=(
@@ -43,8 +43,8 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="b",
-            class2="n",
+            class1="b1",
+            class2="n1",
             eclass1="Pb",
             eclass2="C",
             bond_rs=(
@@ -62,8 +62,8 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="b",
-            class2="m",
+            class1="b1",
+            class2="m1",
             eclass1="Pb",
             eclass2="Pd",
             bond_rs=(
@@ -82,9 +82,9 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="n",
-            class2="b",
-            class3="b",
+            class1="n1",
+            class2="b1",
+            class3="b1",
             eclass1="C",
             eclass2="Pb",
             eclass3="Pb",
@@ -103,9 +103,9 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="b",
-            class2="n",
-            class3="b",
+            class1="b1",
+            class2="n1",
+            class3="b1",
             eclass1="Pb",
             eclass2="C",
             eclass3="Pb",
@@ -132,9 +132,9 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="m",
-            class2="b",
-            class3="b",
+            class1="m1",
+            class2="b1",
+            class3="b1",
             eclass1="Pd",
             eclass2="Pb",
             eclass3="Pb",
@@ -153,9 +153,9 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_angle_range(
         PyramidAngleRange(
-            class1="b",
-            class2="m",
-            class3="b",
+            class1="b1",
+            class2="m1",
+            class3="b1",
             eclass1="Pb",
             eclass2="Pd",
             eclass3="Pb",
@@ -238,8 +238,8 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="a",
-            class2="c",
+            class1="a1",
+            class2="c1",
             eclass1="Ba",
             eclass2="Ag",
             bond_rs=(
@@ -257,8 +257,8 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="a",
-            class2="b",
+            class1="a1",
+            class2="b1",
             eclass1="Ba",
             eclass2="Pb",
             bond_rs=(
@@ -277,8 +277,8 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="b",
-            class2="m",
+            class1="b1",
+            class2="m1",
             eclass1="Pb",
             eclass2="Pd",
             bond_rs=(
@@ -297,9 +297,9 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="a",
-            class2="c",
-            class3="a",
+            class1="a1",
+            class2="c1",
+            class3="a1",
             eclass1="Ba",
             eclass2="Ag",
             eclass3="Ba",
@@ -318,9 +318,9 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="b",
-            class2="a",
-            class3="c",
+            class1="b1",
+            class2="a1",
+            class3="c1",
             eclass1="Pb",
             eclass2="Ba",
             eclass3="Ag",
@@ -341,9 +341,9 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="m",
-            class2="b",
-            class3="a",
+            class1="m1",
+            class2="b1",
+            class3="a1",
             eclass1="Pd",
             eclass2="Pb",
             eclass3="Ba",
@@ -362,9 +362,9 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_angle_range(
         PyramidAngleRange(
-            class1="b",
-            class2="m",
-            class3="b",
+            class1="b1",
+            class2="m1",
+            class3="b1",
             eclass1="Pd",
             eclass2="Pb",
             eclass3="Pd",
@@ -388,7 +388,7 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_torsion_range(
         TargetTorsionRange(
-            search_string=("b", "a", "c", "a", "b"),
+            search_string=("b1", "a1", "c1", "a1", "b1"),
             search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
             measured_atom_ids=[0, 1, 3, 4],
             phi0s=(openmm.unit.Quantity(value=180, unit=openmm.unit.degrees),),
@@ -483,8 +483,8 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="a",
-            class2="c",
+            class1="a1",
+            class2="c1",
             eclass1="Ba",
             eclass2="Ag",
             bond_rs=(
@@ -502,8 +502,8 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="a",
-            class2="b",
+            class1="a1",
+            class2="b1",
             eclass1="Ba",
             eclass2="Pb",
             bond_rs=(
@@ -522,8 +522,8 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_bond_range(
         TargetBondRange(
-            class1="b",
-            class2="n",
+            class1="b1",
+            class2="n1",
             eclass1="Pb",
             eclass2="C",
             bond_rs=(
@@ -542,9 +542,9 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="a",
-            class2="c",
-            class3="a",
+            class1="a1",
+            class2="c1",
+            class3="a1",
             eclass1="Ba",
             eclass2="Ag",
             eclass3="Ba",
@@ -564,9 +564,9 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="b",
-            class2="a",
-            class3="c",
+            class1="b1",
+            class2="a1",
+            class3="c1",
             eclass1="Pb",
             eclass2="Ba",
             eclass3="Ag",
@@ -587,9 +587,9 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="n",
-            class2="b",
-            class3="a",
+            class1="n1",
+            class2="b1",
+            class3="a1",
             eclass1="C",
             eclass2="Pb",
             eclass3="Ba",
@@ -608,9 +608,9 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
     )
     forcefieldlibrary.add_angle_range(
         TargetAngleRange(
-            class1="b",
-            class2="n",
-            class3="b",
+            class1="b1",
+            class2="n1",
+            class3="b1",
             eclass1="Pb",
             eclass2="C",
             eclass3="Pb",
@@ -637,7 +637,7 @@ def define_2p3_forcefield_library(full_bead_library, prefix):
 
     forcefieldlibrary.add_torsion_range(
         TargetTorsionRange(
-            search_string=("b", "a", "c", "a", "b"),
+            search_string=("b1", "a1", "c1", "a1", "b1"),
             search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
             measured_atom_ids=[0, 1, 3, 4],
             phi0s=(openmm.unit.Quantity(value=180, unit=openmm.unit.degrees),),
