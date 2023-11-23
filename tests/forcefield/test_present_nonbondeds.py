@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-from cgexplore.errors import ForcefieldUnitError
+from cgexplore.errors import ForceFieldUnitError
 
 
 def test_present_nonbondeds(molecule):
@@ -40,5 +40,5 @@ def test_present_nonbondeds(molecule):
                 assert test.epsilon == present.epsilon
                 assert test.force == present.force
 
-    except ForcefieldUnitError:
+    except ForceFieldUnitError:
         assert molecule.num_forcefields == 0

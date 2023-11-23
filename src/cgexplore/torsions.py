@@ -41,6 +41,7 @@ class TargetTorsion:
     phi0: openmm.unit.Quantity
     torsion_k: openmm.unit.Quantity
     torsion_n: int
+    funct: int = 0
 
     def human_readable(self) -> str:
         return (

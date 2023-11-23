@@ -14,7 +14,7 @@ import stk
 from openmm import OpenMMException, app, openmm
 
 from .beads import CgBead, get_cgbead_from_element
-from .errors import ForcefieldUnavailableError, ForcefieldUnitError
+from .errors import ForceFieldUnavailableError, ForceFieldUnitError
 from .martini import MartiniTopology, get_martini_mass_by_type
 from .utilities import (
     cosine_periodic_angle_force,
@@ -23,6 +23,10 @@ from .utilities import (
 
 
 class ForcedSystem:
+    molecule: stk.Molecule
+    force_field_terms: dict[str, tuple]
+    vdw_bond_cutoff: int
+
     def _available_forces(self, force_type: str) -> openmm.Force:
         available = {
             "HarmonicBondForce": openmm.HarmonicBondForce(),
@@ -33,7 +37,7 @@ class ForcedSystem:
         }
         if force_type not in available:
             msg = f"{force_type} not in {available.keys()}"
-            raise ForcefieldUnavailableError(msg)
+            raise ForceFieldUnavailableError(msg)
         return available[force_type]
 
     def _add_bonds(self, system: openmm.System) -> openmm.System:
@@ -62,7 +66,7 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in bonds does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
 
         return system
 
@@ -109,7 +113,7 @@ class ForcedSystem:
                         )
                 except AttributeError:
                     msg = f"{assigned_force} in angles does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
 
         return system
 
@@ -140,7 +144,7 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in torsions does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
 
         return system
 
@@ -171,7 +175,7 @@ class ForcedSystem:
 
                 except AttributeError:
                     msg = f"{assigned_force} in nonbondeds does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
 
             try:
                 # This method MUST be after terms are assigned.
@@ -181,7 +185,7 @@ class ForcedSystem:
                 )
             except OpenMMException:
                 msg = f"{force_type} is missing a definition for a particle."
-                raise ForcefieldUnitError(msg)
+                raise ForceFieldUnitError(msg)
 
         return system
 
@@ -190,6 +194,12 @@ class ForcedSystem:
         system = self._add_angles(system)
         system = self._add_torsions(system)
         return self._add_nonbondeds(system)
+
+    def get_openmm_topology(self) -> app.topology.Topology:
+        raise NotImplementedError
+
+    def get_openmm_system(self) -> openmm.System:
+        raise NotImplementedError
 
 
 @dataclass(frozen=True)

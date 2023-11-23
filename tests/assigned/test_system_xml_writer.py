@@ -1,7 +1,7 @@
 import os
 import pathlib
 
-from cgexplore.errors import ForcefieldUnitError
+from cgexplore.errors import ForceFieldUnitError
 
 
 def test_system_xml_writer(molecule):
@@ -52,5 +52,5 @@ def test_system_xml_writer(molecule):
         assert xml_string == test_xml_string
         os.system(f"rm {syst_xml_file}")
         os.system(f"rm {topo_xml_file}")
-    except ForcefieldUnitError:
+    except ForceFieldUnitError:
         assert molecule.num_forcefields == 0

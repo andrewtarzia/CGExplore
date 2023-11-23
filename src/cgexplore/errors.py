@@ -16,9 +16,9 @@ logging.basicConfig(
 )
 
 
-class ForcefieldUnitError(Exception):
+class ForceFieldUnitError(Exception):
     pass
 
 
-class ForcefieldUnavailableError(Exception):
+class ForceFieldUnavailableError(Exception):
     pass

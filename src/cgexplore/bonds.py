@@ -43,6 +43,7 @@ class TargetBond:
     eclass2: str
     bond_r: openmm.unit.Quantity
     bond_k: openmm.unit.Quantity
+    funct: int = 0
 
     def human_readable(self) -> str:
         return (

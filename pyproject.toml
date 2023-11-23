@@ -107,5 +107,6 @@ module = [
   "openmmtools.*",
   "openmm.*",
   "atomlite.*",
+  "martini_openmm.*",
 ]
 ignore_missing_imports = true

@@ -4,7 +4,7 @@ import stk
 from cgexplore.angles import TargetAngle
 from cgexplore.beads import CgBead
 from cgexplore.bonds import TargetBond
-from cgexplore.forcefield import Forcefield
+from cgexplore.forcefield import ForceField
 from cgexplore.nonbonded import TargetNonbonded
 from cgexplore.torsions import TargetTorsion
 from openmm import openmm
@@ -27,7 +27,7 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            force_field=Forcefield(
+            force_field=ForceField(
                 identifier=name,
                 prefix="assigned_tests",
                 present_beads=(
@@ -54,7 +54,7 @@ from .case_data import CaseData
                 angle_targets=(),
                 torsion_targets=(
                     TargetTorsion(
-                        search_string=("b", "a", "c", "a", "b"),
+                        search_string=("b1", "a1", "c1", "a1", "b1"),
                         search_estring=(),
                         measured_atom_ids=[0, 1, 3, 4],
                         phi0=openmm.unit.Quantity(
@@ -149,7 +149,7 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            force_field=Forcefield(
+            force_field=ForceField(
                 identifier=name,
                 prefix="assigned_tests",
                 present_beads=(
@@ -174,8 +174,8 @@ from .case_data import CaseData
                 ),
                 bond_targets=(
                     TargetBond(
-                        class1="a",
-                        class2="b",
+                        class1="a1",
+                        class2="b1",
                         eclass1="Ba",
                         eclass2="Pb",
                         bond_r=openmm.unit.Quantity(
@@ -191,9 +191,9 @@ from .case_data import CaseData
                 ),
                 angle_targets=(
                     TargetAngle(
-                        class1="b",
-                        class2="n",
-                        class3="b",
+                        class1="b1",
+                        class2="n1",
+                        class3="b1",
                         eclass1="Pb",
                         eclass2="C",
                         eclass3="Pb",
@@ -210,7 +210,7 @@ from .case_data import CaseData
                 ),
                 torsion_targets=(
                     TargetTorsion(
-                        search_string=("b", "a", "c", "a", "b"),
+                        search_string=("b1", "a1", "c1", "a1", "b1"),
                         search_estring=(),
                         measured_atom_ids=[0, 1, 3, 4],
                         phi0=openmm.unit.Quantity(

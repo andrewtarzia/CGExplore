@@ -86,8 +86,8 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             bond_ranges=(
                 TargetBondRange(
-                    class1="a",
-                    class2="b",
+                    class1="a1",
+                    class2="b1",
                     eclass1="Ba",
                     eclass2="Pb",
                     bond_rs=(
@@ -105,9 +105,9 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             angle_ranges=(
                 TargetAngleRange(
-                    class1="n",
-                    class2="b",
-                    class3="a",
+                    class1="n1",
+                    class2="b1",
+                    class3="a1",
                     eclass1="C",
                     eclass2="Pb",
                     eclass3="Ba",
@@ -126,7 +126,7 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             torsion_ranges=(
                 TargetTorsionRange(
-                    search_string=("b", "a", "c", "a", "b"),
+                    search_string=("b1", "a1", "c1", "a1", "b1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
                     measured_atom_ids=[0, 1, 3, 4],
                     phi0s=(
@@ -324,17 +324,17 @@ kjmol = openmm.unit.kilojoules_per_mole
                 "string='Ba', bead_type='a1', bead_class='a', coordinat"
                 "ion=2), CgBead(element_string='Pb', bead_type='b1', be"
                 "ad_class='b', coordination=2)),\n"
-                "  bond_ranges=(TargetBondRange(class1='a', class2='b',"
+                "  bond_ranges=(TargetBondRange(class1='a1', class2='b1',"
                 " eclass1='Ba', eclass2='Pb', bond_rs=(Quantity(value=1"
                 ".0, unit=angstrom),), bond_ks=(Quantity(value=100000.0"
                 ", unit=kilojoule/(nanometer**2*mole)),)),),\n"
-                "  angle_ranges=(TargetAngleRange(class1='n', class2='b"
-                "', class3='a', eclass1='C', eclass2='Pb', eclass3='Ba'"
+                "  angle_ranges=(TargetAngleRange(class1='n1', class2='b1"
+                "', class3='a1', eclass1='C', eclass2='Pb', eclass3='Ba'"
                 ", angles=(Quantity(value=180, unit=degree),), angle_ks"
                 "=(Quantity(value=100.0, unit=kilojoule/(mole*radian**2"
                 ")),)),),\n"
-                "  torsion_ranges=(TargetTorsionRange(search_string=('b"
-                "', 'a', 'c', 'a', 'b'), search_estring=('Pb', 'Ba', 'A"
+                "  torsion_ranges=(TargetTorsionRange(search_string=('b1"
+                "', 'a1', 'c1', 'a1', 'b1'), search_estring=('Pb', 'Ba', 'A"
                 "g', 'Ba', 'Pb'), measured_atom_ids=[0, 1, 3, 4], phi0s"
                 "=(Quantity(value=180, unit=degree),), torsion_ks=(Quan"
                 "tity(value=50, unit=kilojoule/mole), Quantity(value=0,"
@@ -375,8 +375,8 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             bond_ranges=(
                 TargetBondRange(
-                    class1="n",
-                    class2="c",
+                    class1="n1",
+                    class2="c1",
                     eclass1="C",
                     eclass2="N",
                     bond_rs=(
@@ -394,8 +394,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                     ),
                 ),
                 TargetBondRange(
-                    class1="n",
-                    class2="o",
+                    class1="n1",
+                    class2="o1",
                     eclass1="C",
                     eclass2="O",
                     bond_rs=(
@@ -412,9 +412,9 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             angle_ranges=(
                 TargetAngleRange(
-                    class1="c",
-                    class2="n",
-                    class3="c",
+                    class1="c1",
+                    class2="n1",
+                    class3="c1",
                     eclass1="C",
                     eclass2="N",
                     eclass3="C",
@@ -435,7 +435,7 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             torsion_ranges=(
                 TargetTorsionRange(
-                    search_string=("c", "n", "c", "c"),
+                    search_string=("c1", "n1", "c1", "c1"),
                     search_estring=("C", "N", "C", "C"),
                     measured_atom_ids=[0, 1, 2, 3],
                     phi0s=(
@@ -1357,21 +1357,21 @@ kjmol = openmm.unit.kilojoules_per_mole
                 "_string='N', bead_type='n1', bead_class='n', coordina"
                 "tion=2), CgBead(element_string='O', bead_type='o1', b"
                 "ead_class='o', coordination=2)),\n"
-                "  bond_ranges=(TargetBondRange(class1='n', class2='c'"
+                "  bond_ranges=(TargetBondRange(class1='n1', class2='c1'"
                 ", eclass1='C', eclass2='N', bond_rs=(Quantity(value=1"
                 ".0, unit=angstrom), Quantity(value=2.0, unit=angstrom"
                 ")), bond_ks=(Quantity(value=100000.0, unit=kilojoule/"
-                "(nanometer**2*mole)),)), TargetBondRange(class1='n', "
-                "class2='o', eclass1='C', eclass2='O', bond_rs=(Quanti"
+                "(nanometer**2*mole)),)), TargetBondRange(class1='n1', "
+                "class2='o1', eclass1='C', eclass2='O', bond_rs=(Quanti"
                 "ty(value=2.0, unit=angstrom),), bond_ks=(Quantity(val"
                 "ue=100000.0, unit=kilojoule/(nanometer**2*mole)),))),\n"
-                "  angle_ranges=(TargetAngleRange(class1='c', class2='"
-                "n', class3='c', eclass1='C', eclass2='N', eclass3='C'"
+                "  angle_ranges=(TargetAngleRange(class1='c1', class2='"
+                "n1', class3='c1', eclass1='C', eclass2='N', eclass3='C'"
                 ", angles=(Quantity(value=160, unit=degree),), angle_k"
                 "s=(Quantity(value=100.0, unit=kilojoule/(mole*radian*"
                 "*2)),)),),\n"
                 "  torsion_ranges=(TargetTorsionRange(search_string=('"
-                "c', 'n', 'c', 'c'), search_estring=('C', 'N', 'C', 'C"
+                "c1', 'n1', 'c1', 'c1'), search_estring=('C', 'N', 'C', 'C"
                 "'), measured_atom_ids=[0, 1, 2, 3], phi0s=(Quantity(v"
                 "alue=180, unit=degree),), torsion_ks=(Quantity(value="
                 "50, unit=kilojoule/mole),), torsion_ns=(1,)),),\n"
@@ -1402,8 +1402,8 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             bond_ranges=(
                 TargetBondRange(
-                    class1="b",
-                    class2="m",
+                    class1="b1",
+                    class2="m1",
                     eclass1="Pb",
                     eclass2="Pd",
                     bond_rs=(
@@ -1423,9 +1423,9 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             angle_ranges=(
                 PyramidAngleRange(
-                    class1="b",
-                    class2="m",
-                    class3="b",
+                    class1="b1",
+                    class2="m1",
+                    class3="b1",
                     eclass1="Pd",
                     eclass2="Pb",
                     eclass3="Pd",
@@ -1846,12 +1846,12 @@ kjmol = openmm.unit.kilojoules_per_mole
                 "'m1', bead_class='m', coordination=4), CgBead(element_"
                 "string='Pb', bead_type='b1', bead_class='b', coordinat"
                 "ion=2)),\n"
-                "  bond_ranges=(TargetBondRange(class1='b', class2='m',"
+                "  bond_ranges=(TargetBondRange(class1='b1', class2='m1',"
                 " eclass1='Pb', eclass2='Pd', bond_rs=(Quantity(value=1"
                 ".5, unit=angstrom),), bond_ks=(Quantity(value=100000.0"
                 ", unit=kilojoule/(nanometer**2*mole)),)),),\n"
-                "  angle_ranges=(PyramidAngleRange(class1='b', class2='"
-                "m', class3='b', eclass1='Pd', eclass2='Pb', eclass3='P"
+                "  angle_ranges=(PyramidAngleRange(class1='b1', class2='"
+                "m1', class3='b1', eclass1='Pd', eclass2='Pb', eclass3='P"
                 "d', angles=(Quantity(value=80, unit=degree), Quantity("
                 "value=90, unit=degree)), angle_ks=(Quantity(value=100."
                 "0, unit=kilojoule/(mole*radian**2)),)),),\n"
@@ -1889,8 +1889,8 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             bond_ranges=(
                 TargetBondRange(
-                    class1="a",
-                    class2="b",
+                    class1="a1",
+                    class2="b1",
                     eclass1="Ba",
                     eclass2="Pb",
                     bond_rs=(1,),
@@ -1899,9 +1899,9 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             angle_ranges=(
                 TargetAngleRange(
-                    class1="n",
-                    class2="b",
-                    class3="a",
+                    class1="n1",
+                    class2="b1",
+                    class3="a1",
                     eclass1="C",
                     eclass2="Pb",
                     eclass3="Ba",
@@ -1911,7 +1911,7 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             torsion_ranges=(
                 TargetTorsionRange(
-                    search_string=("b", "a", "c", "a"),
+                    search_string=("b1", "a1", "c1", "a1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba"),
                     measured_atom_ids=[0, 1, 2, 3],
                     phi0s=(180,),
@@ -1919,7 +1919,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                     torsion_ns=(1,),
                 ),
                 TargetTorsionRange(
-                    search_string=("b", "a", "c", "a", "b"),
+                    search_string=("b1", "a1", "c1", "a1", "b1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
                     measured_atom_ids=[0, 1, 3, 4],
                     phi0s=(180,),
@@ -1975,9 +1975,9 @@ kjmol = openmm.unit.kilojoules_per_mole
             bond_ranges=(),
             angle_ranges=(
                 TargetAngleRange(
-                    class1="n",
-                    class2="b",
-                    class3="a",
+                    class1="n1",
+                    class2="b1",
+                    class3="a1",
                     eclass1="C",
                     eclass2="Pb",
                     eclass3="Ba",
@@ -1985,9 +1985,9 @@ kjmol = openmm.unit.kilojoules_per_mole
                     angle_ks=(1e2,),
                 ),
                 PyramidAngleRange(
-                    class1="n",
-                    class2="b",
-                    class3="a",
+                    class1="n1",
+                    class2="b1",
+                    class3="a1",
                     eclass1="C",
                     eclass2="Pb",
                     eclass3="Ba",
@@ -2018,8 +2018,8 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             bond_ranges=(
                 TargetBondRange(
-                    class1="c",
-                    class2="n",
+                    class1="c1",
+                    class2="n1",
                     eclass1="Ba",
                     eclass2="Pb",
                     bond_rs=(
@@ -2037,9 +2037,9 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             angle_ranges=(
                 TargetCosineAngleRange(
-                    class1="c",
-                    class2="n",
-                    class3="c",
+                    class1="c1",
+                    class2="n1",
+                    class3="c1",
                     eclass1="C",
                     eclass2="N",
                     eclass3="C",
@@ -2239,12 +2239,15 @@ kjmol = openmm.unit.kilojoules_per_mole
                 "d_type='n1', bead_class='n', coordination=2), CgBead(element_"
                 "string='C', bead_type='c1', bead_class='c', coordination=2)),"
                 "\n"
-                "  bond_ranges=(TargetBondRange(class1='c', class2='n', eclass"
+                "  bond_ranges=(TargetBondRange(class1='c1', class2='n1', "
+                "eclass"
                 "1='Ba', eclass2='Pb', bond_rs=(Quantity(value=1.0, unit=angst"
                 "rom),), bond_ks=(Quantity(value=100000.0, unit=kilojoule/(nan"
                 "ometer**2*mole)),)),),\n"
-                "  angle_ranges=(TargetCosineAngleRange(class1='c', class2='n'"
-                ", class3='c', eclass1='C', eclass2='N', eclass3='C', ns=(3,),"
+                "  angle_ranges=(TargetCosineAngleRange(class1='c1', class2='"
+                "n1'"
+                ", class3='c1', eclass1='C', eclass2='N', eclass3='C', ns=(3,)"
+                ","
                 " bs=(-1, 1), angle_ks=(Quantity(value=100.0, unit=kilojoule/("
                 "mole*radian**2)),)),),\n"
                 "  torsion_ranges=(),\n"

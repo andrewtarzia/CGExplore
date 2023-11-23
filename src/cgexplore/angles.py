@@ -11,7 +11,7 @@ import stk
 from openmm import openmm
 from rdkit.Chem import AllChem as rdkit
 
-from .errors import ForcefieldUnitError
+from .errors import ForceFieldUnitError
 from .utilities import convert_pyramid_angle
 
 logging.basicConfig(
@@ -117,8 +117,8 @@ class TargetCosineAngle:
     eclass1: str
     eclass2: str
     eclass3: str
-    n: float
-    b: float
+    n: int
+    b: int
     angle_k: openmm.unit.Quantity
 
     def human_readable(self) -> str:
@@ -140,8 +140,8 @@ class TargetCosineAngleRange:
     eclass1: str
     eclass2: str
     eclass3: str
-    ns: tuple[float]
-    bs: tuple[float]
+    ns: tuple[int]
+    bs: tuple[int]
     angle_ks: tuple[openmm.unit.Quantity]
 
     def yield_angles(self):
@@ -181,7 +181,7 @@ class PyramidAngleRange:
                 )
             except AttributeError:
                 msg = f"{self} in angles does not have units for parameters"
-                raise ForcefieldUnitError(msg)
+                raise ForceFieldUnitError(msg)
 
             yield TargetPyramidAngle(
                 class1=self.class1,

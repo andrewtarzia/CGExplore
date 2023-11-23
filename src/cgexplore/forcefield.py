@@ -24,10 +24,10 @@ from .angles import (
     TargetMartiniAngle,
     find_angles,
 )
-from .assigned_system import AssignedSystem, MartiniSystem
+from .assigned_system import AssignedSystem, ForcedSystem, MartiniSystem
 from .beads import CgBead, get_cgbead_from_element
 from .bonds import Bond, TargetBond, TargetMartiniBond
-from .errors import ForcefieldUnitError
+from .errors import ForceFieldUnitError
 from .nonbonded import Nonbonded, TargetNonbonded
 from .torsions import (
     TargetMartiniTorsion,
@@ -108,7 +108,7 @@ class ForceFieldLibrary:
                 i for i in parameter_set if "Nonbonded" in i.__class__.__name__
             )
 
-            yield Forcefield(
+            yield ForceField(
                 identifier=str(i),
                 prefix=self._prefix,
                 present_beads=self._bead_library,
@@ -134,18 +134,38 @@ class ForceFieldLibrary:
         return str(self)
 
 
-class Forcefield:
+class ForceField:
     def __init__(
         self,
         identifier: str,
         prefix: str,
         present_beads: tuple[CgBead, ...],
-        bond_targets: tuple[TargetBond, ...],
-        angle_targets: tuple[TargetAngle, ...],
-        torsion_targets: tuple[TargetTorsion, ...],
+        bond_targets: tuple[TargetBond | TargetMartiniBond, ...],
+        angle_targets: tuple[TargetAngle | TargetMartiniAngle, ...],
+        torsion_targets: tuple[TargetTorsion | TargetMartiniTorsion, ...],
         nonbonded_targets: tuple[TargetNonbonded, ...],
         vdw_bond_cutoff: int,
     ) -> None:
+        # Check if you should use MartiniForceField.
+        for bt in bond_targets:
+            if isinstance(bt, TargetMartiniBond):
+                raise TypeError(
+                    f"{bt} is Martini type, probably use "
+                    "MartiniForceFieldLibrary/MartiniForceField"
+                )
+        for at in angle_targets:
+            if isinstance(at, TargetMartiniAngle):
+                raise TypeError(
+                    f"{at} is Martini type, probably use "
+                    "MartiniForceFieldLibrary/MartiniForceField"
+                )
+        for tt in torsion_targets:
+            if isinstance(tt, TargetMartiniTorsion):
+                raise TypeError(
+                    f"{tt} is Martini type, probably use "
+                    "MartiniForceFieldLibrary/MartiniForceField"
+                )
+
         self._identifier = identifier
         self._prefix = prefix
         self._present_beads = present_beads
@@ -185,7 +205,7 @@ class Forcefield:
                     assert isinstance(target_term.bond_k, openmm.unit.Quantity)
                 except AssertionError:
                     msg = f"{target_term} in bonds does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
 
                 if "Martini" in target_term.__class__.__name__:
                     force = "MartiniDefinedBond"
@@ -215,8 +235,11 @@ class Forcefield:
         )
         return tuple(bond_terms)
 
-    def _assign_angle_terms(self, molecule: stk.Molecule) -> tuple:
-        angle_terms = []
+    def _assign_angle_terms(
+        self,
+        molecule: stk.Molecule,
+    ) -> tuple[Angle | CosineAngle, ...]:
+        angle_terms: list[Angle | CosineAngle] = []
         pos_mat = molecule.get_position_matrix()
 
         found = set()
@@ -265,7 +288,7 @@ class Forcefield:
                             f"{target_angle} in angles does not have units for"
                             " parameters"
                         )
-                        raise ForcefieldUnitError(msg)
+                        raise ForceFieldUnitError(msg)
 
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
@@ -304,26 +327,27 @@ class Forcefield:
                             f"{target_angle} in angles does not have units for"
                             " parameters"
                         )
-                        raise ForcefieldUnitError(msg)
+                        raise ForceFieldUnitError(msg)
 
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
                         f"{atom_estrings[1]}{central_atom.get_id()+1}"
                     )
-                    actual_angle = CosineAngle(
-                        atoms=found_angle.atoms,
-                        atom_names=tuple(
-                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
-                            for i in found_angle.atoms
-                        ),
-                        atom_ids=found_angle.atom_ids,
-                        n=target_angle.n,
-                        b=target_angle.b,
-                        angle_k=target_angle.angle_k,
-                        force="CosinePeriodicAngleForce",
+                    angle_terms.append(
+                        CosineAngle(
+                            atoms=found_angle.atoms,
+                            atom_names=tuple(
+                                f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                                for i in found_angle.atoms
+                            ),
+                            atom_ids=found_angle.atom_ids,
+                            n=target_angle.n,
+                            b=target_angle.b,
+                            angle_k=target_angle.angle_k,
+                            force="CosinePeriodicAngleForce",
+                        )
                     )
-                    angle_terms.append(actual_angle)
 
                 elif isinstance(target_angle, TargetMartiniAngle):
                     try:
@@ -338,7 +362,7 @@ class Forcefield:
                             f"{target_angle} in angles does not have units for"
                             " parameters"
                         )
-                        raise ForcefieldUnitError(msg)
+                        raise ForceFieldUnitError(msg)
 
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
@@ -498,7 +522,7 @@ class Forcefield:
                         msg = (
                             f"{target_torsion} in torsions does not have units"
                         )
-                        raise ForcefieldUnitError(msg)
+                        raise ForceFieldUnitError(msg)
 
                     if "Martini" in target_torsion.__class__.__name__:
                         force = "MartiniDefinedTorsion"
@@ -552,7 +576,7 @@ class Forcefield:
                     )
                 except AssertionError:
                     msg = f"{target_term} in nonbondeds does not have units"
-                    raise ForcefieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)
 
                 nonbonded_terms.append(
                     Nonbonded(
@@ -572,7 +596,7 @@ class Forcefield:
         molecule: stk.Molecule,
         name: str,
         output_dir: pathlib.Path,
-    ) -> AssignedSystem:
+    ) -> ForcedSystem:
         assigned_terms = {
             "bond": self._assign_bond_terms(molecule),
             "angle": self._assign_angle_terms(molecule),
@@ -739,7 +763,7 @@ class MartiniForceFieldLibrary(ForceFieldLibrary):
         return str(self)
 
 
-class MartiniForceField(Forcefield):
+class MartiniForceField(ForceField):
     def __init__(
         self,
         identifier: str,
@@ -766,7 +790,7 @@ class MartiniForceField(Forcefield):
         molecule: stk.Molecule,
         name: str,
         output_dir: pathlib.Path,
-    ) -> MartiniSystem:
+    ) -> ForcedSystem:
         assigned_terms = {
             "bond": self._assign_bond_terms(molecule),
             "angle": self._assign_angle_terms(molecule),
