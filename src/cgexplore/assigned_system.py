@@ -189,6 +189,11 @@ class ForcedSystem:
 
         return system
 
+    def _add_atoms(self, system: openmm.System) -> openmm.System:
+        for atom in self.molecule.get_atoms():
+            system.addParticle(self.mass)
+        return system
+
     def _add_forces(self, system: openmm.System) -> openmm.System:
         system = self._add_bonds(system)
         system = self._add_angles(system)
@@ -251,7 +256,7 @@ class AssignedSystem(ForcedSystem):
         re_str += " </Residues>\n\n"
 
         ff_str += at_str
-        ff_str += re_str
+        # ff_str += re_str
 
         ff_str += "</ForceField>\n"
         return ff_str
@@ -299,10 +304,8 @@ class AssignedSystem(ForcedSystem):
         return topology
 
     def get_openmm_system(self) -> openmm.System:
-        self._write_topology_xml(self.molecule)
-        forcefield = app.ForceField(self.topology_xml)
-        topology = self.get_openmm_topology()
-        system = forcefield.createSystem(topology)
+        system = openmm.System()
+        system = self._add_atoms(system)
         system = self._add_forces(system)
 
         with open(self.system_xml, "w") as f:
