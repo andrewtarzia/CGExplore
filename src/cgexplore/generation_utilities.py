@@ -17,8 +17,8 @@ import numpy as np
 import stk
 from openmm import OpenMMException, openmm
 
-from .angles import Angle
-from .assigned_system import AssignedSystem
+from .angles import Angle, CosineAngle
+from .assigned_system import AssignedSystem, MartiniSystem
 from .beads import periodic_table
 from .bonds import Bond
 from .ensembles import Conformer, Ensemble
@@ -118,6 +118,37 @@ def soften_force_field(
         New assigned system.
 
     """
+    if isinstance(assigned_system, MartiniSystem):
+        raise TypeError("soften not available for Martini yet.")
+
+    angles = []
+    for i in assigned_system.force_field_terms["angle"]:
+        if isinstance(i, Angle):
+            angles.append(
+                Angle(
+                    atom_names=i.atom_names,
+                    atom_ids=i.atom_ids,
+                    angle=i.angle,
+                    angle_k=i.angle_k / angle_ff_scale,
+                    atoms=i.atoms,
+                    force=i.force,
+                )
+            )
+        elif isinstance(i, CosineAngle):
+            angles.append(
+                CosineAngle(
+                    atom_names=i.atom_names,
+                    atom_ids=i.atom_ids,
+                    n=i.n,
+                    b=i.b,
+                    angle_k=i.angle_k / angle_ff_scale,
+                    atoms=i.atoms,
+                    force=i.force,
+                )
+            )
+        else:
+            raise TypeError(f"soften not available for {i} angle type.")
+
     new_force_field_terms = {
         "bond": tuple(
             Bond(
@@ -130,17 +161,7 @@ def soften_force_field(
             )
             for i in assigned_system.force_field_terms["bond"]
         ),
-        "angle": tuple(
-            Angle(
-                atom_names=i.atom_names,
-                atom_ids=i.atom_ids,
-                angle=i.angle,
-                angle_k=i.angle_k / angle_ff_scale,
-                atoms=i.atoms,
-                force=i.force,
-            )
-            for i in assigned_system.force_field_terms["angle"]
-        ),
+        "angle": tuple(angles),
         "torsion": (),
         "nonbonded": assigned_system.force_field_terms["nonbonded"],
     }
