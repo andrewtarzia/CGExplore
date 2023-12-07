@@ -83,6 +83,11 @@ def optimise_ligand(
         molecule = opt.optimize(assigned_system)
         molecule = molecule.with_centroid(np.array((0, 0, 0)))
         molecule.write(opt1_mol_file)
+        energy_decomp = opt.read_final_energy_decomposition()
+        logging.info("optimised with energy:")
+        for i in energy_decomp:
+            e, u = energy_decomp[i]
+            logging.info(f"{i}: {round(e, 2)} [{u}]")
 
     return molecule
 
