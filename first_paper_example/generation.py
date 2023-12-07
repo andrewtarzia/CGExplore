@@ -7,7 +7,7 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
+import itertools as it
 import logging
 import os
 
@@ -268,7 +268,7 @@ def build_populations(
         logging.info(f"there are {len(topologies)} topologies")
         logging.info(f"there are {len(force_fields)} ffs")
         logging.info(f"building {len(force_fields) * len(topologies)} cages")
-        popn_iterator = itertools.product(topologies, force_fields)
+        popn_iterator = it.product(topologies, force_fields)
         for cage_topo_str, force_field in popn_iterator:
             c2_precursor = popn_dict["c2"]
             cl_precursor = popn_dict["cl"]

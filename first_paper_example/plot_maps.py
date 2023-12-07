@@ -7,7 +7,7 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
+import itertools as it
 import logging
 import math
 import os
@@ -15,7 +15,6 @@ import sys
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
 from analysis import (
     Xc_map,
     angle_str,
@@ -28,6 +27,7 @@ from analysis import (
     stoich_map,
     topology_labels,
 )
+from cgexplore.utilities import draw_pie
 from env_set import calculations, figures, outputdata
 
 logging.basicConfig(
@@ -319,48 +319,6 @@ def selectivity_map(all_data, figure_output):
         plt.close()
 
 
-def draw_pie(colours, xpos, ypos, size, ax):
-    """From:
-    https://stackoverflow.com/questions/56337732/how-to-plot-scatter-
-    pie-chart-using-matplotlib.
-
-    """
-    num_points = len(colours)
-    if num_points == 1:
-        ax.scatter(
-            xpos,
-            ypos,
-            c=colours[0],
-            edgecolors="k",
-            s=size,
-        )
-    else:
-        ratios = [1 / num_points for i in range(num_points)]
-        assert sum(ratios) <= 1, "sum of ratios needs to be < 1"
-
-        markers = []
-        previous = 0
-        # calculate the points of the pie pieces
-        for color, ratio in zip(colours, ratios, strict=True):
-            this = 2 * np.pi * ratio + previous
-            x = [0, *np.cos(np.linspace(previous, this, 100)).tolist(), 0]
-            y = [0, *np.sin(np.linspace(previous, this, 100)).tolist(), 0]
-            xy = np.column_stack([x, y])
-            previous = this
-            markers.append(
-                {
-                    "marker": xy,
-                    "s": np.abs(xy).max() ** 2 * np.array(size),
-                    "facecolor": color,
-                    "edgecolors": "k",
-                }
-            )
-
-        # scatter each of the pie pieces to create pies
-        for marker in markers:
-            ax.scatter(xpos, ypos, **marker)
-
-
 def selfsort_legend(all_data, figure_output):
     logging.info("running selfsort_legend")
 
@@ -403,7 +361,7 @@ def selfsort_map(all_data, figure_output):
     io1 = sorted(set(all_data[cols_to_iter[0]]))
     io2 = sorted(set(all_data[cols_to_iter[1]]))
     io3 = sorted(set(all_data[cols_to_iter[2]]))
-    for tor, vdw, cltitle in itertools.product(io1, io2, io3):
+    for tor, vdw, cltitle in it.product(io1, io2, io3):
         data = all_data[all_data[cols_to_iter[0]] == tor]
         data = data[data[cols_to_iter[1]] == vdw]
         data = data[data[cols_to_iter[2]] == cltitle]
@@ -412,9 +370,7 @@ def selfsort_map(all_data, figure_output):
         uo1 = sorted(set(data[cols_to_map[0]]))
         uo2 = sorted(set(data[cols_to_map[1]]))
 
-        for (i, cla), (_j, ba) in itertools.product(
-            enumerate(uo1), enumerate(uo2)
-        ):
+        for (i, cla), (_j, ba) in it.product(enumerate(uo1), enumerate(uo2)):
             plot_data = data[data[cols_to_map[0]] == cla]
             plot_data = plot_data[plot_data[cols_to_map[1]] == ba]
 
@@ -481,7 +437,7 @@ def kinetic_selfsort_map(all_data, figure_output):
     io1 = sorted(set(all_data[cols_to_iter[0]]))
     io2 = sorted(set(all_data[cols_to_iter[1]]))
     io3 = sorted(set(all_data[cols_to_iter[2]]))
-    for tor, vdw, cltitle in itertools.product(io1, io2, io3):
+    for tor, vdw, cltitle in it.product(io1, io2, io3):
         data = all_data[all_data[cols_to_iter[0]] == tor]
         data = data[data[cols_to_iter[1]] == vdw]
         data = data[data[cols_to_iter[2]] == cltitle]
@@ -490,9 +446,7 @@ def kinetic_selfsort_map(all_data, figure_output):
         uo1 = sorted(set(data[cols_to_map[0]]))
         uo2 = sorted(set(data[cols_to_map[1]]))
 
-        for (i, cla), (_j, ba) in itertools.product(
-            enumerate(uo1), enumerate(uo2)
-        ):
+        for (i, cla), (_j, ba) in it.product(enumerate(uo1), enumerate(uo2)):
             plot_data = data[data[cols_to_map[0]] == cla]
             plot_data = plot_data[plot_data[cols_to_map[1]] == ba]
 

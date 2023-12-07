@@ -7,7 +7,7 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
+import itertools as it
 import logging
 from collections import abc
 from dataclasses import dataclass
@@ -66,7 +66,7 @@ class TargetTorsionRange:
     torsion_ns: tuple[int]
 
     def yield_torsions(self):
-        for phi0, k, n in itertools.product(
+        for phi0, k, n in it.product(
             self.phi0s, self.torsion_ks, self.torsion_ns
         ):
             yield TargetTorsion(
@@ -139,7 +139,7 @@ class MartiniTorsionRange:
 
     def yield_torsions(self):
         raise NotImplementedError("handle torsions")
-        for phi0, k, n in itertools.product(
+        for phi0, k, n in it.product(
             self.phi0s, self.torsion_ks, self.torsion_ns
         ):
             yield TargetMartiniTorsion(

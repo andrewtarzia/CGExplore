@@ -7,7 +7,7 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
+import itertools as it
 import logging
 from dataclasses import dataclass
 
@@ -66,7 +66,7 @@ class TargetBondRange:
     bond_ks: tuple[openmm.unit.Quantity]
 
     def yield_bonds(self):
-        for r, k in itertools.product(self.bond_rs, self.bond_ks):
+        for r, k in it.product(self.bond_rs, self.bond_ks):
             yield TargetBond(
                 type1=self.type1,
                 type2=self.type2,
@@ -75,6 +75,36 @@ class TargetBondRange:
                 bond_k=k,
                 bond_r=r,
             )
+
+
+@dataclass
+class TargetPairedBondRange:
+    type1s: tuple[str]
+    type2s: tuple[str]
+    element1s: tuple[str]
+    element2s: tuple[str]
+    bond_rs: tuple[openmm.unit.Quantity]
+    bond_ks: tuple[openmm.unit.Quantity]
+
+    def yield_bonds(self):
+        raise NotImplementedError
+        for r, k in it.product(self.bond_rs, self.bond_ks):
+            for type1, type2, element1, element2 in zip(
+                self.type1s,
+                self.type2s,
+                self.element1s,
+                self.element2s,
+                strict=True,
+            ):
+                print(type1, type2, element1, element2)
+                yield TargetBond(
+                    type1=type1,
+                    type2=type2,
+                    element1=element1,
+                    element2=element2,
+                    bond_k=k,
+                    bond_r=r,
+                )
 
 
 @dataclass
@@ -110,7 +140,7 @@ class MartiniBondRange:
     bond_ks: tuple[openmm.unit.Quantity]
 
     def yield_bonds(self):
-        for r, k in itertools.product(self.bond_rs, self.bond_ks):
+        for r, k in it.product(self.bond_rs, self.bond_ks):
             yield TargetMartiniBond(
                 type1=self.type1,
                 type2=self.type2,

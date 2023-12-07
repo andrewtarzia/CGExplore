@@ -181,3 +181,45 @@ def cosine_periodic_angle_force() -> openmm.CustomAngleForce:
     custom_force.addPerAngleParameter("b")
     custom_force.addPerAngleParameter("min_n")
     return custom_force
+
+
+def draw_pie(colours, xpos, ypos, size, ax):
+    """From:
+    https://stackoverflow.com/questions/56337732/how-to-plot-scatter-
+    pie-chart-using-matplotlib.
+
+    """
+    num_points = len(colours)
+    if num_points == 1:
+        ax.scatter(
+            xpos,
+            ypos,
+            c=colours[0],
+            edgecolors="k",
+            s=size,
+        )
+    else:
+        ratios = [1 / num_points for i in range(num_points)]
+        assert sum(ratios) <= 1, "sum of ratios needs to be < 1"
+
+        markers = []
+        previous = 0
+        # calculate the points of the pie pieces
+        for color, ratio in zip(colours, ratios, strict=True):
+            this = 2 * np.pi * ratio + previous
+            x = [0, *np.cos(np.linspace(previous, this, 100)).tolist(), 0]
+            y = [0, *np.sin(np.linspace(previous, this, 100)).tolist(), 0]
+            xy = np.column_stack([x, y])
+            previous = this
+            markers.append(
+                {
+                    "marker": xy,
+                    "s": np.abs(xy).max() ** 2 * np.array(size),
+                    "facecolor": color,
+                    "edgecolors": "k",
+                }
+            )
+
+        # scatter each of the pie pieces to create pies
+        for marker in markers:
+            ax.scatter(xpos, ypos, **marker)

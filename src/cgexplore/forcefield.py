@@ -7,7 +7,7 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
+import itertools as it
 import logging
 import pathlib
 from heapq import nsmallest
@@ -88,7 +88,7 @@ class ForceFieldLibrary:
     def yield_forcefields(self):
         iterations = self._get_iterations()
 
-        for i, parameter_set in enumerate(itertools.product(*iterations)):
+        for i, parameter_set in enumerate(it.product(*iterations)):
             bond_terms = tuple(
                 i for i in parameter_set if "Bond" in i.__class__.__name__
             )
@@ -561,14 +561,17 @@ class ForceField:
         molecule: stk.Molecule,
     ) -> tuple:
         nonbonded_terms = []
+        found = set()
+        assigned = set()
 
         for atom in molecule.get_atoms():
             atom_estring = atom.__class__.__name__
             cgbead = get_cgbead_from_element(atom_estring, self.get_bead_set())
-
+            found.add(cgbead.bead_class)
             for target_term in self._nonbonded_targets:
                 if target_term.bead_class != cgbead.bead_class:
                     continue
+                assigned.add(target_term.bead_class)
                 try:
                     assert isinstance(target_term.sigma, openmm.unit.Quantity)
                     assert isinstance(
@@ -588,7 +591,10 @@ class ForceField:
                         force=target_term.force,
                     )
                 )
-
+        logging.info(
+            "unassigned nonbonded terms: "
+            f"{sorted((i for i in found if i not in assigned))}"
+        )
         return tuple(nonbonded_terms)
 
     def assign_terms(
@@ -722,7 +728,7 @@ class MartiniForceFieldLibrary(ForceFieldLibrary):
     def yield_forcefields(self):
         iterations = self._get_iterations()
 
-        for i, parameter_set in enumerate(itertools.product(*iterations)):
+        for i, parameter_set in enumerate(it.product(*iterations)):
             bond_terms = tuple(
                 i for i in parameter_set if "Bond" in i.__class__.__name__
             )

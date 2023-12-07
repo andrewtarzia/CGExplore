@@ -2,7 +2,7 @@
 
 """Module for handling angles."""
 
-import itertools
+import itertools as it
 import logging
 from collections import abc
 from dataclasses import dataclass
@@ -80,7 +80,7 @@ class TargetAngleRange:
     angle_ks: tuple[openmm.unit.Quantity]
 
     def yield_angles(self):
-        for angle, k in itertools.product(self.angles, self.angle_ks):
+        for angle, k in it.product(self.angles, self.angle_ks):
             yield TargetAngle(
                 type1=self.type1,
                 type2=self.type2,
@@ -145,7 +145,7 @@ class TargetCosineAngleRange:
     angle_ks: tuple[openmm.unit.Quantity]
 
     def yield_angles(self):
-        for n, b, k in itertools.product(self.ns, self.bs, self.angle_ks):
+        for n, b, k in it.product(self.ns, self.bs, self.angle_ks):
             yield TargetCosineAngle(
                 type1=self.type1,
                 type2=self.type2,
@@ -171,7 +171,7 @@ class PyramidAngleRange:
     angle_ks: tuple[openmm.unit.Quantity]
 
     def yield_angles(self):
-        for angle, k in itertools.product(self.angles, self.angle_ks):
+        for angle, k in it.product(self.angles, self.angle_ks):
             try:
                 opposite_angle = openmm.unit.Quantity(
                     value=convert_pyramid_angle(
@@ -254,7 +254,7 @@ class MartiniAngleRange:
     angle_ks: tuple[openmm.unit.Quantity]
 
     def yield_angles(self):
-        for angle, k in itertools.product(self.angles, self.angle_ks):
+        for angle, k in it.product(self.angles, self.angle_ks):
             yield TargetMartiniAngle(
                 type1=self.type1,
                 type2=self.type2,

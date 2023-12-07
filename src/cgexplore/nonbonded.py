@@ -7,7 +7,7 @@ Author: Andrew Tarzia
 
 """
 
-import itertools
+import itertools as it
 import logging
 from dataclasses import dataclass
 
@@ -58,7 +58,7 @@ class TargetNonbondedRange:
     force: str
 
     def yield_nonbondeds(self):
-        for sigma, epsilon in itertools.product(self.sigmas, self.epsilons):
+        for sigma, epsilon in it.product(self.sigmas, self.epsilons):
             yield TargetNonbonded(
                 bead_class=self.bead_class,
                 bead_element=self.bead_element,
