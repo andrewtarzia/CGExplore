@@ -442,9 +442,6 @@ def yield_near_models(
     ff_name = [i for i in name.split("_") if "f" in i][-1]
 
     for new_ff_id in neighbour_library:
-        if new_ff_id < 0:
-            continue
-
         new_name = name.replace(ff_name, f"f{new_ff_id}")
         new_fina_mol_file = os.path.join(output_dir, f"{new_name}_final.mol")
         if os.path.exists(new_fina_mol_file):
