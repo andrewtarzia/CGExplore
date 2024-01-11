@@ -229,10 +229,9 @@ class ForceField:
                     )
                 )
 
-        logging.info(
-            "unassigned bond terms: "
-            f"{sorted((i for i in found if i not in assigned))}"
-        )
+        unassigned = sorted((i for i in found if i not in assigned))
+        if len(unassigned) > 1:
+            logging.info(f"unassigned bond terms: {unassigned}")
         return tuple(bond_terms)
 
     def _assign_angle_terms(
@@ -472,11 +471,9 @@ class ForceField:
                         force="HarmonicAngleForce",
                     ),
                 )
-
-        logging.info(
-            "unassigned angle terms: "
-            f"{sorted((i for i in found if i not in assigned))}"
-        )
+        unassigned = sorted((i for i in found if i not in assigned))
+        if len(unassigned) > 1:
+            logging.info(f"unassigned angle terms: {unassigned}")
         return tuple(angle_terms)
 
     def _assign_torsion_terms(
@@ -484,7 +481,6 @@ class ForceField:
         molecule: stk.Molecule,
     ) -> tuple:
         torsion_terms = []
-        found = set()
         assigned = set()
 
         # Iterate over the different path lengths, and find all torsions
@@ -500,8 +496,6 @@ class ForceField:
                     for i in atom_estrings
                 ]
                 cgbead_string = tuple(i.bead_type for i in cgbeads)
-                found.add(cgbead_string)
-                found.add(tuple(reversed(cgbead_string)))
                 for target_torsion in self._torsion_targets:
                     if target_torsion.search_string not in (
                         cgbead_string,
@@ -550,10 +544,11 @@ class ForceField:
                         )
                     )
 
-        logging.info(
-            "unassigned torsion terms: "
-            f"{sorted((i for i in found if i not in assigned))}"
-        )
+        if len(assigned) > 0:
+            logging.info(
+                f"assigned torsion terms: {sorted(assigned)} "
+                f"({len(self._torsion_targets)} targets) "
+            )
         return tuple(torsion_terms)
 
     def _assign_nonbonded_terms(
@@ -591,10 +586,9 @@ class ForceField:
                         force=target_term.force,
                     )
                 )
-        logging.info(
-            "unassigned nonbonded terms: "
-            f"{sorted((i for i in found if i not in assigned))}"
-        )
+        unassigned = sorted((i for i in found if i not in assigned))
+        if len(unassigned) > 1:
+            logging.info(f"unassigned nonbonded terms: {unassigned}")
         return tuple(nonbonded_terms)
 
     def assign_terms(
