@@ -45,6 +45,15 @@ class TargetBond:
     bond_k: openmm.unit.Quantity
     funct: int = 0
 
+    def vector_key(self) -> str:
+        return f"{self.type1}{self.type2}"
+
+    def vector(self) -> tuple[float]:
+        return (
+            self.bond_r.value_in_unit(openmm.unit.angstrom),
+            self.bond_k.value_in_unit(bond_k_unit()),
+        )
+
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("

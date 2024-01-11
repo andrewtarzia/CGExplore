@@ -37,6 +37,15 @@ class TargetNonbonded:
     epsilon: openmm.unit.Quantity
     force: str
 
+    def vector_key(self) -> str:
+        return self.bead_class
+
+    def vector(self) -> tuple[float]:
+        return (
+            self.sigma.value_in_unit(openmm.unit.angstrom),
+            self.epsilon.value_in_unit(openmm.unit.kilojoules_per_mole),
+        )
+
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("

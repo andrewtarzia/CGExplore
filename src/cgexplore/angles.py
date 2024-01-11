@@ -57,6 +57,15 @@ class TargetAngle:
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
 
+    def vector_key(self) -> str:
+        return f"{self.type1}{self.type2}{self.type3}"
+
+    def vector(self) -> tuple[float]:
+        return (
+            self.angle.value_in_unit(openmm.unit.degrees),
+            self.angle_k.value_in_unit(angle_k_unit()),
+        )
+
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
@@ -121,13 +130,23 @@ class TargetCosineAngle:
     b: int
     angle_k: openmm.unit.Quantity
 
+    def vector_key(self) -> str:
+        return f"{self.type1}{self.type2}{self.type3}"
+
+    def vector(self) -> tuple[float]:
+        return (
+            self.n,
+            self.b,
+            self.angle_k.value_in_unit(openmm.unit.kilojoules_per_mole),
+        )
+
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
             f"{self.type1}{self.type2}{self.type3}, "
             f"{self.element1}{self.element2}{self.element3}, "
             f"{self.n}, {self.b}, "
-            f"{self.angle_k.in_units_of(angle_k_unit())}, "
+            f"{self.angle_k.in_units_of(openmm.unit.kilojoules_per_mole)}, "
             ")"
         )
 

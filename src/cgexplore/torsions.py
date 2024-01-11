@@ -43,6 +43,16 @@ class TargetTorsion:
     torsion_n: int
     funct: int = 0
 
+    def vector_key(self) -> str:
+        return "".join(self.search_string)
+
+    def vector(self) -> tuple[float]:
+        return (
+            self.phi0.value_in_unit(openmm.unit.degrees),
+            self.torsion_k.value_in_unit(openmm.unit.kilojoules_per_mole),
+            self.torsion_n,
+        )
+
     def human_readable(self) -> str:
         return (
             f"{self.__class__.__name__}("
