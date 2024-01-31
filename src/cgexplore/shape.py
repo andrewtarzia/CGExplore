@@ -821,6 +821,7 @@ class ShapeMeasure:
     def _run_calculation(self, structure_string: str) -> dict:
         """Calculate the shape of a molecule."""
         input_file = "shp.dat"
+        std_out = "shp.out"
         output_file = "shp.tab"
 
         self._write_input_file(
@@ -828,18 +829,19 @@ class ShapeMeasure:
             structure_string=structure_string,
         )
 
-        cmd = f"{self._shape_path} {input_file}"
-
         # Note that sp.call will hold the program until completion
         # of the calculation.
-        sp.call(
-            cmd,
-            stdin=sp.DEVNULL,
-            stdout=sp.DEVNULL,
-            stderr=sp.DEVNULL,
+        captured_output = sp.run(
+            [f"{self._shape_path}", f"{input_file}"],
+            stdin=sp.PIPE,
+            stdout=sp.PIPE,
+            stderr=sp.PIPE,
             # Shell is required to run complex arguments.
-            shell=True,
+            # shell=True,
         )
+
+        with open(std_out, "w") as f:
+            f.write(str(captured_output.stdout))
 
         return self._collect_all_shape_values(output_file)
 
