@@ -30,6 +30,12 @@ def test_shape_mol(
     name: str,
     topo_str: str,
 ) -> None:
+    """
+    Test shape molecule.
+
+    Requires hard-coded assumptions.
+    I suggest using the method in `ShapeMeasure`.
+    """
     num_atoms = len(atoms)
     if num_atoms != topo_expected[topo_str]:
         msg = (
@@ -68,6 +74,12 @@ def get_shape_molecule_byelement(
     element: str,
     topo_expected: dict[str, int],
 ) -> stk.Molecule | None:
+    """
+    Get shape molecule.
+
+    Requires hard-coded assumptions.
+    I suggest using the method in `ShapeMeasure`.
+    """
     splits = name.split("_")
     topo_str = splits[0]
     if topo_str not in topo_expected:
@@ -125,6 +137,12 @@ def get_shape_molecule_nodes(
     element: str,
     topo_expected: dict[str, int],
 ) -> stk.Molecule | None:
+    """
+    Get shape molecule.
+
+    Requires hard-coded assumptions.
+    I suggest using the method in `ShapeMeasure`.
+    """
     splits = name.split("_")
     topo_str = splits[0]
     if topo_str not in topo_expected:
@@ -154,6 +172,12 @@ def get_shape_molecule_ligands(
     element: str,
     topo_expected: dict[str, int],
 ) -> stk.Molecule | None:
+    """
+    Get shape molecule.
+
+    Requires hard-coded assumptions.
+    I suggest using the method in `ShapeMeasure`.
+    """
     splits = name.split("_")
     topo_str = splits[0]
     bbs = list(constructed_molecule.get_building_blocks())
@@ -203,6 +227,36 @@ class ShapeMeasure:
             }
         self._num_vertex_options = tuple(
             {int(self._shape_dict[i]["vertices"]) for i in self._shape_dict}
+        )
+
+    def _test_shape_mol(self, expected_points: int, atoms: list) -> None:
+        num_atoms = len(atoms)
+        if num_atoms != expected_points:
+            msg = (
+                f"Expected num points not met ({expected_points}); has "
+                f"{num_atoms}"
+            )
+            raise ValueError(msg)
+
+    def get_shape_molecule_byelement(
+        self,
+        molecule: stk.Molecule,
+        element: str,
+        expected_points: int,
+    ) -> stk.Molecule | None:
+        old_position_matrix = molecule.get_position_matrix()
+
+        position_matrix, atoms = fill_position_matrix_molecule(
+            molecule=molecule,
+            element=element,
+            old_position_matrix=old_position_matrix,
+        )
+
+        self._test_shape_mol(expected_points, atoms)
+        return stk.BuildingBlock.init(
+            atoms=atoms,
+            bonds=(),
+            position_matrix=np.array(position_matrix),
         )
 
     def reference_shape_dict(self) -> dict[str, dict]:
