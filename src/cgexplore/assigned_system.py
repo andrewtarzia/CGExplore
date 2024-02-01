@@ -24,7 +24,7 @@ from .utilities import (
 
 class ForcedSystem:
     molecule: stk.Molecule
-    force_field_terms: dict[str, tuple]
+    forcefield_terms: dict[str, tuple]
     vdw_bond_cutoff: int
 
     def _available_forces(self, force_type: str) -> openmm.Force:
@@ -41,7 +41,7 @@ class ForcedSystem:
         return available[force_type]
 
     def _add_bonds(self, system: openmm.System) -> openmm.System:
-        forces = self.force_field_terms["bond"]
+        forces = self.forcefield_terms["bond"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -71,7 +71,7 @@ class ForcedSystem:
         return system
 
     def _add_angles(self, system: openmm.System) -> openmm.System:
-        forces = self.force_field_terms["angle"]
+        forces = self.forcefield_terms["angle"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -118,7 +118,7 @@ class ForcedSystem:
         return system
 
     def _add_torsions(self, system: openmm.System) -> openmm.System:
-        forces = self.force_field_terms["torsion"]
+        forces = self.forcefield_terms["torsion"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -153,7 +153,7 @@ class ForcedSystem:
             (i.get_atom1().get_id(), i.get_atom2().get_id())
             for i in self.molecule.get_bonds()
         ]
-        forces = self.force_field_terms["nonbonded"]
+        forces = self.forcefield_terms["nonbonded"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             force_function = self._available_forces(force_type)
@@ -190,9 +190,7 @@ class ForcedSystem:
         return system
 
     def _add_atoms(self, system: openmm.System) -> openmm.System:
-        for atom in self.molecule.get_atoms():
-            system.addParticle(self.mass)
-        return system
+        raise NotImplementedError
 
     def _add_forces(self, system: openmm.System) -> openmm.System:
         system = self._add_bonds(system)
@@ -210,12 +208,17 @@ class ForcedSystem:
 @dataclass(frozen=True)
 class AssignedSystem(ForcedSystem):
     molecule: stk.Molecule
-    force_field_terms: dict[str, tuple]
+    forcefield_terms: dict[str, tuple]
     system_xml: pathlib.Path
     topology_xml: pathlib.Path
     bead_set: dict[str, CgBead]
     vdw_bond_cutoff: int
     mass: float = 10
+
+    def _add_atoms(self, system: openmm.System) -> openmm.System:
+        for atom in self.molecule.get_atoms():
+            system.addParticle(self.mass)
+        return system
 
     def _get_topology_xml_string(self, molecule: stk.Molecule) -> str:
         ff_str = "<ForceField>\n\n"
@@ -322,7 +325,7 @@ class MartiniSystem(ForcedSystem):
     """
 
     molecule: stk.Molecule
-    force_field_terms: dict[str, tuple]
+    forcefield_terms: dict[str, tuple]
     system_xml: pathlib.Path
     topology_itp: pathlib.Path
     vdw_bond_cutoff: int
@@ -362,7 +365,7 @@ class MartiniSystem(ForcedSystem):
 
     def _get_bonds_string(self, molecule: stk.Molecule) -> str:
         string = "[bonds]\n; i j   funct   length\n"
-        forces = self.force_field_terms["bond"]
+        forces = self.forcefield_terms["bond"]
         for assigned_force in forces:
             force_type = assigned_force.force
             if force_type != "MartiniDefinedBond":
@@ -385,7 +388,7 @@ class MartiniSystem(ForcedSystem):
 
     def _get_angles_string(self, molecule: stk.Molecule) -> str:
         string = "[angles]\n; i j k    funct  ref.angle   force_k\n"
-        forces = self.force_field_terms["angle"]
+        forces = self.forcefield_terms["angle"]
 
         for assigned_force in forces:
             force_type = assigned_force.force
@@ -412,7 +415,7 @@ class MartiniSystem(ForcedSystem):
 
     def _get_torsions_string(self, molecule: stk.Molecule) -> str:
         string = "[dihedrals]\n; i j k l  funct  ref.angle   force_k\n"
-        forces = self.force_field_terms["torsion"]
+        forces = self.forcefield_terms["torsion"]
         force_types = {i.force for i in forces}
 
         for force_type in force_types:
@@ -425,7 +428,7 @@ class MartiniSystem(ForcedSystem):
 
     def _get_contraints_string(self, molecule: stk.Molecule) -> str:
         string = "[constraints]\n; i j   funct   length\n"
-        for constraint in self.force_field_terms["constraints"]:
+        for constraint in self.forcefield_terms["constraints"]:
             string += (
                 f"  {constraint[0]} {constraint[1]} {constraint[2]} "
                 f"{constraint[3]} {constraint[4]}"
@@ -435,7 +438,7 @@ class MartiniSystem(ForcedSystem):
 
     def _get_exclusions_string(self, molecule: stk.Molecule) -> str:
         string = "[exclusions]\n; i j   funct   length\n"
-        for constraint in self.force_field_terms["constraints"]:
+        for constraint in self.forcefield_terms["constraints"]:
             string += (
                 f"  {constraint[0]} {constraint[1]} {constraint[2]} "
                 f"{constraint[3]} {constraint[4]}"

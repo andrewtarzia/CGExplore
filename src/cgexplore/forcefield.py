@@ -230,7 +230,7 @@ class ForceField:
                 )
 
         unassigned = sorted((i for i in found if i not in assigned))
-        if len(unassigned) > 1:
+        if len(unassigned) > 0:
             logging.info(f"unassigned bond terms: {unassigned}")
         return tuple(bond_terms)
 
@@ -472,7 +472,7 @@ class ForceField:
                     ),
                 )
         unassigned = sorted((i for i in found if i not in assigned))
-        if len(unassigned) > 1:
+        if len(unassigned) > 0:
             logging.info(f"unassigned angle terms: {unassigned}")
         return tuple(angle_terms)
 
@@ -587,7 +587,7 @@ class ForceField:
                     )
                 )
         unassigned = sorted((i for i in found if i not in assigned))
-        if len(unassigned) > 1:
+        if len(unassigned) > 0:
             logging.info(f"unassigned nonbonded terms: {unassigned}")
         return tuple(nonbonded_terms)
 
@@ -612,7 +612,7 @@ class ForceField:
 
         return AssignedSystem(
             molecule=molecule,
-            force_field_terms=assigned_terms,
+            forcefield_terms=assigned_terms,
             system_xml=(
                 output_dir
                 / f"{name}_{self._prefix}_{self._identifier}_syst.xml"
@@ -801,7 +801,7 @@ class MartiniForceField(ForceField):
 
         return MartiniSystem(
             molecule=molecule,
-            force_field_terms=assigned_terms,
+            forcefield_terms=assigned_terms,
             system_xml=(
                 output_dir
                 / f"{name}_{self._prefix}_{self._identifier}_syst.xml"

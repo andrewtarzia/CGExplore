@@ -35,7 +35,7 @@ def optimise_ligand(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path,
-    force_field: ForceField,
+    forcefield: ForceField,
     platform: str | None,
 ) -> stk.Molecule:
     """Optimise a building block.
@@ -52,7 +52,7 @@ def optimise_ligand(
         output_dir:
             Directory to save outputs of optimisation process.
 
-        force_field:
+        forcefield:
             Define the forces used in the molecule.
 
         platform:
@@ -70,7 +70,7 @@ def optimise_ligand(
         molecule = molecule.with_structure_from_file(opt1_mol_file)
     else:
         logging.info(f"optimising {name}, no max_iterations")
-        assigned_system = force_field.assign_terms(
+        assigned_system = forcefield.assign_terms(
             molecule=molecule,
             name=name,
             output_dir=output_dir,
@@ -92,7 +92,7 @@ def optimise_ligand(
     return molecule
 
 
-def soften_force_field(
+def soften_forcefield(
     assigned_system: AssignedSystem,
     bond_ff_scale: float,
     angle_ff_scale: float,
@@ -122,7 +122,7 @@ def soften_force_field(
         raise TypeError("soften not available for Martini yet.")
 
     angles = []
-    for i in assigned_system.force_field_terms["angle"]:
+    for i in assigned_system.forcefield_terms["angle"]:
         if isinstance(i, Angle):
             angles.append(
                 Angle(
@@ -136,7 +136,7 @@ def soften_force_field(
             )
         elif isinstance(i, CosineAngle):
             angles.append(
-                CosineAngle(
+                CosineAngle(  # type: ignore[arg-type]
                     atom_names=i.atom_names,
                     atom_ids=i.atom_ids,
                     n=i.n,
@@ -149,7 +149,7 @@ def soften_force_field(
         else:
             raise TypeError(f"soften not available for {i} angle type.")
 
-    new_force_field_terms = {
+    new_forcefield_terms = {
         "bond": tuple(
             Bond(
                 atom_names=i.atom_names,
@@ -159,11 +159,11 @@ def soften_force_field(
                 atoms=i.atoms,
                 force=i.force,
             )
-            for i in assigned_system.force_field_terms["bond"]
+            for i in assigned_system.forcefield_terms["bond"]
         ),
         "angle": tuple(angles),
         "torsion": (),
-        "nonbonded": assigned_system.force_field_terms["nonbonded"],
+        "nonbonded": assigned_system.forcefield_terms["nonbonded"],
     }
 
     new_system_xml = pathlib.Path(
@@ -174,7 +174,7 @@ def soften_force_field(
 
     return AssignedSystem(
         molecule=assigned_system.molecule,
-        force_field_terms=new_force_field_terms,
+        forcefield_terms=new_forcefield_terms,
         system_xml=new_system_xml,
         topology_xml=assigned_system.topology_xml,
         bead_set=assigned_system.bead_set,
@@ -255,7 +255,7 @@ def run_soft_md_cycle(
         An OMMTrajectory containing the data and conformers.
 
     """
-    soft_assigned_system = soften_force_field(
+    soft_assigned_system = soften_forcefield(
         assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
         angle_ff_scale=angle_ff_scale,
@@ -324,7 +324,7 @@ def run_constrained_optimisation(
         An stk molecule.
 
     """
-    soft_assigned_system = soften_force_field(
+    soft_assigned_system = soften_forcefield(
         assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
         angle_ff_scale=angle_ff_scale,
@@ -490,7 +490,7 @@ def shift_beads(
 
 def yield_shifted_models(
     molecule: stk.Molecule,
-    force_field: ForceField,
+    forcefield: ForceField,
     kicks: tuple[int],
 ) -> Iterator[stk.Molecule]:
     """Yield conformers with atom positions of particular beads shifted.
@@ -500,7 +500,7 @@ def yield_shifted_models(
         molecule:
             The molecule to manipulate.
 
-        force_field:
+        forcefield:
             Defines the force field.
 
         kicks:
@@ -510,7 +510,7 @@ def yield_shifted_models(
         An stk molecule.
 
     """
-    for bead in force_field.get_present_beads():
+    for bead in forcefield.get_present_beads():
         atom_number = periodic_table()[bead.element_string]
         for kick in kicks:
             yield shift_beads(molecule, atom_number, kick)

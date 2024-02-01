@@ -36,7 +36,7 @@ def optimise_cage(
     molecule,
     name,
     output_dir,
-    force_field,
+    forcefield,
     platform,
     database,
 ):
@@ -75,7 +75,7 @@ def optimise_cage(
         )
         return ensemble.get_lowest_e_conformer()
 
-    assigned_system = force_field.assign_terms(molecule, name, output_dir)
+    assigned_system = forcefield.assign_terms(molecule, name, output_dir)
 
     ensemble = Ensemble(
         base_molecule=molecule,
@@ -99,7 +99,7 @@ def optimise_cage(
         conformer = run_optimisation(
             assigned_system=AssignedSystem(
                 molecule=temp_molecule,
-                force_field_terms=assigned_system.force_field_terms,
+                forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
                 topology_xml=assigned_system.topology_xml,
                 bead_set=assigned_system.bead_set,
@@ -119,13 +119,13 @@ def optimise_cage(
     # building blocks.
     logging.info(f"optimisation of shifted structures of {name}")
     for test_molecule in yield_shifted_models(
-        temp_molecule, force_field, kicks=(1, 2, 3, 4)
+        temp_molecule, forcefield, kicks=(1, 2, 3, 4)
     ):
         try:
             conformer = run_optimisation(
                 assigned_system=AssignedSystem(
                     molecule=test_molecule,
-                    force_field_terms=assigned_system.force_field_terms,
+                    forcefield_terms=assigned_system.forcefield_terms,
                     system_xml=assigned_system.system_xml,
                     topology_xml=assigned_system.topology_xml,
                     bead_set=assigned_system.bead_set,
@@ -144,8 +144,8 @@ def optimise_cage(
     # Collect and optimise structures nearby in phase space.
     logging.info(f"optimisation of nearby structures of {name}")
     neighbour_library = get_neighbour_library(
-        ffnum=int(force_field.get_identifier()),
-        fftype=force_field.get_prefix(),
+        ffnum=int(forcefield.get_identifier()),
+        fftype=forcefield.get_prefix(),
     )
     for test_molecule in yield_near_models(
         molecule=molecule,
@@ -156,7 +156,7 @@ def optimise_cage(
         conformer = run_optimisation(
             assigned_system=AssignedSystem(
                 molecule=test_molecule,
-                force_field_terms=assigned_system.force_field_terms,
+                forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
                 topology_xml=assigned_system.topology_xml,
                 bead_set=assigned_system.bead_set,
@@ -176,7 +176,7 @@ def optimise_cage(
         name=name,
         assigned_system=AssignedSystem(
             molecule=ensemble.get_lowest_e_conformer().molecule,
-            force_field_terms=assigned_system.force_field_terms,
+            forcefield_terms=assigned_system.forcefield_terms,
             system_xml=assigned_system.system_xml,
             topology_xml=assigned_system.topology_xml,
             bead_set=assigned_system.bead_set,
@@ -212,7 +212,7 @@ def optimise_cage(
         conformer = run_optimisation(
             assigned_system=AssignedSystem(
                 molecule=md_conformer.molecule,
-                force_field_terms=assigned_system.force_field_terms,
+                forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
                 topology_xml=assigned_system.topology_xml,
                 bead_set=assigned_system.bead_set,
@@ -264,44 +264,44 @@ def build_populations(
         logging.info(f"running population {population}")
         popn_dict = populations[population]
         topologies = popn_dict["topologies"]
-        force_fields = tuple(popn_dict["fflibrary"].yield_forcefields())
+        forcefields = tuple(popn_dict["fflibrary"].yield_forcefields())
         logging.info(f"there are {len(topologies)} topologies")
-        logging.info(f"there are {len(force_fields)} ffs")
-        logging.info(f"building {len(force_fields) * len(topologies)} cages")
-        popn_iterator = it.product(topologies, force_fields)
-        for cage_topo_str, force_field in popn_iterator:
+        logging.info(f"there are {len(forcefields)} ffs")
+        logging.info(f"building {len(forcefields) * len(topologies)} cages")
+        popn_iterator = it.product(topologies, forcefields)
+        for cage_topo_str, forcefield in popn_iterator:
             c2_precursor = popn_dict["c2"]
             cl_precursor = popn_dict["cl"]
             name = (
                 f"{cage_topo_str}_{cl_precursor.get_name()}_"
                 f"{c2_precursor.get_name()}_"
-                f"f{force_field.get_identifier()}"
+                f"f{forcefield.get_identifier()}"
             )
 
             # Write out force field.
-            force_field.write_human_readable(calculation_output)
+            forcefield.write_human_readable(calculation_output)
 
             # Optimise building blocks.
             c2_name = (
-                f"{c2_precursor.get_name()}_f{force_field.get_identifier()}"
+                f"{c2_precursor.get_name()}_f{forcefield.get_identifier()}"
             )
             c2_building_block = optimise_ligand(
                 molecule=c2_precursor.get_building_block(),
                 name=c2_name,
                 output_dir=calculation_output,
-                force_field=force_field,
+                forcefield=forcefield,
                 platform=None,
             )
             c2_building_block.write(str(ligand_output / f"{c2_name}_optl.mol"))
 
             cl_name = (
-                f"{cl_precursor.get_name()}_f{force_field.get_identifier()}"
+                f"{cl_precursor.get_name()}_f{forcefield.get_identifier()}"
             )
             cl_building_block = optimise_ligand(
                 molecule=cl_precursor.get_building_block(),
                 name=cl_name,
                 output_dir=calculation_output,
-                force_field=force_field,
+                forcefield=forcefield,
                 platform=None,
             )
             cl_building_block.write(str(ligand_output / f"{cl_name}_optl.mol"))
@@ -317,7 +317,7 @@ def build_populations(
                 molecule=cage,
                 name=name,
                 output_dir=calculation_output,
-                force_field=force_field,
+                forcefield=forcefield,
                 platform=platform,
                 database=database,
             )
@@ -331,7 +331,7 @@ def build_populations(
                 conformer=conformer,
                 name=name,
                 output_dir=calculation_output,
-                force_field=force_field,
+                forcefield=forcefield,
                 node_element=node_element,
                 ligand_element=ligand_element,
                 database=database,

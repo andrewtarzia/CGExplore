@@ -20,23 +20,23 @@ def test_system_xml_writer(molecule):
         syst_xml_file = pathlib.Path(
             os.path.dirname(os.path.realpath(__file__))
         ) / (
-            f"{molecule.name}_{molecule.force_field.get_prefix()}_"
+            f"{molecule.name}_{molecule.forcefield.get_prefix()}_"
             f"{molecule.name}_syst.xml"
         )
         topo_xml_file = pathlib.Path(
             os.path.dirname(os.path.realpath(__file__))
         ) / (
-            f"{molecule.name}_{molecule.force_field.get_prefix()}_"
+            f"{molecule.name}_{molecule.forcefield.get_prefix()}_"
             f"{molecule.name}_topo.xml"
         )
         saved_syst_xml_file = pathlib.Path(
             os.path.dirname(os.path.realpath(__file__))
         ) / (
-            f"{molecule.name}_{molecule.force_field.get_prefix()}_"
+            f"{molecule.name}_{molecule.forcefield.get_prefix()}_"
             f"{molecule.name}_syst_saved.xml"
         )
 
-        assigned_system = molecule.force_field.assign_terms(
+        assigned_system = molecule.forcefield.assign_terms(
             molecule=molecule.molecule,
             output_dir=pathlib.Path(
                 os.path.dirname(os.path.realpath(__file__))

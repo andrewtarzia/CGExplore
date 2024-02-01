@@ -14,7 +14,7 @@ def test_topology_xml_writer(molecule):
         None : :class:`NoneType`
 
     """
-    assigned_system = molecule.force_field.assign_terms(
+    assigned_system = molecule.forcefield.assign_terms(
         molecule=molecule.molecule,
         output_dir=pathlib.Path(os.path.dirname(os.path.realpath(__file__))),
         name=molecule.name,

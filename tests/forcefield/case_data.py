@@ -11,7 +11,7 @@ class CaseData:
     def __init__(
         self,
         molecule: stk.Molecule,
-        force_field_library,
+        forcefield_library,
         bond_ranges,
         angle_ranges,
         torsion_ranges,
@@ -25,15 +25,15 @@ class CaseData:
         name: str,
     ) -> None:
         self.molecule = molecule
-        self.force_field_library = force_field_library
+        self.forcefield_library = forcefield_library
         for i in bond_ranges:
-            self.force_field_library.add_bond_range(i)
+            self.forcefield_library.add_bond_range(i)
         for i in angle_ranges:
-            self.force_field_library.add_angle_range(i)
+            self.forcefield_library.add_angle_range(i)
         for i in torsion_ranges:
-            self.force_field_library.add_torsion_range(i)
+            self.forcefield_library.add_torsion_range(i)
         for i in nonbonded_ranges:
-            self.force_field_library.add_nonbonded_range(i)
+            self.forcefield_library.add_nonbonded_range(i)
         self.num_forcefields = num_forcefields
         self.present_bonds = present_bonds
         self.present_angles = present_angles

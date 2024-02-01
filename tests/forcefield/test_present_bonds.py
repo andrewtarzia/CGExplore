@@ -19,9 +19,9 @@ def test_present_bonds(molecule):
 
     """
     try:
-        force_fields = tuple(molecule.force_field_library.yield_forcefields())
+        forcefields = tuple(molecule.forcefield_library.yield_forcefields())
 
-        for i, ff in enumerate(force_fields):
+        for i, ff in enumerate(forcefields):
             assigned_system = ff.assign_terms(
                 molecule=molecule.molecule,
                 output_dir=pathlib.Path(
@@ -30,7 +30,7 @@ def test_present_bonds(molecule):
                 name=molecule.name,
             )
 
-            present_terms = assigned_system.force_field_terms["bond"]
+            present_terms = assigned_system.forcefield_terms["bond"]
             print(present_terms)
             assert len(present_terms) == len(molecule.present_bonds[i])
             for test, present in zip(

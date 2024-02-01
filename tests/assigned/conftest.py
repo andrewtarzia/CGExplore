@@ -27,7 +27,7 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            force_field=ForceField(
+            forcefield=ForceField(
                 identifier=name,
                 prefix="assigned_tests",
                 present_beads=(
@@ -117,20 +117,6 @@ from .case_data import CaseData
   <Type name="c1" class="c" element="Ag" mass="10"/>
  </AtomTypes>
 
- <Residues>
-  <Residue name="ALL">
-   <Atom name="0" type="b1"/>
-   <Atom name="1" type="a1"/>
-   <Atom name="2" type="c1"/>
-   <Atom name="3" type="a1"/>
-   <Atom name="4" type="b1"/>
-   <Bond atomName1="0" atomName2="1"/>
-   <Bond atomName1="1" atomName2="2"/>
-   <Bond atomName1="2" atomName2="3"/>
-   <Bond atomName1="3" atomName2="4"/>
-  </Residue>
- </Residues>
-
 </ForceField>
 """
             ),
@@ -149,7 +135,7 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            force_field=ForceField(
+            forcefield=ForceField(
                 identifier=name,
                 prefix="assigned_tests",
                 present_beads=(
@@ -272,20 +258,6 @@ from .case_data import CaseData
   <Type name="a1" class="a" element="Ba" mass="10"/>
   <Type name="c1" class="c" element="Ag" mass="10"/>
  </AtomTypes>
-
- <Residues>
-  <Residue name="ALL">
-   <Atom name="0" type="b1"/>
-   <Atom name="1" type="a1"/>
-   <Atom name="2" type="c1"/>
-   <Atom name="3" type="a1"/>
-   <Atom name="4" type="b1"/>
-   <Bond atomName1="0" atomName2="1"/>
-   <Bond atomName1="1" atomName2="2"/>
-   <Bond atomName1="2" atomName2="3"/>
-   <Bond atomName1="3" atomName2="4"/>
-  </Residue>
- </Residues>
 
 </ForceField>
 """
