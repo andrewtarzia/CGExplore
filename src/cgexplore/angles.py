@@ -60,7 +60,7 @@ class TargetAngle:
     def vector_key(self) -> str:
         return f"{self.type1}{self.type2}{self.type3}"
 
-    def vector(self) -> tuple[float]:
+    def vector(self) -> tuple[float, float]:
         return (
             self.angle.value_in_unit(openmm.unit.degrees),
             self.angle_k.value_in_unit(angle_k_unit()),
@@ -133,7 +133,7 @@ class TargetCosineAngle:
     def vector_key(self) -> str:
         return f"{self.type1}{self.type2}{self.type3}"
 
-    def vector(self) -> tuple[float]:
+    def vector(self) -> tuple[float, float, float]:
         return (
             self.n,
             self.b,

@@ -40,7 +40,7 @@ class TargetNonbonded:
     def vector_key(self) -> str:
         return self.bead_class
 
-    def vector(self) -> tuple[float]:
+    def vector(self) -> tuple[float, float]:
         return (
             self.sigma.value_in_unit(openmm.unit.angstrom),
             self.epsilon.value_in_unit(openmm.unit.kilojoules_per_mole),
