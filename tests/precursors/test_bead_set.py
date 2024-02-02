@@ -1,4 +1,7 @@
-def test_bead_set(precursor):
+from .case_data import CaseData
+
+
+def test_bead_set(precursor: CaseData) -> None:
     """Test :meth:`.Precursor.get_bead_set`.
 
     Parameters:

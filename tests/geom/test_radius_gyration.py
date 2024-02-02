@@ -1,7 +1,9 @@
 import numpy as np
 
+from .case_data import CaseData
 
-def test_radius_gyration(molecule):
+
+def test_radius_gyration(molecule: CaseData) -> None:
     """Test :meth:`.GeomMeasure.calculate_radius_gyration`.
 
     Parameters:

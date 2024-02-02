@@ -1055,13 +1055,11 @@ def generate_movies(figure_output):
 
 
 def naming_convention_map(old_name, tors="toff"):
-    """
-    This only applies because of the change of naming convention.
+    """This only applies because of the change of naming convention.
 
     In future, users should stick to the `new` naming convention.
 
     """
-
     if "_f" in old_name:
         # You do not need to convert this.
         return old_name
@@ -1170,7 +1168,8 @@ def main():
         struct_output,
         struct_figure_output,
     )
-    raise SystemExit("not implemented from here.")
+    msg = "not implemented from here."
+    raise SystemExit(msg)
     webapp_csv(
         all_data,
         figure_output,

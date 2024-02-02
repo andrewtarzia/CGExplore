@@ -2,11 +2,7 @@ import stk
 
 
 class CaseData:
-    """A test case.
-
-    Attributes:
-
-    """
+    """A test case."""
 
     def __init__(
         self,
@@ -16,6 +12,7 @@ class CaseData:
         shape_string: str,
         name: str,
     ) -> None:
+        """Initialize CaseData."""
         self.molecule = molecule
         self.shape_dict = shape_dict
         self.expected_points = expected_points

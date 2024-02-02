@@ -27,7 +27,9 @@ logging.basicConfig(
 
 
 class OMMTrajectory:
-    def __init__(
+    """Class for holding trajectory information from OpenMM."""
+
+    def __init__(  # noqa: PLR0913
         self,
         base_molecule: stk.Molecule,
         data_path: pathlib.Path,
@@ -41,6 +43,7 @@ class OMMTrajectory:
         reporting_freq: float,
         traj_freq: float,
     ) -> None:
+        """Initialize OMMTrajectory."""
         self._base_molecule = base_molecule
         self._data_path = data_path
         self._traj_path = traj_path
@@ -56,12 +59,15 @@ class OMMTrajectory:
         self._friction = friction
 
     def get_data(self) -> pd.DataFrame:
+        """Get Trajectory data."""
         return pd.read_csv(self._data_path)
 
     def get_base_molecule(self) -> stk.Molecule:
+        """Get the base molecule of this trajectory."""
         return self._base_molecule
 
     def yield_conformers(self) -> abc.Iterator[Timestep]:
+        """Yield conformers from trajectory."""
         num_atoms = self._base_molecule.get_num_atoms()
         start_trigger = "MODEL"
         triggered = False
@@ -102,17 +108,21 @@ class OMMTrajectory:
                     new_pos_mat.append([x, y, z])
 
     def __str__(self) -> str:
+        """Return a string representation of the OMMTrajectory."""
         return (
             f"{self.__class__.__name__}(steps={self._num_steps}, "
             f"conformers={self._num_confs})"
         )
 
     def __repr__(self) -> str:
+        """Return a string representation of the OMMTrajectory."""
         return str(self)
 
 
 class CGOMMOptimizer:
-    def __init__(
+    """Optimiser of CG models using OpenMM."""
+
+    def __init__(  # noqa: PLR0913
         self,
         fileprefix: str,
         output_dir: pathlib.Path,
@@ -120,6 +130,7 @@ class CGOMMOptimizer:
         atom_constraints: abc.Iterable[tuple[int, int]] | None = None,
         platform: str | None = None,
     ) -> None:
+        """Initialize CGOMMOptimizer."""
         self._fileprefix = fileprefix
         self._output_dir = output_dir
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -155,13 +166,14 @@ class CGOMMOptimizer:
         From https://github.com/XiaojuanHu/CTPOL_MD/pull/4/files
 
         Use these two methods as:
-        `fgrps=forcegroupify(system)`
-        `
-        tt= getEnergyDecomposition(simulation.context, fgrps)
-        for idd in tt.keys():
-            print(idd,tt[idd])
-        print('\n')
-        `
+
+        ```
+            fgrps=forcegroupify(system)
+
+            tt= getEnergyDecomposition(simulation.context, fgrps)
+            for idd in tt.keys():
+                print(idd,tt[idd])
+        ```
 
         """
         forcegroups = {}
@@ -321,10 +333,12 @@ class CGOMMOptimizer:
         return molecule.with_position_matrix(positions * 10)
 
     def calculate_energy(self, assigned_system: ForcedSystem) -> float:
+        """Calculate energy of a system."""
         simulation, _ = self._setup_simulation(assigned_system)
         return self._get_energy(simulation)
 
     def read_final_energy_decomposition(self) -> dict:
+        """Read the final energy decomposition in an output file."""
         decomp_data = (
             self._output_string.split("energy decomposition:")[-1]
             .split("end time:")[0]
@@ -341,6 +355,7 @@ class CGOMMOptimizer:
         return decomposition
 
     def optimize(self, assigned_system: ForcedSystem) -> stk.Molecule:
+        """Optimize a molecule."""
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
         self._output_string += (
@@ -363,7 +378,9 @@ class CGOMMOptimizer:
 
 
 class CGOMMDynamics(CGOMMOptimizer):
-    def __init__(
+    """Optimiser of CG models using OpenMM and Molecular Dynamics."""
+
+    def __init__(  # noqa: PLR0913
         self,
         fileprefix: str,
         output_dir: pathlib.Path,
@@ -378,6 +395,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         atom_constraints: abc.Iterable[tuple[int, int]] | None = None,
         platform: str | None = None,
     ) -> None:
+        """Initialize CGOMMDynamics."""
         self._fileprefix = fileprefix
         self._output_dir = output_dir
         self._output_path = output_dir / f"{fileprefix}_omm.out"
@@ -398,7 +416,8 @@ class CGOMMDynamics(CGOMMOptimizer):
 
         if random_seed is None:
             logging.info("a random random seed is used")
-            self._random_seed = np.random.randint(1000)
+            rng = np.random.default_rng(1000)
+            self._random_seed = rng.integers(low=1, high=4000)
         else:
             self._random_seed = random_seed
 
@@ -515,6 +534,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         )
 
     def run_dynamics(self, assigned_system: ForcedSystem) -> OMMTrajectory:
+        """Run dynamics on an assigned system."""
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
         self._output_string += (

@@ -1,24 +1,29 @@
-import os
+import pathlib
+import shutil
 
 import atomlite
 import pytest
 import stk
 from cgexplore.databases import AtomliteDatabase
 
+from .case_data import CaseData
 
-def test_databasing(molecule):
+
+def test_databasing(molecule: CaseData) -> None:
     """Test :class:`.AtomliteDatabase`."""
-    path = os.path.join(
-        os.path.dirname(os.path.realpath(__file__)),
-        "test.db",
-    )
-    if os.path.exists(path):
-        os.remove(path)
+    path = pathlib.Path(__file__).resolve().parent / "test.db"
+
+    if path.exists():
+        shutil.rmtree(path)
 
     database = AtomliteDatabase(path)
 
     assert database.get_num_entries() == 0
-    for mol, prop in zip(molecule.molecules, molecule.property_dicts):
+    for mol, prop in zip(
+        molecule.molecules,
+        molecule.property_dicts,
+        strict=True,
+    ):
         print(mol, prop)
         key = stk.Smiles().get_key(mol)
         database.add_molecule(molecule=mol, key=key)
@@ -50,4 +55,4 @@ def test_databasing(molecule):
     print(database.get_num_entries())
     assert database.get_num_entries() == molecule.expected_count
 
-    os.remove(path)
+    path.unlink()

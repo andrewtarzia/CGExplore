@@ -1,4 +1,7 @@
-def test_fflibrary(molecule):
+from .case_data import CaseData
+
+
+def test_fflibrary(molecule: CaseData) -> None:
     """Test methods toward :meth:`.ForceFieldLibrary`.
 
     Parameters:

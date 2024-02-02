@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for handling torsions.
@@ -14,7 +13,7 @@ from dataclasses import dataclass
 
 import stk
 from openmm import openmm
-from rdkit.Chem import AllChem as rdkit
+from rdkit.Chem import AllChem
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,6 +23,8 @@ logging.basicConfig(
 
 @dataclass
 class Torsion:
+    """Class containing torsion defintion."""
+
     atom_names: tuple[str, ...]
     atom_ids: tuple[int, ...]
     phi0: openmm.unit.Quantity
@@ -35,6 +36,8 @@ class Torsion:
 
 @dataclass
 class TargetTorsion:
+    """Defines a target term to search for in a molecule."""
+
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
     measured_atom_ids: tuple[int, int, int, int]
@@ -44,9 +47,11 @@ class TargetTorsion:
     funct: int = 0
 
     def vector_key(self) -> str:
+        """Return key for vector defining this target term."""
         return "".join(self.search_string)
 
     def vector(self) -> tuple[float, float, float]:
+        """Return vector defining this target term."""
         return (
             self.phi0.value_in_unit(openmm.unit.degrees),
             self.torsion_k.value_in_unit(openmm.unit.kilojoules_per_mole),
@@ -54,6 +59,7 @@ class TargetTorsion:
         )
 
     def human_readable(self) -> str:
+        """Return human-readable definition of this target term."""
         return (
             f"{self.__class__.__name__}("
             f'{"".join(self.search_string)}, '
@@ -68,6 +74,8 @@ class TargetTorsion:
 
 @dataclass
 class TargetTorsionRange:
+    """Defines a target term and ranges in parameters to search for."""
+
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
     measured_atom_ids: tuple[int, int, int, int]
@@ -75,7 +83,8 @@ class TargetTorsionRange:
     torsion_ks: tuple[openmm.unit.Quantity]
     torsion_ns: tuple[int]
 
-    def yield_torsions(self):
+    def yield_torsions(self) -> abc.Iterable[TargetTorsion]:
+        """Find interactions matching target."""
         for phi0, k, n in it.product(
             self.phi0s, self.torsion_ks, self.torsion_ns
         ):
@@ -91,6 +100,8 @@ class TargetTorsionRange:
 
 @dataclass
 class FoundTorsion:
+    """Define a found forcefield term."""
+
     atoms: tuple[stk.Atom, ...]
     atom_ids: tuple[int, ...]
 
@@ -99,7 +110,8 @@ def find_torsions(
     molecule: stk.Molecule,
     chain_length: int,
 ) -> abc.Iterator[FoundTorsion]:
-    paths = rdkit.FindAllPathsOfLengthN(
+    """Find torsions based on bonds in molecule."""
+    paths = AllChem.FindAllPathsOfLengthN(
         mol=molecule.to_rdkit_mol(),
         length=chain_length,
         useBonds=False,
@@ -115,6 +127,8 @@ def find_torsions(
 
 @dataclass
 class TargetMartiniTorsion:
+    """Defines a target angle to search for in a molecule."""
+
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
     measured_atom_ids: tuple[int, int, int, int]
@@ -124,6 +138,7 @@ class TargetMartiniTorsion:
     funct: int
 
     def human_readable(self) -> str:
+        """Return human-readable definition of this target term."""
         return (
             f"{self.__class__.__name__}("
             f'{"".join(self.search_string)}, '
@@ -139,6 +154,8 @@ class TargetMartiniTorsion:
 
 @dataclass
 class MartiniTorsionRange:
+    """Defines a target torsion and ranges in parameters to search for."""
+
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
     measured_atom_ids: tuple[int, int, int, int]
@@ -147,9 +164,11 @@ class MartiniTorsionRange:
     torsion_ns: tuple[int]
     funct: int
 
-    def yield_torsions(self):
-        raise NotImplementedError("handle torsions")
-        for phi0, k, n in it.product(
+    def yield_torsions(self) -> abc.Iterable[TargetMartiniTorsion]:
+        """Find torsions matching target."""
+        msg = "handle torsions"
+        raise NotImplementedError(msg)
+        for phi0, k, n in it.product(  # type: ignore[unreachable]
             self.phi0s, self.torsion_ks, self.torsion_ns
         ):
             yield TargetMartiniTorsion(

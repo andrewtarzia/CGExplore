@@ -1,8 +1,10 @@
 import stk
 from cgexplore.shape import ShapeMeasure
 
+from .case_data import CaseData
 
-def test_shape(molecule):
+
+def test_shape(molecule: CaseData) -> None:
     """Test :meth:`.ShapeMeasure.get_shape_molecule_byelement`.
 
     Parameters:
@@ -14,7 +16,6 @@ def test_shape(molecule):
         None : :class:`NoneType`
 
     """
-
     shape_calc = ShapeMeasure(
         output_dir="fake_output",
         shape_path="fake_output",

@@ -1,25 +1,22 @@
+import cgexplore
 import stk
 
 
 class CaseData:
-    """A test case.
-
-    Attributes:
-
-    """
+    """A test case."""
 
     def __init__(
         self,
         molecule: stk.Molecule,
-        forcefield_library,
-        bond_ranges,
-        angle_ranges,
-        torsion_ranges,
-        nonbonded_ranges,
-        present_bonds,
-        present_angles,
-        present_nonbondeds,
-        present_torsions,
+        forcefield_library: cgexplore.forcefield.ForceFieldLibrary,
+        bond_ranges: tuple[cgexplore.bonds.TargetBondRange],
+        angle_ranges: tuple[cgexplore.angles.TargetAngleRange],
+        torsion_ranges: tuple[cgexplore.torsions.TargetTorsionRange],
+        nonbonded_ranges: tuple[cgexplore.nonbonded.TargetNonbondedRange],
+        present_bonds: tuple[tuple],
+        present_angles: tuple[tuple],
+        present_nonbondeds: tuple[tuple],
+        present_torsions: tuple[tuple],
         num_forcefields: int,
         library_string: str,
         name: str,

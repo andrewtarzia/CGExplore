@@ -6,14 +6,17 @@ from collections import abc, defaultdict
 
 import stk
 import stko
-from rdkit.Chem import AllChem as rdkit
+from rdkit.Chem import AllChem
 
 from .torsions import find_torsions
 from .utilities import get_dihedral
 
 
 class GeomMeasure:
+    """Class to perform geometry calculations."""
+
     def __init__(self, target_torsions: abc.Iterable | None = None) -> None:
+        """Initialize GeomMeasure."""
         self._stko_analyser = stko.molecule_analysis.GeometryAnalyser()
         if target_torsions is None:
             self._target_torsions = None
@@ -24,6 +27,7 @@ class GeomMeasure:
         self,
         molecule: stk.Molecule,
     ) -> dict[str, float]:
+        """Calculate the minimum distance between beads and centroid."""
         return {
             "min_distance": (
                 self._stko_analyser.get_min_centroid_distance(molecule)
@@ -35,7 +39,7 @@ class GeomMeasure:
         molecule: stk.Molecule,
         path_length: int,
     ) -> tuple[tuple[int]]:
-        return rdkit.FindAllPathsOfLengthN(
+        return AllChem.FindAllPathsOfLengthN(
             mol=molecule.to_rdkit_mol(),
             length=path_length,
             useBonds=False,
@@ -43,26 +47,36 @@ class GeomMeasure:
         )
 
     def calculate_minb2b(self, molecule: stk.Molecule) -> float:
+        """Calculate the minimum distance between beads and beads."""
         return self._stko_analyser.get_min_atom_atom_distance(molecule)
 
     def calculate_bonds(
         self,
         molecule: stk.Molecule,
     ) -> dict[tuple[str, ...], list[float]]:
+        """Calculate the bond lengths.
+
+        Uses `stko..molecule_analysis.GeometryAnalyser`
+        """
         return self._stko_analyser.calculate_bonds(molecule)
 
     def calculate_angles(
         self,
         molecule: stk.Molecule,
     ) -> dict[tuple[str, ...], list[float]]:
+        """Calculate the angle values.
+
+        Uses `stko..molecule_analysis.GeometryAnalyser`
+        """
         return self._stko_analyser.calculate_angles(molecule)
 
     def calculate_torsions(
         self,
         molecule: stk.Molecule,
-        absolute: bool,
-        as_search_string: bool = False,
+        absolute: bool,  # noqa: FBT001
+        as_search_string: bool = False,  # noqa: FBT001, FBT002
     ) -> dict[str, list[float]]:
+        """Calculate the value of target torsions."""
         if self._target_torsions is None:
             return {}
 
@@ -131,7 +145,15 @@ class GeomMeasure:
         return torsions
 
     def calculate_radius_gyration(self, molecule: stk.Molecule) -> float:
+        """Calculate the radius of gyration.
+
+        Uses `stko..molecule_analysis.GeometryAnalyser`
+        """
         return self._stko_analyser.get_radius_gyration(molecule)
 
     def calculate_max_diameter(self, molecule: stk.Molecule) -> float:
+        """Calculate the maximum diameter of the molecule.
+
+        Uses `stko..molecule_analysis.GeometryAnalyser`
+        """
         return self._stko_analyser.get_max_diameter(molecule)

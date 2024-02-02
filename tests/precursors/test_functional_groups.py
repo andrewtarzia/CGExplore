@@ -1,4 +1,7 @@
-def test_functional_groups(precursor):
+from .case_data import CaseData
+
+
+def test_functional_groups(precursor: CaseData) -> None:
     """Test :class:`.Precursor`.
 
     Parameters:

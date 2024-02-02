@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for structure generation utilities.
@@ -9,7 +8,6 @@ Author: Andrew Tarzia
 
 
 import logging
-import os
 import pathlib
 from collections.abc import Iterator
 
@@ -64,10 +62,10 @@ def optimise_ligand(
         An stk molecule.
 
     """
-    opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
+    opt1_mol_file = pathlib.Path(output_dir) / f"{name}_opted1.mol"
 
-    if os.path.exists(opt1_mol_file):
-        molecule = molecule.with_structure_from_file(opt1_mol_file)
+    if opt1_mol_file.exists():
+        molecule = molecule.with_structure_from_file(str(opt1_mol_file))
     else:
         logging.info(f"optimising {name}, no max_iterations")
         assigned_system = forcefield.assign_terms(
@@ -119,7 +117,8 @@ def soften_forcefield(
 
     """
     if isinstance(assigned_system, MartiniSystem):
-        raise TypeError("soften not available for Martini yet.")
+        msg = "soften not available for Martini yet."
+        raise TypeError(msg)
 
     angles = []
     for i in assigned_system.forcefield_terms["angle"]:
@@ -147,7 +146,8 @@ def soften_forcefield(
                 )
             )
         else:
-            raise TypeError(f"soften not available for {i} angle type.")
+            msg = f"soften not available for {i} angle type."
+            raise TypeError(msg)
 
     new_forcefield_terms = {
         "bond": tuple(
@@ -182,7 +182,7 @@ def soften_forcefield(
     )
 
 
-def run_soft_md_cycle(
+def run_soft_md_cycle(  # noqa: PLR0913
     name: str,
     assigned_system: AssignedSystem,
     output_dir: pathlib.Path,
@@ -282,7 +282,7 @@ def run_soft_md_cycle(
         return None
 
 
-def run_constrained_optimisation(
+def run_constrained_optimisation(  # noqa: PLR0913
     assigned_system: AssignedSystem,
     name: str,
     output_dir: pathlib.Path,
@@ -351,7 +351,7 @@ def run_constrained_optimisation(
     return constrained_opt.optimize(soft_assigned_system)
 
 
-def run_optimisation(
+def run_optimisation(  # noqa: PLR0913
     assigned_system: AssignedSystem,
     name: str,
     file_suffix: str,
@@ -443,10 +443,10 @@ def yield_near_models(
 
     for new_ff_id in neighbour_library:
         new_name = name.replace(ff_name, f"f{new_ff_id}")
-        new_fina_mol_file = os.path.join(output_dir, f"{new_name}_final.mol")
-        if os.path.exists(new_fina_mol_file):
+        new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
+        if new_fina_mol_file.exists():
             logging.info(f"found neigh: {new_fina_mol_file}")
-            yield molecule.with_structure_from_file(new_fina_mol_file)
+            yield molecule.with_structure_from_file(str(new_fina_mol_file))
 
 
 def shift_beads(

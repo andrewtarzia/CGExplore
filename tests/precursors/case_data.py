@@ -1,12 +1,10 @@
+import numpy as np
+import numpy.typing as npt
 from cgexplore.molecule_construction import Precursor
 
 
 class CaseData:
-    """A test case.
-
-    Attributes:
-
-    """
+    """A test case."""
 
     def __init__(
         self,
@@ -15,7 +13,7 @@ class CaseData:
         num_fgs: int,
         bead_set: dict,
         smiles: str,
-        position_matrix,
+        position_matrix: npt.NDArray[np.float64],
         name: str,
     ) -> None:
         self.precursor = precursor

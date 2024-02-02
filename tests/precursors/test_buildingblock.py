@@ -1,8 +1,10 @@
 import numpy as np
 import stk
 
+from .case_data import CaseData
 
-def test_building_block(precursor):
+
+def test_building_block(precursor: CaseData) -> None:
     """Test :meth:`.Precursor.get_building_block`.
 
     Parameters:

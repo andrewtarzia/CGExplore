@@ -1,7 +1,9 @@
 import numpy as np
 
+from .case_data import CaseData
 
-def test_maxdiameter(molecule):
+
+def test_maxdiameter(molecule: CaseData) -> None:
     """Test :meth:`.GeomMeasure.calculate_max_diameter`.
 
     Parameters:

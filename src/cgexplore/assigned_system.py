@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for system classes with assigned terms.
@@ -23,6 +22,8 @@ from .utilities import (
 
 
 class ForcedSystem:
+    """A system with forces assigned."""
+
     molecule: stk.Molecule
     forcefield_terms: dict[str, tuple]
     vdw_bond_cutoff: int
@@ -66,7 +67,7 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in bonds does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
 
@@ -113,7 +114,7 @@ class ForcedSystem:
                         )
                 except AttributeError:
                     msg = f"{assigned_force} in angles does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
 
@@ -144,7 +145,7 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in torsions does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
 
@@ -175,7 +176,7 @@ class ForcedSystem:
 
                 except AttributeError:
                     msg = f"{assigned_force} in nonbondeds does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
             try:
                 # This method MUST be after terms are assigned.
@@ -185,7 +186,7 @@ class ForcedSystem:
                 )
             except OpenMMException:
                 msg = f"{force_type} is missing a definition for a particle."
-                raise ForceFieldUnitError(msg)
+                raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
 
@@ -199,14 +200,18 @@ class ForcedSystem:
         return self._add_nonbondeds(system)
 
     def get_openmm_topology(self) -> app.topology.Topology:
+        """Return OpenMM.Topology object."""
         raise NotImplementedError
 
     def get_openmm_system(self) -> openmm.System:
+        """Return OpenMM.System object."""
         raise NotImplementedError
 
 
 @dataclass(frozen=True)
 class AssignedSystem(ForcedSystem):
+    """A system with forces assigned."""
+
     molecule: stk.Molecule
     forcefield_terms: dict[str, tuple]
     system_xml: pathlib.Path
@@ -216,7 +221,7 @@ class AssignedSystem(ForcedSystem):
     mass: float = 10
 
     def _add_atoms(self, system: openmm.System) -> openmm.System:
-        for atom in self.molecule.get_atoms():
+        for _atom in self.molecule.get_atoms():
             system.addParticle(self.mass)
         return system
 
@@ -259,7 +264,6 @@ class AssignedSystem(ForcedSystem):
         re_str += " </Residues>\n\n"
 
         ff_str += at_str
-        # ff_str += re_str
 
         ff_str += "</ForceField>\n"
         return ff_str
@@ -271,6 +275,7 @@ class AssignedSystem(ForcedSystem):
             f.write(ff_str)
 
     def get_openmm_topology(self) -> app.topology.Topology:
+        """Return OpenMM.Topology object."""
         topology = app.topology.Topology()
         chain = topology.addChain()
         residue = topology.addResidue(name="ALL", chain=chain)
@@ -307,6 +312,7 @@ class AssignedSystem(ForcedSystem):
         return topology
 
     def get_openmm_system(self) -> openmm.System:
+        """Return OpenMM.System object."""
         system = openmm.System()
         system = self._add_atoms(system)
         system = self._add_forces(system)
@@ -319,10 +325,7 @@ class AssignedSystem(ForcedSystem):
 
 @dataclass(frozen=True)
 class MartiniSystem(ForcedSystem):
-    """
-    Assign a system using martini_openmm.
-
-    """
+    """Assign a system using martini_openmm."""
 
     molecule: stk.Molecule
     forcefield_terms: dict[str, tuple]
@@ -363,7 +366,7 @@ class MartiniSystem(ForcedSystem):
         atoms_string += "\n"
         return atoms_string
 
-    def _get_bonds_string(self, molecule: stk.Molecule) -> str:
+    def _get_bonds_string(self) -> str:
         string = "[bonds]\n; i j   funct   length\n"
         forces = self.forcefield_terms["bond"]
         for assigned_force in forces:
@@ -386,7 +389,7 @@ class MartiniSystem(ForcedSystem):
         string += "\n"
         return string
 
-    def _get_angles_string(self, molecule: stk.Molecule) -> str:
+    def _get_angles_string(self) -> str:
         string = "[angles]\n; i j k    funct  ref.angle   force_k\n"
         forces = self.forcefield_terms["angle"]
 
@@ -413,7 +416,7 @@ class MartiniSystem(ForcedSystem):
         string += "\n"
         return string
 
-    def _get_torsions_string(self, molecule: stk.Molecule) -> str:
+    def _get_torsions_string(self) -> str:
         string = "[dihedrals]\n; i j k l  funct  ref.angle   force_k\n"
         forces = self.forcefield_terms["torsion"]
         force_types = {i.force for i in forces}
@@ -421,12 +424,12 @@ class MartiniSystem(ForcedSystem):
         for force_type in force_types:
             if force_type != "MartiniDefinedTorsion":
                 continue
-            print(force_type)
-            raise SystemExit()
+            print(force_type)  # noqa: T201
+            raise SystemExit
         string += "\n"
         return string
 
-    def _get_contraints_string(self, molecule: stk.Molecule) -> str:
+    def _get_contraints_string(self) -> str:
         string = "[constraints]\n; i j   funct   length\n"
         for constraint in self.forcefield_terms["constraints"]:
             string += (
@@ -436,7 +439,7 @@ class MartiniSystem(ForcedSystem):
         string += "\n"
         return string
 
-    def _get_exclusions_string(self, molecule: stk.Molecule) -> str:
+    def _get_exclusions_string(self) -> str:
         string = "[exclusions]\n; i j   funct   length\n"
         for constraint in self.forcefield_terms["constraints"]:
             string += (
@@ -456,10 +459,10 @@ class MartiniSystem(ForcedSystem):
         )
 
         atoms_string = self._get_atoms_string(molecule, molecule_name)
-        bonds_string = self._get_bonds_string(molecule)
-        angles_string = self._get_angles_string(molecule)
-        torsions_string = self._get_torsions_string(molecule)
-        constraints_string = self._get_contraints_string(molecule)
+        bonds_string = self._get_bonds_string()
+        angles_string = self._get_angles_string()
+        torsions_string = self._get_torsions_string()
+        constraints_string = self._get_contraints_string()
 
         string += atoms_string
         string += bonds_string
@@ -471,10 +474,12 @@ class MartiniSystem(ForcedSystem):
             f.write(string)
 
     def get_openmm_topology(self) -> app.topology.Topology:
+        """Return OpenMM.Topology object."""
         self._write_topology_itp(self.molecule)
         return MartiniTopology(self.topology_itp).get_openmm_topology()
 
     def get_openmm_system(self) -> openmm.System:
+        """Return OpenMM.System object."""
         self._write_topology_itp(self.molecule)
         topology = MartiniTopology(self.topology_itp)
         system = topology.get_openmm_system()

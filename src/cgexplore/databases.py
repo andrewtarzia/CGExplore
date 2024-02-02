@@ -1,3 +1,8 @@
+"""Module for databasing, with AtomLite.
+
+Author: Andrew Tarzia
+"""
+
 import logging
 import pathlib
 import sqlite3
@@ -16,6 +21,7 @@ class AtomliteDatabase:
     """Holds an atomlite database with some useful methods."""
 
     def __init__(self, db_file: pathlib.Path) -> None:
+        """Initialize database."""
         self._db_file = db_file
         self._db = atomlite.Database(db_file)
 
@@ -24,6 +30,7 @@ class AtomliteDatabase:
         return self._db.num_entries()
 
     def add_molecule(self, molecule: stk.Molecule, key: str) -> None:
+        """Add molecule to database as entry."""
         entry = atomlite.Entry.from_rdkit(
             key=key,
             molecule=molecule.to_rdkit_mol(),
@@ -34,15 +41,18 @@ class AtomliteDatabase:
             self._db.update_entries(entry)
 
     def get_entries(self) -> abc.Iterator[atomlite.Entry]:
+        """Get all entries."""
         return self._db.get_entries()
 
     def get_entry(self, key: str) -> atomlite.Entry:
+        """Get specific entry."""
         if not self._db.has_entry(key):
             msg = f"{key} not in database"
             raise RuntimeError(msg)
         return self._db.get_entry(key)  # type: ignore[return-value]
 
     def get_molecule(self, key: str) -> stk.Molecule:
+        """Get a molecule."""
         rdkit_molecule = atomlite.json_to_rdkit(self.get_entry(key).molecule)
         return stk.BuildingBlock.init_from_rdkit_mol(rdkit_molecule)
 
@@ -51,6 +61,7 @@ class AtomliteDatabase:
         key: str,
         property_dict: dict[str, atomlite.Json],
     ) -> None:
+        """Add properties to an entry by key."""
         self._db.update_properties(
             atomlite.PropertyEntry(key=key, properties=property_dict)
         )
@@ -61,6 +72,7 @@ class AtomliteDatabase:
         property_key: str,
         property_type: type,
     ) -> atomlite.Json:
+        """Get the properties of an entry."""
         if property_type is bool:
             value = self._db.get_bool_property(  # type: ignore[assignment]
                 key=key,
@@ -94,9 +106,11 @@ class AtomliteDatabase:
         return value  # type: ignore[return-value]
 
     def has_molecule(self, key: str) -> bool:
+        """Check if database has a molecule by key."""
         return bool(self._db.has_entry(key))
 
     def remove_entry(self, key: str) -> None:
+        """Remove an entry by key."""
         self._db.remove_entries(keys=key)
 
     def keep_if(
@@ -104,6 +118,7 @@ class AtomliteDatabase:
         column: str,
         value: str | float,
     ) -> abc.Iterator[atomlite.Entry]:
+        """Filter database entries by properties."""
         for entry in self.get_entries():
             if entry.properties[column] == value:
                 yield entry

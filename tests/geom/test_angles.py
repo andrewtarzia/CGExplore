@@ -1,7 +1,9 @@
 import numpy as np
 
+from .case_data import CaseData
 
-def test_angles(molecule):
+
+def test_angles(molecule: CaseData) -> None:
     """Test :meth:`.GeomMeasure.calculate_angles`.
 
     Parameters:

@@ -1,18 +1,15 @@
+import cgexplore
 import stk
 
 
 class CaseData:
-    """A test case.
-
-    Attributes:
-
-    """
+    """A test case."""
 
     def __init__(
         self,
         molecule: stk.Molecule,
-        forcefield,
-        xml_string,
+        forcefield: cgexplore.forcefield.ForceField,
+        xml_string: str,
         name: str,
     ) -> None:
         self.molecule = molecule

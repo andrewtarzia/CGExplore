@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Classes of topologies of precursors.
@@ -15,24 +14,33 @@ from .beads import CgBead
 
 
 class Precursor:
+    """Define model precursors."""
+
     def __init__(self) -> None:
+        """Initialize a precursor."""
         self._bead_set: dict[str, CgBead]
         self._building_block: stk.BuildingBlock
         self._name: str
         raise NotImplementedError
 
     def get_bead_set(self) -> dict[str, CgBead]:
+        """Get beads in precursor."""
         return self._bead_set
 
     def get_building_block(self) -> stk.BuildingBlock:
+        """Get building block defined by precursor."""
         return self._building_block
 
     def get_name(self) -> str:
+        """Get name of precursor."""
         return self._name
 
 
 class FourC0Arm(Precursor):
+    """A `FourC0Arm` Precursor."""
+
     def __init__(self, bead: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._name = f"4C0{bead.bead_type}"
         self._bead_set = {bead.bead_type: bead}
@@ -62,7 +70,10 @@ class FourC0Arm(Precursor):
 
 
 class FourC1Arm(Precursor):
+    """A `FourC1Arm` Precursor."""
+
     def __init__(self, bead: CgBead, abead1: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._abead1 = abead1
         self._name = f"4C1{bead.bead_type}{abead1.bead_type}"
@@ -111,7 +122,10 @@ class FourC1Arm(Precursor):
 
 
 class ThreeC0Arm(Precursor):
+    """A `ThreeC0Arm` Precursor."""
+
     def __init__(self, bead: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._name = f"3C0{bead.bead_type}"
         self._bead_set = {
@@ -142,7 +156,10 @@ class ThreeC0Arm(Precursor):
 
 
 class ThreeC1Arm(Precursor):
+    """A `ThreeC1Arm` Precursor."""
+
     def __init__(self, bead: CgBead, abead1: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._abead1 = abead1
         self._name = f"3C1{bead.bead_type}{abead1.bead_type}"
@@ -187,7 +204,10 @@ class ThreeC1Arm(Precursor):
 
 
 class ThreeC2Arm(Precursor):
+    """A `ThreeC2Arm` Precursor."""
+
     def __init__(self, bead: CgBead, abead1: CgBead, abead2: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
@@ -240,7 +260,10 @@ class ThreeC2Arm(Precursor):
 
 
 class TwoC0Arm(Precursor):
+    """A `TwoC0Arm` Precursor."""
+
     def __init__(self, bead: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._name = f"2C0{bead.bead_type}"
         self._bead_set = {bead.bead_type: bead}
@@ -261,7 +284,10 @@ class TwoC0Arm(Precursor):
 
 
 class TwoC1Arm(Precursor):
+    """A `TwoC1Arm` Precursor."""
+
     def __init__(self, bead: CgBead, abead1: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._abead1 = abead1
         self._name = f"2C1{bead.bead_type}{abead1.bead_type}"
@@ -284,7 +310,10 @@ class TwoC1Arm(Precursor):
 
 
 class TwoC2Arm(Precursor):
+    """A `TwoC2Arm` Precursor."""
+
     def __init__(self, bead: CgBead, abead1: CgBead, abead2: CgBead) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
@@ -321,6 +350,8 @@ class TwoC2Arm(Precursor):
 
 
 class TwoC3Arm(Precursor):
+    """A `TwoC3Arm` Precursor."""
+
     def __init__(
         self,
         bead: CgBead,
@@ -328,6 +359,7 @@ class TwoC3Arm(Precursor):
         abead2: CgBead,
         abead3: CgBead,
     ) -> None:
+        """Initialize a precursor."""
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
@@ -366,134 +398,6 @@ class TwoC3Arm(Precursor):
                     [3, 0, 0],
                     [8, 0, 0],
                     [12, 0, 0],
-                ]
-            ),
-        )
-
-
-class UnsymmLigand(Precursor):
-    def __init__(
-        self,
-        centre_bead: CgBead,
-        lhs_bead: CgBead,
-        rhs_bead: CgBead,
-        binder_bead: CgBead,
-    ) -> None:
-        self._centre_bead = centre_bead
-        self._lhs_bead = lhs_bead
-        self._rhs_bead = rhs_bead
-        self._binder_bead = binder_bead
-        self._name = (
-            f"UL{centre_bead.bead_type}{lhs_bead.bead_type}"
-            f"{rhs_bead.bead_type}{binder_bead.bead_type}"
-        )
-        self._bead_set = {
-            centre_bead.bead_type: centre_bead,
-            lhs_bead.bead_type: lhs_bead,
-            rhs_bead.bead_type: rhs_bead,
-            binder_bead.bead_type: binder_bead,
-        }
-
-        new_fgs = (
-            stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{binder_bead.element_string}X1]"
-                    f"[{rhs_bead.element_string}]"
-                ),
-                bonders=(0,),
-                deleters=(),
-                placers=(0, 1),
-            ),
-            stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{binder_bead.element_string}X1]"
-                    f"[{lhs_bead.element_string}]"
-                ),
-                bonders=(0,),
-                deleters=(),
-                placers=(0, 1),
-            ),
-        )
-        self._building_block = stk.BuildingBlock(
-            smiles=(
-                f"[{binder_bead.element_string}]"
-                f"[{lhs_bead.element_string}]"
-                f"[{centre_bead.element_string}]"
-                f"[{rhs_bead.element_string}]"
-                f"[{binder_bead.element_string}]"
-            ),
-            functional_groups=new_fgs,
-            position_matrix=np.array(
-                [
-                    [-10, 0, 0],
-                    [-5, 3, 0],
-                    [0, 5, 0],
-                    [5, 3, 0],
-                    [10, 0, 0],
-                ]
-            ),
-        )
-
-
-class UnsymmBiteLigand(Precursor):
-    def __init__(
-        self,
-        centre_bead: CgBead,
-        lhs_bead: CgBead,
-        rhs_bead: CgBead,
-        binder_bead: CgBead,
-    ) -> None:
-        self._centre_bead = centre_bead
-        self._lhs_bead = lhs_bead
-        self._rhs_bead = rhs_bead
-        self._binder_bead = binder_bead
-        self._name = (
-            f"BL{centre_bead.bead_type}{lhs_bead.bead_type}"
-            f"{rhs_bead.bead_type}{binder_bead.bead_type}"
-        )
-        self._bead_set = {
-            centre_bead.bead_type: centre_bead,
-            lhs_bead.bead_type: lhs_bead,
-            rhs_bead.bead_type: rhs_bead,
-            binder_bead.bead_type: binder_bead,
-        }
-
-        new_fgs = (
-            stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{binder_bead.element_string}X1]"
-                    f"[{rhs_bead.element_string}]"
-                ),
-                bonders=(0,),
-                deleters=(),
-                placers=(0, 1),
-            ),
-            stk.SmartsFunctionalGroupFactory(
-                smarts=(
-                    f"[{binder_bead.element_string}X1]"
-                    f"[{lhs_bead.element_string}]"
-                ),
-                bonders=(0,),
-                deleters=(),
-                placers=(0, 1),
-            ),
-        )
-        self._building_block = stk.BuildingBlock(
-            smiles=(
-                f"[{binder_bead.element_string}]"
-                f"[{lhs_bead.element_string}]"
-                f"[{centre_bead.element_string}]"
-                f"[{rhs_bead.element_string}]"
-                f"[{binder_bead.element_string}]"
-            ),
-            functional_groups=new_fgs,
-            position_matrix=np.array(
-                [
-                    [-10, 0, 0],
-                    [-5, 3, 0],
-                    [0, 5, 0],
-                    [5, 3, 0],
-                    [10, 0, 0],
                 ]
             ),
         )

@@ -14,6 +14,8 @@ logging.basicConfig(
 
 @dataclass
 class CgBead:
+    """Define a coarse-grained bead."""
+
     element_string: str
     bead_type: str
     bead_class: str
@@ -24,6 +26,7 @@ def get_cgbead_from_type(
     bead_type: str,
     bead_set: dict[str, CgBead],
 ) -> CgBead:
+    """Get CgBead class from matching to bead type."""
     return bead_set[bead_type]
 
 
@@ -31,6 +34,7 @@ def get_cgbead_from_element(
     estring: str,
     bead_set: dict[str, CgBead],
 ) -> CgBead:
+    """Get CgBead class from matching to element string."""
     for i in bead_set:
         bead = bead_set[i]
         if bead.element_string == estring:
@@ -40,6 +44,7 @@ def get_cgbead_from_element(
 
 
 def periodic_table() -> dict[str, int]:
+    """Periodic table of elements."""
     return {
         "H": 1,
         "He": 2,
@@ -142,11 +147,13 @@ def periodic_table() -> dict[str, int]:
 
 
 def string_to_atom_number(string: str) -> int:
+    """Convert atom string to atom number."""
     return periodic_table()[string]
 
 
 def bead_library_check(bead_library: tuple[CgBead]) -> None:
-    print(bead_library)
+    """Check bead library for bad definitions."""
+    logging.info(bead_library)
     logging.info(f"there are {len(bead_library)} beads")
     used_names = tuple(i.bead_class for i in bead_library)
     counts = Counter(used_names)

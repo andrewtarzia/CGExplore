@@ -1,12 +1,12 @@
-import os
 import pathlib
 
 from cgexplore.errors import ForceFieldUnitError
 
+from .case_data import CaseData
 from .utilities import is_equivalent_atom
 
 
-def test_present_bonds(molecule):
+def test_present_bonds(molecule: CaseData) -> None:
     """Test methods toward :meth:`.ForceField._assign_bond_terms`.
 
     Parameters:
@@ -24,9 +24,7 @@ def test_present_bonds(molecule):
         for i, ff in enumerate(forcefields):
             assigned_system = ff.assign_terms(
                 molecule=molecule.molecule,
-                output_dir=pathlib.Path(
-                    os.path.dirname(os.path.realpath(__file__))
-                ),
+                output_dir=pathlib.Path(__file__).resolve().parent,
                 name=molecule.name,
             )
 

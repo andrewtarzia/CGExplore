@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for shape analysis.
@@ -30,8 +29,7 @@ def test_shape_mol(
     name: str,
     topo_str: str,
 ) -> None:
-    """
-    Test shape molecule.
+    """Test shape molecule.
 
     Requires hard-coded assumptions.
     I suggest using the method in `ShapeMeasure`.
@@ -50,6 +48,7 @@ def fill_position_matrix_molecule(
     element: str,
     old_position_matrix: np.ndarray,
 ) -> tuple[list, list]:
+    """Make position matrix from filtering molecule based on element."""
     position_matrix = []
     atoms: list[stk.Atom] = []
 
@@ -74,8 +73,7 @@ def get_shape_molecule_byelement(
     element: str,
     topo_expected: dict[str, int],
 ) -> stk.Molecule | None:
-    """
-    Get shape molecule.
+    """Get shape molecule.
 
     Requires hard-coded assumptions.
     I suggest using the method in `ShapeMeasure`.
@@ -107,6 +105,7 @@ def fill_position_matrix(
     element: str,
     old_position_matrix: np.ndarray,
 ) -> tuple[list, list]:
+    """Make position matrix from filtering molecule based on target BB."""
     position_matrix = []
     atoms: list[stk.Atom] = []
 
@@ -137,8 +136,7 @@ def get_shape_molecule_nodes(
     element: str,
     topo_expected: dict[str, int],
 ) -> stk.Molecule | None:
-    """
-    Get shape molecule.
+    """Get shape molecule.
 
     Requires hard-coded assumptions.
     I suggest using the method in `ShapeMeasure`.
@@ -172,8 +170,7 @@ def get_shape_molecule_ligands(
     element: str,
     topo_expected: dict[str, int],
 ) -> stk.Molecule | None:
-    """
-    Get shape molecule.
+    """Get shape molecule.
 
     Requires hard-coded assumptions.
     I suggest using the method in `ShapeMeasure`.
@@ -216,6 +213,7 @@ class ShapeMeasure:
         shape_path: pathlib.Path | str,
         shape_string: str | None = None,
     ) -> None:
+        """Initialize shape measure."""
         self._output_dir = output_dir
         self._shape_path = shape_path
         self._shape_dict: dict[str, dict]
@@ -244,6 +242,7 @@ class ShapeMeasure:
         element: str,
         expected_points: int,
     ) -> stk.Molecule | None:
+        """Get molecule to analyse by filtering by element."""
         old_position_matrix = molecule.get_position_matrix()
 
         position_matrix, atoms = fill_position_matrix_molecule(
@@ -260,6 +259,7 @@ class ShapeMeasure:
         )
 
     def reference_shape_dict(self) -> dict[str, dict]:
+        """Reference shapes as dictionary."""
         return {
             "L-2": {
                 "code": "1",
@@ -863,7 +863,9 @@ class ShapeMeasure:
         shape_numbers = tuple(i["code"] for i in possible_shapes)
 
         title = "$shape run by Andrew Tarzia - central atom=0 always.\n"
-        fix_perm = "%fixperm 0\\n" if num_vertices == 12 else "\n"
+        fix_perm = (
+            "%fixperm 0\\n" if num_vertices == 12 else "\n"  # noqa: PLR2004
+        )
         size_of_poly = f"{num_vertices} 0\n"
         codes = " ".join(shape_numbers) + "\n"
 
@@ -886,12 +888,11 @@ class ShapeMeasure:
         # Note that sp.call will hold the program until completion
         # of the calculation.
         captured_output = sp.run(
-            [f"{self._shape_path}", f"{input_file}"],
+            [f"{self._shape_path}", f"{input_file}"],  # noqa: S603
             stdin=sp.PIPE,
-            stdout=sp.PIPE,
-            stderr=sp.PIPE,
+            capture_output=True,
+            check=True,
             # Shell is required to run complex arguments.
-            # shell=True,
         )
 
         with open(std_out, "w") as f:
@@ -912,9 +913,7 @@ class ShapeMeasure:
                     bb_ids[aibbid] = []
                 bb_ids[aibbid].append(ai.get_atom().get_id())
 
-        centroids = []
-        for n in bb_ids:
-            centroids.append(molecule.get_centroid(atom_ids=bb_ids[n]))
+        centroids = [molecule.get_centroid(atom_ids=bb_ids[n]) for n in bb_ids]
 
         with open("cents.xyz", "w") as f:
             f.write(f"{len(centroids)}\n\n")
@@ -932,13 +931,14 @@ class ShapeMeasure:
         )
 
     def calculate(self, molecule: stk.Molecule) -> dict:
-        output_dir = os.path.abspath(self._output_dir)
+        """Calculate shape measures for a molecule."""
+        output_dir = pathlib.Path(self._output_dir).resolve()
 
-        if os.path.exists(output_dir):
+        if output_dir.exists():
             shutil.rmtree(output_dir)
-        os.mkdir(output_dir)
+        output_dir.mkdir()
 
-        init_dir = os.getcwd()
+        init_dir = pathlib.Path.cwd()
         try:
             os.chdir(output_dir)
             structure_string = "shape run by AT\n"
@@ -970,13 +970,17 @@ class ShapeMeasure:
         constructed_molecule: stk.ConstructedMolecule,
         target_atmnums: tuple[int],
     ) -> dict:
-        output_dir = os.path.abspath(self._output_dir)
+        """Calculate shape from the centroids of building blocks.
 
-        if os.path.exists(output_dir):
+        Currently not implemented well.
+        """
+        output_dir = pathlib.Path(self._output_dir).resolve()
+
+        if output_dir.exists():
             shutil.rmtree(output_dir)
-        os.mkdir(output_dir)
+        output_dir.mkdir()
 
-        init_dir = os.getcwd()
+        init_dir = pathlib.Path.cwd()
         try:
             os.chdir(output_dir)
             centroids = self._get_centroids(

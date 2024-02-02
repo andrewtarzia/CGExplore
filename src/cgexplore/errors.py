@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for containing exceptions.
@@ -17,8 +16,8 @@ logging.basicConfig(
 
 
 class ForceFieldUnitError(Exception):
-    pass
+    """Error found in units of forcefield term."""
 
 
 class ForceFieldUnavailableError(Exception):
-    pass
+    """Error found assigning forcefield term."""

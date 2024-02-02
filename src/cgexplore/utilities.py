@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Utilities module.
@@ -9,10 +8,11 @@ Author: Andrew Tarzia
 
 import json
 import logging
-import os
 import pathlib
 
+import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import stk
 from openmm import openmm
 from scipy.spatial.distance import euclidean
@@ -35,8 +35,9 @@ def convert_pyramid_angle(outer_angle: float) -> float:
 
 
 def check_directory(path: pathlib.Path) -> None:
-    if not os.path.exists(path):
-        os.mkdir(path)
+    """Check if a directory exists, make if not."""
+    if not path.exists():
+        path.mkdir()
 
 
 def get_atom_distance(
@@ -69,7 +70,7 @@ def get_atom_distance(
     return float(distance)
 
 
-def unit_vector(vector):
+def unit_vector(vector: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     """Returns the unit vector of the vector.
 
     https://stackoverflow.com/questions/2827393/
@@ -80,8 +81,14 @@ def unit_vector(vector):
     return vector / np.linalg.norm(vector)
 
 
-def angle_between(v1, v2, normal=None):
-    """Returns the angle in radians between vectors 'v1' and 'v2'::
+def angle_between(
+    v1: npt.NDArray[np.float64],
+    v2: npt.NDArray[np.float64],
+    normal: npt.NDArray[np.float64] | None = None,
+) -> float:
+    """Returns the angle in radians between vectors 'v1' and 'v2'.
+
+    Defined as ::
 
         >>> angle_between((1, 0, 0), (0, 1, 0))
         1.5707963267948966
@@ -161,6 +168,7 @@ def get_dihedral(
 
 
 def custom_excluded_volume_force() -> openmm.CustomNonbondedForce:
+    """Define Custom Excluded Volume force."""
     energy_expression = "epsilon*((sigma)/(r))^12;"
     energy_expression += "epsilon = sqrt(epsilon1*epsilon2);"
     energy_expression += "sigma = 0.5*(sigma1+sigma2);"
@@ -171,6 +179,7 @@ def custom_excluded_volume_force() -> openmm.CustomNonbondedForce:
 
 
 def cosine_periodic_angle_force() -> openmm.CustomAngleForce:
+    """Define Custom Angle force."""
     energy_expression = "F*C*(1-A*cos(n * theta));"
     energy_expression += "A = b*(min_n);"
     energy_expression += "C = (n^2 * k)/2;"
@@ -183,8 +192,16 @@ def cosine_periodic_angle_force() -> openmm.CustomAngleForce:
     return custom_force
 
 
-def draw_pie(colours, xpos, ypos, size, ax):
-    """From:
+def draw_pie(
+    colours: list[str],
+    xpos: float,
+    ypos: float,
+    size: float,
+    ax: plt.Axes,
+) -> None:
+    """Draw a pie chart at a specific point on ax.
+
+    From:
     https://stackoverflow.com/questions/56337732/how-to-plot-scatter-
     pie-chart-using-matplotlib.
 
@@ -200,10 +217,12 @@ def draw_pie(colours, xpos, ypos, size, ax):
         )
     else:
         ratios = [1 / num_points for i in range(num_points)]
-        assert sum(ratios) <= 1, "sum of ratios needs to be < 1"
+        if sum(ratios) <= 1:
+            msg = "sum of ratios needs to be < 1"
+            raise AssertionError(msg)
 
         markers = []
-        previous = 0
+        previous = 0.0
         # calculate the points of the pie pieces
         for color, ratio in zip(colours, ratios, strict=True):
             this = 2 * np.pi * ratio + previous

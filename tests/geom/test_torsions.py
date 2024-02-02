@@ -1,7 +1,9 @@
 import numpy as np
 
+from .case_data import CaseData
 
-def test_torsions(molecule):
+
+def test_torsions(molecule: CaseData) -> None:
     """Test :meth:`.GeomMeasure.calculate_torsions`.
 
     Parameters:
