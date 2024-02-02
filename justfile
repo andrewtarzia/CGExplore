@@ -17,7 +17,7 @@ check:
   (set -x; ruff . )
 
   echo
-  ( set -x; black --check . )
+  ( set -x; ruff format --check . )
 
   echo
   ( set -x; mypy src )
@@ -27,7 +27,15 @@ check:
 
   test $error = 0
 
+
 # Auto-fix code issues.
 fix:
-  black .
+  ruff format .
   ruff --fix .
+
+
+# Build docs.
+docs:
+  rm -rf docs/source/_autosummary
+  make -C docs html
+  echo Docs are in $PWD/docs/build/html/index.html

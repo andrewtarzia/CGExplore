@@ -24,7 +24,6 @@ readme = "README.md"
 [project.optional-dependencies]
 dev = [
   "ruff",
-  "black",
   "mypy",
   "pip-tools",
   "pytest",
@@ -32,7 +31,10 @@ dev = [
   "pytest-datadir",
   "pytest-lazy-fixture",
   "pytest-cov",
+  "sphinx",
+  "sphinx-copybutton",
   "twine",
+  "furo",
 ]
 
 [project.urls]
@@ -47,13 +49,10 @@ where = [
   "src",
 ]
 
-[tool.black]
-line-length = 79
-
 [tool.ruff]
 line-length = 79
-extend-select = ["I"]
-ignore = ["ANN101", "COM812", "ISC001"]
+select = ["ALL"]
+ignore = ["ANN101", "ANN401", "COM812", "ISC001", "G004", "PTH123"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -81,12 +80,9 @@ testpaths = [
 python_files = [
     "test_*.py",
     "*_test.py",
-    "benchmark_*.py",
-    "*_benchmark.py",
 ]
 python_functions = [
   "test_*",
-  "benchmark_*",
 ]
 
 [tool.mypy]
@@ -94,6 +90,12 @@ show_error_codes = true
 implicit_optional = false
 warn_no_return = true
 strict_optional = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_unreachable = true
+disallow_any_generics = false
 
 [[tool.mypy.overrides]]
 module = [
