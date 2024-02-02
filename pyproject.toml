@@ -50,11 +50,13 @@ where = [
 
 [tool.ruff]
 line-length = 79
-select = ["ALL"]
-ignore = ["ANN101", "ANN401", "COM812", "ISC001", "G004", "PTH123"]
 exclude = [
   "first_paper_example",
 ]
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["ANN101", "ANN401", "COM812", "ISC001", "G004", "PTH123"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
