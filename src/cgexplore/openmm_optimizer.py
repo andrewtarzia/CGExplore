@@ -142,7 +142,7 @@ class CGOMMOptimizer:
         else:
             self._max_iterations = max_iterations
 
-        self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
+        self._tolerance = 1e-6
 
         if platform is not None:
             self._platform = openmm.Platform.getPlatformByName(platform)
@@ -408,7 +408,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         else:
             self._max_iterations = max_iterations
 
-        self._tolerance = 1e-6 * openmm.unit.kilojoules_per_mole
+        self._tolerance = 1e-6
 
         self._atom_constraints = atom_constraints
 
