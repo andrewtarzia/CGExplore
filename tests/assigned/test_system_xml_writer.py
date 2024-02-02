@@ -34,11 +34,17 @@ def test_system_xml_writer(molecule: CaseData) -> None:
         )
         assigned_system.get_openmm_system()
         with open(syst_xml_file) as f:
-            xml_string = f.read()
+            xml_string_list = f.readlines()
         with open(saved_syst_xml_file) as f:
-            test_xml_string = f.read()
-        print(xml_string)
-        assert xml_string == test_xml_string
+            test_xml_string_list = f.readlines()
+
+        for xml, test in zip(
+            xml_string_list, test_xml_string_list, strict=True
+        ):
+            if "openmmVersion" in xml and "openmmVersion" in test:
+                continue
+            print(xml, test)
+            assert xml == test
         syst_xml_file.unlink()
     except ForceFieldUnitError:
         assert molecule.num_forcefields == 0
