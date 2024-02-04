@@ -217,8 +217,11 @@ def draw_pie(
         )
     else:
         ratios = [1 / num_points for i in range(num_points)]
-        if sum(ratios) <= 1:
-            msg = "sum of ratios needs to be < 1"
+        if sum(ratios) > 1:
+            msg = (
+                f"sum of ratios needs to be < 1 (np={num_points}, "
+                f"ratios={ratios})"
+            )
             raise AssertionError(msg)
 
         markers = []
