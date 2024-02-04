@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for system classes with assigned terms.
@@ -23,8 +22,10 @@ from .utilities import (
 
 
 class ForcedSystem:
+    """A system with forces assigned."""
+
     molecule: stk.Molecule
-    force_field_terms: dict[str, tuple]
+    forcefield_terms: dict[str, tuple]
     vdw_bond_cutoff: int
 
     def _available_forces(self, force_type: str) -> openmm.Force:
@@ -41,7 +42,7 @@ class ForcedSystem:
         return available[force_type]
 
     def _add_bonds(self, system: openmm.System) -> openmm.System:
-        forces = self.force_field_terms["bond"]
+        forces = self.forcefield_terms["bond"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -66,12 +67,12 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in bonds does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
 
     def _add_angles(self, system: openmm.System) -> openmm.System:
-        forces = self.force_field_terms["angle"]
+        forces = self.forcefield_terms["angle"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -113,12 +114,12 @@ class ForcedSystem:
                         )
                 except AttributeError:
                     msg = f"{assigned_force} in angles does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
 
     def _add_torsions(self, system: openmm.System) -> openmm.System:
-        forces = self.force_field_terms["torsion"]
+        forces = self.forcefield_terms["torsion"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -144,7 +145,7 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in torsions does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
 
@@ -153,7 +154,7 @@ class ForcedSystem:
             (i.get_atom1().get_id(), i.get_atom2().get_id())
             for i in self.molecule.get_bonds()
         ]
-        forces = self.force_field_terms["nonbonded"]
+        forces = self.forcefield_terms["nonbonded"]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             force_function = self._available_forces(force_type)
@@ -175,7 +176,7 @@ class ForcedSystem:
 
                 except AttributeError:
                     msg = f"{assigned_force} in nonbondeds does not have units"
-                    raise ForceFieldUnitError(msg)
+                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
             try:
                 # This method MUST be after terms are assigned.
@@ -185,9 +186,12 @@ class ForcedSystem:
                 )
             except OpenMMException:
                 msg = f"{force_type} is missing a definition for a particle."
-                raise ForceFieldUnitError(msg)
+                raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
         return system
+
+    def _add_atoms(self, system: openmm.System) -> openmm.System:
+        raise NotImplementedError
 
     def _add_forces(self, system: openmm.System) -> openmm.System:
         system = self._add_bonds(system)
@@ -196,21 +200,30 @@ class ForcedSystem:
         return self._add_nonbondeds(system)
 
     def get_openmm_topology(self) -> app.topology.Topology:
+        """Return OpenMM.Topology object."""
         raise NotImplementedError
 
     def get_openmm_system(self) -> openmm.System:
+        """Return OpenMM.System object."""
         raise NotImplementedError
 
 
 @dataclass(frozen=True)
 class AssignedSystem(ForcedSystem):
+    """A system with forces assigned."""
+
     molecule: stk.Molecule
-    force_field_terms: dict[str, tuple]
+    forcefield_terms: dict[str, tuple]
     system_xml: pathlib.Path
     topology_xml: pathlib.Path
     bead_set: dict[str, CgBead]
     vdw_bond_cutoff: int
     mass: float = 10
+
+    def _add_atoms(self, system: openmm.System) -> openmm.System:
+        for _atom in self.molecule.get_atoms():
+            system.addParticle(self.mass)
+        return system
 
     def _get_topology_xml_string(self, molecule: stk.Molecule) -> str:
         ff_str = "<ForceField>\n\n"
@@ -251,7 +264,6 @@ class AssignedSystem(ForcedSystem):
         re_str += " </Residues>\n\n"
 
         ff_str += at_str
-        ff_str += re_str
 
         ff_str += "</ForceField>\n"
         return ff_str
@@ -263,6 +275,7 @@ class AssignedSystem(ForcedSystem):
             f.write(ff_str)
 
     def get_openmm_topology(self) -> app.topology.Topology:
+        """Return OpenMM.Topology object."""
         topology = app.topology.Topology()
         chain = topology.addChain()
         residue = topology.addResidue(name="ALL", chain=chain)
@@ -299,10 +312,9 @@ class AssignedSystem(ForcedSystem):
         return topology
 
     def get_openmm_system(self) -> openmm.System:
-        self._write_topology_xml(self.molecule)
-        forcefield = app.ForceField(self.topology_xml)
-        topology = self.get_openmm_topology()
-        system = forcefield.createSystem(topology)
+        """Return OpenMM.System object."""
+        system = openmm.System()
+        system = self._add_atoms(system)
         system = self._add_forces(system)
 
         with open(self.system_xml, "w") as f:
@@ -313,13 +325,10 @@ class AssignedSystem(ForcedSystem):
 
 @dataclass(frozen=True)
 class MartiniSystem(ForcedSystem):
-    """
-    Assign a system using martini_openmm.
-
-    """
+    """Assign a system using martini_openmm."""
 
     molecule: stk.Molecule
-    force_field_terms: dict[str, tuple]
+    forcefield_terms: dict[str, tuple]
     system_xml: pathlib.Path
     topology_itp: pathlib.Path
     vdw_bond_cutoff: int
@@ -357,9 +366,9 @@ class MartiniSystem(ForcedSystem):
         atoms_string += "\n"
         return atoms_string
 
-    def _get_bonds_string(self, molecule: stk.Molecule) -> str:
+    def _get_bonds_string(self) -> str:
         string = "[bonds]\n; i j   funct   length\n"
-        forces = self.force_field_terms["bond"]
+        forces = self.forcefield_terms["bond"]
         for assigned_force in forces:
             force_type = assigned_force.force
             if force_type != "MartiniDefinedBond":
@@ -380,9 +389,9 @@ class MartiniSystem(ForcedSystem):
         string += "\n"
         return string
 
-    def _get_angles_string(self, molecule: stk.Molecule) -> str:
+    def _get_angles_string(self) -> str:
         string = "[angles]\n; i j k    funct  ref.angle   force_k\n"
-        forces = self.force_field_terms["angle"]
+        forces = self.forcefield_terms["angle"]
 
         for assigned_force in forces:
             force_type = assigned_force.force
@@ -407,22 +416,22 @@ class MartiniSystem(ForcedSystem):
         string += "\n"
         return string
 
-    def _get_torsions_string(self, molecule: stk.Molecule) -> str:
+    def _get_torsions_string(self) -> str:
         string = "[dihedrals]\n; i j k l  funct  ref.angle   force_k\n"
-        forces = self.force_field_terms["torsion"]
+        forces = self.forcefield_terms["torsion"]
         force_types = {i.force for i in forces}
 
         for force_type in force_types:
             if force_type != "MartiniDefinedTorsion":
                 continue
-            print(force_type)
-            raise SystemExit()
+            print(force_type)  # noqa: T201
+            raise SystemExit
         string += "\n"
         return string
 
-    def _get_contraints_string(self, molecule: stk.Molecule) -> str:
+    def _get_contraints_string(self) -> str:
         string = "[constraints]\n; i j   funct   length\n"
-        for constraint in self.force_field_terms["constraints"]:
+        for constraint in self.forcefield_terms["constraints"]:
             string += (
                 f"  {constraint[0]} {constraint[1]} {constraint[2]} "
                 f"{constraint[3]} {constraint[4]}"
@@ -430,9 +439,9 @@ class MartiniSystem(ForcedSystem):
         string += "\n"
         return string
 
-    def _get_exclusions_string(self, molecule: stk.Molecule) -> str:
+    def _get_exclusions_string(self) -> str:
         string = "[exclusions]\n; i j   funct   length\n"
-        for constraint in self.force_field_terms["constraints"]:
+        for constraint in self.forcefield_terms["constraints"]:
             string += (
                 f"  {constraint[0]} {constraint[1]} {constraint[2]} "
                 f"{constraint[3]} {constraint[4]}"
@@ -450,10 +459,10 @@ class MartiniSystem(ForcedSystem):
         )
 
         atoms_string = self._get_atoms_string(molecule, molecule_name)
-        bonds_string = self._get_bonds_string(molecule)
-        angles_string = self._get_angles_string(molecule)
-        torsions_string = self._get_torsions_string(molecule)
-        constraints_string = self._get_contraints_string(molecule)
+        bonds_string = self._get_bonds_string()
+        angles_string = self._get_angles_string()
+        torsions_string = self._get_torsions_string()
+        constraints_string = self._get_contraints_string()
 
         string += atoms_string
         string += bonds_string
@@ -465,10 +474,12 @@ class MartiniSystem(ForcedSystem):
             f.write(string)
 
     def get_openmm_topology(self) -> app.topology.Topology:
+        """Return OpenMM.Topology object."""
         self._write_topology_itp(self.molecule)
         return MartiniTopology(self.topology_itp).get_openmm_topology()
 
     def get_openmm_system(self) -> openmm.System:
+        """Return OpenMM.System object."""
         self._write_topology_itp(self.molecule)
         topology = MartiniTopology(self.topology_itp)
         system = topology.get_openmm_system()

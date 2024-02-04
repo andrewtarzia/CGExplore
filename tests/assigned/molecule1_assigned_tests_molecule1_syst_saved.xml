@@ -14,7 +14,6 @@
 	</Particles>
 	<Constraints/>
 	<Forces>
-		<Force forceGroup="0" frequency="1" name="CMMotionRemover" type="CMMotionRemover" version="1"/>
 		<Force forceGroup="0" name="HarmonicBondForce" type="HarmonicBondForce" usesPeriodic="0" version="2">
 			<Bonds>
 				<Bond d=".1" k="100000" p1="0" p2="1"/>

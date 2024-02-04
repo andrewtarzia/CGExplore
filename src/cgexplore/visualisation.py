@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for pymol visualisation.
@@ -14,6 +13,8 @@ import stk
 
 
 class Pymol:
+    """Pymol visualiser."""
+
     def __init__(
         self,
         output_dir: pathlib.Path,
@@ -21,6 +22,7 @@ class Pymol:
         pymol_path: pathlib.Path,
         settings: dict | None = None,
     ) -> None:
+        """Initialize Pymol visualiser."""
         self._output_dir = output_dir
         self._file_prefix = file_prefix
         self._pymol = pymol_path
@@ -49,11 +51,10 @@ class Pymol:
             max_diam = stk.BuildingBlock.init_from_file(
                 path=str(fi),
             ).get_maximum_diameter()
-            print(max_diam)
             max_max_diam = max((max_diam, max_max_diam))
         return f"zoom center, {max_max_diam/2}"
 
-    def _write_pymol_script(
+    def _write_pymol_script(  # noqa: PLR0913
         self,
         structure_files: list,
         structure_colours: list | None,
@@ -88,11 +89,11 @@ class Pymol:
             lstring += f"load {sf}\n"
             lname = str(sf.name).replace(".mol", "")
             lnames.append(lname)
-            col = col.replace("#", "0x")
+            tcol = col.replace("#", "0x")
             if structure_colours is None:
                 cstring += "color orange, (name C*)\n"
             else:
-                cstring += f"color {col}, {lname}\n"
+                cstring += f"color {tcol}, {lname}\n"
 
         string = (
             f"{lstring}\n"
@@ -124,6 +125,7 @@ class Pymol:
         orient_atoms: str | None = None,
         big_colour: str | None = None,
     ) -> None:
+        """Run pymol to visualise a molecule."""
         pml_file = self._output_dir / f"{self._file_prefix}.pml"
         self._write_pymol_script(
             structure_files=structure_files,
@@ -132,4 +134,4 @@ class Pymol:
             orient_atoms=orient_atoms,
             big_colour=big_colour,
         )
-        os.system(f"{self._pymol} -c -q {pml_file}")
+        os.system(f"{self._pymol} -c -q {pml_file}")  # noqa: S605

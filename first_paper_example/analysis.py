@@ -41,7 +41,7 @@ def analyse_cage(
     conformer,
     name,
     output_dir,
-    force_field,
+    forcefield,
     node_element,
     ligand_element,
     database,
@@ -157,7 +157,7 @@ def analyse_cage(
 
         # This is matched to the existing analysis code. I recommend
         # generalising in the future.
-        ff_targets = force_field.get_targets()
+        ff_targets = forcefield.get_targets()
         if "6P8" in name:
             torsions = "toff"
         else:
@@ -206,8 +206,8 @@ def analyse_cage(
                 elif ("b1", "m1", "b1") in (cp, tuple(reversed(cp))):
                     clangle = at.angle.value_in_unit(openmm.unit.degrees)
 
-        force_field_dict = {
-            "ff_id": force_field.get_identifier(),
+        forcefield_dict = {
+            "ff_id": forcefield.get_identifier(),
             "torsions": torsions,
             "vdws": "von",
             "clbb_bead1": "",
@@ -235,7 +235,7 @@ def analyse_cage(
             "min_b2b_distance": min_b2b_distance,
             "radius_gyration": radius_gyration,
             "max_diameter": max_diameter,
-            "force_field_dict": force_field_dict,
+            "forcefield_dict": forcefield_dict,
         }
         with open(output_file, "w") as f:
             json.dump(res_dict, f, indent=4)
@@ -624,8 +624,8 @@ def data_to_array(json_files, output_dir):
         row["c2bb_name"] = c2bb_name
         row["topology"] = t_str
         row["ff_name"] = ff_name
-        row["torsions"] = res_dict["force_field_dict"]["torsions"]
-        row["vdws"] = res_dict["force_field_dict"]["vdws"]
+        row["torsions"] = res_dict["forcefield_dict"]["torsions"]
+        row["vdws"] = res_dict["forcefield_dict"]["vdws"]
         row["run_number"] = 0
 
         row["cltopo"] = int(clbb_name[0])
@@ -633,18 +633,18 @@ def data_to_array(json_files, output_dir):
             "2p3"
         ) or t_str in cage_topology_options("2p4"):
             cltitle = "3C1" if row["cltopo"] == 3 else "4C1"
-            row["c2r0"] = res_dict["force_field_dict"]["c2r0"]
-            row["c2angle"] = res_dict["force_field_dict"]["c2angle"]
+            row["c2r0"] = res_dict["forcefield_dict"]["c2r0"]
+            row["c2angle"] = res_dict["forcefield_dict"]["c2angle"]
             row["target_bite_angle"] = (row["c2angle"] - 90) * 2
 
         elif t_str in cage_topology_options("3p4"):
             cltitle = "4C1"
-            row["c3r0"] = res_dict["force_field_dict"]["c3r0"]
-            row["c3angle"] = res_dict["force_field_dict"]["c3angle"]
+            row["c3r0"] = res_dict["forcefield_dict"]["c3r0"]
+            row["c3angle"] = res_dict["forcefield_dict"]["c3angle"]
 
         row["cltitle"] = cltitle
-        row["clr0"] = res_dict["force_field_dict"]["clr0"]
-        row["clangle"] = res_dict["force_field_dict"]["clangle"]
+        row["clr0"] = res_dict["forcefield_dict"]["clr0"]
+        row["clangle"] = res_dict["forcefield_dict"]["clangle"]
 
         row["bbpair"] = clbb_name + c2bb_name + ff_name
         row["optimised"] = res_dict["optimised"]

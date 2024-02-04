@@ -1,4 +1,7 @@
-def test_minb2b(molecule):
+from .case_data import CaseData
+
+
+def test_minb2b(molecule: CaseData) -> None:
     """Test :meth:`.GeomMeasure.calculate_minb2b`.
 
     Parameters:

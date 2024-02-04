@@ -1,4 +1,7 @@
-def test_fflibrary(molecule):
+from .case_data import CaseData
+
+
+def test_fflibrary(molecule: CaseData) -> None:
     """Test methods toward :meth:`.ForceFieldLibrary`.
 
     Parameters:
@@ -11,7 +14,7 @@ def test_fflibrary(molecule):
 
     """
     if molecule.num_forcefields > 0:
-        force_fields = tuple(molecule.force_field_library.yield_forcefields())
-        print(molecule.force_field_library)
-        assert molecule.num_forcefields == len(force_fields)
-        assert str(molecule.force_field_library) == molecule.library_string
+        forcefields = tuple(molecule.forcefield_library.yield_forcefields())
+        print(molecule.forcefield_library)
+        assert molecule.num_forcefields == len(forcefields)
+        assert str(molecule.forcefield_library) == molecule.library_string

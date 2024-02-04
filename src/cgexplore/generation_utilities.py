@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for structure generation utilities.
@@ -9,7 +8,6 @@ Author: Andrew Tarzia
 
 
 import logging
-import os
 import pathlib
 from collections.abc import Iterator
 
@@ -17,8 +15,8 @@ import numpy as np
 import stk
 from openmm import OpenMMException, openmm
 
-from .angles import Angle
-from .assigned_system import AssignedSystem
+from .angles import Angle, CosineAngle
+from .assigned_system import AssignedSystem, MartiniSystem
 from .beads import periodic_table
 from .bonds import Bond
 from .ensembles import Conformer, Ensemble
@@ -35,7 +33,7 @@ def optimise_ligand(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path,
-    force_field: ForceField,
+    forcefield: ForceField,
     platform: str | None,
 ) -> stk.Molecule:
     """Optimise a building block.
@@ -52,7 +50,7 @@ def optimise_ligand(
         output_dir:
             Directory to save outputs of optimisation process.
 
-        force_field:
+        forcefield:
             Define the forces used in the molecule.
 
         platform:
@@ -64,13 +62,13 @@ def optimise_ligand(
         An stk molecule.
 
     """
-    opt1_mol_file = os.path.join(output_dir, f"{name}_opted1.mol")
+    opt1_mol_file = pathlib.Path(output_dir) / f"{name}_opted1.mol"
 
-    if os.path.exists(opt1_mol_file):
-        molecule = molecule.with_structure_from_file(opt1_mol_file)
+    if opt1_mol_file.exists():
+        molecule = molecule.with_structure_from_file(str(opt1_mol_file))
     else:
         logging.info(f"optimising {name}, no max_iterations")
-        assigned_system = force_field.assign_terms(
+        assigned_system = forcefield.assign_terms(
             molecule=molecule,
             name=name,
             output_dir=output_dir,
@@ -83,11 +81,16 @@ def optimise_ligand(
         molecule = opt.optimize(assigned_system)
         molecule = molecule.with_centroid(np.array((0, 0, 0)))
         molecule.write(opt1_mol_file)
+        energy_decomp = opt.read_final_energy_decomposition()
+        logging.info("optimised with energy:")
+        for i in energy_decomp:
+            e, u = energy_decomp[i]
+            logging.info(f"{i}: {round(e, 2)} [{u}]")
 
     return molecule
 
 
-def soften_force_field(
+def soften_forcefield(
     assigned_system: AssignedSystem,
     bond_ff_scale: float,
     angle_ff_scale: float,
@@ -113,7 +116,40 @@ def soften_force_field(
         New assigned system.
 
     """
-    new_force_field_terms = {
+    if isinstance(assigned_system, MartiniSystem):
+        msg = "soften not available for Martini yet."
+        raise TypeError(msg)
+
+    angles = []
+    for i in assigned_system.forcefield_terms["angle"]:
+        if isinstance(i, Angle):
+            angles.append(
+                Angle(
+                    atom_names=i.atom_names,
+                    atom_ids=i.atom_ids,
+                    angle=i.angle,
+                    angle_k=i.angle_k / angle_ff_scale,
+                    atoms=i.atoms,
+                    force=i.force,
+                )
+            )
+        elif isinstance(i, CosineAngle):
+            angles.append(
+                CosineAngle(  # type: ignore[arg-type]
+                    atom_names=i.atom_names,
+                    atom_ids=i.atom_ids,
+                    n=i.n,
+                    b=i.b,
+                    angle_k=i.angle_k / angle_ff_scale,
+                    atoms=i.atoms,
+                    force=i.force,
+                )
+            )
+        else:
+            msg = f"soften not available for {i} angle type."
+            raise TypeError(msg)
+
+    new_forcefield_terms = {
         "bond": tuple(
             Bond(
                 atom_names=i.atom_names,
@@ -123,21 +159,11 @@ def soften_force_field(
                 atoms=i.atoms,
                 force=i.force,
             )
-            for i in assigned_system.force_field_terms["bond"]
+            for i in assigned_system.forcefield_terms["bond"]
         ),
-        "angle": tuple(
-            Angle(
-                atom_names=i.atom_names,
-                atom_ids=i.atom_ids,
-                angle=i.angle,
-                angle_k=i.angle_k / angle_ff_scale,
-                atoms=i.atoms,
-                force=i.force,
-            )
-            for i in assigned_system.force_field_terms["angle"]
-        ),
+        "angle": tuple(angles),
         "torsion": (),
-        "nonbonded": assigned_system.force_field_terms["nonbonded"],
+        "nonbonded": assigned_system.forcefield_terms["nonbonded"],
     }
 
     new_system_xml = pathlib.Path(
@@ -148,7 +174,7 @@ def soften_force_field(
 
     return AssignedSystem(
         molecule=assigned_system.molecule,
-        force_field_terms=new_force_field_terms,
+        forcefield_terms=new_forcefield_terms,
         system_xml=new_system_xml,
         topology_xml=assigned_system.topology_xml,
         bead_set=assigned_system.bead_set,
@@ -156,7 +182,7 @@ def soften_force_field(
     )
 
 
-def run_soft_md_cycle(
+def run_soft_md_cycle(  # noqa: PLR0913
     name: str,
     assigned_system: AssignedSystem,
     output_dir: pathlib.Path,
@@ -229,7 +255,7 @@ def run_soft_md_cycle(
         An OMMTrajectory containing the data and conformers.
 
     """
-    soft_assigned_system = soften_force_field(
+    soft_assigned_system = soften_forcefield(
         assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
         angle_ff_scale=angle_ff_scale,
@@ -256,7 +282,7 @@ def run_soft_md_cycle(
         return None
 
 
-def run_constrained_optimisation(
+def run_constrained_optimisation(  # noqa: PLR0913
     assigned_system: AssignedSystem,
     name: str,
     output_dir: pathlib.Path,
@@ -298,7 +324,7 @@ def run_constrained_optimisation(
         An stk molecule.
 
     """
-    soft_assigned_system = soften_force_field(
+    soft_assigned_system = soften_forcefield(
         assigned_system=assigned_system,
         bond_ff_scale=bond_ff_scale,
         angle_ff_scale=angle_ff_scale,
@@ -325,7 +351,7 @@ def run_constrained_optimisation(
     return constrained_opt.optimize(soft_assigned_system)
 
 
-def run_optimisation(
+def run_optimisation(  # noqa: PLR0913
     assigned_system: AssignedSystem,
     name: str,
     file_suffix: str,
@@ -416,14 +442,11 @@ def yield_near_models(
     ff_name = [i for i in name.split("_") if "f" in i][-1]
 
     for new_ff_id in neighbour_library:
-        if new_ff_id < 0:
-            continue
-
         new_name = name.replace(ff_name, f"f{new_ff_id}")
-        new_fina_mol_file = os.path.join(output_dir, f"{new_name}_final.mol")
-        if os.path.exists(new_fina_mol_file):
+        new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
+        if new_fina_mol_file.exists():
             logging.info(f"found neigh: {new_fina_mol_file}")
-            yield molecule.with_structure_from_file(new_fina_mol_file)
+            yield molecule.with_structure_from_file(str(new_fina_mol_file))
 
 
 def shift_beads(
@@ -467,7 +490,7 @@ def shift_beads(
 
 def yield_shifted_models(
     molecule: stk.Molecule,
-    force_field: ForceField,
+    forcefield: ForceField,
     kicks: tuple[int],
 ) -> Iterator[stk.Molecule]:
     """Yield conformers with atom positions of particular beads shifted.
@@ -477,7 +500,7 @@ def yield_shifted_models(
         molecule:
             The molecule to manipulate.
 
-        force_field:
+        forcefield:
             Defines the force field.
 
         kicks:
@@ -487,7 +510,7 @@ def yield_shifted_models(
         An stk molecule.
 
     """
-    for bead in force_field.get_present_beads():
+    for bead in forcefield.get_present_beads():
         atom_number = periodic_table()[bead.element_string]
         for kick in kicks:
             yield shift_beads(molecule, atom_number, kick)

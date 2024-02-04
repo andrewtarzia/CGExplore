@@ -27,7 +27,7 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            force_field=ForceField(
+            forcefield=ForceField(
                 identifier="testff",
                 prefix="testffprefix",
                 present_beads=(
@@ -129,7 +129,7 @@ from .case_data import CaseData
                     )
                 ),
             ),
-            force_field=ForceField(
+            forcefield=ForceField(
                 identifier="testff",
                 prefix="testffprefix",
                 present_beads=(

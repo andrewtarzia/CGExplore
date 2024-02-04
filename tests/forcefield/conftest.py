@@ -79,7 +79,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                     )
                 ),
             ),
-            force_field_library=ForceFieldLibrary(
+            forcefield_library=ForceFieldLibrary(
                 bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
@@ -368,7 +368,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                     )
                 ),
             ),
-            force_field_library=ForceFieldLibrary(
+            forcefield_library=ForceFieldLibrary(
                 bead_library=(c_bead, n_bead, o_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
@@ -1395,7 +1395,7 @@ kjmol = openmm.unit.kilojoules_per_mole
             molecule=FourC1Arm(
                 bead=pd_bead, abead1=pb_bead
             ).get_building_block(),
-            force_field_library=ForceFieldLibrary(
+            forcefield_library=ForceFieldLibrary(
                 bead_library=(pd_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
@@ -1882,7 +1882,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                     )
                 ),
             ),
-            force_field_library=ForceFieldLibrary(
+            forcefield_library=ForceFieldLibrary(
                 bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
@@ -1967,7 +1967,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                     )
                 ),
             ),
-            force_field_library=ForceFieldLibrary(
+            forcefield_library=ForceFieldLibrary(
                 bead_library=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
@@ -2011,7 +2011,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 smiles="[C][N][C]",
                 position_matrix=np.array(([1, 0, 0], [0.5, 0, 0], [2, 0, 0])),
             ),
-            force_field_library=ForceFieldLibrary(
+            forcefield_library=ForceFieldLibrary(
                 bead_library=(c_bead, n_bead, c_bead),
                 vdw_bond_cutoff=2,
                 prefix="testuff",

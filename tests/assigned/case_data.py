@@ -1,3 +1,4 @@
+import cgexplore
 import stk
 
 
@@ -7,11 +8,11 @@ class CaseData:
     def __init__(
         self,
         molecule: stk.Molecule,
-        force_field,
-        topology_xml_string,
+        forcefield: cgexplore.forcefield.ForceField,
+        topology_xml_string: str,
         name: str,
     ) -> None:
         self.molecule = molecule
-        self.force_field = force_field
+        self.forcefield = forcefield
         self.topology_xml_string = topology_xml_string
         self.name = name

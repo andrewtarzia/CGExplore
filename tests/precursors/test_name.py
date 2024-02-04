@@ -1,4 +1,7 @@
-def test_name(precursor):
+from .case_data import CaseData
+
+
+def test_name(precursor: CaseData) -> None:
     """Test :meth:`.Precursor.get_name`.
 
     Parameters:

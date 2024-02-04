@@ -1,11 +1,13 @@
 import numpy as np
 
+from .case_data import CaseData
 
-def test_bonds(molecule):
+
+def test_bonds(molecule: CaseData) -> None:
     """Test :meth:`.GeomMeasure.calculate_bonds`.
 
-    Parameters
-    ----------
+    Parameters:
+
         molecule:
             The molecule with bonds.
 

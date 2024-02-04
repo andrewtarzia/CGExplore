@@ -5,31 +5,28 @@
 Contains class in https://github.com/maccallumlab/martini_openmm/tree/master
 
 """
+import contextlib
 import logging
-import os
 import pathlib
 
 from openmm import app, openmm
 
-try:
+with contextlib.suppress(ModuleNotFoundError):
     import martini_openmm as martini
-except ModuleNotFoundError:
-    pass
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 
-_martini_dir = (
-    pathlib.Path(os.path.dirname(os.path.abspath(__file__))) / "data"
-)
+_martini_dir = pathlib.Path(__file__).resolve().parent / "data"
 
 
 class MartiniTopology:
     """Contains the :class:`MartiniTopFile`."""
 
     def __init__(self, itp_file: pathlib.Path) -> None:
+        """Initialze MartiniTopology."""
         self._itp_file = itp_file
         self._molecule_name = itp_file.name.replace(".itp", "")
         self._top_file = pathlib.Path(str(itp_file).replace(".itp", ".top"))
@@ -61,13 +58,16 @@ class MartiniTopology:
             f.write(string)
 
     def get_openmm_topology(self) -> app.topology.Topology:
+        """Return OpenMM.Topology object."""
         return self._topology.topology
 
     def get_openmm_system(self) -> openmm.System:
+        """Return OpenMM.System object."""
         return self._topology.create_system()
 
 
-def get_martini_mass_by_type(bead_type) -> float:
+def get_martini_mass_by_type(bead_type: str) -> float:
+    """Get the mass of martini types."""
     bead_size = bead_type[0]
     return {
         "P": 72.0,

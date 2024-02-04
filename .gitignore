@@ -132,3 +132,4 @@ dmypy.json
 src/cgexplore/_version.py
 testff_iterations.json
 .vscode
+docs/source/_autosummary
