@@ -16,8 +16,9 @@ import pandas as pd
 import stk
 from openmm import app, openmm
 
-from .assigned_system import ForcedSystem
-from .ensembles import Timestep
+from cgexplore._internal.forcefields.assigned_system import ForcedSystem
+from cgexplore._internal.molecular.ensembles import Timestep
+
 from .utilities import get_atom_distance
 
 logging.basicConfig(

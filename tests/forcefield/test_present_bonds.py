@@ -1,6 +1,6 @@
 import pathlib
 
-from cgexplore.errors import ForceFieldUnitError
+from cgexplore.utilities import ForceFieldUnitError
 
 from .case_data import CaseData
 from .utilities import is_equivalent_atom

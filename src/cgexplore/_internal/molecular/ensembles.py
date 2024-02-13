@@ -14,15 +14,7 @@ from dataclasses import dataclass
 import numpy as np
 import stk
 
-
-@dataclass
-class Conformer:
-    """Define conformer information."""
-
-    molecule: stk.Molecule
-    energy_decomposition: dict
-    conformer_id: int | None = None
-    source: str | None = None
+from .conformer import Conformer
 
 
 @dataclass

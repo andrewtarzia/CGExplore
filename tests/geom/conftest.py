@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 import stk
-from cgexplore.geom import GeomMeasure
-from cgexplore.torsions import TargetTorsion
+from cgexplore.analysis import GeomMeasure
+from cgexplore.terms import TargetTorsion
 
 from .case_data import CaseData
 

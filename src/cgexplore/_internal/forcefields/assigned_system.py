@@ -12,8 +12,12 @@ from dataclasses import dataclass
 import stk
 from openmm import OpenMMException, app, openmm
 
-from .beads import CgBead, get_cgbead_from_element
-from .errors import ForceFieldUnavailableError, ForceFieldUnitError
+from cgexplore._internal.molecular.beads import CgBead, get_cgbead_from_element
+from cgexplore._internal.utilities.errors import (
+    ForceFieldUnavailableError,
+    ForceFieldUnitError,
+)
+
 from .martini import MartiniTopology, get_martini_mass_by_type
 from .utilities import (
     cosine_periodic_angle_force,

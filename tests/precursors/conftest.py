@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from cgexplore.beads import CgBead
-from cgexplore.molecule_construction import (
+from cgexplore.molecular import (
+    CgBead,
     FourC0Arm,
     FourC1Arm,
     ThreeC0Arm,

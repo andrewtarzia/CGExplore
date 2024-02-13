@@ -16,26 +16,27 @@ import numpy as np
 import stk
 from openmm import openmm
 
-from .angles import (
+from cgexplore._internal.molecular.beads import CgBead, get_cgbead_from_element
+from cgexplore._internal.terms.angles import (
     Angle,
     CosineAngle,
     TargetAngle,
     TargetCosineAngle,
     TargetMartiniAngle,
-    find_angles,
 )
-from .assigned_system import AssignedSystem, ForcedSystem, MartiniSystem
-from .beads import CgBead, get_cgbead_from_element
-from .bonds import Bond, TargetBond, TargetMartiniBond
-from .errors import ForceFieldUnitError
-from .nonbonded import Nonbonded, TargetNonbonded
-from .torsions import (
+from cgexplore._internal.terms.bonds import Bond, TargetBond, TargetMartiniBond
+from cgexplore._internal.terms.nonbonded import Nonbonded, TargetNonbonded
+from cgexplore._internal.terms.torsions import (
     TargetMartiniTorsion,
     TargetTorsion,
     Torsion,
-    find_torsions,
 )
-from .utilities import angle_between, convert_pyramid_angle
+from cgexplore._internal.terms.utilities import find_angles, find_torsions
+from cgexplore._internal.utilities.errors import ForceFieldUnitError
+from cgexplore._internal.utilities.utilities import convert_pyramid_angle
+
+from .assigned_system import AssignedSystem, ForcedSystem, MartiniSystem
+from .utilities import angle_between
 
 logging.basicConfig(
     level=logging.INFO,

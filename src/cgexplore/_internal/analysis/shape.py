@@ -15,7 +15,7 @@ import subprocess as sp
 import numpy as np
 import stk
 
-from .beads import periodic_table
+from cgexplore._internal.molecular.beads import periodic_table
 
 logging.basicConfig(
     level=logging.INFO,

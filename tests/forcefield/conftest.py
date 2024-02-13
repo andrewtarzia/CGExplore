@@ -1,19 +1,21 @@
 import numpy as np
 import pytest
 import stk
-from cgexplore.angles import (
+from cgexplore.forcefields import ForceFieldLibrary
+from cgexplore.molecular import CgBead, FourC1Arm
+from cgexplore.terms import (
     Angle,
+    Bond,
     CosineAngle,
+    Nonbonded,
     PyramidAngleRange,
     TargetAngleRange,
+    TargetBondRange,
     TargetCosineAngleRange,
+    TargetNonbondedRange,
+    TargetTorsionRange,
+    Torsion,
 )
-from cgexplore.beads import CgBead
-from cgexplore.bonds import Bond, TargetBondRange
-from cgexplore.forcefield import ForceFieldLibrary
-from cgexplore.molecule_construction import FourC1Arm
-from cgexplore.nonbonded import Nonbonded, TargetNonbondedRange
-from cgexplore.torsions import TargetTorsionRange, Torsion
 from openmm import openmm
 
 from .case_data import CaseData

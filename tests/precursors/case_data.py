@@ -1,6 +1,6 @@
 import numpy as np
 import numpy.typing as npt
-from cgexplore.molecule_construction import Precursor
+from cgexplore.molecular import Precursor
 
 
 class CaseData:
