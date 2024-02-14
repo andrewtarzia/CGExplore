@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import stk
 from openmm import OpenMMException, app, openmm
 
-from cgexplore._internal.molecular.beads import CgBead, get_cgbead_from_element
+from cgexplore._internal.molecular.beads import BeadLibrary
 from cgexplore._internal.utilities.errors import (
     ForceFieldUnavailableError,
     ForceFieldUnitError,
@@ -220,7 +220,7 @@ class AssignedSystem(ForcedSystem):
     forcefield_terms: dict[str, tuple]
     system_xml: pathlib.Path
     topology_xml: pathlib.Path
-    bead_set: dict[str, CgBead]
+    bead_set: BeadLibrary
     vdw_bond_cutoff: int
     mass: float = 10
 
@@ -240,10 +240,7 @@ class AssignedSystem(ForcedSystem):
         for atom in molecule.get_atoms():
             aestring = atom.__class__.__name__
             aid = atom.get_id()
-            acgbead = get_cgbead_from_element(
-                estring=aestring,
-                bead_set=self.bead_set,
-            )
+            acgbead = self.bead_set.get_cgbead_from_element(estring=aestring)
             atype = acgbead.bead_type
             aclass = acgbead.bead_class
 
@@ -291,10 +288,7 @@ class AssignedSystem(ForcedSystem):
             a_element = app.element.Element.getByAtomicNumber(
                 atom.get_atomic_number()
             )
-            a_cgbead = get_cgbead_from_element(
-                estring=a_estring,
-                bead_set=self.bead_set,
-            )
+            a_cgbead = self.bead_set.get_cgbead_from_element(estring=a_estring)
 
             omm_atom = topology.addAtom(
                 name=a_cgbead.bead_type,
@@ -336,7 +330,7 @@ class MartiniSystem(ForcedSystem):
     system_xml: pathlib.Path
     topology_itp: pathlib.Path
     vdw_bond_cutoff: int
-    bead_set: dict[str, CgBead]
+    bead_set: BeadLibrary
 
     def _get_atoms_string(
         self,
@@ -350,10 +344,7 @@ class MartiniSystem(ForcedSystem):
         for atom in molecule.get_atoms():
             a_estring = atom.__class__.__name__
 
-            a_cgbead = get_cgbead_from_element(
-                estring=a_estring,
-                bead_set=self.bead_set,
-            )
+            a_cgbead = self.bead_set.get_cgbead_from_element(estring=a_estring)
             nr = atom.get_id() + 1
             type_ = a_cgbead.bead_type
             resnr = 1

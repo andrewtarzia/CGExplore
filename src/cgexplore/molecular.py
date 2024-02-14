@@ -1,10 +1,8 @@
 """molecular package."""
 
 from cgexplore._internal.molecular.beads import (
+    BeadLibrary,
     CgBead,
-    bead_library_check,
-    get_cgbead_from_element,
-    get_cgbead_from_type,
     periodic_table,
     string_to_atom_number,
 )
@@ -38,9 +36,7 @@ __all__ = [
     "Timestep",
     "Ensemble",
     "CgBead",
-    "get_cgbead_from_element",
-    "get_cgbead_from_type",
+    "BeadLibrary",
     "periodic_table",
     "string_to_atom_number",
-    "bead_library_check",
 ]

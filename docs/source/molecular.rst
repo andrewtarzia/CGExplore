@@ -15,9 +15,7 @@ CG-Beads
   :maxdepth: 1
 
   CgBead <_autosummary/cgexplore.molecular.CgBead>
-  bead_library_check <_autosummary/cgexplore.molecular.bead_library_check>
-  get_cgbead_from_element <_autosummary/cgexplore.molecular.get_cgbead_from_element>
-  get_cgbead_from_type <_autosummary/cgexplore.molecular.get_cgbead_from_type>
+  BeadLibrary <_autosummary/cgexplore.molecular.BeadLibrary>
   string_to_atom_number <_autosummary/cgexplore.molecular.string_to_atom_number>
   periodic_table <_autosummary/cgexplore.molecular.periodic_table>
 

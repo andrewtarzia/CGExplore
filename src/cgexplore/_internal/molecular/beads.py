@@ -22,25 +22,49 @@ class CgBead:
     coordination: int
 
 
-def get_cgbead_from_type(
-    bead_type: str,
-    bead_set: dict[str, CgBead],
-) -> CgBead:
-    """Get CgBead class from matching to bead type."""
-    return bead_set[bead_type]
+class BeadLibrary:
+    """Define a library of beads used in a model."""
 
+    def __init__(self, beads: tuple[CgBead, ...]) -> None:
+        """Initialize a BeadLibrary."""
+        self._beads = beads
+        # Run a check.
+        self._bead_library_check()
+        self._from_type_map = {i.bead_type: i for i in self._beads}
+        self._from_class_map = {i.bead_class: i for i in self._beads}
+        self._from_element_map = {i.element_string: i for i in self._beads}
 
-def get_cgbead_from_element(
-    estring: str,
-    bead_set: dict[str, CgBead],
-) -> CgBead:
-    """Get CgBead class from matching to element string."""
-    for i in bead_set:
-        bead = bead_set[i]
-        if bead.element_string == estring:
-            return bead
-    msg = f"{estring} not found in {bead_set}"
-    raise ValueError(msg)
+    def _bead_library_check(self) -> None:
+        """Check bead library for bad definitions."""
+        used_names = tuple(i.bead_class for i in self._beads)
+        counts = Counter(used_names)
+        for bead_class in counts:
+            if counts[bead_class] > 1:
+                # Check if they are different classes.
+                bead_types = {
+                    i.bead_type
+                    for i in self._beads
+                    if i.bead_class == bead_class
+                }
+                if len(bead_types) == 1:
+                    msg = (
+                        f"Bead ({bead_class}) shows twice in your library:"
+                        f" {counts}.\n"
+                        f"Library: {self._beads} ({len(self._beads)} beads)"
+                    )
+                    raise ValueError(msg)
+
+    def get_cgbead_from_type(self, bead_type: str) -> CgBead:
+        """Get CgBead from matching to bead type."""
+        return self._from_type_map[bead_type]
+
+    def get_cgbead_from_element(self, estring: str) -> CgBead:
+        """Get CgBead from matching to element string."""
+        return self._from_element_map[estring]
+
+    def get_cgbead_from_class(self, bead_class: str) -> CgBead:
+        """Get CgBead from matching to bead class."""
+        return self._from_class_map[bead_class]
 
 
 def periodic_table() -> dict[str, int]:
@@ -149,23 +173,3 @@ def periodic_table() -> dict[str, int]:
 def string_to_atom_number(string: str) -> int:
     """Convert atom string to atom number."""
     return periodic_table()[string]
-
-
-def bead_library_check(bead_library: tuple[CgBead]) -> None:
-    """Check bead library for bad definitions."""
-    logging.info(bead_library)
-    logging.info(f"there are {len(bead_library)} beads")
-    used_names = tuple(i.bead_class for i in bead_library)
-    counts = Counter(used_names)
-    for bead_class in counts:
-        if counts[bead_class] > 1:
-            # Check if they are different classes.
-            bead_types = {
-                i.bead_type for i in bead_library if i.bead_class == bead_class
-            }
-            if len(bead_types) == 1:
-                msg = (
-                    f"you used a bead ({bead_class}) twice in your library: "
-                    f"{counts}"
-                )
-                raise ValueError(msg)

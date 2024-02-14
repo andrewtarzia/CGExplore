@@ -16,7 +16,7 @@ import numpy as np
 import stk
 from openmm import openmm
 
-from cgexplore._internal.molecular.beads import CgBead, get_cgbead_from_element
+from cgexplore._internal.molecular.beads import BeadLibrary, CgBead
 from cgexplore._internal.terms.angles import (
     Angle,
     CosineAngle,
@@ -85,6 +85,7 @@ class ForceField:
         self._identifier = identifier
         self._prefix = prefix
         self._present_beads = present_beads
+        self._bead_library = BeadLibrary(present_beads)
         self._bond_targets = bond_targets
         self._angle_targets = angle_targets
         self._torsion_targets = torsion_targets
@@ -102,7 +103,7 @@ class ForceField:
             atoms = (bond.get_atom1(), bond.get_atom2())
             atom_estrings = [i.__class__.__name__ for i in atoms]
             cgbeads = [
-                get_cgbead_from_element(i, self.get_bead_set())
+                self._bead_library.get_cgbead_from_element(i)
                 for i in atom_estrings
             ]
             cgbead_string = tuple(i.bead_type for i in cgbeads)
@@ -165,7 +166,7 @@ class ForceField:
             atom_estrings = [i.__class__.__name__ for i in found_angle.atoms]
             try:
                 cgbeads = [
-                    get_cgbead_from_element(i, self.get_bead_set())
+                    self._bead_library.get_cgbead_from_element(i)
                     for i in atom_estrings
                 ]
             except KeyError:
@@ -412,7 +413,7 @@ class ForceField:
                     i.__class__.__name__ for i in found_torsion.atoms
                 ]
                 cgbeads = [
-                    get_cgbead_from_element(i, self.get_bead_set())
+                    self._bead_library.get_cgbead_from_element(i)
                     for i in atom_estrings
                 ]
                 cgbead_string = tuple(i.bead_type for i in cgbeads)
@@ -483,7 +484,7 @@ class ForceField:
 
         for atom in molecule.get_atoms():
             atom_estring = atom.__class__.__name__
-            cgbead = get_cgbead_from_element(atom_estring, self.get_bead_set())
+            cgbead = self._bead_library.get_cgbead_from_element(atom_estring)
             found.add(cgbead.bead_class)
             for target_term in self._nonbonded_targets:
                 if target_term.bead_class != cgbead.bead_class:
@@ -542,13 +543,13 @@ class ForceField:
                 output_dir
                 / f"{name}_{self._prefix}_{self._identifier}_topo.xml"
             ),
-            bead_set=self.get_bead_set(),
+            bead_set=self._bead_library,
             vdw_bond_cutoff=self._vdw_bond_cutoff,
         )
 
-    def get_bead_set(self) -> dict[str, CgBead]:
+    def get_bead_library(self) -> BeadLibrary:
         """Get beads in forcefield."""
-        return {i.bead_type: i for i in self._present_beads}
+        return self._bead_library
 
     def get_identifier(self) -> str:
         """Get forcefield identifier."""
@@ -640,6 +641,7 @@ class MartiniForceField(ForceField):
         self._identifier = identifier
         self._prefix = prefix
         self._present_beads = present_beads
+        self._bead_library = BeadLibrary(present_beads)
         self._bond_targets = bond_targets
         self._angle_targets = angle_targets
         self._torsion_targets = torsion_targets
@@ -673,7 +675,7 @@ class MartiniForceField(ForceField):
                 output_dir
                 / f"{name}_{self._prefix}_{self._identifier}_topo.itp"
             ),
-            bead_set=self.get_bead_set(),
+            bead_set=self._bead_library,
             vdw_bond_cutoff=self._vdw_bond_cutoff,
         )
 
@@ -683,12 +685,12 @@ class ForceFieldLibrary:
 
     def __init__(
         self,
-        bead_library: tuple[CgBead],
+        present_beads: tuple[CgBead],
         vdw_bond_cutoff: int,
         prefix: str,
     ) -> None:
         """Initialize ForceFieldLibrary."""
-        self._bead_library = bead_library
+        self._present_beads = present_beads
         self._vdw_bond_cutoff = vdw_bond_cutoff
         self._prefix = prefix
         self._bond_ranges: tuple = ()
@@ -760,7 +762,7 @@ class ForceFieldLibrary:
             yield ForceField(
                 identifier=str(i),
                 prefix=self._prefix,
-                present_beads=self._bead_library,
+                present_beads=self._present_beads,
                 bond_targets=bond_terms,
                 angle_targets=angle_terms,
                 torsion_targets=torsion_terms,
@@ -772,7 +774,7 @@ class ForceFieldLibrary:
         """Return a string representation of the Ensemble."""
         return (
             f"{self.__class__.__name__}(\n"
-            f"  bead_library={self._bead_library},\n"
+            f"  present_beads={self._present_beads},\n"
             f"  bond_ranges={self._bond_ranges},\n"
             f"  angle_ranges={self._angle_ranges},\n"
             f"  torsion_ranges={self._torsion_ranges},\n"
@@ -790,12 +792,12 @@ class MartiniForceFieldLibrary(ForceFieldLibrary):
 
     def __init__(
         self,
-        bead_library: tuple[CgBead],
+        present_beads: tuple[CgBead],
         vdw_bond_cutoff: int,
         prefix: str,
     ) -> None:
         """Initialize MartiniForceFieldLibrary."""
-        self._bead_library = bead_library
+        self._present_beads = present_beads
         self._vdw_bond_cutoff = vdw_bond_cutoff
         self._prefix = prefix
         self._bond_ranges: tuple = ()
@@ -843,7 +845,7 @@ class MartiniForceFieldLibrary(ForceFieldLibrary):
             yield MartiniForceField(
                 identifier=str(i),
                 prefix=self._prefix,
-                present_beads=self._bead_library,
+                present_beads=self._present_beads,
                 bond_targets=bond_terms,
                 angle_targets=angle_terms,
                 torsion_targets=torsion_terms,
@@ -855,7 +857,7 @@ class MartiniForceFieldLibrary(ForceFieldLibrary):
         """Return a string representation of the Ensemble."""
         return (
             f"{self.__class__.__name__}(\n"
-            f"  bead_library={self._bead_library},\n"
+            f"  present_beads={self._present_beads},\n"
             f"  bond_ranges={self._bond_ranges},\n"
             f"  angle_ranges={self._angle_ranges},\n"
             f"  torsion_ranges={self._torsion_ranges},\n"

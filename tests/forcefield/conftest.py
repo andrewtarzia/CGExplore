@@ -82,7 +82,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             forcefield_library=ForceFieldLibrary(
-                bead_library=(ag_bead, ba_bead, pb_bead),
+                present_beads=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
             ),
@@ -321,7 +321,7 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             library_string=(
                 "ForceFieldLibrary(\n"
-                "  bead_library=(CgBead(element_string='Ag', bead_type="
+                "  present_beads=(CgBead(element_string='Ag', bead_type="
                 "'c1', bead_class='c', coordination=2), CgBead(element_"
                 "string='Ba', bead_type='a1', bead_class='a', coordinat"
                 "ion=2), CgBead(element_string='Pb', bead_type='b1', be"
@@ -371,7 +371,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             forcefield_library=ForceFieldLibrary(
-                bead_library=(c_bead, n_bead, o_bead),
+                present_beads=(c_bead, n_bead, o_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
             ),
@@ -1354,7 +1354,7 @@ kjmol = openmm.unit.kilojoules_per_mole
             ),
             library_string=(
                 "ForceFieldLibrary(\n"
-                "  bead_library=(CgBead(element_string='C', bead_type="
+                "  present_beads=(CgBead(element_string='C', bead_type="
                 "'c1', bead_class='c', coordination=2), CgBead(element"
                 "_string='N', bead_type='n1', bead_class='n', coordina"
                 "tion=2), CgBead(element_string='O', bead_type='o1', b"
@@ -1398,7 +1398,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 bead=pd_bead, abead1=pb_bead
             ).get_building_block(),
             forcefield_library=ForceFieldLibrary(
-                bead_library=(pd_bead, pb_bead),
+                present_beads=(pd_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
             ),
@@ -1844,7 +1844,7 @@ kjmol = openmm.unit.kilojoules_per_mole
             present_torsions=((), ()),
             library_string=(
                 "ForceFieldLibrary(\n"
-                "  bead_library=(CgBead(element_string='Pd', bead_type="
+                "  present_beads=(CgBead(element_string='Pd', bead_type="
                 "'m1', bead_class='m', coordination=4), CgBead(element_"
                 "string='Pb', bead_type='b1', bead_class='b', coordinat"
                 "ion=2)),\n"
@@ -1885,7 +1885,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             forcefield_library=ForceFieldLibrary(
-                bead_library=(ag_bead, ba_bead, pb_bead),
+                present_beads=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
             ),
@@ -1970,7 +1970,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             forcefield_library=ForceFieldLibrary(
-                bead_library=(ag_bead, ba_bead, pb_bead),
+                present_beads=(ag_bead, ba_bead, pb_bead),
                 vdw_bond_cutoff=2,
                 prefix="testff",
             ),
@@ -2014,7 +2014,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 position_matrix=np.array(([1, 0, 0], [0.5, 0, 0], [2, 0, 0])),
             ),
             forcefield_library=ForceFieldLibrary(
-                bead_library=(c_bead, n_bead, c_bead),
+                present_beads=(c_bead, n_bead),
                 vdw_bond_cutoff=2,
                 prefix="testuff",
             ),
@@ -2236,11 +2236,9 @@ kjmol = openmm.unit.kilojoules_per_mole
             present_torsions=((), ()),
             library_string=(
                 "ForceFieldLibrary(\n"
-                "  bead_library=(CgBead(element_string='C', bead_type='c1', be"
-                "ad_class='c', coordination=2), CgBead(element_string='N', bea"
-                "d_type='n1', bead_class='n', coordination=2), CgBead(element_"
-                "string='C', bead_type='c1', bead_class='c', coordination=2)),"
-                "\n"
+                "  present_beads=(CgBead(element_string='C', bead_type='c1', b"
+                "ead_class='c', coordination=2), CgBead(element_string='N', be"
+                "ad_type='n1', bead_class='n', coordination=2)),\n"
                 "  bond_ranges=(TargetBondRange(type1='c1', type2='n1', "
                 "element"
                 "1='Ba', element2='Pb', bond_rs=(Quantity(value=1.0, unit=angs"
