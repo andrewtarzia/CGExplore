@@ -38,9 +38,7 @@ which comes with the pip install.
 Installation
 ------------
 
-To get :mod:`.CGExplore`, you need to follow these steps:
-
-Clone :mod:`.CGExplore` from `here <https://github.com/andrewtarzia/CGExplore>`_
+To install :mod:`.CGExplore`, you need to follow these steps:
 
 Create a `conda` or `mamba` environment::
 
@@ -51,14 +49,9 @@ Activate the environment::
   $ conda activate NAME
 
 
-From :mod:`.CGExplore` directory, install pip environment::
+Install :mod:`.CGExplore` with pip::
 
-  $ pip install .
-
-or for development, use `just <https://github.com/casey/just>`_ to install a
-dev environment with::
-
-  $ just dev
+  $ pip install cgexplore
 
 
 Install `OpenMM` `docs <https://openmm.org/>`_::
@@ -82,9 +75,25 @@ or::
 
 Then, update directory structure in `env_set.py` if using example code.
 
+
 The library implements some analysis that uses `Shape 2.1`. Follow the
 instructions to download and installed at
 `Shape <https://www.iqtc.ub.edu/uncategorised/program-for-the-stereochemical-analysis-of-molecular-fragments-by-means-of-continous-shape-measures-and-associated-tools/>`_
+
+
+Developer Setup
+---------------
+
+To develop with `CGExplore`, you should create a new environment as above, then:
+
+Clone :mod:`.CGExplore` from `here <https://github.com/andrewtarzia/CGExplore>`_
+
+From :mod:`.CGExplore` directory use `just <https://github.com/casey/just>`_ to
+install a dev environment with::
+
+  $ just dev
+
+And then follow the previous steps.
 
 
 Examples
