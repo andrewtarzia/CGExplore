@@ -7,11 +7,14 @@ Author: Andrew Tarzia
 
 """
 
-from cgexplore.angles import PyramidAngleRange, TargetAngleRange
-from cgexplore.bonds import TargetBondRange
-from cgexplore.forcefield import ForceFieldLibrary
-from cgexplore.nonbonded import TargetNonbondedRange
-from cgexplore.torsions import TargetTorsionRange
+from cgexplore.forcefields import ForceFieldLibrary
+from cgexplore.terms import (
+    PyramidAngleRange,
+    TargetAngleRange,
+    TargetBondRange,
+    TargetNonbondedRange,
+    TargetTorsionRange,
+)
 from openmm import openmm
 
 

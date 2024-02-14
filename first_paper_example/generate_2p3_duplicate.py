@@ -12,10 +12,8 @@ import sys
 
 import stk
 from bead_libraries import arm_bead, binder_bead, core_bead, trigonal_bead
-from cgexplore.beads import bead_library_check
-from cgexplore.databases import AtomliteDatabase
-from cgexplore.molecule_construction import ThreeC1Arm, TwoC1Arm
-from cgexplore.utilities import check_directory
+from cgexplore.molecular import ThreeC1Arm, TwoC1Arm, bead_library_check
+from cgexplore.utilities import AtomliteDatabase, check_directory
 from define_forcefields import define_2p3_forcefield_library
 from env_set import cages, ligands
 from generation import build_populations

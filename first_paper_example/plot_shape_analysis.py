@@ -689,14 +689,13 @@ def plot_shape_flex(data, mode, figure_output):
                 title = "tritopic shape"
             elif mode == "n":
                 title = "tetratopic shape"
-        else:
-            if mode == "l":
-                title = "ditopic shape"
-            elif mode == "n":
-                if Xc_map(tstr) == 3:
-                    title = "tritopic shape"
-                elif Xc_map(tstr) == 4:
-                    title = "tetratopic shape"
+        elif mode == "l":
+            title = "ditopic shape"
+        elif mode == "n":
+            if Xc_map(tstr) == 3:
+                title = "tritopic shape"
+            elif Xc_map(tstr) == 4:
+                title = "tetratopic shape"
 
         ax.set_title(f"{convert_topo(tstr)}: {title}", fontsize=16)
 

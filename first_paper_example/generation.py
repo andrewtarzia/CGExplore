@@ -14,9 +14,9 @@ import os
 import openmm
 import stk
 from analysis import analyse_cage
-from cgexplore.assigned_system import AssignedSystem
-from cgexplore.ensembles import Conformer, Ensemble
-from cgexplore.generation_utilities import (
+from cgexplore.forcefields import AssignedSystem
+from cgexplore.molecular import Conformer, Ensemble
+from cgexplore.utilities import (
     optimise_ligand,
     run_constrained_optimisation,
     run_optimisation,

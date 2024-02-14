@@ -14,13 +14,13 @@ import os
 import numpy as np
 import openmm
 import pandas as pd
-from cgexplore.geom import GeomMeasure
-from cgexplore.shape import (
+from cgexplore.analysis import (
+    GeomMeasure,
     ShapeMeasure,
     get_shape_molecule_byelement,
     known_shape_vectors,
 )
-from cgexplore.torsions import TargetTorsion
+from cgexplore.terms import TargetTorsion
 from env_set import shape_path
 from topologies import cage_topology_options
 
@@ -183,9 +183,7 @@ def analyse_cage(
             else:
                 if ("a1", "c1") in (cp, tuple(reversed(cp))):
                     c2r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
-                if ("b1", "n1") in (cp, tuple(reversed(cp))):
-                    clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
-                elif ("b1", "m1") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1") in (cp, tuple(reversed(cp))) or ("b1", "m1") in (cp, tuple(reversed(cp))):
                     clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
 
         c2angle = None
@@ -201,9 +199,7 @@ def analyse_cage(
             else:
                 if ("b1", "a1", "c1") in (cp, tuple(reversed(cp))):
                     c2angle = at.angle.value_in_unit(openmm.unit.degrees)
-                if ("b1", "n1", "b1") in (cp, tuple(reversed(cp))):
-                    clangle = at.angle.value_in_unit(openmm.unit.degrees)
-                elif ("b1", "m1", "b1") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1", "b1") in (cp, tuple(reversed(cp))) or ("b1", "m1", "b1") in (cp, tuple(reversed(cp))):
                     clangle = at.angle.value_in_unit(openmm.unit.degrees)
 
         forcefield_dict = {

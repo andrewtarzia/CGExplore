@@ -11,9 +11,8 @@ import logging
 import sys
 
 from bead_libraries import arm_bead, binder_bead, core_bead, tetragonal_bead
-from cgexplore.beads import bead_library_check
-from cgexplore.databases import AtomliteDatabase
-from cgexplore.molecule_construction import FourC1Arm, TwoC1Arm
+from cgexplore.molecular import bead_library_check, FourC1Arm, TwoC1Arm
+from cgexplore.utilities import AtomliteDatabase
 from define_forcefields import define_2p4_forcefield_library
 from env_set import calculations, ligands, outputdata, structures
 from generation import build_populations
