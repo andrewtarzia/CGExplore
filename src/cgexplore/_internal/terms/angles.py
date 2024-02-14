@@ -9,10 +9,9 @@ from dataclasses import dataclass
 
 import stk
 from openmm import openmm
-from rdkit.Chem import AllChem
 
-from .errors import ForceFieldUnitError
-from .utilities import convert_pyramid_angle
+from cgexplore._internal.utilities.errors import ForceFieldUnitError
+from cgexplore._internal.utilities.utilities import convert_pyramid_angle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -246,22 +245,6 @@ class FoundAngle:
 
     atoms: tuple[stk.Atom, ...]
     atom_ids: tuple[int, ...]
-
-
-def find_angles(molecule: stk.Molecule) -> abc.Iterator[FoundAngle]:
-    """Find angles based on bonds in molecule."""
-    paths = AllChem.FindAllPathsOfLengthN(
-        mol=molecule.to_rdkit_mol(),
-        length=3,
-        useBonds=False,
-        useHs=True,
-    )
-    for atom_ids in paths:
-        atoms = tuple(molecule.get_atoms(atom_ids=list(atom_ids)))
-        yield FoundAngle(
-            atoms=atoms,
-            atom_ids=tuple(i.get_id() for i in atoms),
-        )
 
 
 @dataclass

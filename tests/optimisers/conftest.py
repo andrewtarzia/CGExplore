@@ -1,12 +1,14 @@
 import numpy as np
 import pytest
 import stk
-from cgexplore.angles import TargetAngle
-from cgexplore.beads import CgBead
-from cgexplore.bonds import TargetBond
-from cgexplore.forcefield import ForceField
-from cgexplore.nonbonded import TargetNonbonded
-from cgexplore.torsions import TargetTorsion
+from cgexplore.forcefields import ForceField
+from cgexplore.molecular import CgBead
+from cgexplore.terms import (
+    TargetAngle,
+    TargetBond,
+    TargetNonbonded,
+    TargetTorsion,
+)
 from openmm import openmm
 
 from .case_data import CaseData

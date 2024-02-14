@@ -1,7 +1,7 @@
 import pathlib
 
-from cgexplore.angles import Angle, CosineAngle
-from cgexplore.errors import ForceFieldUnitError
+from cgexplore.terms import Angle, CosineAngle
+from cgexplore.utilities import ForceFieldUnitError
 
 from .case_data import CaseData
 from .utilities import is_equivalent_atom

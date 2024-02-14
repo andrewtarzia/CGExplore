@@ -7,7 +7,7 @@ Author: Andrew Tarzia
 
 """
 
-from cgexplore.beads import CgBead
+from cgexplore.molecular import CgBead
 
 
 def core_bead() -> CgBead:

@@ -8,7 +8,8 @@ import stk
 import stko
 from rdkit.Chem import AllChem
 
-from .torsions import find_torsions
+from cgexplore._internal.terms.utilities import find_torsions
+
 from .utilities import get_dihedral
 
 

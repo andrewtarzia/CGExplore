@@ -14,15 +14,7 @@ from dataclasses import dataclass
 import numpy as np
 import stk
 
-
-@dataclass
-class Conformer:
-    """Define conformer information."""
-
-    molecule: stk.Molecule
-    energy_decomposition: dict
-    conformer_id: int | None = None
-    source: str | None = None
+from .conformer import Conformer
 
 
 @dataclass
@@ -163,7 +155,7 @@ class Ensemble:
             min_energy = self._data[temp_energy_conformerid]["total energy"][0]
         except KeyError:
             # This try statement is for backwards compatability.
-            # Conformer IDs should be strings.
+            # Conformer IDs should not be strs.
             temp_energy_conformerid = "0"
             data = self._data[temp_energy_conformerid]  # type: ignore[index]
             min_energy = data["total energy"][0]
@@ -173,24 +165,21 @@ class Ensemble:
             conf_energy = self._data[confid]["total energy"][0]
             if conf_energy < min_energy:
                 min_energy = conf_energy
-                min_energy_conformerid = confid  # type: ignore[assignment]
+                min_energy_conformerid = confid
 
         return self.get_conformer(min_energy_conformerid)
 
-    def get_conformer(self, conf_id: int | str) -> Conformer:
+    def get_conformer(self, conf_id: int) -> Conformer:
         """Get a specific conformer."""
         if conf_id not in self._data:
-            if str(conf_id) not in self._data:
-                msg = (
-                    f"conformer {conf_id} not found in ensemble "
-                    f"({self._data_json}). Strict handling of `conf_id` is "
-                    f"coming. Current types: {[type(i) for i in self._data]}"
-                )
-                raise ValueError(msg)
+            msg = (
+                f"conformer {conf_id} not found in ensemble "
+                f"({self._data_json}). Strict handling of `conf_id` is "
+                f"coming. Current types: {[type(i) for i in self._data]}"
+            )
+            raise ValueError(msg)
 
-            conf_id = str(conf_id)
-
-        conf_lines = self._trajectory[int(conf_id)]
+        conf_lines = self._trajectory[conf_id]
         extracted_id = int(conf_lines[1].strip().split()[1])
         if extracted_id != int(conf_id):
             msg = f"Asked for {conf_id}, got {extracted_id}"
@@ -207,14 +196,14 @@ class Ensemble:
             )
             raise ValueError(msg)
 
-        conf_data = self._data[conf_id]  # type: ignore[index]
+        conf_data = self._data[conf_id]
         source = conf_data["source"]
         energy_decomp = {i: conf_data[i] for i in conf_data if i != "source"}
         return Conformer(
             molecule=(
                 self._base_molecule.with_position_matrix(np.array(new_pos_mat))
             ),
-            conformer_id=int(conf_id),
+            conformer_id=conf_id,
             energy_decomposition=energy_decomp,
             source=source,
         )
@@ -229,9 +218,13 @@ class Ensemble:
 
     def load_data(self) -> dict[int, dict]:
         """Load ensemble data."""
+
+        def keystoint(x: dict) -> dict[int, dict]:
+            return {int(k): v for k, v in x.items()}
+
         try:
             with open(self._data_json) as f:
-                return json.load(f)
+                return json.load(f, object_hook=keystoint)
         except FileNotFoundError:
             return {}
 

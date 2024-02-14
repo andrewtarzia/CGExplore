@@ -26,14 +26,14 @@ dev = [
   "ruff",
   "mypy",
   "pip-tools",
-  "pytest==7.4.2",
+  "pytest<8",
   "pytest-datadir",
   "pytest-lazy-fixture",
   "pytest-cov",
   "sphinx",
   "sphinx-copybutton",
   "twine",
-  "furo",
+  "sphinx_rtd_theme",
 ]
 
 [project.urls]

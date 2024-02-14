@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Classes of topologies of cages.

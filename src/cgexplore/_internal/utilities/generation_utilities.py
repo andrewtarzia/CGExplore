@@ -15,13 +15,21 @@ import numpy as np
 import stk
 from openmm import OpenMMException, openmm
 
-from .angles import Angle, CosineAngle
-from .assigned_system import AssignedSystem, MartiniSystem
-from .beads import periodic_table
-from .bonds import Bond
-from .ensembles import Conformer, Ensemble
-from .forcefield import ForceField
-from .openmm_optimizer import CGOMMDynamics, CGOMMOptimizer, OMMTrajectory
+from cgexplore._internal.forcefields.assigned_system import (
+    AssignedSystem,
+    MartiniSystem,
+)
+from cgexplore._internal.forcefields.forcefield import ForceField
+from cgexplore._internal.molecular.beads import periodic_table
+from cgexplore._internal.molecular.conformer import Conformer
+from cgexplore._internal.molecular.ensembles import Ensemble
+from cgexplore._internal.optimisation.openmm_optimizer import (
+    CGOMMDynamics,
+    CGOMMOptimizer,
+    OMMTrajectory,
+)
+from cgexplore._internal.terms.angles import Angle, CosineAngle
+from cgexplore._internal.terms.bonds import Bond
 
 logging.basicConfig(
     level=logging.INFO,

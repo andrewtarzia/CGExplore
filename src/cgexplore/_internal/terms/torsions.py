@@ -13,7 +13,6 @@ from dataclasses import dataclass
 
 import stk
 from openmm import openmm
-from rdkit.Chem import AllChem
 
 logging.basicConfig(
     level=logging.INFO,
@@ -104,25 +103,6 @@ class FoundTorsion:
 
     atoms: tuple[stk.Atom, ...]
     atom_ids: tuple[int, ...]
-
-
-def find_torsions(
-    molecule: stk.Molecule,
-    chain_length: int,
-) -> abc.Iterator[FoundTorsion]:
-    """Find torsions based on bonds in molecule."""
-    paths = AllChem.FindAllPathsOfLengthN(
-        mol=molecule.to_rdkit_mol(),
-        length=chain_length,
-        useBonds=False,
-        useHs=True,
-    )
-    for atom_ids in paths:
-        atoms = tuple(molecule.get_atoms(atom_ids=list(atom_ids)))
-        yield FoundTorsion(
-            atoms=atoms,
-            atom_ids=tuple(i.get_id() for i in atoms),
-        )
 
 
 @dataclass

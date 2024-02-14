@@ -22,8 +22,7 @@ from analysis import (
     mapshape_to_topology,
     topology_labels,
 )
-from cgexplore.utilities import check_directory
-from cgexplore.visualisation import Pymol
+from cgexplore.utilities import Pymol, check_directory
 from env_set import (
     calculations,
     figures,
@@ -295,7 +294,7 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs)):
+    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs, strict=False)):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[
             ton["cage_name"] == naming_convention_map(sname[0], sname[1])
@@ -689,7 +688,7 @@ def si_shape_fig(
     )
     flat_axs = axs.flatten()
 
-    for sname, ax in zip(structure_names, flat_axs):
+    for sname, ax in zip(structure_names, flat_axs, strict=False):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[
             ton["cage_name"] == naming_convention_map(sname[0], sname[1])

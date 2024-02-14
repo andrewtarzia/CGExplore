@@ -884,7 +884,7 @@ def plot_topology_pore_flex(data, figure_output):
                 lblkey,
             )
         )
-    ax.legend(*zip(*labels), fontsize=16, ncols=4)
+    ax.legend(*zip(*labels, strict=False), fontsize=16, ncols=4)
     ax.set_xlim(0.5, len(topologies) + 0.5)
 
     fig.tight_layout()

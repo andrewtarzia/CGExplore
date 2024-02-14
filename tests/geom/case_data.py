@@ -8,7 +8,7 @@ class CaseData:
     def __init__(
         self,
         molecule: stk.Molecule,
-        geommeasure: cgexplore.GeomMeasure,
+        geommeasure: cgexplore.analysis.GeomMeasure,
         length_dict: dict[str : list[float]],
         angle_dict: dict[str : list[float]],
         torsion_dict: dict[str : list[float]],

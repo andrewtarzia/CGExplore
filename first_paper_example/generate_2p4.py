@@ -11,9 +11,8 @@ import logging
 import sys
 
 from bead_libraries import arm_bead, binder_bead, core_bead, tetragonal_bead
-from cgexplore.beads import bead_library_check
-from cgexplore.databases import AtomliteDatabase
-from cgexplore.molecule_construction import FourC1Arm, TwoC1Arm
+from cgexplore.molecular import FourC1Arm, TwoC1Arm
+from cgexplore.utilities import AtomliteDatabase
 from define_forcefields import define_2p4_forcefield_library
 from env_set import calculations, ligands, outputdata, structures
 from generation import build_populations
@@ -41,17 +40,16 @@ def main():
     data_output = outputdata()
 
     # Define bead libraries.
-    full_bead_library = (
+    present_beads = (
         core_bead(),
         arm_bead(),
         binder_bead(),
         tetragonal_bead(),
     )
-    bead_library_check(full_bead_library)
 
     logging.info("defining force field")
     forcefieldlibrary = define_2p4_forcefield_library(
-        full_bead_library=full_bead_library,
+        present_beads=present_beads,
         prefix="2p4",
     )
 

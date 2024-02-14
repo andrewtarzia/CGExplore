@@ -15,7 +15,7 @@ import subprocess as sp
 import numpy as np
 import stk
 
-from .beads import periodic_table
+from cgexplore._internal.molecular.beads import periodic_table
 
 logging.basicConfig(
     level=logging.INFO,
@@ -200,10 +200,9 @@ def get_shape_molecule_ligands(
 
 
 class ShapeMeasure:
-    """Uses Shape [1]_ to calculate the shape of coordinates.
+    """Uses Shape to calculate the shape of coordinates.
 
-    References:
-        .. [1] http://www.ee.ub.edu/
+    Shape: http://www.ee.ub.edu/
 
     """
 

@@ -7,17 +7,20 @@ Author: Andrew Tarzia
 
 """
 
-from cgexplore.angles import PyramidAngleRange, TargetAngleRange
-from cgexplore.bonds import TargetBondRange
-from cgexplore.forcefield import ForceFieldLibrary
-from cgexplore.nonbonded import TargetNonbondedRange
-from cgexplore.torsions import TargetTorsionRange
+from cgexplore.forcefields import ForceFieldLibrary
+from cgexplore.terms import (
+    PyramidAngleRange,
+    TargetAngleRange,
+    TargetBondRange,
+    TargetNonbondedRange,
+    TargetTorsionRange,
+)
 from openmm import openmm
 
 
-def define_3p4_forcefield_library(full_bead_library, prefix):
+def define_3p4_forcefield_library(present_beads, prefix):
     forcefieldlibrary = ForceFieldLibrary(
-        bead_library=full_bead_library,
+        present_beads=present_beads,
         vdw_bond_cutoff=2,
         prefix=prefix,
     )
@@ -229,9 +232,9 @@ def define_3p4_forcefield_library(full_bead_library, prefix):
     return forcefieldlibrary
 
 
-def define_2p4_forcefield_library(full_bead_library, prefix):
+def define_2p4_forcefield_library(present_beads, prefix):
     forcefieldlibrary = ForceFieldLibrary(
-        bead_library=full_bead_library,
+        present_beads=present_beads,
         vdw_bond_cutoff=2,
         prefix=prefix,
     )
@@ -474,9 +477,9 @@ def define_2p4_forcefield_library(full_bead_library, prefix):
     return forcefieldlibrary
 
 
-def define_2p3_forcefield_library(full_bead_library, prefix):
+def define_2p3_forcefield_library(present_beads, prefix):
     forcefieldlibrary = ForceFieldLibrary(
-        bead_library=full_bead_library,
+        present_beads=present_beads,
         vdw_bond_cutoff=2,
         prefix=prefix,
     )

@@ -8,7 +8,7 @@ class CaseData:
     def __init__(
         self,
         molecule: stk.Molecule,
-        forcefield: cgexplore.forcefield.ForceField,
+        forcefield: cgexplore.forcefields.ForceField,
         xml_string: str,
         name: str,
     ) -> None:

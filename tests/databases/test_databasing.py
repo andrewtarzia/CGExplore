@@ -4,7 +4,7 @@ import shutil
 import atomlite
 import pytest
 import stk
-from cgexplore.databases import AtomliteDatabase
+from cgexplore.utilities import AtomliteDatabase
 
 from .case_data import CaseData
 
