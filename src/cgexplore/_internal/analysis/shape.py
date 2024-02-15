@@ -257,6 +257,191 @@ class ShapeMeasure:
             position_matrix=np.array(position_matrix),
         )
 
+    def _collect_all_shape_values(self, output_file: str) -> dict:
+        """Collect shape values from output."""
+        with open(output_file) as f:
+            lines = f.readlines()
+
+        label_idx_map = {}
+        values = None
+        for line in reversed(lines):
+            if "Structure" in line:
+                values = [
+                    i.strip()
+                    for i in line.rstrip().split("]")[1].split(" ")
+                    if i.strip()
+                ]
+                for idx, symb in enumerate(values):
+                    label_idx_map[symb] = idx
+                break
+            float_values = [i.strip() for i in line.rstrip().split(",")]
+
+        if values is None:
+            logging.info("no shapes found due to overlapping atoms")
+            shapes = {}
+        else:
+            shapes = {
+                i: float(float_values[1 + label_idx_map[i]])
+                for i in label_idx_map
+            }
+
+        return shapes
+
+    def _write_input_file(
+        self,
+        input_file: str,
+        structure_string: str,
+    ) -> None:
+        """Write input file for shape."""
+        num_vertices = len(structure_string.split("\n")) - 2
+
+        possible_shapes = self._get_possible_shapes(num_vertices)
+        shape_numbers = tuple(i["code"] for i in possible_shapes)
+
+        title = "$shape run by Andrew Tarzia - central atom=0 always.\n"
+        fix_perm = (
+            "%fixperm 0\\n" if num_vertices == 12 else "\n"  # noqa: PLR2004
+        )
+        size_of_poly = f"{num_vertices} 0\n"
+        codes = " ".join(shape_numbers) + "\n"
+
+        string = title + fix_perm + size_of_poly + codes + structure_string
+
+        with open(input_file, "w") as f:
+            f.write(string)
+
+    def _run_calculation(self, structure_string: str) -> dict:
+        """Calculate the shape of a molecule."""
+        input_file = "shp.dat"
+        std_out = "shp.out"
+        output_file = "shp.tab"
+
+        self._write_input_file(
+            input_file=input_file,
+            structure_string=structure_string,
+        )
+
+        # Note that sp.call will hold the program until completion
+        # of the calculation.
+        captured_output = sp.run(
+            [f"{self._shape_path}", f"{input_file}"],  # noqa: S603
+            stdin=sp.PIPE,
+            capture_output=True,
+            check=True,
+            # Shell is required to run complex arguments.
+        )
+
+        with open(std_out, "w") as f:
+            f.write(str(captured_output.stdout))
+
+        return self._collect_all_shape_values(output_file)
+
+    def _get_centroids(
+        self,
+        molecule: stk.ConstructedMolecule,
+        target_atmnums: tuple[int],
+    ) -> list[np.ndarray]:
+        bb_ids: dict[int | None, list] = {}
+        for ai in molecule.get_atom_infos():
+            aibbid = ai.get_building_block_id()
+            if ai.get_atom().get_atomic_number() in target_atmnums:
+                if aibbid not in bb_ids:
+                    bb_ids[aibbid] = []
+                bb_ids[aibbid].append(ai.get_atom().get_id())
+
+        centroids = [molecule.get_centroid(atom_ids=bb_ids[n]) for n in bb_ids]
+
+        with open("cents.xyz", "w") as f:
+            f.write(f"{len(centroids)}\n\n")
+            for c in centroids:
+                f.write(f"Zn {c[0]} {c[1]} {c[2]}\n")
+
+        return centroids
+
+    def _get_possible_shapes(self, num_vertices: int) -> tuple[dict, ...]:
+        ref_dict = self.reference_shape_dict()
+        return tuple(
+            ref_dict[i]
+            for i in ref_dict
+            if int(ref_dict[i]["vertices"]) == num_vertices
+        )
+
+    def calculate(self, molecule: stk.Molecule) -> dict:
+        """Calculate shape measures for a molecule."""
+        output_dir = pathlib.Path(self._output_dir).resolve()
+
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir()
+
+        init_dir = pathlib.Path.cwd()
+        try:
+            os.chdir(output_dir)
+            structure_string = "shape run by AT\n"
+            num_centroids = 0
+            pos_mat = molecule.get_position_matrix()
+            for a in molecule.get_atoms():
+                c = pos_mat[a.get_id()]
+                structure_string += (
+                    f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
+                )
+                num_centroids += 1
+
+            if num_centroids not in self._num_vertex_options:
+                msg = (
+                    f"you gave {num_centroids} vertices, but expected to "
+                    f"calculate shapes with {self._num_vertex_options} options"
+                )
+                raise ValueError(msg)
+
+            shapes = self._run_calculation(structure_string)
+
+        finally:
+            os.chdir(init_dir)
+
+        return shapes
+
+    def calculate_from_centroids(
+        self,
+        constructed_molecule: stk.ConstructedMolecule,
+        target_atmnums: tuple[int],
+    ) -> dict:
+        """Calculate shape from the centroids of building blocks.
+
+        Currently not implemented well.
+        """
+        output_dir = pathlib.Path(self._output_dir).resolve()
+
+        if output_dir.exists():
+            shutil.rmtree(output_dir)
+        output_dir.mkdir()
+
+        init_dir = pathlib.Path.cwd()
+        try:
+            os.chdir(output_dir)
+            centroids = self._get_centroids(
+                constructed_molecule, target_atmnums
+            )
+            structure_string = "shape run by AT\n"
+            num_centroids = 0
+            for c in centroids:
+                structure_string += f"Zn {c[0]} {c[1]} {c[2]}\n"
+                num_centroids += 1
+
+            if num_centroids not in self._num_vertex_options:
+                msg = (
+                    f"you gave {num_centroids} vertices, but expected to "
+                    f"calculate shapes with {self._num_vertex_options} options"
+                )
+                raise ValueError(msg)
+
+            shapes = self._run_calculation(structure_string)
+
+        finally:
+            os.chdir(init_dir)
+
+        return shapes
+
     def reference_shape_dict(self) -> dict[str, dict]:
         """Reference shapes as dictionary."""
         return {
@@ -819,191 +1004,6 @@ class ShapeMeasure:
                 "shape": "Truncated octahedron Oh",
             },
         }
-
-    def _collect_all_shape_values(self, output_file: str) -> dict:
-        """Collect shape values from output."""
-        with open(output_file) as f:
-            lines = f.readlines()
-
-        label_idx_map = {}
-        values = None
-        for line in reversed(lines):
-            if "Structure" in line:
-                values = [
-                    i.strip()
-                    for i in line.rstrip().split("]")[1].split(" ")
-                    if i.strip()
-                ]
-                for idx, symb in enumerate(values):
-                    label_idx_map[symb] = idx
-                break
-            float_values = [i.strip() for i in line.rstrip().split(",")]
-
-        if values is None:
-            logging.info("no shapes found due to overlapping atoms")
-            shapes = {}
-        else:
-            shapes = {
-                i: float(float_values[1 + label_idx_map[i]])
-                for i in label_idx_map
-            }
-
-        return shapes
-
-    def _write_input_file(
-        self,
-        input_file: str,
-        structure_string: str,
-    ) -> None:
-        """Write input file for shape."""
-        num_vertices = len(structure_string.split("\n")) - 2
-
-        possible_shapes = self._get_possible_shapes(num_vertices)
-        shape_numbers = tuple(i["code"] for i in possible_shapes)
-
-        title = "$shape run by Andrew Tarzia - central atom=0 always.\n"
-        fix_perm = (
-            "%fixperm 0\\n" if num_vertices == 12 else "\n"  # noqa: PLR2004
-        )
-        size_of_poly = f"{num_vertices} 0\n"
-        codes = " ".join(shape_numbers) + "\n"
-
-        string = title + fix_perm + size_of_poly + codes + structure_string
-
-        with open(input_file, "w") as f:
-            f.write(string)
-
-    def _run_calculation(self, structure_string: str) -> dict:
-        """Calculate the shape of a molecule."""
-        input_file = "shp.dat"
-        std_out = "shp.out"
-        output_file = "shp.tab"
-
-        self._write_input_file(
-            input_file=input_file,
-            structure_string=structure_string,
-        )
-
-        # Note that sp.call will hold the program until completion
-        # of the calculation.
-        captured_output = sp.run(
-            [f"{self._shape_path}", f"{input_file}"],  # noqa: S603
-            stdin=sp.PIPE,
-            capture_output=True,
-            check=True,
-            # Shell is required to run complex arguments.
-        )
-
-        with open(std_out, "w") as f:
-            f.write(str(captured_output.stdout))
-
-        return self._collect_all_shape_values(output_file)
-
-    def _get_centroids(
-        self,
-        molecule: stk.ConstructedMolecule,
-        target_atmnums: tuple[int],
-    ) -> list[np.ndarray]:
-        bb_ids: dict[int | None, list] = {}
-        for ai in molecule.get_atom_infos():
-            aibbid = ai.get_building_block_id()
-            if ai.get_atom().get_atomic_number() in target_atmnums:
-                if aibbid not in bb_ids:
-                    bb_ids[aibbid] = []
-                bb_ids[aibbid].append(ai.get_atom().get_id())
-
-        centroids = [molecule.get_centroid(atom_ids=bb_ids[n]) for n in bb_ids]
-
-        with open("cents.xyz", "w") as f:
-            f.write(f"{len(centroids)}\n\n")
-            for c in centroids:
-                f.write(f"Zn {c[0]} {c[1]} {c[2]}\n")
-
-        return centroids
-
-    def _get_possible_shapes(self, num_vertices: int) -> tuple[dict, ...]:
-        ref_dict = self.reference_shape_dict()
-        return tuple(
-            ref_dict[i]
-            for i in ref_dict
-            if int(ref_dict[i]["vertices"]) == num_vertices
-        )
-
-    def calculate(self, molecule: stk.Molecule) -> dict:
-        """Calculate shape measures for a molecule."""
-        output_dir = pathlib.Path(self._output_dir).resolve()
-
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
-        output_dir.mkdir()
-
-        init_dir = pathlib.Path.cwd()
-        try:
-            os.chdir(output_dir)
-            structure_string = "shape run by AT\n"
-            num_centroids = 0
-            pos_mat = molecule.get_position_matrix()
-            for a in molecule.get_atoms():
-                c = pos_mat[a.get_id()]
-                structure_string += (
-                    f"{a.__class__.__name__} {c[0]} {c[1]} {c[2]}\n"
-                )
-                num_centroids += 1
-
-            if num_centroids not in self._num_vertex_options:
-                msg = (
-                    f"you gave {num_centroids} vertices, but expected to "
-                    f"calculate shapes with {self._num_vertex_options} options"
-                )
-                raise ValueError(msg)
-
-            shapes = self._run_calculation(structure_string)
-
-        finally:
-            os.chdir(init_dir)
-
-        return shapes
-
-    def calculate_from_centroids(
-        self,
-        constructed_molecule: stk.ConstructedMolecule,
-        target_atmnums: tuple[int],
-    ) -> dict:
-        """Calculate shape from the centroids of building blocks.
-
-        Currently not implemented well.
-        """
-        output_dir = pathlib.Path(self._output_dir).resolve()
-
-        if output_dir.exists():
-            shutil.rmtree(output_dir)
-        output_dir.mkdir()
-
-        init_dir = pathlib.Path.cwd()
-        try:
-            os.chdir(output_dir)
-            centroids = self._get_centroids(
-                constructed_molecule, target_atmnums
-            )
-            structure_string = "shape run by AT\n"
-            num_centroids = 0
-            for c in centroids:
-                structure_string += f"Zn {c[0]} {c[1]} {c[2]}\n"
-                num_centroids += 1
-
-            if num_centroids not in self._num_vertex_options:
-                msg = (
-                    f"you gave {num_centroids} vertices, but expected to "
-                    f"calculate shapes with {self._num_vertex_options} options"
-                )
-                raise ValueError(msg)
-
-            shapes = self._run_calculation(structure_string)
-
-        finally:
-            os.chdir(init_dir)
-
-        return shapes
 
 
 def known_shape_vectors() -> dict[str, dict]:

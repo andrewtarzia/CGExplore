@@ -7,6 +7,7 @@
    Forcefields <forcefields>
    Molecular <molecular>
    Optimisation <optimisation>
+   Systems Optimisation <systems_optimisation>
    Terms <terms>
    Utilities <utilities>
    First Paper Example <first_paper_example>
