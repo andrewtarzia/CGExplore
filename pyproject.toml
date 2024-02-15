@@ -52,6 +52,7 @@ where = [
 line-length = 79
 exclude = [
   "first_paper_example",
+  "optimisation_example",
 ]
 
 [tool.ruff.lint]

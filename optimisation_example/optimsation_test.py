@@ -1,13 +1,14 @@
-import pathlib
-import cgexplore
-import stk
 import logging
-import matplotlib.pyplot as plt
 import os
-from openmm import openmm
-from dataclasses import dataclass
-import numpy as np
+import pathlib
 from collections import abc
+from dataclasses import dataclass
+
+import cgexplore
+import matplotlib.pyplot as plt
+import numpy as np
+import stk
+from openmm import openmm
 
 
 def shape_path():
@@ -777,7 +778,7 @@ def main():
     ax.legend(fontsize=16)
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_dir, "space_explored.png"),
+        figure_dir / "space_explored.png",
         dpi=360,
         bbox_inches="tight",
     )
