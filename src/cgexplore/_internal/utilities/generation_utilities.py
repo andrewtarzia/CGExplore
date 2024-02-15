@@ -355,7 +355,6 @@ def run_constrained_optimisation(  # noqa: PLR0913
         atom_constraints=intra_bb_bonds,
         platform=platform,
     )
-    logging.info(f"optimising with {len(intra_bb_bonds)} constraints")
     return constrained_opt.optimize(soft_assigned_system)
 
 

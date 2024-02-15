@@ -303,7 +303,6 @@ class ChromosomeGenerator:
         self,
         list_of_chromosomes,
     ) -> abc.Iterable[Chromosome]:
-
         tuples = set([i.name for i in list_of_chromosomes])
         return [self.select_chromosome(i) for i in tuples]
 
@@ -313,7 +312,6 @@ class ChromosomeGenerator:
         generator,
         gene_range,
     ) -> abc.Iterable[Chromosome]:
-
         filter_range = [
             i
             for i in sorted(self.chromosome_map.keys())
@@ -341,7 +339,6 @@ class ChromosomeGenerator:
         generator,
         gene_range,
     ) -> abc.Iterable[Chromosome]:
-
         print(list_of_chromosomes)
         selected = generator.choice(list_of_chromosomes, 5)
         print(selected)

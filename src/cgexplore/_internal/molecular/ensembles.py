@@ -219,8 +219,11 @@ class Ensemble:
     def load_data(self) -> dict[int, dict]:
         """Load ensemble data."""
 
-        def keystoint(x: dict) -> dict[int, dict]:
-            return {int(k): v for k, v in x.items()}
+        def keystoint(x: dict) -> dict:
+            try:
+                return {int(k): v for k, v in x.items()}
+            except ValueError:
+                return dict(x.items())
 
         try:
             with open(self._data_json) as f:
