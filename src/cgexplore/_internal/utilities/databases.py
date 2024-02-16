@@ -73,31 +73,38 @@ class AtomliteDatabase:
         property_type: type,
     ) -> atomlite.Json:
         """Get the properties of an entry."""
-        if property_type is bool:
-            value = self._db.get_bool_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
+        try:
+            if property_type is bool:
+                value = self._db.get_bool_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is float:
+                value = self._db.get_float_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is str:
+                value = self._db.get_str_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is int:
+                value = self._db.get_int_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is dict:
+
+                value = self.get_entry(key).properties[property_key]  # type: ignore[assignment]
+            else:
+                msg = f"{property_key} has unexpected type"
+                raise RuntimeError(msg)
+        except KeyError as ex:
+            ex.add_note(
+                f"{key} does not have {property_key} of {property_type}"
             )
-        elif property_type is float:
-            value = self._db.get_float_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
-            )
-        elif property_type is str:
-            value = self._db.get_str_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
-            )
-        elif property_type is int:
-            value = self._db.get_int_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
-            )
-        elif property_type is dict:
-            value = self.get_entry(key).properties[property_key]  # type: ignore[assignment]
-        else:
-            msg = f"{property_key} has unexpected type"
-            raise RuntimeError(msg)
+            raise
 
         if value is None:
             msg = f"{property_key} has no value"
