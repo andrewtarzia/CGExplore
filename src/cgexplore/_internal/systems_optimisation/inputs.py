@@ -11,8 +11,11 @@ from collections import abc
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 from cgexplore._internal.forcefields.forcefield import ForceField
 from cgexplore._internal.molecular.beads import CgBead
+from cgexplore.utilities import AtomliteDatabase
 
 from .utilities import (
     define_angle,
@@ -224,7 +227,8 @@ class ChromosomeGenerator:
         for key in definer_dict:
             definer = definer_dict[key]
             for comp_id, comp in enumerate(definer[1:]):
-                if not isinstance(comp, float):
+                if not isinstance(comp, float | int | str):
+
                     self.add_gene(
                         iteration=tuple((key, i, comp_id + 1) for i in comp),
                         gene_type="term",
@@ -257,74 +261,107 @@ class ChromosomeGenerator:
         self.chromosomes = all_chromosomes
         logging.info(f"there are {len(self.chromosomes)} chromosomes")
 
-    def get_term_ids(self):
+    def get_term_ids(self) -> tuple[int, ...]:
+        """Get chromosome indices associated with terms."""
         return tuple(
             i
             for i in self.chromosome_types
             if self.chromosome_types[i] == "term"
         )
 
-    def get_term_ranges(self):
-        pass
-
-    def get_topo_ids(self):
+    def get_topo_ids(self) -> tuple[int, ...]:
+        """Get chromosome indices associated with topology."""
         return tuple(
             i
             for i in self.chromosome_types
             if self.chromosome_types[i] == "topology"
         )
 
-    def get_topo_ranges(self):
-        pass
-
-    def get_prec_ids(self):
+    def get_prec_ids(self) -> tuple[int, ...]:
+        """Get chromosome indices associated with precursors."""
         return tuple(
             i
             for i in self.chromosome_types
             if self.chromosome_types[i] == "precursor"
         )
 
-    def get_prec_ranges(self):
-        pass
-
-    def select_chromosome(self, chromosome) -> Chromosome:
+    def select_chromosome(self, chromosome: tuple[int, ...]) -> Chromosome:
         """Get chromosome."""
         return self.chromosomes[chromosome]
 
     def select_random_population(
         self,
-        generator,
-        size,
+        generator: np.random.Generator,
+        size: int,
     ) -> abc.Iterable[Chromosome]:
+        """Select `size` instances from population."""
         selected = list(generator.choice(list(self.chromosomes.keys()), size))
         return [self.select_chromosome(tuple(i)) for i in selected]
 
     def dedupe_population(
         self,
-        list_of_chromosomes,
+        list_of_chromosomes: abc.Iterable[Chromosome],
     ) -> abc.Iterable[Chromosome]:
-        tuples = set([i.name for i in list_of_chromosomes])
+        """Deduplicate the list of chromosomes."""
+        tuples = {i.name for i in list_of_chromosomes}
         return [self.select_chromosome(i) for i in tuples]
 
-    def mutate_population(
+    def mutate_population(  # noqa: PLR0913
         self,
-        list_of_chromosomes,
-        generator,
-        gene_range,
+        list_of_chromosomes: abc.Iterable[Chromosome],
+        generator: np.random.Generator,
+        gene_range: tuple[int, ...],
+        selection: str,
+        num_to_select: int,
+        database: AtomliteDatabase,
     ) -> abc.Iterable[Chromosome]:
+        """Mutate a list of chromosomes in the gene range only.
+
+        Available selections for which chromosomes to mutate:
+            random - uses generator.choice()
+            roulette - adds weight to generator.choice() based on
+                fitness/sum(fitness)
+
+        """
+        # Define which genes we are mutating.
         filter_range = [
             i
             for i in sorted(self.chromosome_map.keys())
             if i not in gene_range
         ]
-        selected = generator.choice(list_of_chromosomes, 5)
+
+        # Select chromosomes to mutate.
+        if selection == "random":
+            selected = generator.choice(
+                list_of_chromosomes, size=num_to_select
+            )
+        elif selection == "roulette":
+            fitness_values = [
+                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[
+                    "fitness"
+                ]
+                for i in list_of_chromosomes
+            ]
+            weights = [i / sum(fitness_values) for i in fitness_values]
+            selected = generator.choice(
+                list_of_chromosomes,
+                size=num_to_select,
+                p=weights,
+            )
+
+        else:
+            msg = f"{selection} is not defined."
+            raise RuntimeError(msg)
         mutated = []
         for chromosome in selected:
+            # Filter all chromosomes based on matching to selected chromosome
+            # in gene region.
             filtered_chromosomes = [
                 i
                 for i in self.chromosomes
                 if all(i[k] == chromosome.name[k] for k in filter_range)
             ]
+            # Add the mutated chromosome selected from the filter chromosomes.
             mutated.append(
                 self.select_chromosome(
                     tuple(generator.choice(filtered_chromosomes))
@@ -333,14 +370,59 @@ class ChromosomeGenerator:
 
         return mutated
 
-    def crossover_population(
+    def crossover_population(  # noqa: PLR0913
         self,
-        list_of_chromosomes,
-        generator,
-        gene_range,
+        list_of_chromosomes: abc.Iterable[Chromosome],
+        generator: np.random.Generator,
+        selection: str,
+        num_to_select: int,
+        database: AtomliteDatabase,
     ) -> abc.Iterable[Chromosome]:
-        print(list_of_chromosomes)
-        selected = generator.choice(list_of_chromosomes, 5)
-        print(selected)
-        raise SystemExit
-        return [self.select_chromosome(i) for i in strings]
+
+        # Select chromosomes to cross.
+        if selection == "random":
+            selected = generator.choice(
+                list_of_chromosomes,
+                size=(num_to_select, 2),
+            )
+        elif selection == "roulette":
+            fitness_values = [
+                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[
+                    "fitness"
+                ]
+                for i in list_of_chromosomes
+            ]
+            weights = [i / sum(fitness_values) for i in fitness_values]
+            selected = generator.choice(
+                list_of_chromosomes,
+                size=(num_to_select, 2),
+                p=weights,
+            )
+        else:
+            msg = f"{selection} is not defined."
+            raise RuntimeError(msg)
+
+        crossed = []
+        for chromosome1, chromosome2 in selected:
+            # Randomly select the genes to cross.
+            nums_to_select_from = range(len(chromosome1.name))
+            num_to_cross = generator.choice(nums_to_select_from, size=1)
+            genes_to_cross = set(
+                generator.choice(nums_to_select_from, size=num_to_cross[0])
+            )
+
+            # Cross them.
+            new_chromosome1 = tuple(
+                val if i not in genes_to_cross else chromosome2.name[i]
+                for i, val in enumerate(chromosome1.name)
+            )
+            new_chromosome2 = tuple(
+                val if i not in genes_to_cross else chromosome1.name[i]
+                for i, val in enumerate(chromosome2.name)
+            )
+
+            # Append the new chromosomes.
+            crossed.append(self.select_chromosome(new_chromosome1))
+            crossed.append(self.select_chromosome(new_chromosome2))
+
+        return crossed

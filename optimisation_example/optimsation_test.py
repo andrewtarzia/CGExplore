@@ -1,14 +1,20 @@
 import logging
 import os
 import pathlib
-from collections import abc
+from collections import abc, defaultdict
 from dataclasses import dataclass
 
 import cgexplore
 import matplotlib.pyplot as plt
 import numpy as np
 import stk
-from openmm import openmm
+import openmm
+
+
+def pymol_path():
+    return pathlib.Path(
+        "/home/atarzia/software/pymol-open-source-build/bin/pymol"
+    )
 
 
 def shape_path():
@@ -18,19 +24,41 @@ def shape_path():
     )
 
 
+def isomer_energy():
+    return 0.3
+
+
 def stoich_map(tstr):
     """Stoichiometry maps to the number of building blocks."""
-    return {"4P6": 10, "2P3": 5}[tstr]
+    return {
+        "2P3": 5,
+        "4P6": 10,
+        "4P62": 10,
+        "6P9": 15,
+        "8P12": 20,
+    }[tstr]
 
 
 def node_expected_topologies(tstr):
     """Number of nodes map to topologies."""
-    return {"4P6": 4, "2P3": 2}[tstr]
+    return {
+        "2P3": 2,
+        "4P6": 4,
+        "4P62": 4,
+        "6P9": 6,
+        "8P12": 8,
+    }[tstr]
 
 
 def colours():
     """Colours map to topologies."""
-    return {"4P6": "#ff7f0e", "2P3": "#1f77b4"}
+    return {
+        "2P3": "#1f77b4",
+        "4P6": "#ff7f0e",
+        "4P62": "#2ca02c",
+        "6P9": "#d62728",
+        "8P12": "#17becf",
+    }
 
 
 def analyse_cage(
@@ -165,7 +193,6 @@ def analyse_cage(
         forcefield_dict = {
             "ff_id": forcefield.get_identifier(),
             "ff_prefix": forcefield.get_prefix(),
-            "vdws": "von",
             "v_dict": v_dict,
             "k_dict": k_dict,
         }
@@ -398,23 +425,18 @@ class Generation:
     def get_generation_size(self):
         return len(self.chromosomes)
 
-    def get_fitness_values(self):
-        return self.fitnesses
-
     def select_best(self, selection_size, database):
         temp = [
             (i, self.fitness_function(i, database)) for i in self.chromosomes
         ]
         best_indices = tuple(
-            sorted(range(len(temp)), key=lambda i: temp[i][1], reverse=False)
+            sorted(range(len(temp)), key=lambda i: temp[i][1], reverse=True)
         )[:selection_size]
         best = [self.chromosomes[i] for i in best_indices]
         return best
 
     def calculate_fitness_values(self, database):
-        self.fitnesses = [
-            self.fitness_function(i, database) for i in self.chromosomes
-        ]
+        return [self.fitness_function(i, database) for i in self.chromosomes]
 
     def run_structures(self, calc_dir, struct_output, database):
         length = len(self.chromosomes)
@@ -460,19 +482,27 @@ def fitness_calculator(chromosome, database):
     entry = database.get_entry(name)
     pore = entry.properties["opt_pore_data"]["min_distance"]
     energy = entry.properties["energy_per_bb"]
-    pore_diff = abs(2.5 - pore)
-    fitness = pore_diff + energy
+    pore_diff = abs(2.5 - pore) / 2.5
+    if energy > isomer_energy() * 2:
+        fitness = 0
+    else:
+        fitness = 1 / (pore_diff + energy)
+    database.add_properties(
+        key=name,
+        property_dict={"fitness": fitness},
+    )
+
     return fitness
 
 
-def progress_plot(generations, output):
+def progress_plot(generations, database, output):
     fig, ax = plt.subplots(figsize=(8, 5))
     fitnesses = []
     for generation in generations:
-        fitnesses.append(generation.get_fitness_values())
+        fitnesses.append(generation.calculate_fitness_values(database))
     ax.plot(
         [max(i) for i in fitnesses],
-        c="#087E8B",
+        # c="#087E8B",
         lw=2,
         marker="o",
         markersize=10,
@@ -481,7 +511,7 @@ def progress_plot(generations, output):
 
     ax.plot(
         [np.mean(i) for i in fitnesses],
-        c="#FF5A5F",
+        # c="#FF5A5F",
         lw=2,
         marker="o",
         markersize=10,
@@ -489,7 +519,7 @@ def progress_plot(generations, output):
     )
     ax.plot(
         [min(i) for i in fitnesses],
-        c="#6D435A",
+        # c="#6D435A",
         lw=2,
         marker="o",
         markersize=10,
@@ -500,8 +530,8 @@ def progress_plot(generations, output):
     ax.set_xlabel("generation", fontsize=16)
     ax.set_ylabel("fitness", fontsize=16)
     ax.set_xlim(0, len(generations))
-
     ax.legend(fontsize=16)
+
     fig.tight_layout()
     fig.savefig(
         output,
@@ -514,9 +544,15 @@ def progress_plot(generations, output):
 def main():
     wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
     struct_output = wd / "structures"
+    cgexplore.utilities.check_directory(struct_output)
     calc_dir = wd / "calculations"
+    cgexplore.utilities.check_directory(calc_dir)
     data_dir = wd / "data"
+    cgexplore.utilities.check_directory(data_dir)
     figure_dir = wd / "figures"
+    cgexplore.utilities.check_directory(figure_dir)
+    best_dir = figure_dir / "best"
+    cgexplore.utilities.check_directory(best_dir)
 
     prefix = "opt"
     database = cgexplore.utilities.AtomliteDatabase(data_dir / "test.db")
@@ -553,8 +589,11 @@ def main():
     )
     chromo_it.add_gene(
         iteration=(
-            ("4P6", stk.cage.FourPlusSix),
             ("2P3", stk.cage.TwoPlusThree),
+            ("4P6", stk.cage.FourPlusSix),
+            ("4P62", stk.cage.FourPlusSix2),
+            ("6P9", stk.cage.SixPlusNine),
+            ("8P12", stk.cage.EightPlusTwelve),
         ),
         gene_type="topology",
     )
@@ -563,21 +602,21 @@ def main():
     chromo_it.add_gene(
         iteration=(
             cgexplore.molecular.TwoC1Arm(bead=bbead, abead1=cbead),
-            cgexplore.molecular.TwoC2Arm(
-                bead=bbead, abead1=cbead, abead2=cbead
-            ),
-            cgexplore.molecular.TwoC3Arm(
-                bead=bbead, abead1=cbead, abead2=cbead, abead3=cbead
-            ),
+            # cgexplore.molecular.TwoC2Arm(
+            #     bead=bbead, abead1=cbead, abead2=cbead
+            # ),
+            # cgexplore.molecular.TwoC3Arm(
+            #     bead=bbead, abead1=cbead, abead2=cbead, abead3=cbead
+            # ),
         ),
         gene_type="precursor",
     )
     chromo_it.add_gene(
         iteration=(
             cgexplore.molecular.ThreeC1Arm(bead=abead, abead1=dbead),
-            cgexplore.molecular.ThreeC2Arm(
-                bead=abead, abead1=dbead, abead2=dbead
-            ),
+            # cgexplore.molecular.ThreeC2Arm(
+            #     bead=abead, abead1=dbead, abead2=dbead
+            # ),
         ),
         gene_type="precursor",
     )
@@ -601,6 +640,7 @@ def main():
         "cbc": ("angle", 180.0, 1e2),
         "oao": ("angle", (60, 70, 90, 110, 120), 1e2),
         # Torsions.
+        "ocbco": ("tors", "0134", 180, (50, 0), 1),
         # Nonbondeds.
         "a": ("nb", 10.0, 1.0),
         "b": ("nb", 10.0, 1.0),
@@ -611,7 +651,7 @@ def main():
 
     chromo_it.define_chromosomes()
     generator = np.random.default_rng(4)
-    num_generations = 10
+    num_generations = 6
     selection_size = 10
 
     initial_population = chromo_it.select_random_population(
@@ -630,73 +670,160 @@ def main():
         struct_output=struct_output,
         database=database,
     )
-    generation.calculate_fitness_values(database)
+    _ = generation.calculate_fitness_values(database)
     generations.append(generation)
 
     logging.info("need better selectors and such")
 
-    for generation_id in range(1, num_generations):
-        logging.info(f"doing {generation_id}")
+    for generation_id in range(1, num_generations + 1):
+        logging.info(f"doing generation {generation_id}")
         logging.info(f"initial size is {generation.get_generation_size()}.")
         logging.info("doing mutations.")
-        term_mutants = chromo_it.mutate_population(
-            generation.chromosomes,
-            generator=generator,
-            gene_range=chromo_it.get_term_ids(),
+        merged_chromosomes = []
+        merged_chromosomes.extend(
+            chromo_it.mutate_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                gene_range=chromo_it.get_term_ids(),
+                selection="random",
+                num_to_select=5,
+                database=database,
+            )
         )
-        topo_mutants = chromo_it.mutate_population(
-            generation.chromosomes,
-            generator=generator,
-            gene_range=chromo_it.get_topo_ids(),
+        merged_chromosomes.extend(
+            chromo_it.mutate_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                gene_range=chromo_it.get_topo_ids(),
+                selection="random",
+                num_to_select=5,
+                database=database,
+            )
         )
-        prec_mutants = chromo_it.mutate_population(
-            generation.chromosomes,
-            generator=generator,
-            gene_range=chromo_it.get_prec_ids(),
+        merged_chromosomes.extend(
+            chromo_it.mutate_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                gene_range=chromo_it.get_prec_ids(),
+                selection="random",
+                num_to_select=5,
+                database=database,
+            )
+        )
+        merged_chromosomes.extend(
+            chromo_it.mutate_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                gene_range=chromo_it.get_term_ids(),
+                selection="roulette",
+                num_to_select=5,
+                database=database,
+            )
+        )
+        merged_chromosomes.extend(
+            chromo_it.mutate_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                gene_range=chromo_it.get_topo_ids(),
+                selection="roulette",
+                num_to_select=5,
+                database=database,
+            )
+        )
+        merged_chromosomes.extend(
+            chromo_it.mutate_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                gene_range=chromo_it.get_prec_ids(),
+                selection="roulette",
+                num_to_select=5,
+                database=database,
+            )
         )
 
         # logging.info("Doing crossovers.")
-        # term_offspring = chromo_it.crossover_population(
-        #     generation.chromosomes,
-        #     generator=generator,
-        # )
-        # print(offspring)
-
-        # Merge crossovers and mutations.
-        # merged_chromosomes = offspring + mutants
-
-        # Add the best 5 to the new generation.
-        best = generation.select_best(
-            selection_size=5,
-            database=database,
+        merged_chromosomes.extend(
+            chromo_it.crossover_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                selection="random",
+                num_to_select=5,
+                database=database,
+            )
         )
 
-        merged_chromosomes = term_mutants + prec_mutants + topo_mutants + best
+        merged_chromosomes.extend(
+            chromo_it.crossover_population(
+                list_of_chromosomes=generation.chromosomes,
+                generator=generator,
+                selection="roulette",
+                num_to_select=5,
+                database=database,
+            )
+        )
+
+        # Add the best 5 to the new generation.
+        merged_chromosomes.extend(
+            generation.select_best(
+                selection_size=5,
+                database=database,
+            )
+        )
+
         generation = Generation(
             chromosomes=chromo_it.dedupe_population(merged_chromosomes),
             fitness_function=fitness_calculator,
         )
         logging.info(f"new size is {generation.get_generation_size()}.")
 
-        logging.info("running calcs.")
+        # Build, optimise and analyse each structure.
         generation.run_structures(
             calc_dir=calc_dir,
             struct_output=struct_output,
             database=database,
         )
-        generation.calculate_fitness_values(database)
+        _ = generation.calculate_fitness_values(database)
 
-        logging.info("selecting best.")
+        # Select the best of the generation.
+        # TODO: maybe make this roulete?
         best = generation.select_best(
             selection_size=selection_size,
             database=database,
         )
+        generation = Generation(
+            chromosomes=chromo_it.dedupe_population(best),
+            fitness_function=fitness_calculator,
+        )
         generations.append(generation)
+        logging.info(f"final size is {generation.get_generation_size()}.")
 
-    progress_plot(
-        generations=generations,
-        output=figure_dir / "fitness_progress.png",
-    )
+        progress_plot(
+            generations=generations,
+            database=database,
+            output=figure_dir / "fitness_progress.png",
+        )
+
+        # Output best structures as images.
+        best_chromosome = generation.select_best(1, database)[0]
+        best_name = f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
+        best_file = struct_output / (f"{best_name}_optc.mol")
+        viz = cgexplore.utilities.Pymol(
+            output_dir=best_dir,
+            file_prefix=f"{prefix}_g{generation_id}_best",
+            settings={
+                "grid_mode": 0,
+                "rayx": 1000,
+                "rayy": 1000,
+                "stick_rad": 0.7,
+                "vdw": 0,
+                "zoom_string": "custom",
+            },
+            pymol_path=pymol_path(),
+        )
+        viz.visualise(
+            [best_file],
+            orient_atoms=None,
+        )
 
     # Report.
     fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
@@ -711,60 +838,72 @@ def main():
         f"{len(found)} chromosomes found in EA (of "
         f"{len(chromo_it.chromosomes)})"
     )
+    xys = defaultdict(list)
     for entry in database.get_entries():
         tstr = entry.properties["topology"]
 
-        entry_chromo = tuple(entry.properties["chromosome"])
-        if entry_chromo in found:
-            ax.scatter(
-                entry.properties["opt_pore_data"]["min_distance"],
-                entry.properties["energy_per_bb"],
-                c="none",
-                edgecolor="k",
-                s=60,
-                marker="o",
-                alpha=1.0,
-                lw=2,
-            )
-            ax1.scatter(
-                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
-                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
-                c="none",
-                edgecolor="k",
-                s=60,
-                marker="o",
-                alpha=1.0,
-                lw=2,
-            )
+        if "fitness" not in entry.properties:
+            continue
 
         ax.scatter(
             entry.properties["opt_pore_data"]["min_distance"],
             entry.properties["energy_per_bb"],
-            c=colours()[tstr],
+            c=entry.properties["fitness"],
             edgecolor="none",
-            s=60,
+            s=70,
             marker="o",
             alpha=1.0,
+            vmin=0,
+            vmax=40,
+            cmap="Blues",
         )
-        ax1.scatter(
-            entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
-            entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
-            c=colours()[tstr],
-            edgecolor="none",
-            s=60,
-            marker="o",
-            alpha=1.0,
+        xys[
+            (
+                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
+                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
+            )
+        ].append(
+            (
+                entry.properties["topology"],
+                entry.properties["energy_per_bb"],
+                entry.properties["fitness"],
+            )
+        )
+
+    for x, y in xys:
+        fitness_threshold = 10
+        stable = [
+            i[0]
+            for i in xys[(x, y)]
+            if i[1] < isomer_energy() and i[2] > fitness_threshold
+        ]
+        # highfitness = [i[0] for i in xys[(x, y)] if i[2] > 10]
+        if len(stable) == 0:
+            cmaps = ["white"]
+        else:
+            cmaps = sorted([colours()[i] for i in stable])
+
+        if len(cmaps) > 8:
+            cmaps = ["k"]
+        cgexplore.utilities.draw_pie(
+            colours=cmaps,
+            xpos=x,
+            ypos=y,
+            size=400,
+            ax=ax1,
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("pore size", fontsize=16)
     ax.set_ylabel("energy", fontsize=16)
+    ax.set_yscale("log")
     ax1.tick_params(axis="both", which="major", labelsize=16)
     ax1.set_xlabel("ditopic", fontsize=16)
     ax1.set_ylabel("tritopic", fontsize=16)
+    ax1.set_title(f"E: {isomer_energy()}, F: {fitness_threshold}", fontsize=16)
 
     for tstr in colours():
-        ax.scatter(
+        ax1.scatter(
             None,
             None,
             c=colours()[tstr],
@@ -775,7 +914,7 @@ def main():
             label=tstr,
         )
 
-    ax.legend(fontsize=16)
+    ax1.legend(fontsize=16)
     fig.tight_layout()
     fig.savefig(
         figure_dir / "space_explored.png",
