@@ -132,7 +132,7 @@ def define_torsion(
         search_estring=tuple(
             element_from_type(test, present_beads) for test in interaction_key
         ),
-        measured_atom_ids=interaction_list[1],
+        measured_atom_ids=tuple(int(i) for i in interaction_list[1]),
         phi0=openmm.unit.Quantity(
             value=interaction_list[2],
             unit=openmm.unit.degrees,
