@@ -6,8 +6,8 @@ Author: Andrew Tarzia
 
 """
 
-import os
 import pathlib
+import subprocess as sp
 
 import stk
 
@@ -134,4 +134,9 @@ class Pymol:
             orient_atoms=orient_atoms,
             big_colour=big_colour,
         )
-        os.system(f"{self._pymol} -c -q {pml_file}")  # noqa: S605
+        _ = sp.run(
+            [f"{self._pymol}", "-c", "-q", f"{pml_file}"],  # noqa: S603
+            stdin=sp.PIPE,
+            capture_output=True,
+            check=True,
+        )
