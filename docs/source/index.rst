@@ -10,6 +10,7 @@
    Systems Optimisation <systems_optimisation>
    Terms <terms>
    Utilities <utilities>
+   Executables <executables>
    First Paper Example <first_paper_example>
 
 .. toctree::
