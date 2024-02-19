@@ -39,22 +39,6 @@ def stoich_map(tstr):
     }[tstr]
 
 
-def target_shapes(tstr):
-    """Map from topology to desired shape."""
-    return {
-        "4P6": "T-4",
-        "4P62": "SP-4",
-        "6P9": "TPR-6",
-        "8P12": "CU-8",
-        "3P6": "TP-3",
-        "4P8": "SP-4",
-        "4P82": "T-4",
-        "6P12": "OC-6",
-        "8P16": "SAPR-8",
-        "6P8": "OC-6",
-    }[tstr]
-
-
 def node_expected_topologies(tstr):
     """Number of nodes map to topologies."""
     return {
@@ -242,6 +226,66 @@ def analyse_cage(
         )
 
 
+def get_neighbour_library(
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+) -> list[str]:
+
+    modifiable_gene_ids = (3, 4)
+    new_chromosomes = []
+
+    for gene_id in modifiable_gene_ids:
+        curr_gene = chromosome.name[gene_id]
+
+        for i in (-2, -1, +1, +2):
+
+            new_gene = curr_gene + i
+            new_chromo = [i for i in chromosome.name]
+            new_chromo[gene_id] = new_gene
+
+            if new_gene < 0:
+                continue
+            new_chromosomes.append("".join(str(ng) for ng in new_chromo))
+
+    return new_chromosomes
+
+
+def yield_near_models(
+    molecule: stk.Molecule,
+    name: str,
+    output_dir: pathlib.Path | str,
+    neighbour_library: list,
+) -> abc.Iterator[stk.Molecule]:
+    """Yield structures of models with neighbouring force field parameters.
+
+    Keywords:
+
+        molecule:
+            The molecule to modify the position matrix of.
+
+        name:
+            Name of molecule, holding force field ID.
+
+        output_dir:
+            Directory with optimisation outputs saved.
+
+        neighbour_library:
+            IDs of force fields with nearby parameters, defined in
+            `define_forcefields.py`.
+
+    Returns:
+        An stk molecule.
+
+    """
+    ff_name = name.split("_")[1]
+
+    for new_ff_id in neighbour_library:
+        new_name = name.replace(ff_name, f"{new_ff_id}")
+        new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
+        if new_fina_mol_file.exists():
+            logging.info(f"found neigh: {new_fina_mol_file}")
+            yield molecule.with_structure_from_file(str(new_fina_mol_file))
+
+
 def optimise_cage(
     molecule,
     name,
@@ -249,6 +293,7 @@ def optimise_cage(
     forcefield,
     platform,
     database,
+    chromosome,
 ):
 
     fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
@@ -330,7 +375,9 @@ def optimise_cage(
     # Run optimisations of series of conformers with shifted out
     # building blocks.
     for test_molecule in cgexplore.utilities.yield_shifted_models(
-        temp_molecule, forcefield, kicks=(1, 2, 3, 4)
+        temp_molecule,
+        forcefield,
+        kicks=(1, 2, 3, 4),
     ):
         try:
             conformer = cgexplore.utilities.run_optimisation(
@@ -354,35 +401,29 @@ def optimise_cage(
                 raise error
 
     # Collect and optimise structures nearby in phase space.
-    logging.info(
-        f"optimisation of nearby structures of {name} - DOOOO (use filtered chromosome)"
-    )
-    # neighbour_library = get_neighbour_library(
-    #     ffid=forcefield.get_identifier(),
-    #     fftype=forcefield.get_prefix(),
-    # )
-    # for test_molecule in yield_near_models(
-    #     molecule=molecule,
-    #     name=name,
-    #     output_dir=output_dir,
-    #     neighbour_library=neighbour_library,
-    # ):
-    #     conformer = run_optimisation(
-    #         assigned_system=AssignedSystem(
-    #             molecule=test_molecule,
-    #             forcefield_terms=assigned_system.forcefield_terms,
-    #             system_xml=assigned_system.system_xml,
-    #             topology_xml=assigned_system.topology_xml,
-    #             bead_set=assigned_system.bead_set,
-    #             vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
-    #         ),
-    #         name=name,
-    #         file_suffix="nopt",
-    #         output_dir=output_dir,
-    #         # max_iterations=50,
-    #         platform=platform,
-    #     )
-    #     ensemble.add_conformer(conformer=conformer, source="nearby_opt")
+    neighbour_library = get_neighbour_library(chromosome=chromosome)
+    for test_molecule in yield_near_models(
+        molecule=molecule,
+        name=name,
+        output_dir=output_dir,
+        neighbour_library=neighbour_library,
+    ):
+        conformer = cgexplore.utilities.run_optimisation(
+            assigned_system=cgexplore.forcefields.AssignedSystem(
+                molecule=test_molecule,
+                forcefield_terms=assigned_system.forcefield_terms,
+                system_xml=assigned_system.system_xml,
+                topology_xml=assigned_system.topology_xml,
+                bead_set=assigned_system.bead_set,
+                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+            ),
+            name=name,
+            file_suffix="nopt",
+            output_dir=output_dir,
+            # max_iterations=50,
+            platform=platform,
+        )
+        ensemble.add_conformer(conformer=conformer, source="nearby_opt")
 
     num_steps = 20000
     traj_freq = 500
