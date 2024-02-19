@@ -232,7 +232,6 @@ class ChromosomeGenerator:
             definer = definer_dict[key]
             for comp_id, comp in enumerate(definer[1:]):
                 if not isinstance(comp, float | int | str):
-
                     self.add_gene(
                         iteration=tuple((key, i, comp_id + 1) for i in comp),
                         gene_type="term",
@@ -398,7 +397,6 @@ class ChromosomeGenerator:
         num_to_select: int,
         database: AtomliteDatabase,
     ) -> abc.Iterable[Chromosome]:
-
         # Select chromosomes to cross.
         if selection == "random":
             selected = generator.choice(

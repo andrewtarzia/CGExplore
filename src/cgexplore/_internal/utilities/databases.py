@@ -95,7 +95,6 @@ class AtomliteDatabase:
                     path=f"$.{property_key}",
                 )
             elif property_type is dict:
-
                 value = self.get_entry(key).properties[property_key]  # type: ignore[assignment]
             else:
                 msg = f"{property_key} has unexpected type"
