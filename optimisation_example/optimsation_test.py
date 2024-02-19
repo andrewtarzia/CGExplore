@@ -499,6 +499,77 @@ def optimise_cage(
     return min_energy_conformer
 
 
+def fitness_calculator(
+    chromosome,
+    chromosome_generator,
+    database,
+    calculation_output,
+    structure_output,
+):
+    target_pore = 3
+    name = f"{chromosome.prefix}_{chromosome.get_string()}"
+    entry = database.get_entry(name)
+    tstr = entry.properties["topology"]
+    pore = entry.properties["opt_pore_data"]["min_distance"]
+    energy = entry.properties["energy_per_bb"]
+    pore_diff = abs(target_pore - pore) / target_pore
+
+    # If energy is too high, return bad fitness.
+    if energy > isomer_energy() * 2:
+        database.add_properties(
+            key=name,
+            property_dict={"fitness": 0},
+        )
+        return 0
+
+    # Else, we check smaller topologies.
+
+    # Select all with the same chromosome except for topology graph to check
+    # for self-sorting.
+    differ_by_topology = chromosome_generator.select_similar_chromosome(
+        chromosome=chromosome,
+        free_gene_id=0,
+    )
+    other_topologies = {}
+    current_stoich = stoich_map(tstr)
+    for other_chromosome in differ_by_topology:
+        other_name = (
+            f"{other_chromosome.prefix}_" f"{other_chromosome.get_string()}"
+        )
+        other_tstr, _ = other_chromosome.get_topology_information()
+        # Only recalculate smaller or equivalent cages.
+        if stoich_map(other_tstr) <= current_stoich:
+            if not database.has_molecule(other_name):
+                # Run calculation.
+                structure_calculator(
+                    chromosome=other_chromosome,
+                    database=database,
+                    calculation_output=calculation_output,
+                    structure_output=structure_output,
+                )
+
+            other_entry = database.get_entry(other_name)
+            other_energy = other_entry.properties["energy_per_bb"]
+            other_topologies[other_tstr] = other_energy
+
+    if min(other_topologies.values()) < energy:
+        smaller_is_stable = True
+    else:
+        smaller_is_stable = False
+
+    if smaller_is_stable:
+        fitness = 0
+    else:
+        fitness = 1 / (pore_diff + energy)
+
+    database.add_properties(
+        key=name,
+        property_dict={"fitness": fitness},
+    )
+
+    return fitness
+
+
 def structure_calculator(
     chromosome,
     database,
@@ -522,6 +593,7 @@ def structure_calculator(
         forcefield=forcefield,
         platform=None,
         database=database,
+        chromosome=chromosome,
     )
 
     if conformer is not None:
@@ -700,93 +772,124 @@ def main():
     seeds = [4, 280, 999, 2196]
     num_generations = 20
     selection_size = 10
-    for target_pore in [1, 2, 3, 4, 5]:
 
-        def fitness_calculator(
-            chromosome,
-            chromosome_generator,
-            database,
-            calculation_output,
-            structure_output,
-        ):
+    for seed in seeds:
+        generator = np.random.default_rng(seed)
 
-            name = f"{chromosome.prefix}_{chromosome.get_string()}"
-            entry = database.get_entry(name)
-            tstr = entry.properties["topology"]
-            pore = entry.properties["opt_pore_data"]["min_distance"]
-            energy = entry.properties["energy_per_bb"]
-            pore_diff = abs(target_pore - pore) / target_pore
+        initial_population = chromo_it.select_random_population(
+            generator,
+            size=selection_size,
+        )
 
-            # If energy is too high, return bad fitness.
-            if energy > isomer_energy() * 2:
-                database.add_properties(
-                    key=name,
-                    property_dict={"fitness": 0},
-                )
-                return 0
+        # Yield this.
+        generations = []
+        generation = cgexplore.systems_optimisation.Generation(
+            chromosomes=initial_population,
+            chromosome_generator=chromo_it,
+            fitness_calculator=fitness_calculator,
+            structure_calculator=structure_calculator,
+            structure_output=struct_output,
+            calculation_output=calc_dir,
+            database=database,
+        )
+        generation.run_structures()
+        _ = generation.calculate_fitness_values()
+        generations.append(generation)
 
-            # Else, we check smaller topologies.
-
-            # Select all with the same chromosome except for topology graph to check
-            # for self-sorting.
-            differ_by_topology = (
-                chromosome_generator.select_similar_chromosome(
-                    chromosome=chromosome,
-                    free_gene_id=0,
+        for generation_id in range(1, num_generations + 1):
+            logging.info(f"doing generation {generation_id} of seed {seed}")
+            logging.info(
+                f"initial size is {generation.get_generation_size()}."
+            )
+            logging.info("doing mutations.")
+            merged_chromosomes = []
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    gene_range=chromo_it.get_term_ids(),
+                    selection="random",
+                    num_to_select=5,
+                    database=database,
                 )
             )
-            other_topologies = {}
-            current_stoich = stoich_map(tstr)
-            for other_chromosome in differ_by_topology:
-                other_name = (
-                    f"{other_chromosome.prefix}_"
-                    f"{other_chromosome.get_string()}"
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    gene_range=chromo_it.get_topo_ids(),
+                    selection="random",
+                    num_to_select=5,
+                    database=database,
                 )
-                other_tstr, _ = other_chromosome.get_topology_information()
-                # Only recalculate smaller or equivalent cages.
-                if stoich_map(other_tstr) <= current_stoich:
-                    if not database.has_molecule(other_name):
-                        # Run calculation.
-                        structure_calculator(
-                            chromosome=other_chromosome,
-                            database=database,
-                            calculation_output=calculation_output,
-                            structure_output=structure_output,
-                        )
-
-                    other_entry = database.get_entry(other_name)
-                    other_energy = other_entry.properties["energy_per_bb"]
-                    other_topologies[other_tstr] = other_energy
-
-            if min(other_topologies.values()) < energy:
-                smaller_is_stable = True
-            else:
-                smaller_is_stable = False
-
-            if smaller_is_stable:
-                fitness = 0
-            else:
-                fitness = 1 / (pore_diff + energy)
-
-            database.add_properties(
-                key=name,
-                property_dict={"fitness": fitness},
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    gene_range=chromo_it.get_prec_ids(),
+                    selection="random",
+                    num_to_select=5,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    gene_range=chromo_it.get_term_ids(),
+                    selection="roulette",
+                    num_to_select=5,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    gene_range=chromo_it.get_topo_ids(),
+                    selection="roulette",
+                    num_to_select=5,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    gene_range=chromo_it.get_prec_ids(),
+                    selection="roulette",
+                    num_to_select=5,
+                    database=database,
+                )
             )
 
-            return fitness
-
-        for seed in seeds:
-            generator = np.random.default_rng(seed)
-
-            initial_population = chromo_it.select_random_population(
-                generator,
-                size=selection_size,
+            # logging.info("Doing crossovers.")
+            merged_chromosomes.extend(
+                chromo_it.crossover_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    selection="random",
+                    num_to_select=5,
+                    database=database,
+                )
             )
 
-            # Yield this.
-            generations = []
+            merged_chromosomes.extend(
+                chromo_it.crossover_population(
+                    list_of_chromosomes=generation.chromosomes,
+                    generator=generator,
+                    selection="roulette",
+                    num_to_select=5,
+                    database=database,
+                )
+            )
+
+            # Add the best 5 to the new generation.
+            merged_chromosomes.extend(generation.select_best(selection_size=5))
+
             generation = cgexplore.systems_optimisation.Generation(
-                chromosomes=initial_population,
+                chromosomes=chromo_it.dedupe_population(merged_chromosomes),
                 chromosome_generator=chromo_it,
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
@@ -794,287 +897,169 @@ def main():
                 calculation_output=calc_dir,
                 database=database,
             )
+            logging.info(f"new size is {generation.get_generation_size()}.")
+
+            # Build, optimise and analyse each structure.
             generation.run_structures()
             _ = generation.calculate_fitness_values()
+
+            # Add final state to generations.
             generations.append(generation)
 
-            for generation_id in range(1, num_generations + 1):
-                logging.info(
-                    f"doing generation {generation_id} of seed {seed}"
-                )
-                logging.info(
-                    f"initial size is {generation.get_generation_size()}."
-                )
-                logging.info("doing mutations.")
-                merged_chromosomes = []
-                merged_chromosomes.extend(
-                    chromo_it.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromo_it.get_term_ids(),
-                        selection="random",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromo_it.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromo_it.get_topo_ids(),
-                        selection="random",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromo_it.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromo_it.get_prec_ids(),
-                        selection="random",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromo_it.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromo_it.get_term_ids(),
-                        selection="roulette",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromo_it.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromo_it.get_topo_ids(),
-                        selection="roulette",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromo_it.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromo_it.get_prec_ids(),
-                        selection="roulette",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-
-                # logging.info("Doing crossovers.")
-                merged_chromosomes.extend(
-                    chromo_it.crossover_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        selection="random",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-
-                merged_chromosomes.extend(
-                    chromo_it.crossover_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        selection="roulette",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-
-                # Add the best 5 to the new generation.
-                merged_chromosomes.extend(
-                    generation.select_best(selection_size=5)
-                )
-
-                generation = cgexplore.systems_optimisation.Generation(
-                    chromosomes=chromo_it.dedupe_population(
-                        merged_chromosomes
-                    ),
-                    chromosome_generator=chromo_it,
-                    fitness_calculator=fitness_calculator,
-                    structure_calculator=structure_calculator,
-                    structure_output=struct_output,
-                    calculation_output=calc_dir,
-                    database=database,
-                )
-                logging.info(
-                    f"new size is {generation.get_generation_size()}."
-                )
-
-                # Build, optimise and analyse each structure.
-                generation.run_structures()
-                _ = generation.calculate_fitness_values()
-
-                # Add final state to generations.
-                generations.append(generation)
-
-                # Select the best of the generation for the next generation.
-                # TODO: maybe make this roulete?
-                best = generation.select_best(selection_size=selection_size)
-                generation = cgexplore.systems_optimisation.Generation(
-                    chromosomes=chromo_it.dedupe_population(best),
-                    chromosome_generator=chromo_it,
-                    fitness_calculator=fitness_calculator,
-                    structure_calculator=structure_calculator,
-                    structure_output=struct_output,
-                    calculation_output=calc_dir,
-                    database=database,
-                )
-                logging.info(
-                    f"final size is {generation.get_generation_size()}."
-                )
-
-                progress_plot(
-                    generations=generations,
-                    output=figure_dir
-                    / f"fitness_progress_{seed}_{target_pore}.png",
-                    num_generations=num_generations,
-                )
-
-                # Output best structures as images.
-                best_chromosome = generation.select_best(selection_size=1)[0]
-                best_name = (
-                    f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
-                )
-                best_file = struct_output / (f"{best_name}_optc.mol")
-                viz = cgexplore.utilities.Pymol(
-                    output_dir=best_dir,
-                    file_prefix=f"{prefix}_{seed}_g{generation_id}_best",
-                    settings={
-                        "grid_mode": 0,
-                        "rayx": 1000,
-                        "rayy": 1000,
-                        "stick_rad": 0.7,
-                        "vdw": 0,
-                        "zoom_string": "custom",
-                    },
-                    pymol_path=pymol_path(),
-                ).visualise(
-                    [best_file],
-                    orient_atoms=None,
-                )
-
-            logging.info(f"top scorer is {best_name} (seed: {seed})")
-
-        # Report.
-        found = set()
-        for generation in generations:
-            for chromo in generation.chromosomes:
-                found.add(chromo.name)
-        logging.info(
-            f"{len(found)} chromosomes found in EA (of "
-            f"{chromo_it.get_num_chromosomes()})"
-        )
-
-        fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
-        ax, ax1 = axs
-        xys = defaultdict(list)
-        plotted = 0
-        for entry in database.get_entries():
-            tstr = entry.properties["topology"]
-
-            fitness = fitness_calculator(
-                chromosome=chromo_it.select_chromosome(
-                    tuple(entry.properties["chromosome"])
-                ),
+            # Select the best of the generation for the next generation.
+            # TODO: maybe make this roulete?
+            best = generation.select_best(selection_size=selection_size)
+            generation = cgexplore.systems_optimisation.Generation(
+                chromosomes=chromo_it.dedupe_population(best),
                 chromosome_generator=chromo_it,
-                database=database,
+                fitness_calculator=fitness_calculator,
+                structure_calculator=structure_calculator,
                 structure_output=struct_output,
                 calculation_output=calc_dir,
+                database=database,
+            )
+            logging.info(f"final size is {generation.get_generation_size()}.")
+
+            progress_plot(
+                generations=generations,
+                output=figure_dir / f"fitness_progress_{seed}.png",
+                num_generations=num_generations,
             )
 
-            ax.scatter(
-                entry.properties["opt_pore_data"]["min_distance"],
+            # Output best structures as images.
+            best_chromosome = generation.select_best(selection_size=1)[0]
+            best_name = (
+                f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
+            )
+            best_file = struct_output / (f"{best_name}_optc.mol")
+            viz = cgexplore.utilities.Pymol(
+                output_dir=best_dir,
+                file_prefix=f"{prefix}_{seed}_g{generation_id}_best",
+                settings={
+                    "grid_mode": 0,
+                    "rayx": 1000,
+                    "rayy": 1000,
+                    "stick_rad": 0.7,
+                    "vdw": 0,
+                    "zoom_string": "custom",
+                },
+                pymol_path=pymol_path(),
+            ).visualise(
+                [best_file],
+                orient_atoms=None,
+            )
+
+        logging.info(f"top scorer is {best_name} (seed: {seed})")
+
+    # Report.
+    found = set()
+    for generation in generations:
+        for chromo in generation.chromosomes:
+            found.add(chromo.name)
+    logging.info(
+        f"{len(found)} chromosomes found in EA (of "
+        f"{chromo_it.get_num_chromosomes()})"
+    )
+
+    fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
+    ax, ax1 = axs
+    xys = defaultdict(list)
+    plotted = 0
+    for entry in database.get_entries():
+        tstr = entry.properties["topology"]
+
+        fitness = fitness_calculator(
+            chromosome=chromo_it.select_chromosome(
+                tuple(entry.properties["chromosome"])
+            ),
+            chromosome_generator=chromo_it,
+            database=database,
+            structure_output=struct_output,
+            calculation_output=calc_dir,
+        )
+
+        ax.scatter(
+            entry.properties["opt_pore_data"]["min_distance"],
+            entry.properties["energy_per_bb"],
+            c=fitness,
+            edgecolor="none",
+            s=70,
+            marker="o",
+            alpha=1.0,
+            vmin=0,
+            vmax=40,
+            cmap="Blues",
+        )
+        xys[
+            (
+                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
+                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
+            )
+        ].append(
+            (
+                entry.properties["topology"],
                 entry.properties["energy_per_bb"],
-                c=fitness,
-                edgecolor="none",
-                s=70,
-                marker="o",
-                alpha=1.0,
-                vmin=0,
-                vmax=40,
-                cmap="Blues",
+                fitness,
             )
-            xys[
-                (
-                    entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
-                    entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
-                )
-            ].append(
-                (
-                    entry.properties["topology"],
-                    entry.properties["energy_per_bb"],
-                    fitness,
-                )
-            )
-            plotted += 1
-
-        for x, y in xys:
-            fitness_threshold = 10
-            stable = [
-                i[0]
-                for i in xys[(x, y)]
-                if i[1] < isomer_energy() and i[2] > fitness_threshold
-            ]
-            # highfitness = [i[0] for i in xys[(x, y)] if i[2] > 10]
-            if len(stable) == 0:
-                cmaps = ["white"]
-            else:
-                cmaps = sorted([colours()[i] for i in stable])
-
-            if len(cmaps) > 8:
-                cmaps = ["k"]
-            cgexplore.utilities.draw_pie(
-                colours=cmaps,
-                xpos=x,
-                ypos=y,
-                size=400,
-                ax=ax1,
-            )
-
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("pore size", fontsize=16)
-        ax.set_ylabel("energy", fontsize=16)
-        ax.set_yscale("log")
-        ax.set_title(
-            f"plotted: {plotted}, found: {len(found)}, "
-            f"possible: {chromo_it.get_num_chromosomes()}"
         )
-        ax1.tick_params(axis="both", which="major", labelsize=16)
-        ax1.set_xlabel("ditopic", fontsize=16)
-        ax1.set_ylabel("tritopic", fontsize=16)
-        ax1.set_title(
-            f"E: {isomer_energy()}, F: {fitness_threshold}", fontsize=16
+        plotted += 1
+
+    for x, y in xys:
+        fitness_threshold = 10
+        stable = [
+            i[0]
+            for i in xys[(x, y)]
+            if i[1] < isomer_energy() and i[2] > fitness_threshold
+        ]
+        # highfitness = [i[0] for i in xys[(x, y)] if i[2] > 10]
+        if len(stable) == 0:
+            cmaps = ["white"]
+        else:
+            cmaps = sorted([colours()[i] for i in stable])
+
+        if len(cmaps) > 8:
+            cmaps = ["k"]
+        cgexplore.utilities.draw_pie(
+            colours=cmaps,
+            xpos=x,
+            ypos=y,
+            size=400,
+            ax=ax1,
         )
 
-        for tstr in colours():
-            ax1.scatter(
-                None,
-                None,
-                c=colours()[tstr],
-                edgecolor="none",
-                s=60,
-                marker="o",
-                alpha=1.0,
-                label=tstr,
-            )
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("pore size", fontsize=16)
+    ax.set_ylabel("energy", fontsize=16)
+    ax.set_yscale("log")
+    ax.set_title(
+        f"plotted: {plotted}, found: {len(found)}, "
+        f"possible: {chromo_it.get_num_chromosomes()}"
+    )
+    ax1.tick_params(axis="both", which="major", labelsize=16)
+    ax1.set_xlabel("ditopic", fontsize=16)
+    ax1.set_ylabel("tritopic", fontsize=16)
+    ax1.set_title(f"E: {isomer_energy()}, F: {fitness_threshold}", fontsize=16)
 
-        ax1.legend(fontsize=16)
-        fig.tight_layout()
-        fig.savefig(
-            figure_dir / f"space_explored_{target_pore}.png",
-            dpi=360,
-            bbox_inches="tight",
+    for tstr in colours():
+        ax1.scatter(
+            None,
+            None,
+            c=colours()[tstr],
+            edgecolor="none",
+            s=60,
+            marker="o",
+            alpha=1.0,
+            label=tstr,
         )
-        plt.close()
+
+    ax1.legend(fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        figure_dir / f"space_explored.png",
+        dpi=360,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 if __name__ == "__main__":
