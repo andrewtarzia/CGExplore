@@ -185,6 +185,10 @@ class ChromosomeGenerator:
     chromosome_types: dict[int, str] = field(default_factory=dict)
     chromosomed_terms: dict[str, list[int]] = field(default_factory=dict)
 
+    def get_num_chromosomes(self) -> int:
+        """Return the number of chromosomes."""
+        return len(self.chromosomes)
+
     def add_gene(self, iteration: abc.Iterable, gene_type: str) -> None:
         """Add a gene to the chromosome generator, to be iterated over.
 
@@ -305,6 +309,22 @@ class ChromosomeGenerator:
         """Deduplicate the list of chromosomes."""
         tuples = {i.name for i in list_of_chromosomes}
         return [self.select_chromosome(i) for i in tuples]
+
+    def select_similar_chromosome(
+        self,
+        chromosome: Chromosome,
+        free_gene_id: int,
+    ) -> abc.Iterable[Chromosome]:
+        """Select chromosomes where only one gene is allowed to change."""
+        filter_range = [
+            i for i in sorted(self.chromosome_map.keys()) if i != free_gene_id
+        ]
+        filtered_chromosomes = [
+            i
+            for i in self.chromosomes
+            if all(i[k] == chromosome.name[k] for k in filter_range)
+        ]
+        return [self.select_chromosome(tuple(i)) for i in filtered_chromosomes]
 
     def mutate_population(  # noqa: PLR0913
         self,
