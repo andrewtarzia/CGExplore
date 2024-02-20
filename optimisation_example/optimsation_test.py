@@ -506,7 +506,7 @@ def fitness_calculator(
     calculation_output,
     structure_output,
 ):
-    target_pore = 3
+    target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
     entry = database.get_entry(name)
     tstr = entry.properties["topology"]

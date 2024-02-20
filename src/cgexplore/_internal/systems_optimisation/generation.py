@@ -24,7 +24,7 @@ logging.basicConfig(
 class Generation:
     """Define the chromosomes in a single generation."""
 
-    chromosomes: abc.Iterable[Chromosome]
+    chromosomes: list[Chromosome]
     chromosome_generator: ChromosomeGenerator
     fitness_calculator: abc.Callable
     structure_calculator: abc.Callable

@@ -296,15 +296,15 @@ class ChromosomeGenerator:
         self,
         generator: np.random.Generator,
         size: int,
-    ) -> abc.Iterable[Chromosome]:
+    ) -> list[Chromosome]:
         """Select `size` instances from population."""
         selected = list(generator.choice(list(self.chromosomes.keys()), size))
         return [self.select_chromosome(tuple(i)) for i in selected]
 
     def dedupe_population(
         self,
-        list_of_chromosomes: abc.Iterable[Chromosome],
-    ) -> abc.Iterable[Chromosome]:
+        list_of_chromosomes: list[Chromosome],
+    ) -> list[Chromosome]:
         """Deduplicate the list of chromosomes."""
         tuples = {i.name for i in list_of_chromosomes}
         return [self.select_chromosome(i) for i in tuples]
@@ -313,7 +313,7 @@ class ChromosomeGenerator:
         self,
         chromosome: Chromosome,
         free_gene_id: int,
-    ) -> abc.Iterable[Chromosome]:
+    ) -> list[Chromosome]:
         """Select chromosomes where only one gene is allowed to change."""
         filter_range = [
             i for i in sorted(self.chromosome_map.keys()) if i != free_gene_id
@@ -327,13 +327,13 @@ class ChromosomeGenerator:
 
     def mutate_population(  # noqa: PLR0913
         self,
-        list_of_chromosomes: abc.Iterable[Chromosome],
+        list_of_chromosomes: list[Chromosome],
         generator: np.random.Generator,
         gene_range: tuple[int, ...],
         selection: str,
         num_to_select: int,
         database: AtomliteDatabase,
-    ) -> abc.Iterable[Chromosome]:
+    ) -> list[Chromosome]:
         """Mutate a list of chromosomes in the gene range only.
 
         Available selections for which chromosomes to mutate:
@@ -352,18 +352,19 @@ class ChromosomeGenerator:
         # Select chromosomes to mutate.
         if selection == "random":
             selected = generator.choice(
-                list_of_chromosomes, size=num_to_select
+                np.asarray(list_of_chromosomes),
+                size=num_to_select,
             )
         elif selection == "roulette":
-            fitness_values = [
-                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[
+            fitness_values: list[float | int] = [
+                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[  # type: ignore[misc]
                     "fitness"
                 ]
                 for i in list_of_chromosomes
             ]
             weights = [i / sum(fitness_values) for i in fitness_values]
             selected = generator.choice(
-                list_of_chromosomes,
+                np.asarray(list_of_chromosomes),
                 size=num_to_select,
                 p=weights,
             )
@@ -391,28 +392,28 @@ class ChromosomeGenerator:
 
     def crossover_population(  # noqa: PLR0913
         self,
-        list_of_chromosomes: abc.Iterable[Chromosome],
+        list_of_chromosomes: list[Chromosome],
         generator: np.random.Generator,
         selection: str,
         num_to_select: int,
         database: AtomliteDatabase,
-    ) -> abc.Iterable[Chromosome]:
+    ) -> list[Chromosome]:
         # Select chromosomes to cross.
         if selection == "random":
             selected = generator.choice(
-                list_of_chromosomes,
+                np.asarray(list_of_chromosomes),
                 size=(num_to_select, 2),
             )
         elif selection == "roulette":
-            fitness_values = [
-                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[
+            fitness_values: list[float | int] = [
+                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[  # type: ignore[misc]
                     "fitness"
                 ]
                 for i in list_of_chromosomes
             ]
             weights = [i / sum(fitness_values) for i in fitness_values]
             selected = generator.choice(
-                list_of_chromosomes,
+                np.asarray(list_of_chromosomes),
                 size=(num_to_select, 2),
                 p=weights,
             )

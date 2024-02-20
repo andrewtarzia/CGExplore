@@ -127,12 +127,19 @@ def define_torsion(
     TODO: Handle other forces.
     TODO: Use generic dataclasses.
     """
+    measured_atom_ids = tuple(int(i) for i in interaction_list[1])
+    if len(measured_atom_ids) != 4:  # noqa: PLR2004
+        msg = (
+            f"trying to define torsion with measured atoms {measured_atom_ids}"
+            ", should be 4"
+        )
+        raise RuntimeError(msg)
     return TargetTorsion(
         search_string=tuple(i for i in interaction_key),
         search_estring=tuple(
             element_from_type(test, present_beads) for test in interaction_key
         ),
-        measured_atom_ids=tuple(int(i) for i in interaction_list[1]),
+        measured_atom_ids=measured_atom_ids,
         phi0=openmm.unit.Quantity(
             value=interaction_list[2],
             unit=openmm.unit.degrees,
