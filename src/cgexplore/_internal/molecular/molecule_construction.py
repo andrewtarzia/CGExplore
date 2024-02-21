@@ -7,10 +7,185 @@ Author: Andrew Tarzia
 """
 
 
+import itertools as it
+from dataclasses import dataclass
+
+import networkx as nx
 import numpy as np
 import stk
 
-from .beads import CgBead
+from .beads import CgBead, periodic_table
+
+
+class Graph:
+
+    def __init__(self, chromosome_list):
+        self.chromosome_list = chromosome_list
+        self.G = nx.Graph()
+
+    def nodes(self):
+        return self.G.nodes
+
+    def edges(self):
+        self.G.add_node(0)
+        node = 1
+        edges = []
+        for i in range(len(self.chromosome_list)):
+            for j in range(self.chromosome_list[i]):
+                edges.append([i, node])
+                self.G.add_edge(i, node)
+                node += 1
+        return edges
+
+
+def get_rotation(rad):
+    rad = rad
+    c, s = np.cos(rad), np.sin(rad)
+    return np.array(((c, -s), (s, c)))
+
+
+def Vnorm_R(v, R):
+    u = v / np.linalg.norm(v) * R
+    return u
+
+
+def place_beads(coords, n_bead, center_ndx, cluster, count):
+    ndx = count + 1
+    R = 4.7
+    # loop for the first bead to be added
+    if center_ndx == 0:
+        rad = 2 * np.pi / n_bead
+        rot_tmp = rad
+        for bead in range(n_bead):
+            u_tmp = np.dot(get_rotation(rot_tmp), (R, 0))
+            coords[ndx] = u_tmp + coords[center_ndx]
+            rot_tmp += rad
+            ndx += 1
+    # attach only one bead
+    elif n_bead == 1 and center_ndx > 0:
+        rad = 2 * np.pi
+        v = coords[center_ndx] - coords[cluster[1][0]]
+        u = Vnorm_R(np.dot(get_rotation(rad), v), R)
+        coords[ndx] = u + coords[center_ndx]
+    # loop for a multiple bead addition
+    else:
+        rad = -2 * np.pi / (n_bead + 1)
+        rot_tmp = rad
+        for bead in range(n_bead):
+            v_tmp = coords[center_ndx] - coords[cluster[1][0]]
+            u_tmp = Vnorm_R(np.dot(get_rotation(rot_tmp + np.pi), v_tmp), R)
+            coords[ndx] = u_tmp + coords[center_ndx]
+            rot_tmp += rad
+            ndx += 1
+
+
+def clusters(n):
+    tmp_connections = []
+    for connection in n:
+        for node in connection:
+            if (node in k for k in n):
+                tmp_connections.append([node, connection])
+    cl_list = []
+    for i in range(len(n) + 1):
+        k = []
+        for elem in tmp_connections:
+            if elem[0] == i:
+                k.append(elem[1])
+        cl_list.append(k)
+    t = []
+    for elem in cl_list:
+        t.append(set([val for sublist in elem for val in sublist]))
+    cluster = []
+    for o, l in enumerate(t):
+        li = []
+        for m in l:
+            li.append(m)
+        li.remove(o)
+        cluster.append([o, li])
+    return cluster
+
+
+class Coordinates:
+
+    def __init__(self, chromosome, connections, nB=7):
+        self.chromosome = chromosome
+        self.connections = connections
+        self.coords = np.zeros((nB, 2))
+        self.count = 0
+
+    def get(self):
+        for i, bead in enumerate(self.chromosome):
+            place_beads(self.coords, bead, i, self.connections[i], self.count)
+            self.count += bead
+        return self.coords
+
+
+@dataclass
+class PrecursorGenerator:
+    """Generate custom Precursor."""
+
+    composition: tuple[int, ...]
+    present_beads: tuple[CgBead, ...]
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+
+    def __post_init__(self) -> None:
+        graph = Graph(self.composition)
+        n = graph.edges()
+        cl = clusters(n)
+        coordinates = Coordinates(
+            self.composition, cl, sum(self.composition) + 1
+        ).get()
+        coordinates = np.array(
+            [np.array([i[0], i[1], 0]) for i in coordinates]
+        )
+
+        pt = periodic_table()
+        atoms = [
+            stk.Atom(i, pt[self.present_beads[i].element_string])
+            for i in graph.nodes()
+        ]
+        bonds = []
+        bonded = set()
+        for cluster in cl:
+            a1id = cluster[0]
+            for a2id in cluster[1]:
+
+                bond_pair = tuple(sorted((a1id, a2id)))
+                if bond_pair not in bonded:
+                    bonds.append(stk.Bond(atoms[a1id], atoms[a2id], order=1))
+                    bonded.add(bond_pair)
+
+        model = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=tuple(bonds),
+            position_matrix=coordinates,
+        )
+
+        new_fgs = tuple(
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{self.binder_beads[i].element_string}]"
+                    f"[{self.placer_beads[j].element_string}]"
+                ),
+                bonders=(0,),
+                deleters=(),
+                placers=(0, 1),
+            )
+            for i, j in it.product(
+                range(len(self.binder_beads)), range(len(self.placer_beads))
+            )
+        )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=model,
+            functional_groups=new_fgs,
+        )
+
+    def get_smiles(self) -> str:
+        return stk.Smiles().get_key(self.building_block)
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
 
 
 class Precursor:

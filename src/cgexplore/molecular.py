@@ -12,6 +12,7 @@ from cgexplore._internal.molecular.molecule_construction import (
     FourC0Arm,
     FourC1Arm,
     Precursor,
+    PrecursorGenerator,
     ThreeC0Arm,
     ThreeC1Arm,
     ThreeC2Arm,
@@ -23,6 +24,7 @@ from cgexplore._internal.molecular.molecule_construction import (
 
 __all__ = [
     "Precursor",
+    "PrecursorGenerator",
     "FourC0Arm",
     "FourC1Arm",
     "ThreeC0Arm",

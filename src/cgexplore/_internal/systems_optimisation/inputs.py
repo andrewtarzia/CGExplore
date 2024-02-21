@@ -290,7 +290,10 @@ class ChromosomeGenerator:
             )
 
     def define_chromosomes(self) -> None:
-        """Get all chromosomes that have been defined."""
+        """Get all chromosomes that have been defined.
+
+        If the chromosome space is large, this can be super expensive!
+        """
         all_chromosomes = {}
         for chromosome in self.yield_chromosomes():
             all_chromosomes[chromosome.name] = chromosome
@@ -323,6 +326,7 @@ class ChromosomeGenerator:
 
     def select_chromosome(self, chromosome: tuple[int, ...]) -> Chromosome:
         """Get chromosome."""
+        raise SystemExit("handle chromosomes usage 1")
         return self.chromosomes[chromosome]
 
     def select_random_population(
@@ -331,8 +335,43 @@ class ChromosomeGenerator:
         size: int,
     ) -> list[Chromosome]:
         """Select `size` instances from population."""
-        selected = list(generator.choice(list(self.chromosomes.keys()), size))
-        return [self.select_chromosome(tuple(i)) for i in selected]
+        selected = []
+
+        known_types = set(self.chromosome_types.values())
+        for _ in range(size):
+            gene_dict = {}
+            chromosome_name = [0 for i in range(len(self.chromosome_map))]
+            for gene_id in self.chromosome_map:
+                chromosome_options = range(len(self.chromosome_map[gene_id]))
+                gene = generator.choice(chromosome_options)
+                gene_value = self.chromosome_map[gene_id][gene]
+                gene_type = self.chromosome_types[gene_id]
+                gene_dict[gene_id] = (gene, gene_value, gene_type)
+                chromosome_name[gene_id] = gene
+
+            if "forcefield" in known_types:
+                # In this case, the definer dict changes per chromosome!
+                ff_id = next(
+                    i
+                    for i in self.chromosome_types
+                    if self.chromosome_types[i] == "forcefield"
+                )
+                definer_dict = gene_dict[ff_id][1]
+            else:
+                definer_dict = self.definer_dict
+            selected.append(
+                Chromosome(
+                    name=tuple(chromosome_name),
+                    prefix=self.prefix,
+                    present_beads=self.present_beads,
+                    vdw_bond_cutoff=self.vdw_bond_cutoff,
+                    gene_dict=gene_dict,
+                    definer_dict=definer_dict,
+                    chromosomed_terms=self.chromosomed_terms,
+                )
+            )
+
+        return selected
 
     def dedupe_population(
         self,
@@ -348,6 +387,7 @@ class ChromosomeGenerator:
         free_gene_id: int,
     ) -> list[Chromosome]:
         """Select chromosomes where only one gene is allowed to change."""
+        raise SystemExit("handle chromosomes usage 2")
         filter_range = [
             i for i in sorted(self.chromosome_map.keys()) if i != free_gene_id
         ]
@@ -405,6 +445,8 @@ class ChromosomeGenerator:
         else:
             msg = f"{selection} is not defined."
             raise RuntimeError(msg)
+
+        raise SystemExit("handle chromosomes usage 3")
         mutated = []
         for chromosome in selected:
             # Filter all chromosomes based on matching to selected chromosome
@@ -483,11 +525,7 @@ class ChromosomeGenerator:
         """Return a string representation of the ChromosomeGenerator."""
         _num_chromosomes = self.get_num_chromosomes()
         _num_genes = len(self.chromosome_map)
-        return (
-            f"{self.__class__.__name__}("
-            f"num_chromosomes={_num_chromosomes}, "
-            f"num_genes={_num_genes})"
-        )
+        return f"{self.__class__.__name__}(" f"num_genes={_num_genes})"
 
     def __repr__(self) -> str:
         """Return a string representation of the Chromosome."""
