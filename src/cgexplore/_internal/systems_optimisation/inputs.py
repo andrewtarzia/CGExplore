@@ -184,6 +184,7 @@ class ChromosomeGenerator:
     chromosome_map: dict[int, dict] = field(default_factory=dict)
     chromosome_types: dict[int, str] = field(default_factory=dict)
     chromosomed_terms: dict[str, list[int]] = field(default_factory=dict)
+    definer_dict: dict[str, tuple] = field(default_factory=dict)
 
     def get_num_chromosomes(self) -> int:
         """Return the number of chromosomes."""
@@ -201,18 +202,29 @@ class ChromosomeGenerator:
                 For term: use the `add_forcefield_dict`
                 For topology:
                 For precursor:
+                For forcefield:
 
             gene_type:
                 A string defining the gene type.
-                Can be `term`, `topology`, `precursor`.
+                Can be `term`, `topology`, `precursor`, `forcefield`.
 
         """
-        if gene_type not in ("term", "topology", "precursor"):
-            msg = "gene_type not `term`, `topology`, `precursor`"
+        if gene_type not in ("term", "topology", "precursor", "forcefield"):
+            msg = "gene_type not `term`, `topology`, `precursor`, `forcefield`"
             raise RuntimeError(msg)
+
+        known_types = set(self.chromosome_types.values())
+        if "term" in known_types and gene_type == "forcefield":
+            msg = "cannot add `forcefield` and `term` in the same chromosome."
+            raise RuntimeError(msg)
+        if "forcefield" in known_types and gene_type == "term":
+            msg = "cannot add `forcefield` and `term` in the same chromosome."
+            raise RuntimeError(msg)
+
         chromo_index = len(self.chromosome_map)
         self.chromosome_types[chromo_index] = gene_type
         self.chromosome_map[chromo_index] = dict(enumerate(iteration))
+
         if gene_type == "term":
             term_key = next(
                 i[0] for i in self.chromosome_map[chromo_index].values()
@@ -240,30 +252,48 @@ class ChromosomeGenerator:
                         gene_type="term",
                     )
 
-    def define_chromosomes(self) -> None:
-        """Get all chromosomes that have been defined."""
+    def yield_chromosomes(self) -> abc.Iterable[Chromosome]:
+        """Yield chromosomes."""
         chromosome_ids = sorted(self.chromosome_map.keys())
 
         iteration = it.product(
             *(self.chromosome_map[i] for i in chromosome_ids)
         )
-        all_chromosomes = {}
-        for chromosome in iteration:
+
+        known_types = set(self.chromosome_types.values())
+        for chromosome_name in iteration:
             gene_dict = {}
-            for gene_id, gene in enumerate(chromosome):
+            for gene_id, gene in enumerate(chromosome_name):
                 gene_value = self.chromosome_map[gene_id][gene]
                 gene_type = self.chromosome_types[gene_id]
                 gene_dict[gene_id] = (gene, gene_value, gene_type)
 
-            all_chromosomes[chromosome] = Chromosome(
-                name=chromosome,
+            if "forcefield" in known_types:
+                # In this case, the definer dict changes per chromosome!
+                ff_id = next(
+                    i
+                    for i in self.chromosome_types
+                    if self.chromosome_types[i] == "forcefield"
+                )
+                definer_dict = gene_dict[ff_id][1]
+            else:
+                definer_dict = self.definer_dict
+
+            yield Chromosome(
+                name=chromosome_name,
                 prefix=self.prefix,
                 present_beads=self.present_beads,
                 vdw_bond_cutoff=self.vdw_bond_cutoff,
                 gene_dict=gene_dict,
-                definer_dict=self.definer_dict,
+                definer_dict=definer_dict,
                 chromosomed_terms=self.chromosomed_terms,
             )
+
+    def define_chromosomes(self) -> None:
+        """Get all chromosomes that have been defined."""
+        all_chromosomes = {}
+        for chromosome in self.yield_chromosomes():
+            all_chromosomes[chromosome.name] = chromosome
         self.chromosomes = all_chromosomes
         logging.info(f"there are {len(self.chromosomes)} chromosomes")
 
