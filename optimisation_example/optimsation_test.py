@@ -226,66 +226,6 @@ def analyse_cage(
         )
 
 
-def get_neighbour_library(
-    chromosome: cgexplore.systems_optimisation.Chromosome,
-) -> list[str]:
-
-    modifiable_gene_ids = (3, 4)
-    new_chromosomes = []
-
-    for gene_id in modifiable_gene_ids:
-        curr_gene = chromosome.name[gene_id]
-
-        for i in (-2, -1, +1, +2):
-
-            new_gene = curr_gene + i
-            new_chromo = [i for i in chromosome.name]
-            new_chromo[gene_id] = new_gene
-
-            if new_gene < 0:
-                continue
-            new_chromosomes.append("".join(str(ng) for ng in new_chromo))
-
-    return new_chromosomes
-
-
-def yield_near_models(
-    molecule: stk.Molecule,
-    name: str,
-    output_dir: pathlib.Path | str,
-    neighbour_library: list,
-) -> abc.Iterator[stk.Molecule]:
-    """Yield structures of models with neighbouring force field parameters.
-
-    Keywords:
-
-        molecule:
-            The molecule to modify the position matrix of.
-
-        name:
-            Name of molecule, holding force field ID.
-
-        output_dir:
-            Directory with optimisation outputs saved.
-
-        neighbour_library:
-            IDs of force fields with nearby parameters, defined in
-            `define_forcefields.py`.
-
-    Returns:
-        An stk molecule.
-
-    """
-    ff_name = name.split("_")[1]
-
-    for new_ff_id in neighbour_library:
-        new_name = name.replace(ff_name, f"{new_ff_id}")
-        new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
-        if new_fina_mol_file.exists():
-            logging.info(f"found neigh: {new_fina_mol_file}")
-            yield molecule.with_structure_from_file(str(new_fina_mol_file))
-
-
 def optimise_cage(
     molecule,
     name,
@@ -401,8 +341,11 @@ def optimise_cage(
                 raise error
 
     # Collect and optimise structures nearby in phase space.
-    neighbour_library = get_neighbour_library(chromosome=chromosome)
-    for test_molecule in yield_near_models(
+    neighbour_library = cgexplore.systems_optimisation.get_neighbour_library(
+        chromosome=chromosome.name,
+        modifiable_gene_ids=(3, 4),
+    )
+    for test_molecule in cgexplore.systems_optimisation.yield_near_models(
         molecule=molecule,
         name=name,
         output_dir=output_dir,
