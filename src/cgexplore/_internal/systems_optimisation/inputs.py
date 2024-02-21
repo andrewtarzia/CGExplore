@@ -170,7 +170,7 @@ class Chromosome:
         return f"{self.__class__.__name__}({self.get_string()})"
 
     def __repr__(self) -> str:
-        """Return a string representation of the Ensemble."""
+        """Return a string representation of the Chromosome."""
         return str(self)
 
 
@@ -187,7 +187,10 @@ class ChromosomeGenerator:
 
     def get_num_chromosomes(self) -> int:
         """Return the number of chromosomes."""
-        return len(self.chromosomes)
+        try:
+            return len(self.chromosomes)
+        except AttributeError:
+            return 0
 
     def add_gene(self, iteration: abc.Iterable, gene_type: str) -> None:
         """Add a gene to the chromosome generator, to be iterated over.
@@ -445,3 +448,17 @@ class ChromosomeGenerator:
             crossed.append(self.select_chromosome(new_chromosome2))
 
         return crossed
+
+    def __str__(self) -> str:
+        """Return a string representation of the ChromosomeGenerator."""
+        _num_chromosomes = self.get_num_chromosomes()
+        _num_genes = len(self.chromosome_map)
+        return (
+            f"{self.__class__.__name__}("
+            f"num_chromosomes={_num_chromosomes}, "
+            f"num_genes={_num_genes})"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Chromosome."""
+        return str(self)
