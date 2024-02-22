@@ -66,6 +66,10 @@ class AtomliteDatabase:
             atomlite.PropertyEntry(key=key, properties=property_dict)
         )
 
+    def remove_property(self, key: str, property_path: str) -> None:
+        """Add properties to an entry by key."""
+        self._db.remove_property(key=key, path=property_path)
+
     def get_property(
         self,
         key: str,
