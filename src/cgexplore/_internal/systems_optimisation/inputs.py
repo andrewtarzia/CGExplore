@@ -326,8 +326,35 @@ class ChromosomeGenerator:
 
     def select_chromosome(self, chromosome: tuple[int, ...]) -> Chromosome:
         """Get chromosome."""
-        raise SystemExit("handle chromosomes usage 1")
-        return self.chromosomes[chromosome]
+        known_types = set(self.chromosome_types.values())
+        gene_dict = {}
+        for gene_id in self.chromosome_map:
+            gene = chromosome[gene_id]
+
+            gene_value = self.chromosome_map[gene_id][gene]
+            gene_type = self.chromosome_types[gene_id]
+            gene_dict[gene_id] = (gene, gene_value, gene_type)
+
+        if "forcefield" in known_types:
+            # In this case, the definer dict changes per chromosome!
+            ff_id = next(
+                i
+                for i in self.chromosome_types
+                if self.chromosome_types[i] == "forcefield"
+            )
+            definer_dict = gene_dict[ff_id][1]
+        else:
+            definer_dict = self.definer_dict
+
+        return Chromosome(
+            name=tuple(chromosome),
+            prefix=self.prefix,
+            present_beads=self.present_beads,
+            vdw_bond_cutoff=self.vdw_bond_cutoff,
+            gene_dict=gene_dict,
+            definer_dict=definer_dict,
+            chromosomed_terms=self.chromosomed_terms,
+        )
 
     def select_random_population(
         self,
@@ -387,16 +414,21 @@ class ChromosomeGenerator:
         free_gene_id: int,
     ) -> list[Chromosome]:
         """Select chromosomes where only one gene is allowed to change."""
-        raise SystemExit("handle chromosomes usage 2")
-        filter_range = [
-            i for i in sorted(self.chromosome_map.keys()) if i != free_gene_id
-        ]
-        filtered_chromosomes = [
-            i
-            for i in self.chromosomes
-            if all(i[k] == chromosome.name[k] for k in filter_range)
-        ]
-        return [self.select_chromosome(tuple(i)) for i in filtered_chromosomes]
+        selected = []
+        filter_range = tuple(
+            i for i in self.chromosome_map if i != free_gene_id
+        )
+        for new_chromosome in self.yield_chromosomes():
+            if any(
+                new_chromosome.name[k] != chromosome.name[k]
+                for k in filter_range
+            ):
+                continue
+            if chromosome.name == new_chromosome.name:
+                continue
+            selected.append(new_chromosome)
+
+        return selected
 
     def mutate_population(  # noqa: PLR0913
         self,
@@ -410,18 +442,15 @@ class ChromosomeGenerator:
         """Mutate a list of chromosomes in the gene range only.
 
         Available selections for which chromosomes to mutate:
-            random - uses generator.choice()
-            roulette - adds weight to generator.choice() based on
+
+            random:
+                uses generator.choice()
+
+            roulette:
+                adds weight to generator.choice() based on
                 fitness/sum(fitness)
 
         """
-        # Define which genes we are mutating.
-        filter_range = [
-            i
-            for i in sorted(self.chromosome_map.keys())
-            if i not in gene_range
-        ]
-
         # Select chromosomes to mutate.
         if selection == "random":
             selected = generator.choice(
@@ -446,20 +475,43 @@ class ChromosomeGenerator:
             msg = f"{selection} is not defined."
             raise RuntimeError(msg)
 
-        raise SystemExit("handle chromosomes usage 3")
         mutated = []
+        known_types = set(self.chromosome_types.values())
         for chromosome in selected:
-            # Filter all chromosomes based on matching to selected chromosome
-            # in gene region.
-            filtered_chromosomes = [
-                i
-                for i in self.chromosomes
-                if all(i[k] == chromosome.name[k] for k in filter_range)
-            ]
-            # Add the mutated chromosome selected from the filter chromosomes.
+            gene_dict = {}
+            chromosome_name = [0 for i in range(len(self.chromosome_map))]
+            for gene_id in self.chromosome_map:
+                if gene_id in gene_range:
+                    gene = chromosome.name[gene_id]
+                else:
+                    chromosome_options = tuple(
+                        range(len(self.chromosome_map[gene_id]))
+                    )
+                    gene = generator.choice(chromosome_options)
+                gene_value = self.chromosome_map[gene_id][gene]
+                gene_type = self.chromosome_types[gene_id]
+                gene_dict[gene_id] = (gene, gene_value, gene_type)
+                chromosome_name[gene_id] = gene
+
+            if "forcefield" in known_types:
+                # In this case, the definer dict changes per chromosome!
+                ff_id = next(
+                    i
+                    for i in self.chromosome_types
+                    if self.chromosome_types[i] == "forcefield"
+                )
+                definer_dict = gene_dict[ff_id][1]
+            else:
+                definer_dict = self.definer_dict
             mutated.append(
-                self.select_chromosome(
-                    tuple(generator.choice(filtered_chromosomes))
+                Chromosome(
+                    name=tuple(chromosome_name),
+                    prefix=self.prefix,
+                    present_beads=self.present_beads,
+                    vdw_bond_cutoff=self.vdw_bond_cutoff,
+                    gene_dict=gene_dict,
+                    definer_dict=definer_dict,
+                    chromosomed_terms=self.chromosomed_terms,
                 )
             )
 
