@@ -45,35 +45,35 @@ To install :mod:`.CGExplore`, you need to follow these steps:
 
 Create a `conda` or `mamba` environment::
 
-  $ mamba create -n NAME python=3.11
+  mamba create -n NAME python=3.11
 
 Activate the environment::
 
-  $ conda activate NAME
+  conda activate NAME
 
 
 Install :mod:`.CGExplore` with pip::
 
-  $ pip install cgexplore
+  pip install cgexplore
 
 
 Install `OpenMM` `docs <https://openmm.org/>`_::
 
-  $ mamba install openmm
+  mamba install openmm
 
 or::
 
-  $ conda install -c conda-forge openmm
+  conda install -c conda-forge openmm
 
 
 Install `openmmtools` `docs <https://openmmtools.readthedocs.io/en/stable/gettingstarted.html>`_::
 
-  $ mamba install openmmtools
+  mamba install openmmtools
 
 or::
 
-  $ conda config --add channels omnia --add channels conda-forge
-  $ conda install openmmtools
+  conda config --add channels omnia --add channels conda-forge
+  conda install openmmtools
 
 
 Then, update directory structure in `env_set.py` if using example code.
@@ -94,7 +94,7 @@ Clone :mod:`.CGExplore` from `here <https://github.com/andrewtarzia/CGExplore>`_
 From :mod:`.CGExplore` directory use `just <https://github.com/casey/just>`_ to
 install a dev environment with::
 
-  $ just dev
+  just dev
 
 And then follow the previous steps.
 

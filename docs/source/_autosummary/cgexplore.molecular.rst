@@ -22,11 +22,15 @@ cgexplore.molecular
       Ensemble
       FourC0Arm
       FourC1Arm
+      LinearPrecursor
       Precursor
+      PrecursorGenerator
+      SquarePrecursor
       ThreeC0Arm
       ThreeC1Arm
       ThreeC2Arm
       Timestep
+      TrianglePrecursor
       TwoC0Arm
       TwoC1Arm
       TwoC2Arm

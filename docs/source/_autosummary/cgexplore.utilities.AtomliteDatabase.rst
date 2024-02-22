@@ -27,6 +27,7 @@ cgexplore.utilities.AtomliteDatabase
       ~AtomliteDatabase.has_molecule
       ~AtomliteDatabase.keep_if
       ~AtomliteDatabase.remove_entry
+      ~AtomliteDatabase.remove_property
    
    
 

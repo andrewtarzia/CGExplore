@@ -52,14 +52,84 @@ by the user of the form:
 
 .. code-block:: python
 
-  def fitness_calculator():
-    pass
+  def fitness_calculator(
+    chromosome,
+    chromosome_generator,
+    database,
+    calculation_output,
+    structure_output,
+  ):
+    """Calculate the fitness of a chromosome.
+
+    All arguments are needed, even if not used.
+    """
+    target_pore = 2
+    name = f"{chromosome.prefix}_{chromosome.get_string()}"
+
+    # Extract needed properties from database (done in `structure_calculator`).
+    entry = database.get_entry(name)
+    tstr = entry.properties["topology"]
+    pore = entry.properties["opt_pore_data"]["min_distance"]
+    energy = entry.properties["energy_per_bb"]
+    pore_diff = abs(target_pore - pore) / target_pore
+
+    fitness = 1 / (pore_diff + energy)
+
+    # Add fitness to database.
+    database.add_properties(
+        key=name,
+        property_dict={"fitness": fitness},
+    )
+
+    return fitness
 
 
 .. code-block:: python
 
-  def structure_calculator():
-    pass
+  def structure_calculator(
+    chromosome,
+    database,
+    calculation_output,
+    structure_output,
+  ):
+    """Define model and calculate its properties.
+
+    All arguments are needed, even if not used.
+    """
+    # Build structure.
+    topology_str, topology_fun = chromosome.get_topology_information()
+    building_blocks = chromosome.get_building_blocks()
+    cage = stk.ConstructedMolecule(topology_fun(building_blocks))
+    name = f"{chromosome.prefix}_{chromosome.get_string()}"
+
+    # Select forcefield by chromosome.
+    forcefield = chromosome.get_forcefield()
+
+    # Optimise with some procedure.
+    conformer = optimise_cage(
+        molecule=cage,
+        name=name,
+        output_dir=calculation_output,
+        forcefield=forcefield,
+        platform=None,
+        database=database,
+        chromosome=chromosome,
+    )
+
+    # Analyse cage.
+    analyse_cage(
+        name=name,
+        output_dir=calculation_output,
+        forcefield=forcefield,
+        node_element="Ag",
+        database=database,
+        chromosome=chromosome,
+    )
+
+
+Anatomies of a script
+---------------------
 
 .. important::
-  Add further anatomies (like figures) from the test script.
+  WIP: I need to add further examples (like figures) from the test script.
+

@@ -33,6 +33,7 @@
    cgexplore.forcefields
    cgexplore.molecular
    cgexplore.optimisation
+   cgexplore.systems_optimisation
    cgexplore.terms
    cgexplore.utilities
 
