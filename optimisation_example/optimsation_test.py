@@ -79,7 +79,7 @@ def analyse_cage(
         property_dict={
             "cage_name": name,
             "prefix": name.split("_")[0],
-            "chromosome": chromosome.name,
+            "chromosome": tuple(int(i) for i in chromosome.name),
             "topology": topology_str,
         },
     )
@@ -273,6 +273,7 @@ def optimise_cage(
         )
         return ensemble.get_lowest_e_conformer()
 
+    logging.info(f"optimising {name}")
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
     ensemble = cgexplore.molecular.Ensemble(
         base_molecule=molecule,
@@ -342,7 +343,7 @@ def optimise_cage(
 
     # Collect and optimise structures nearby in phase space.
     neighbour_library = cgexplore.systems_optimisation.get_neighbour_library(
-        chromosome=chromosome.name,
+        chromosome_name=chromosome.name,
         modifiable_gene_ids=(3, 4),
     )
     for test_molecule in cgexplore.systems_optimisation.yield_near_models(
@@ -469,15 +470,17 @@ def fitness_calculator(
 
     # Select all with the same chromosome except for topology graph to check
     # for self-sorting.
+
     differ_by_topology = chromosome_generator.select_similar_chromosome(
         chromosome=chromosome,
         free_gene_id=0,
     )
+
     other_topologies = {}
     current_stoich = stoich_map(tstr)
     for other_chromosome in differ_by_topology:
         other_name = (
-            f"{other_chromosome.prefix}_" f"{other_chromosome.get_string()}"
+            f"{other_chromosome.prefix}_{other_chromosome.get_string()}"
         )
         other_tstr, _ = other_chromosome.get_topology_information()
         # Only recalculate smaller or equivalent cages.
@@ -494,8 +497,7 @@ def fitness_calculator(
             other_entry = database.get_entry(other_name)
             other_energy = other_entry.properties["energy_per_bb"]
             other_topologies[other_tstr] = other_energy
-
-    if min(other_topologies.values()) < energy:
+    if len(other_topologies) > 0 and min(other_topologies.values()) < energy:
         smaller_is_stable = True
     else:
         smaller_is_stable = False

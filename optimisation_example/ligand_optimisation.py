@@ -7,26 +7,10 @@ from dataclasses import dataclass
 import cgexplore
 import matplotlib.pyplot as plt
 import numpy as np
+import math
 import stk
 import openmm
 import itertools as it
-
-
-def pymol_path():
-    return pathlib.Path(
-        "/home/atarzia/software/pymol-open-source-build/bin/pymol"
-    )
-
-
-def shape_path():
-    return pathlib.Path(
-        "/home/atarzia/software/shape_2.1_linux_64/"
-        "SHAPE_2.1_linux_64/shape_2.1_linux64"
-    )
-
-
-def isomer_energy():
-    return 0.3
 
 
 def colours():
@@ -48,14 +32,14 @@ def analyse_ligand(
     forcefield,
     chromosome,
 ):
-    entry = database.get_entry(key=file_name)
-    molecule = database.get_molecule(key=file_name)
+    entry = database.get_entry(key=name)
+    molecule = database.get_molecule(key=name)
     properties = entry.properties
 
     topology_str, _ = chromosome.get_topology_information()
 
     database.add_properties(
-        key=file_name,
+        key=name,
         property_dict={
             "prefix": file_name.split("_")[0],
             "repeating_unit": topology_str,
@@ -97,7 +81,7 @@ def analyse_ligand(
         res_dict = {
             "strain_energy": fin_energy,
         }
-        database.add_properties(key=file_name, property_dict=res_dict)
+        database.add_properties(key=name, property_dict=res_dict)
 
     if "dihedral_data" not in properties:
         # Always want to extract target torions if present.
@@ -112,7 +96,7 @@ def analyse_ligand(
             as_search_string=True,
         )
         database.add_properties(
-            key=file_name,
+            key=name,
             property_dict={
                 "bond_data": bond_data,
                 "angle_data": angle_data,
@@ -173,7 +157,7 @@ def analyse_ligand(
         }
 
         database.add_properties(
-            key=file_name,
+            key=name,
             property_dict={"forcefield_dict": forcefield_dict},
         )
 
@@ -195,7 +179,7 @@ def fitness_calculator(
 
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
     file_name = known_conversions[name]
-    entry = database.get_entry(file_name)
+    entry = database.get_entry(name)
     energy = entry.properties["strain_energy"]
 
     if energy < 1e6:
@@ -249,7 +233,7 @@ def optimise_ligand(
     opt1_mol_file = pathlib.Path(output_dir) / f"{file_name}_opted1.mol"
 
     if opt1_mol_file.exists():
-        molecule = molecule.with_structure_from_file(str(opt1_mol_file))
+        return molecule.with_structure_from_file(str(opt1_mol_file))
     else:
         logging.info(f"optimising {name}, no max_iterations")
         assigned_system = forcefield.assign_terms(
@@ -257,32 +241,89 @@ def optimise_ligand(
             name=file_name,
             output_dir=output_dir,
         )
-        opt = cgexplore.optimisation.CGOMMOptimizer(
-            fileprefix=file_name,
+        minimum_energy_conformer = cgexplore.utilities.run_optimisation(
+            assigned_system=assigned_system,
+            name=name,
+            file_suffix="opt1",
             output_dir=output_dir,
+            # max_iterations=50,
             platform=platform,
         )
-        molecule = opt.optimize(assigned_system)
-        molecule = molecule.with_centroid(np.array((0, 0, 0)))
-        molecule.write(opt1_mol_file)
-        energy_decomp = opt.read_final_energy_decomposition()
-        logging.info("optimised with energy:")
-        for i in energy_decomp:
-            e, u = energy_decomp[i]
-            logging.info(f"{i}: {round(e, 2)} [{u}]")
+        minimum_energy = minimum_energy_conformer.energy_decomposition[
+            "total energy"
+        ][0]
+        if math.isnan(minimum_energy):
+            minimum_energy = 1e24
+            minimum_energy_conformer = None
+        else:
+            molecule = minimum_energy_conformer.molecule
 
-        database.add_molecule(molecule=molecule, key=file_name)
+        # Run optimisations of series of conformers with shifted out
+        # building blocks.
+        for test_molecule in cgexplore.utilities.yield_shifted_models(
+            molecule,
+            forcefield,
+            kicks=(1, 2, 3, 4),
+        ):
+            try:
+                conformer = cgexplore.utilities.run_optimisation(
+                    assigned_system=cgexplore.forcefields.AssignedSystem(
+                        molecule=test_molecule,
+                        forcefield_terms=assigned_system.forcefield_terms,
+                        system_xml=assigned_system.system_xml,
+                        topology_xml=assigned_system.topology_xml,
+                        bead_set=assigned_system.bead_set,
+                        vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+                    ),
+                    name=name,
+                    file_suffix="sopt",
+                    output_dir=output_dir,
+                    # max_iterations=50,
+                    platform=platform,
+                )
+                energy = conformer.energy_decomposition["total energy"][0]
+                if math.isnan(energy):
+                    continue
+                if energy < minimum_energy:
+                    minimum_energy = energy
+                    minimum_energy_conformer = cgexplore.molecular.Conformer(
+                        molecule=conformer.molecule,
+                        energy_decomposition=conformer.energy_decomposition,
+                        source="kick_opt",
+                    )
+            except openmm.OpenMMException as error:
+                if "Particle coordinate is NaN. " not in str(error):
+                    raise error
+
+        if minimum_energy_conformer is None:
+            print(minimum_energy, minimum_energy_conformer)
+            raise SystemExit
+
+        minimum_energy_conformer.molecule = (
+            minimum_energy_conformer.molecule.with_centroid(
+                np.array((0, 0, 0))
+            )
+        )
+        minimum_energy_conformer.molecule.write(opt1_mol_file)
+
+        database.add_molecule(
+            molecule=minimum_energy_conformer.molecule,
+            key=name,
+        )
         database.add_properties(
-            key=file_name,
+            key=name,
             property_dict={
-                "energy_decomposition": energy_decomp,
+                "energy_decomposition": (
+                    minimum_energy_conformer.energy_decomposition
+                ),
                 "optimised": True,
+                "source": minimum_energy_conformer.source,
                 "name": name,
                 "file_name": file_name,
             },
         )
 
-    return molecule
+    return minimum_energy_conformer.molecule
 
 
 def structure_calculator(
@@ -411,6 +452,7 @@ class PolymerTopology:
 
 
 def main():
+    raise SystemExit("this does not work yet!")
     wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
     struct_output = wd / "ligand_structures"
     cgexplore.utilities.check_directory(struct_output)
@@ -474,37 +516,45 @@ def main():
     # A precursors.
     chromosome_gen.add_gene(
         iteration=(
-            cgexplore.molecular.PrecursorGenerator(
-                composition=(2,),
-                present_beads=(abead, abead, bbead),
-                binder_beads=(abead, bbead),
-                placer_beads=(abead,),
+            cgexplore.molecular.LinearPrecursor(
+                composition=(1,),
+                present_beads=(abead, ebead),
+                binder_beads=(abead,),
+                placer_beads=(ebead,),
+            ),
+            cgexplore.molecular.TrianglePrecursor(
+                present_beads=(abead, bbead, ebead),
+                binder_beads=(abead,),
+                placer_beads=(bbead, ebead),
+            ),
+            cgexplore.molecular.SquarePrecursor(
+                present_beads=(abead, bbead, bbead, ebead),
+                binder_beads=(abead,),
+                placer_beads=(bbead, ebead),
+            ),
+            cgexplore.molecular.SquarePrecursor(
+                present_beads=(abead, bbead, ebead, bbead),
+                binder_beads=(abead,),
+                placer_beads=(bbead, bbead),
             ),
         ),
         gene_type="precursor",
     )
+
     # B precursors.
     chromosome_gen.add_gene(
         iteration=(
-            cgexplore.molecular.PrecursorGenerator(
-                composition=(6,),
-                present_beads=(
-                    abead,
-                    bbead,
-                    bbead,
-                    cbead,
-                    bbead,
-                    bbead,
-                    cbead,
-                ),
+            cgexplore.molecular.LinearPrecursor(
+                composition=(1,),
+                present_beads=(cbead, cbead),
                 binder_beads=(cbead,),
-                placer_beads=(abead,),
+                placer_beads=(cbead,),
             ),
-            cgexplore.molecular.PrecursorGenerator(
-                composition=(2, 1),
-                present_beads=(abead, abead, bbead, bbead),
-                binder_beads=(bbead,),
-                placer_beads=(abead,),
+            cgexplore.molecular.LinearPrecursor(
+                composition=(2,),
+                present_beads=(cbead, dbead, cbead),
+                binder_beads=(cbead,),
+                placer_beads=(dbead,),
             ),
         ),
         gene_type="precursor",
@@ -512,11 +562,26 @@ def main():
     # C precursors.
     chromosome_gen.add_gene(
         iteration=(
-            cgexplore.molecular.PrecursorGenerator(
-                composition=(2,),
-                present_beads=(abead, bbead, cbead),
-                binder_beads=(bbead, cbead),
-                placer_beads=(abead,),
+            cgexplore.molecular.LinearPrecursor(
+                composition=(1,),
+                present_beads=(abead, ebead),
+                binder_beads=(abead,),
+                placer_beads=(ebead,),
+            ),
+            cgexplore.molecular.TrianglePrecursor(
+                present_beads=(abead, bbead, ebead),
+                binder_beads=(abead,),
+                placer_beads=(bbead, ebead),
+            ),
+            cgexplore.molecular.SquarePrecursor(
+                present_beads=(abead, bbead, bbead, ebead),
+                binder_beads=(abead,),
+                placer_beads=(bbead, ebead),
+            ),
+            cgexplore.molecular.SquarePrecursor(
+                present_beads=(abead, bbead, ebead, bbead),
+                binder_beads=(abead,),
+                placer_beads=(bbead, bbead),
             ),
         ),
         gene_type="precursor",
@@ -543,6 +608,7 @@ def main():
         )
         definer_dict[type_string] = ("angle", angle_values, 1e2)
     for options in it.combinations_with_replacement(present_beads, 4):
+        continue
         type_string = (
             f"{options[0].bead_type}{options[1].bead_type}"
             f"{options[2].bead_type}{options[3].bead_type}"
@@ -554,6 +620,18 @@ def main():
             torsion_strengths,
             1,
         )
+    # Hard code some.
+    definer_dict["ao"] = ("bond", 1.5, 1e5)
+    definer_dict["bc"] = ("bond", 1.5, 1e5)
+    definer_dict["co"] = ("bond", 1.0, 1e5)
+    definer_dict["cc"] = ("bond", 1.0, 1e5)
+    definer_dict["oo"] = ("bond", 1.0, 1e5)
+    definer_dict["ccb"] = ("angle", 180.0, 1e2)
+    definer_dict["aoc"] = ("angle", 180.0, 1e2)
+    definer_dict["aoo"] = ("angle", 180.0, 1e2)
+    definer_dict["bco"] = ("angle", tuple(i for i in range(90, 181, 5)), 1e2)
+    definer_dict["cbc"] = ("angle", 180.0, 1e2)
+    definer_dict["oao"] = ("angle", tuple(i for i in range(50, 121, 5)), 1e2)
 
     chromosome_gen.add_forcefield_dict(definer_dict=definer_dict)
 
@@ -590,6 +668,7 @@ def main():
             output=figure_dir / f"fitness_progress_{seed}.png",
             num_generations=num_generations,
         )
+        raise SystemExit
         for generation_id in range(1, num_generations + 1):
             logging.info(f"doing generation {generation_id} of seed {seed}")
             logging.info(
