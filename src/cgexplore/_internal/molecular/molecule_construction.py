@@ -6,7 +6,6 @@ Author: Andrew Tarzia
 
 """
 
-
 import itertools as it
 from dataclasses import dataclass
 
@@ -15,127 +14,121 @@ import numpy as np
 import stk
 
 from .beads import CgBead, periodic_table
-
-
-class Graph:
-
-    def __init__(self, chromosome_list):
-        self.chromosome_list = chromosome_list
-        self.G = nx.Graph()
-
-    def nodes(self):
-        return self.G.nodes
-
-    def edges(self):
-        self.G.add_node(0)
-        node = 1
-        edges = []
-        for i in range(len(self.chromosome_list)):
-            for j in range(self.chromosome_list[i]):
-                edges.append([i, node])
-                self.G.add_edge(i, node)
-                node += 1
-        return edges
-
-
-def get_rotation(rad):
-    rad = rad
-    c, s = np.cos(rad), np.sin(rad)
-    return np.array(((c, -s), (s, c)))
-
-
-def Vnorm_R(v, R):
-    u = v / np.linalg.norm(v) * R
-    return u
-
-
-def place_beads(coords, n_bead, center_ndx, cluster, count):
-    ndx = count + 1
-    R = 4.7
-    # loop for the first bead to be added
-    if center_ndx == 0:
-        rad = 2 * np.pi / n_bead
-        rot_tmp = rad
-        for bead in range(n_bead):
-            u_tmp = np.dot(get_rotation(rot_tmp), (R, 0))
-            coords[ndx] = u_tmp + coords[center_ndx]
-            rot_tmp += rad
-            ndx += 1
-    # attach only one bead
-    elif n_bead == 1 and center_ndx > 0:
-        rad = 2 * np.pi
-        v = coords[center_ndx] - coords[cluster[1][0]]
-        u = Vnorm_R(np.dot(get_rotation(rad), v), R)
-        coords[ndx] = u + coords[center_ndx]
-    # loop for a multiple bead addition
-    else:
-        rad = -2 * np.pi / (n_bead + 1)
-        rot_tmp = rad
-        for bead in range(n_bead):
-            v_tmp = coords[center_ndx] - coords[cluster[1][0]]
-            u_tmp = Vnorm_R(np.dot(get_rotation(rot_tmp + np.pi), v_tmp), R)
-            coords[ndx] = u_tmp + coords[center_ndx]
-            rot_tmp += rad
-            ndx += 1
-
-
-def clusters(n):
-    tmp_connections = []
-    for connection in n:
-        for node in connection:
-            if (node in k for k in n):
-                tmp_connections.append([node, connection])
-    cl_list = []
-    for i in range(len(n) + 1):
-        k = []
-        for elem in tmp_connections:
-            if elem[0] == i:
-                k.append(elem[1])
-        cl_list.append(k)
-    t = []
-    for elem in cl_list:
-        t.append(set([val for sublist in elem for val in sublist]))
-    cluster = []
-    for o, l in enumerate(t):
-        li = []
-        for m in l:
-            li.append(m)
-        li.remove(o)
-        cluster.append([o, li])
-    return cluster
-
-
-class Coordinates:
-
-    def __init__(self, chromosome, connections, nB=7):
-        self.chromosome = chromosome
-        self.connections = connections
-        self.coords = np.zeros((nB, 2))
-        self.count = 0
-
-    def get(self):
-        for i, bead in enumerate(self.chromosome):
-            place_beads(self.coords, bead, i, self.connections[i], self.count)
-            self.count += bead
-        return self.coords
+from .utilities import get_rotation, vnorm_r
 
 
 @dataclass
 class PrecursorGenerator:
-    """Generate custom Precursor."""
+    """Generate custom Precursor based on a composition tuple.
+
+    Define the link from composition to structure:
+    """
 
     composition: tuple[int, ...]
     present_beads: tuple[CgBead, ...]
     binder_beads: tuple[CgBead, ...]
     placer_beads: tuple[CgBead, ...]
+    bead_distance: float = 4.7
+
+    def _define_graph(self) -> list[tuple]:
+        graph = nx.Graph()
+        graph.add_node(0)
+        node = 1
+        edges = []
+        for i in range(len(self.composition)):
+            for _ in range(self.composition[i]):
+                edges.append((i, node))
+                graph.add_edge(i, node)
+                node += 1
+
+        self.graph = graph
+        return edges
+
+    def _get_clusters(self, edges: list[tuple]) -> list[list]:
+        tmp_connections = []
+        for connection in edges:
+            tmp_connections = [
+                [node, connection]
+                for node in connection
+                if (node in k for k in edges)
+            ]
+
+        cluster_list = []
+        for i in range(len(edges) + 1):
+            k = [elem[1] for elem in tmp_connections if elem[0] == i]
+            cluster_list.append(k)
+
+        t = [
+            {val for sublist in elem for val in sublist}
+            for elem in cluster_list
+        ]
+
+        cluster = []
+        for o, l in enumerate(t):  # noqa: E741
+            li = list(l)
+            li.remove(o)
+            cluster.append([o, li])
+        return cluster
+
+    def _place_beads(  # noqa: PLR0913
+        self,
+        coordinates: np.ndarray,
+        num_beads: int,
+        center_idx: int,
+        cluster: list,
+        count_beads: int,
+    ) -> np.ndarray:
+        ndx = count_beads + 1
+
+        # loop for the first bead to be added
+        if center_idx == 0:
+            rad = 2 * np.pi / num_beads
+            rot_tmp = rad
+            for _ in range(num_beads):
+                u_tmp = np.dot(get_rotation(rot_tmp), (self.bead_distance, 0))
+                coordinates[ndx] = u_tmp + coordinates[center_idx]
+                rot_tmp += rad
+                ndx += 1
+        # attach only one bead
+        elif num_beads == 1 and center_idx > 0:
+            rad = 2 * np.pi
+            v = coordinates[center_idx] - coordinates[cluster[1][0]]
+            u = vnorm_r(np.dot(get_rotation(rad), v), self.bead_distance)
+            coordinates[ndx] = u + coordinates[center_idx]
+        # loop for a multiple bead addition
+        else:
+            rad = -2 * np.pi / (num_beads + 1)
+            rot_tmp = rad
+            for _ in range(num_beads):
+                v_tmp = coordinates[center_idx] - coordinates[cluster[1][0]]
+                u_tmp = vnorm_r(
+                    np.dot(get_rotation(rot_tmp + np.pi), v_tmp),
+                    self.bead_distance,
+                )
+                coordinates[ndx] = u_tmp + coordinates[center_idx]
+                rot_tmp += rad
+                ndx += 1
+        return coordinates
+
+    def _get_coordinates(self, clusters: list[list]) -> np.ndarray:
+        coordinates = np.zeros((sum(self.composition) + 1, 2))
+        count = 0
+        for i, num_beads in enumerate(self.composition):
+            coordinates = self._place_beads(
+                coordinates=coordinates,
+                num_beads=num_beads,
+                center_idx=i,
+                cluster=clusters[i],
+                count_beads=count,
+            )
+            count += num_beads
+
+        return coordinates
 
     def __post_init__(self) -> None:
-        graph = Graph(self.composition)
-        n = graph.edges()
-        cl = clusters(n)
-        coordinates = Coordinates(
-            self.composition, cl, sum(self.composition) + 1
-        ).get()
+        edges = self._define_graph()
+        clusters = self._get_clusters(edges)
+        coordinates = self._get_coordinates(clusters)
         coordinates = np.array(
             [np.array([i[0], i[1], 0]) for i in coordinates]
         )
@@ -143,14 +136,13 @@ class PrecursorGenerator:
         pt = periodic_table()
         atoms = [
             stk.Atom(i, pt[self.present_beads[i].element_string])
-            for i in graph.nodes()
+            for i in self.graph.nodes
         ]
         bonds = []
         bonded = set()
-        for cluster in cl:
+        for cluster in clusters:
             a1id = cluster[0]
             for a2id in cluster[1]:
-
                 bond_pair = tuple(sorted((a1id, a2id)))
                 if bond_pair not in bonded:
                     bonds.append(stk.Bond(atoms[a1id], atoms[a2id], order=1))
@@ -183,6 +175,199 @@ class PrecursorGenerator:
 
     def get_smiles(self) -> str:
         return stk.Smiles().get_key(self.building_block)
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
+
+
+@dataclass
+class LinearPrecursor:
+    """Define a linear precursor."""
+
+    composition: tuple[int, ...]
+    present_beads: tuple[CgBead, ...]
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+
+    def __post_init__(self) -> None:
+        pt = periodic_table()
+        atoms = [
+            stk.Atom(i, pt[self.present_beads[i].element_string])
+            for i in range(len(self.present_beads))
+        ]
+
+        coordinates = [np.array([0, 0, 0])]
+        bonds = []
+        for i in range(self.composition[0]):
+            coordinates.append(np.array([1 * (i + 1), 0, 0]))
+            bonds.append(stk.Bond(atoms[i], atoms[i + 1], order=1))
+
+        model = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=tuple(bonds),
+            position_matrix=np.array(coordinates),
+        )
+
+        if self.composition[0] == 0:
+            new_fgs = (
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0],),
+                    bonders=(atoms[0],),
+                    deleters=(),
+                    placers=(atoms[0],),
+                ),
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0],),
+                    bonders=(atoms[0],),
+                    deleters=(),
+                    placers=(atoms[0],),
+                ),
+            )
+        elif self.composition[0] == 1:
+            new_fgs = (
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0], atoms[1]),
+                    bonders=(atoms[0],),
+                    deleters=(),
+                    placers=(atoms[0], atoms[1]),
+                ),
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0], atoms[1]),
+                    bonders=(atoms[1],),
+                    deleters=(),
+                    placers=(atoms[0], atoms[1]),
+                ),
+            )
+        else:
+            new_fgs = (  # type: ignore[assignment]
+                stk.SmartsFunctionalGroupFactory(
+                    smarts=(
+                        f"[{self.placer_beads[0].element_string}]"
+                        f"[{self.binder_beads[0].element_string}]"
+                    ),
+                    bonders=(1,),
+                    deleters=(),
+                    placers=(0, 1),
+                ),
+            )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=model,
+            functional_groups=new_fgs,
+        )
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
+
+
+@dataclass
+class TrianglePrecursor:
+    """Define a triangle precursor."""
+
+    present_beads: tuple[CgBead, ...]
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+
+    def __post_init__(self) -> None:
+        _x = 2 * np.sqrt(3) / 4
+        _y = 2
+        coordinates = np.array(
+            (
+                np.array([0, _x, 0]),
+                np.array([_y / 2, -_x, 0]),
+                np.array([-_y / 2, -_x, 0]),
+            )
+        )
+
+        pt = periodic_table()
+        atoms = [
+            stk.Atom(i, pt[self.present_beads[i].element_string])
+            for i in range(len(self.present_beads))
+        ]
+        bonds = [
+            stk.Bond(atoms[0], atoms[1], order=1),
+            stk.Bond(atoms[1], atoms[2], order=1),
+            stk.Bond(atoms[2], atoms[0], order=1),
+        ]
+
+        model = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=tuple(bonds),
+            position_matrix=coordinates,
+        )
+
+        new_fgs = (
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{self.placer_beads[0].element_string}]"
+                    f"[{self.binder_beads[0].element_string}]"
+                    f"[{self.placer_beads[1].element_string}]"
+                ),
+                bonders=(1,),
+                deleters=(),
+                placers=(0, 1, 2),
+            ),
+        )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=model,
+            functional_groups=new_fgs,
+        )
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
+
+
+@dataclass
+class SquarePrecursor:
+    """Define a square precursor."""
+
+    present_beads: tuple[CgBead, ...]
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+
+    def __post_init__(self) -> None:
+        coordinates = np.array(
+            (
+                np.array([1, 1, 0]),
+                np.array([1, -1, 0]),
+                np.array([-1, -1, 0]),
+                np.array([-1, 1, 0]),
+            )
+        )
+
+        pt = periodic_table()
+        atoms = [
+            stk.Atom(i, pt[self.present_beads[i].element_string])
+            for i in range(len(self.present_beads))
+        ]
+        bonds = [
+            stk.Bond(atoms[0], atoms[1], order=1),
+            stk.Bond(atoms[1], atoms[2], order=1),
+            stk.Bond(atoms[2], atoms[3], order=1),
+            stk.Bond(atoms[3], atoms[0], order=1),
+        ]
+
+        model = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=tuple(bonds),
+            position_matrix=coordinates,
+        )
+
+        new_fgs = (
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{self.placer_beads[0].element_string}]"
+                    f"[{self.binder_beads[0].element_string}]"
+                    f"[{self.placer_beads[1].element_string}]"
+                ),
+                bonders=(1,),
+                deleters=(),
+                placers=(0, 1, 2),
+            ),
+        )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=model,
+            functional_groups=new_fgs,
+        )
 
     def get_building_block(self) -> stk.BuildingBlock:
         return self.building_block
