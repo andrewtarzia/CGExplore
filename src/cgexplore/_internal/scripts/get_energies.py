@@ -41,15 +41,16 @@ def main() -> None:
             name = entry.key
             energy = properties["energy_per_bb"]
             if energy > min_energy and energy < max_energy:
-                logging.info(f"energy of {name} is {round(energy, 3)} kJmol-1")
+                logging.info(
+                    f"energy of {name} is {round(energy, 3)} kJmol-1"  # type: ignore[arg-type]
+                )
                 count += 1
         logging.info(f"showed {count} energies")
     else:
         entry = database.get_entry(key=args.name)
         energy = entry.properties["energy_per_bb"]
-        logging.info(f"energy of {args.name} is {round(energy, 3)} kJmol-1")
+        logging.info(f"energy of {args.name} is {round(energy, 3)} kJmol-1")  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":
-
     main()

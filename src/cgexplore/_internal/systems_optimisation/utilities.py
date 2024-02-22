@@ -183,14 +183,12 @@ def get_neighbour_library(
     chromosome_name: tuple[int, ...],
     modifiable_gene_ids: tuple[int, ...],
 ) -> list[str]:
-
     new_chromosomes = []
 
     for gene_id in modifiable_gene_ids:
         curr_gene = chromosome_name[gene_id]
 
         for i in (-2, -1, +1, +2):
-
             new_gene = curr_gene + i
             new_chromo = list(chromosome_name)
             new_chromo[gene_id] = new_gene
@@ -235,5 +233,4 @@ def yield_near_models(
         new_name = name.replace(ff_name, f"{new_ff_id}")
         new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
         if new_fina_mol_file.exists():
-            logging.info(f"found neigh: {new_fina_mol_file}")
             yield molecule.with_structure_from_file(str(new_fina_mol_file))

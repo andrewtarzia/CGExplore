@@ -57,7 +57,7 @@ def main() -> None:
                 keys.add(key)
                 if isinstance(properties[key], dict):
                     pdict = properties[key]
-                    for new_key in pdict:
+                    for new_key in pdict:  # type: ignore[union-attr]
                         keys.add(f"{key}.{new_key}")
         logging.info("showing all keys in database:")
         pprint.pprint(keys)  # noqa: T203
