@@ -43,18 +43,20 @@ class Pymol:
             "rayx": 2400,
             "rayy": 2400,
             "zoom_string": "zoom",
+            "zoom_scale": 2,
+            "orient": True,
         }
 
-    def _get_zoom_string(self, structure_files: list) -> str:
+    def _get_zoom_string(self, structure_files: list, zoom_scale: int) -> str:
         max_max_diam = 0.0
         for fi in structure_files:
             max_diam = stk.BuildingBlock.init_from_file(
                 path=str(fi),
             ).get_maximum_diameter()
             max_max_diam = max((max_diam, max_max_diam))
-        return f"zoom center, {max_max_diam/2}"
+        return f"zoom center, {max_max_diam/zoom_scale}"
 
-    def _write_pymol_script(  # noqa: PLR0913
+    def _write_pymol_script(  # noqa: PLR0913, PLR0912
         self,
         structure_files: list,
         structure_colours: list | None,
@@ -63,7 +65,10 @@ class Pymol:
         big_colour: str | None,
     ) -> None:
         if self._settings["zoom_string"] == "custom":
-            zoom_string = self._get_zoom_string(structure_files)
+            zoom_string = self._get_zoom_string(
+                structure_files=structure_files,
+                zoom_scale=self._settings["zoom_scale"],
+            )
         else:
             zoom_string = self._settings["zoom_string"]
 
@@ -72,10 +77,13 @@ class Pymol:
         else:
             show_colours = structure_colours
 
-        if orient_atoms is None:
-            orient_string = "orient"
+        if self._settings["orient"]:
+            if orient_atoms is None:
+                orient_string = "orient"
+            else:
+                orient_string = f"orient (name {orient_atoms}*)"
         else:
-            orient_string = f"orient (name {orient_atoms}*)"
+            orient_string = ""
 
         if big_colour is None:
             big_colour_string = ""
