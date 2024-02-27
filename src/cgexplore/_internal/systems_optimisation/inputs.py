@@ -188,10 +188,13 @@ class ChromosomeGenerator:
 
     def get_num_chromosomes(self) -> int:
         """Return the number of chromosomes."""
-        try:
-            return len(self.chromosomes)
-        except AttributeError:
-            return 0
+        num_per_genes = [
+            len(self.chromosome_map[gene]) for gene in self.chromosome_map
+        ]
+
+        num_chromosomes = np.prod(num_per_genes)
+
+        return int(num_chromosomes)
 
     def add_gene(self, iteration: abc.Iterable, gene_type: str) -> None:
         """Add a gene to the chromosome generator, to be iterated over.
