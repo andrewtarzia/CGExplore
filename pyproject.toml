@@ -55,10 +55,7 @@ where = [
 
 [tool.ruff]
 line-length = 79
-exclude = [
-  "first_paper_example",
-  "optimisation_example",
-]
+exclude = []
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -81,6 +78,24 @@ convention = "google"
   "INP001",
   "T201",
   "PLR0913",
+]
+"first_paper_example/*" = [
+  "D103",
+  "C901",
+  "INP001",
+  "ERA001",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+]
+"optimisation_example/*" = [
+  "D103",
+  "C901",
+  "INP001",
+  "ERA001",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
 ]
 "docs/source/conf.py" = ["D100", "INP001"]
 
