@@ -1,34 +1,34 @@
+"""Script showing how cage optimisation can work."""
+
 import logging
-import os
 import pathlib
-from collections import abc, defaultdict
-from dataclasses import dataclass
+from collections import defaultdict
 
 import cgexplore
 import matplotlib.pyplot as plt
 import numpy as np
-import stk
 import openmm
+import stk
 
 
-def pymol_path():
+def pymol_path() -> pathlib.Path:
     return pathlib.Path(
         "/home/atarzia/software/pymol-open-source-build/bin/pymol"
     )
 
 
-def shape_path():
+def shape_path() -> pathlib.Path:
     return pathlib.Path(
         "/home/atarzia/software/shape_2.1_linux_64/"
         "SHAPE_2.1_linux_64/shape_2.1_linux64"
     )
 
 
-def isomer_energy():
+def isomer_energy() -> float:
     return 0.3
 
 
-def stoich_map(tstr):
+def stoich_map(tstr: str) -> int:
     """Stoichiometry maps to the number of building blocks."""
     return {
         "2P3": 5,
@@ -39,7 +39,7 @@ def stoich_map(tstr):
     }[tstr]
 
 
-def node_expected_topologies(tstr):
+def node_expected_topologies(tstr: str) -> int:
     """Number of nodes map to topologies."""
     return {
         "2P3": 2,
@@ -50,7 +50,7 @@ def node_expected_topologies(tstr):
     }[tstr]
 
 
-def colours():
+def colours() -> dict[str, str]:
     """Colours map to topologies."""
     return {
         "2P3": "#1f77b4",
@@ -62,13 +62,13 @@ def colours():
 
 
 def analyse_cage(
-    database,
-    name,
-    output_dir,
-    forcefield,
-    node_element,
-    chromosome,
-):
+    database: cgexplore.utilities.AtomliteDatabase,
+    name: str,
+    output_dir: pathlib.Path,
+    forcefield: cgexplore.forcefields.ForceField,
+    node_element: str,
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+) -> None:
     entry = database.get_entry(key=name)
     molecule = database.get_molecule(key=name)
     properties = entry.properties
@@ -102,7 +102,7 @@ def analyse_cage(
                     energy_decomp[key] = value
         fin_energy = energy_decomp["total energy_kJ/mol"]
         try:
-            assert (
+            assert (  # noqa: S101
                 sum(
                     energy_decomp[i]
                     for i in energy_decomp
@@ -227,16 +227,16 @@ def analyse_cage(
 
 
 def optimise_cage(
-    molecule,
-    name,
-    output_dir,
-    forcefield,
-    platform,
-    database,
-    chromosome,
-):
+    molecule: stk.Molecule,
+    name: str,
+    output_dir: pathlib.Path,
+    forcefield: cgexplore.forcefields.ForceField,
+    platform: str | None,
+    database: cgexplore.utilities.AtomliteDatabase,
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+) -> cgexplore.molecular.Conformer:
 
-    fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
+    fina_mol_file = output_dir / f"{name}_final.mol"
 
     # Do not rerun if database entry exists.
     if database.has_molecule(key=name):
@@ -253,12 +253,12 @@ def optimise_cage(
         )
 
     # Do not rerun if final mol exists.
-    if os.path.exists(fina_mol_file):
+    if fina_mol_file.exists():
         ensemble = cgexplore.molecular.Ensemble(
             base_molecule=molecule,
-            base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
-            conformer_xyz=os.path.join(output_dir, f"{name}_ensemble.xyz"),
-            data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
+            base_mol_path=output_dir / f"{name}_base.mol",
+            conformer_xyz=output_dir / f"{name}_ensemble.xyz",
+            data_json=output_dir / f"{name}_ensemble.json",
             overwrite=False,
         )
         conformer = ensemble.get_lowest_e_conformer()
@@ -277,9 +277,9 @@ def optimise_cage(
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
     ensemble = cgexplore.molecular.Ensemble(
         base_molecule=molecule,
-        base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
-        conformer_xyz=os.path.join(output_dir, f"{name}_ensemble.xyz"),
-        data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
+        base_mol_path=output_dir / f"{name}_base.mol",
+        conformer_xyz=output_dir / f"{name}_ensemble.xyz",
+        data_json=output_dir / f"{name}_ensemble.json",
         overwrite=True,
     )
     temp_molecule = cgexplore.utilities.run_constrained_optimisation(
@@ -305,13 +305,12 @@ def optimise_cage(
             name=name,
             file_suffix="opt1",
             output_dir=output_dir,
-            # max_iterations=50,
             platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="opt1")
     except openmm.OpenMMException as error:
         if "Particle coordinate is NaN. " not in str(error):
-            raise error
+            raise
 
     # Run optimisations of series of conformers with shifted out
     # building blocks.
@@ -333,13 +332,12 @@ def optimise_cage(
                 name=name,
                 file_suffix="sopt",
                 output_dir=output_dir,
-                # max_iterations=50,
                 platform=platform,
             )
             ensemble.add_conformer(conformer=conformer, source="shifted")
         except openmm.OpenMMException as error:
             if "Particle coordinate is NaN. " not in str(error):
-                raise error
+                raise
 
     # Collect and optimise structures nearby in phase space.
     neighbour_library = cgexplore.systems_optimisation.get_neighbour_library(
@@ -364,7 +362,6 @@ def optimise_cage(
             name=name,
             file_suffix="nopt",
             output_dir=output_dir,
-            # max_iterations=50,
             platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="nearby_opt")
@@ -395,16 +392,14 @@ def optimise_cage(
     )
     if soft_md_trajectory is None:
         logging.info(f"!!!!! {name} MD exploded !!!!!")
-        # md_exploded = True
-        raise ValueError("OpenMM Exception")
+        raise RuntimeError
 
     soft_md_data = soft_md_trajectory.get_data()
 
     # Check that the trajectory is as long as it should be.
     if len(soft_md_data) != num_steps / traj_freq:
         logging.info(f"!!!!! {name} MD failed !!!!!")
-        # md_failed = True
-        raise ValueError
+        raise RuntimeError
 
     # Go through each conformer from soft MD.
     # Optimise them all.
@@ -421,7 +416,6 @@ def optimise_cage(
             name=name,
             file_suffix="smd_mdc",
             output_dir=output_dir,
-            # max_iterations=50,
             platform=platform,
         )
         ensemble.add_conformer(conformer=conformer, source="smd")
@@ -444,12 +438,12 @@ def optimise_cage(
 
 
 def fitness_calculator(
-    chromosome,
-    chromosome_generator,
-    database,
-    calculation_output,
-    structure_output,
-):
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+    chromosome_generator: cgexplore.systems_optimisation.ChromosomeGenerator,
+    database: cgexplore.utilities.AtomliteDatabase,
+    calculation_output: pathlib.Path,
+    structure_output: pathlib.Path,
+) -> float:
     target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
     entry = database.get_entry(name)
@@ -502,10 +496,7 @@ def fitness_calculator(
     else:
         smaller_is_stable = False
 
-    if smaller_is_stable:
-        fitness = 0
-    else:
-        fitness = 1 / (pore_diff + energy)
+    fitness = 0 if smaller_is_stable else 1 / (pore_diff + energy)
 
     database.add_properties(
         key=name,
@@ -516,11 +507,11 @@ def fitness_calculator(
 
 
 def structure_calculator(
-    chromosome,
-    database,
-    calculation_output,
-    structure_output,
-):
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+    database: cgexplore.utilities.AtomliteDatabase,
+    calculation_output: pathlib.Path,
+    structure_output: pathlib.Path,
+) -> None:
     # Build structure.
     topology_str, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
@@ -555,11 +546,15 @@ def structure_calculator(
     )
 
 
-def progress_plot(generations, output, num_generations):
+def progress_plot(
+    generations: list,
+    output: pathlib.Path,
+    num_generations: int,
+) -> None:
     fig, ax = plt.subplots(figsize=(8, 5))
-    fitnesses = []
-    for generation in generations:
-        fitnesses.append(generation.calculate_fitness_values())
+    fitnesses = [
+        generation.calculate_fitness_values() for generation in generations
+    ]
 
     ax.plot(
         [max(i) for i in fitnesses],
@@ -605,7 +600,7 @@ def progress_plot(generations, output, num_generations):
     plt.close("all")
 
 
-def main():
+def main() -> None:
     wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
     struct_output = wd / "structures"
     cgexplore.utilities.check_directory(struct_output)
@@ -852,7 +847,7 @@ def main():
             generations.append(generation)
 
             # Select the best of the generation for the next generation.
-            # TODO: maybe make this roulete?
+            logging.info("maybe make this roulete?")
             best = generation.select_best(selection_size=selection_size)
             generation = cgexplore.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(best),
@@ -877,7 +872,7 @@ def main():
                 f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
             )
             best_file = struct_output / (f"{best_name}_optc.mol")
-            viz = cgexplore.utilities.Pymol(
+            cgexplore.utilities.Pymol(
                 output_dir=best_dir,
                 file_prefix=f"{prefix}_{seed}_g{generation_id}_best",
                 settings={
@@ -962,7 +957,7 @@ def main():
         else:
             cmaps = sorted([colours()[i] for i in stable])
 
-        if len(cmaps) > 8:
+        if len(cmaps) > 8:  # noqa: PLR2004
             cmaps = ["k"]
         cgexplore.utilities.draw_pie(
             colours=cmaps,
@@ -1000,7 +995,7 @@ def main():
     ax1.legend(fontsize=16)
     fig.tight_layout()
     fig.savefig(
-        figure_dir / f"space_explored.png",
+        figure_dir / "space_explored.png",
         dpi=360,
         bbox_inches="tight",
     )
