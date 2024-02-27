@@ -1,19 +1,27 @@
+"""Script showing how ligand optimisation can work."""
+
+import itertools as it
 import logging
-import os
 import pathlib
-from collections import abc, defaultdict
+from collections import abc
 from dataclasses import dataclass
 
 import cgexplore
 import matplotlib.pyplot as plt
 import numpy as np
-import math
-import stk
 import openmm
-import itertools as it
+import spindry as spd
+import stk
+from scipy.spatial.distance import cdist
 
 
-def colours():
+def pymol_path() -> pathlib.Path:
+    return pathlib.Path(
+        "/home/atarzia/software/pymol-open-source-build/bin/pymol"
+    )
+
+
+def colours() -> dict[str, str]:
     """Colours map to topologies."""
     return {
         "2P3": "#1f77b4",
@@ -24,138 +32,47 @@ def colours():
     }
 
 
-def analyse_ligand(
-    database,
-    name,
-    file_name,
-    output_dir,
-    forcefield,
-    chromosome,
-):
-    entry = database.get_entry(key=name)
-    molecule = database.get_molecule(key=name)
-    properties = entry.properties
+def analyse_complex(
+    database: cgexplore.utilities.AtomliteDatabase,
+    name: str,
+    output_dir: pathlib.Path,  # noqa: ARG001
+    forcefield: cgexplore.forcefields.ForceField,
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+) -> None:
 
-    topology_str, _ = chromosome.get_topology_information()
+    entry = database.get_entry(key=name)
+    properties = entry.properties
 
     database.add_properties(
         key=name,
         property_dict={
-            "prefix": file_name.split("_")[0],
-            "repeating_unit": topology_str,
+            "prefix": name.split("_")[0],
+            "chromosome": tuple(int(i) for i in chromosome.name),
         },
     )
-
-    if "strain_energy" not in properties:
-        energy_decomp = {}
-        for component in properties["energy_decomposition"]:
-            component_tup = properties["energy_decomposition"][component]
-            if component == "total energy":
-                energy_decomp[f"{component}_{component_tup[1]}"] = float(
-                    component_tup[0]
-                )
-            else:
-                just_name = component.split("'")[1]
-                key = f"{just_name}_{component_tup[1]}"
-                value = float(component_tup[0])
-                if key in energy_decomp:
-                    energy_decomp[key] += value
-                else:
-                    energy_decomp[key] = value
-        fin_energy = energy_decomp["total energy_kJ/mol"]
-        try:
-            assert (
-                sum(
-                    energy_decomp[i]
-                    for i in energy_decomp
-                    if "total energy" not in i
-                )
-                == fin_energy
-            )
-        except AssertionError as ex:
-            ex.add_note(
-                "energy decompisition does not sum to total energy for"
-                f" {name}: {energy_decomp}"
-            )
-            raise
-        res_dict = {
-            "strain_energy": fin_energy,
-        }
-        database.add_properties(key=name, property_dict=res_dict)
-
-    if "dihedral_data" not in properties:
-        # Always want to extract target torions if present.
-        g_measure = cgexplore.analysis.GeomMeasure()
-        bond_data = g_measure.calculate_bonds(molecule)
-        bond_data = {"_".join(i): bond_data[i] for i in bond_data}
-        angle_data = g_measure.calculate_angles(molecule)
-        angle_data = {"_".join(i): angle_data[i] for i in angle_data}
-        dihedral_data = g_measure.calculate_torsions(
-            molecule=molecule,
-            absolute=True,
-            as_search_string=True,
-        )
-        database.add_properties(
-            key=name,
-            property_dict={
-                "bond_data": bond_data,
-                "angle_data": angle_data,
-                "dihedral_data": dihedral_data,
-            },
-        )
 
     if "forcefield_dict" not in properties:
         # This is matched to the existing analysis code. I recommend
         # generalising in the future.
         ff_targets = forcefield.get_targets()
-        k_dict = {}
-        v_dict = {}
+        s_dict = {}
+        e_dict = {}
 
-        for bt in ff_targets["bonds"]:
-            cp = (bt.type1, bt.type2)
-            k_dict["_".join(cp)] = bt.bond_k.value_in_unit(
-                openmm.unit.kilojoule
-                / openmm.unit.mole
-                / openmm.unit.nanometer**2
-            )
-            v_dict["_".join(cp)] = bt.bond_r.value_in_unit(
+        for at in ff_targets["nonbondeds"]:
+
+            s_dict[at.bead_class] = at.sigma.value_in_unit(
                 openmm.unit.angstrom
             )
-
-        for at in ff_targets["angles"]:
-            cp = (at.type1, at.type2, at.type3)
-            try:
-                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
-                    openmm.unit.kilojoule
-                    / openmm.unit.mole
-                    / openmm.unit.radian**2
-                )
-                v_dict["_".join(cp)] = at.angle.value_in_unit(
-                    openmm.unit.degrees
-                )
-            except TypeError:
-                # Handle different angle types.
-                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
-                    openmm.unit.kilojoule / openmm.unit.mole
-                )
-                v_dict["_".join(cp)] = at.angle.value_in_unit(
-                    openmm.unit.degrees
-                )
-
-        for at in ff_targets["torsions"]:
-            cp = at.search_string
-            k_dict["_".join(cp)] = at.torsion_k.value_in_unit(
+            e_dict[at.bead_class] = at.epsilon.value_in_unit(
                 openmm.unit.kilojoules_per_mole
             )
-            v_dict["_".join(cp)] = at.phi0.value_in_unit(openmm.unit.degrees)
 
         forcefield_dict = {
             "ff_id": forcefield.get_identifier(),
             "ff_prefix": forcefield.get_prefix(),
-            "v_dict": v_dict,
-            "k_dict": k_dict,
+            "s_dict": s_dict,
+            "e_dict": e_dict,
         }
-
         database.add_properties(
             key=name,
             property_dict={"forcefield_dict": forcefield_dict},
@@ -163,29 +80,20 @@ def analyse_ligand(
 
 
 def fitness_calculator(
-    chromosome,
-    chromosome_generator,
-    database,
-    calculation_output,
-    structure_output,
-):
-    conversion_file = calculation_output / "file_names.txt"
-    known_conversions = {}
-    if conversion_file.exists():
-        with open(conversion_file, "r") as f:
-            for line in f.readlines():
-                line = line.strip().split(",")
-                known_conversions[line[0]] = line[1]
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+    chromosome_generator: cgexplore.systems_optimisation.ChromosomeGenerator,  # noqa: ARG001
+    database: cgexplore.utilities.AtomliteDatabase,
+    calculation_output: pathlib.Path,  # noqa: ARG001
+    structure_output: pathlib.Path,  # noqa: ARG001
+) -> float:
 
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
-    file_name = known_conversions[name]
-    entry = database.get_entry(name)
-    energy = entry.properties["strain_energy"]
 
-    if energy < 1e6:
-        fitness = 100
-    else:
-        fitness = min((100, 1 / energy))
+    entry = database.get_entry(name)
+
+    energy = entry.properties["energy_decomposition"]["potential"]
+    centroid_distance = entry.properties["centroid_distance"]
+    fitness = np.exp(-0.01 * energy) + (1 / centroid_distance)
 
     database.add_properties(
         key=name,
@@ -195,187 +103,333 @@ def fitness_calculator(
     return fitness
 
 
-def optimise_ligand(
-    molecule: stk.Molecule,
-    name: str,
-    file_name: str,
-    output_dir: pathlib.Path,
-    forcefield: cgexplore.forcefields.ForceField,
-    platform: str | None,
-    database: cgexplore.utilities.AtomliteDatabase,
-) -> stk.Molecule:
-    """Optimise a building block.
+class CgAtom(spd.Atom):
+    """A new spindry atom with epsilon."""
 
-    Keywords:
+    def __init__(
+        self,
+        id: int,  # noqa: A002
+        element_string: str,
+        epsilon: float,
+        sigma: float,
+    ) -> None:
+        """Initialize CgAtom."""
+        super().__init__(id, element_string)
+        self._epsilon = epsilon
+        self._sigma = sigma
 
-        molecule:
-            The molecule to optimise.
+    def get_epsilon(self) -> float:
+        """Get the epsilon value."""
+        return self._epsilon
 
-        name:
-            Name to use for naming output files. E.g. produces a file
-            `{name}_opted1.mol` in `output_dir`.
+    def get_sigma(self) -> float:
+        """Get the sigma value."""
+        return self._sigma
 
-        output_dir:
-            Directory to save outputs of optimisation process.
 
-        forcefield:
-            Define the forces used in the molecule.
+class CgPotential(spd.Potential):
+    """A Cg non-bonded potential function."""
 
-        platform:
-            Which platform to use with OpenMM optimisation. Options are
-            `CPU` or `CUDA`. More are available but may not work well
-            out of the box.
+    def _nonbond_potential(
+        self,
+        distance: np.ndarray,
+        sigmas: np.ndarray,
+        epsilons: np.ndarray,
+    ) -> np.ndarray:
+        """Define a Lennard-Jones nonbonded potential.
 
-    Returns:
-        An stk molecule.
+        This potential has no relation to an empircal forcefield.
 
-    """
-    opt1_mol_file = pathlib.Path(output_dir) / f"{file_name}_opted1.mol"
-
-    if opt1_mol_file.exists():
-        return molecule.with_structure_from_file(str(opt1_mol_file))
-    else:
-        logging.info(f"optimising {name}, no max_iterations")
-        assigned_system = forcefield.assign_terms(
-            molecule=molecule,
-            name=file_name,
-            output_dir=output_dir,
+        """
+        return epsilons * (
+            (sigmas / distance) ** 12 - (sigmas / distance) ** 6
         )
-        minimum_energy_conformer = cgexplore.utilities.run_optimisation(
-            assigned_system=assigned_system,
-            name=name,
-            file_suffix="opt1",
-            output_dir=output_dir,
-            # max_iterations=50,
-            platform=platform,
-        )
-        minimum_energy = minimum_energy_conformer.energy_decomposition[
-            "total energy"
-        ][0]
-        if math.isnan(minimum_energy):
-            minimum_energy = 1e24
-            minimum_energy_conformer = None
-        else:
-            molecule = minimum_energy_conformer.molecule
 
-        # Run optimisations of series of conformers with shifted out
-        # building blocks.
-        for test_molecule in cgexplore.utilities.yield_shifted_models(
-            molecule,
-            forcefield,
-            kicks=(1, 2, 3, 4),
+    def _combine_sigma(self, radii1: float, radii2: float) -> float:
+        """Combine radii using Lorentz-Berthelot rules."""
+        len1 = len(radii1)
+        len2 = len(radii2)
+
+        mixed = np.zeros((len1, len2))
+        for i in range(len1):
+            for j in range(len2):
+                mixed[i, j] = (radii1[i] + radii2[j]) / 2
+
+        return mixed
+
+    def _combine_epsilon(self, e1: float, e2: float) -> float:
+        """Combine epsilon using Lorentz-Berthelot rules."""
+        len1 = len(e1)
+        len2 = len(e2)
+
+        mixed = np.zeros((len1, len2))
+        for i in range(len1):
+            for j in range(len2):
+                mixed[i, j] = np.sqrt(e1[i] * e2[j])
+
+        return mixed
+
+    def _compute_nonbonded_potential(
+        self,
+        position_matrices: np.ndarray,
+        radii: np.ndarray,
+        epsilons: np.ndarray,
+    ) -> float:
+
+        nonbonded_potential = 0
+        for pos_mat_pair, radii_pair, epsilon_pair in zip(
+            it.combinations(position_matrices, 2),
+            it.combinations(radii, 2),
+            it.combinations(epsilons, 2),
+            strict=False,
         ):
-            try:
-                conformer = cgexplore.utilities.run_optimisation(
-                    assigned_system=cgexplore.forcefields.AssignedSystem(
-                        molecule=test_molecule,
-                        forcefield_terms=assigned_system.forcefield_terms,
-                        system_xml=assigned_system.system_xml,
-                        topology_xml=assigned_system.topology_xml,
-                        bead_set=assigned_system.bead_set,
-                        vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
-                    ),
-                    name=name,
-                    file_suffix="sopt",
-                    output_dir=output_dir,
-                    # max_iterations=50,
-                    platform=platform,
+
+            pair_dists = cdist(pos_mat_pair[0], pos_mat_pair[1])
+            sigmas = self._combine_sigma(radii_pair[0], radii_pair[1])
+            epsilons = self._combine_epsilon(epsilon_pair[0], epsilon_pair[1])
+            nonbonded_potential += np.sum(
+                self._nonbond_potential(
+                    distance=pair_dists.flatten(),
+                    sigmas=sigmas.flatten(),
+                    epsilons=epsilons.flatten(),
                 )
-                energy = conformer.energy_decomposition["total energy"][0]
-                if math.isnan(energy):
-                    continue
-                if energy < minimum_energy:
-                    minimum_energy = energy
-                    minimum_energy_conformer = cgexplore.molecular.Conformer(
-                        molecule=conformer.molecule,
-                        energy_decomposition=conformer.energy_decomposition,
-                        source="kick_opt",
-                    )
-            except openmm.OpenMMException as error:
-                if "Particle coordinate is NaN. " not in str(error):
-                    raise error
-
-        if minimum_energy_conformer is None:
-            print(minimum_energy, minimum_energy_conformer)
-            raise SystemExit
-
-        minimum_energy_conformer.molecule = (
-            minimum_energy_conformer.molecule.with_centroid(
-                np.array((0, 0, 0))
             )
-        )
-        minimum_energy_conformer.molecule.write(opt1_mol_file)
 
+        return nonbonded_potential
+
+    def compute_potential(self, supramolecule: spd.SupraMolecule) -> float:
+        """Compure the potential of the molecule."""
+        component_position_matrices = (
+            i.get_position_matrix() for i in supramolecule.get_components()
+        )
+        component_radii = (
+            tuple(j.get_sigma() for j in i.get_atoms())
+            for i in supramolecule.get_components()
+        )
+        component_epsilon = (
+            tuple(j.get_epsilon() for j in i.get_atoms())
+            for i in supramolecule.get_components()
+        )
+        return self._compute_nonbonded_potential(
+            position_matrices=component_position_matrices,
+            radii=component_radii,
+            epsilons=component_epsilon,
+        )
+
+
+class Laundrette:
+    """Class to run rigid-body docking."""
+
+    def __init__(
+        self,
+        num_dockings: int,
+        naming_prefix: str,
+        output_dir: pathlib.Path,
+        forcefield: cgexplore.forcefields.ForceField,
+        seed: int,
+    ) -> None:
+        """Initialise Laundrette."""
+        self._num_dockings = num_dockings
+        self._naming_prefix = naming_prefix
+        self._output_dir = output_dir
+        self._potential = CgPotential()
+        self._forcefield = forcefield
+        self._rng = np.random.default_rng(seed=seed)
+
+    def _get_supramolecule(
+        self,
+        hgcomplex: stk.ConstructedMolecule,
+    ) -> spd.Potential:
+        nonbonded_targets = self._forcefield.get_targets()["nonbondeds"]
+
+        epsilons = []
+        sigmas = []
+        for atom in hgcomplex.get_atoms():
+            atom_estring = atom.__class__.__name__
+            cgbead = (
+                self._forcefield.get_bead_library().get_cgbead_from_element(
+                    atom_estring
+                )
+            )
+            for target_term in nonbonded_targets:
+                if target_term.bead_class != cgbead.bead_class:
+                    continue
+                epsilons.append(
+                    target_term.epsilon.value_in_unit(
+                        openmm.unit.kilojoules_per_mole
+                    )
+                )
+                sigmas.append(
+                    target_term.sigma.value_in_unit(openmm.unit.angstrom)
+                )
+
+        return spd.SupraMolecule(
+            atoms=(
+                CgAtom(
+                    id=atom.get_id(),
+                    element_string=atom.__class__.__name__,
+                    epsilon=epsilons[atom.get_id()],
+                    sigma=sigmas[atom.get_id()],
+                )
+                for atom in hgcomplex.get_atoms()
+            ),
+            bonds=(
+                spd.Bond(
+                    id=i,
+                    atom_ids=(
+                        bond.get_atom1().get_id(),
+                        bond.get_atom2().get_id(),
+                    ),
+                )
+                for i, bond in enumerate(hgcomplex.get_bonds())
+            ),
+            position_matrix=hgcomplex.get_position_matrix(),
+        )
+
+    def run_dockings(
+        self,
+        host_bb: stk.BuildingBlock,
+        guest_bb: stk.BuildingBlock,
+    ) -> abc.Iterable[cgexplore.molecular.SpindryConformer]:
+        """Run the docking algorithm."""
+        for docking_id in range(self._num_dockings):
+            logging.info(f"docking run: {docking_id+1}")
+
+            guest = stk.host_guest.Guest(
+                building_block=guest_bb,
+                start_vector=guest_bb.get_direction(),
+                end_vector=self._rng.random((1, 3))[0],
+                # Change the displacement of the guest.
+                displacement=self._rng.random((1, 3))[0],
+            )
+
+            hgcomplex = stk.ConstructedMolecule(
+                topology_graph=stk.host_guest.Complex(
+                    host=stk.BuildingBlock.init_from_molecule(host_bb),
+                    guests=guest,
+                ),
+            )
+            supramolecule = self._get_supramolecule(hgcomplex=hgcomplex)
+
+            cg = spd.Spinner(
+                step_size=1.0,
+                rotation_step_size=2.0,
+                num_conformers=200,
+                max_attempts=500,
+                potential_function=self._potential,
+                beta=1.0,
+                random_seed=None,
+            )
+            cid = 1
+            for supraconformer in cg.get_conformers(supramolecule):
+
+                yield cgexplore.molecular.SpindryConformer(
+                    supramolecule=supraconformer,
+                    conformer_id=cid,
+                    source=docking_id,
+                    energy_decomposition={
+                        "potential": supraconformer.get_potential()
+                    },
+                )
+                cid += 1
+
+
+def calculate_min_atom_distance(supramolecule: spd.SupraMolecule) -> float:
+    component_position_matrices = (
+        i.get_position_matrix() for i in supramolecule.get_components()
+    )
+
+    min_distance = 1e24
+    for pos_mat_pair in it.combinations(component_position_matrices, 2):
+        pair_dists = cdist(pos_mat_pair[0], pos_mat_pair[1])
+        min_distance = min([min_distance, min(pair_dists.flatten())])
+
+    return min_distance
+
+
+def structure_calculator(
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+    database: cgexplore.utilities.AtomliteDatabase,
+    calculation_output: pathlib.Path,
+    structure_output: pathlib.Path,
+    host_structure: stk.BuildingBlock,
+) -> None:
+
+    name = f"{chromosome.prefix}_{chromosome.get_string()}"
+    (bb,) = chromosome.get_building_blocks()
+    # Select forcefield by chromosome.
+    forcefield = chromosome.get_forcefield()
+
+    # Optimise with some procedure.
+    opt_file = structure_output / f"{name}_optc.mol"
+    conformers = {}
+    if not opt_file.exists():
+        laundry = Laundrette(
+            num_dockings=10,
+            naming_prefix=name,
+            output_dir=calculation_output,
+            forcefield=forcefield,
+            seed=100,
+        )
+        min_energy_id = "none"
+        min_energy = 1e24
+        for conformer in laundry.run_dockings(
+            host_bb=host_structure,
+            guest_bb=bb,
+        ):
+            id_ = f"{conformer.source}_{conformer.conformer_id}"
+            conformers[id_] = conformer
+            potential = conformer.energy_decomposition["potential"]
+            if potential < min_energy:
+                min_energy = conformer.energy_decomposition["potential"]
+                min_energy_id = id_
+
+        min_energy_conformer = conformers[min_energy_id]
+
+        # Add to atomlite database.
         database.add_molecule(
-            molecule=minimum_energy_conformer.molecule,
+            molecule=min_energy_conformer.to_stk_molecule(),
             key=name,
         )
         database.add_properties(
             key=name,
             property_dict={
                 "energy_decomposition": (
-                    minimum_energy_conformer.energy_decomposition
+                    min_energy_conformer.energy_decomposition
                 ),
+                "source": min_energy_id,
                 "optimised": True,
-                "source": minimum_energy_conformer.source,
-                "name": name,
-                "file_name": file_name,
             },
         )
 
-    return minimum_energy_conformer.molecule
+        # Do some analysis while you have the supramolecule.
+        comps = list(min_energy_conformer.supramolecule.get_components())
+        host_analysis = cgexplore.analysis.GeomMeasure()
+        database.add_properties(
+            key=name,
+            property_dict={
+                "centroid_distance": (
+                    np.linalg.norm(
+                        comps[0].get_centroid() - comps[1].get_centroid()
+                    )
+                ),
+                "min_hg_distance": calculate_min_atom_distance(
+                    min_energy_conformer.supramolecule
+                ),
+                "host_pore": host_analysis.calculate_min_distance(
+                    host_structure
+                ),
+                "host_size": host_analysis.calculate_max_diameter(
+                    host_structure
+                ),
+            },
+        )
 
-
-def structure_calculator(
-    chromosome,
-    database,
-    calculation_output,
-    structure_output,
-):
-    conversion_file = calculation_output / "file_names.txt"
-    known_conversions = {}
-    if conversion_file.exists():
-        with open(conversion_file, "r") as f:
-            for line in f.readlines():
-                line = line.strip().split(",")
-                known_conversions[line[0]] = line[1]
-
-    # Build structure.
-    topology_str, topology_fun = chromosome.get_topology_information()
-    building_blocks = chromosome.get_building_blocks()
-    ligand = topology_fun.construct(building_blocks)
-
-    name = f"{chromosome.prefix}_{chromosome.get_string()}"
-    num_ligands_built = len(list(structure_output.glob("*_optl.mol")))
-    if name in known_conversions:
-        file_name = known_conversions[name]
-    else:
-        file_name = f"{chromosome.prefix}_{num_ligands_built}"
-        known_conversions[name] = file_name
-
-    with open(conversion_file, "a") as f:
-        f.write(f"{name},{file_name}\n")
-
-    # Select forcefield by chromosome.
-    forcefield = chromosome.get_forcefield()
-
-    # Optimise with some procedure.
-    opt_file = str(structure_output / f"{file_name}_optl.mol")
-    building_block = optimise_ligand(
-        molecule=ligand,
-        name=name,
-        file_name=file_name,
-        output_dir=calculation_output,
-        forcefield=forcefield,
-        database=database,
-        platform=None,
-    )
-    building_block.write(opt_file)
+        min_energy_conformer.to_stk_molecule().write(opt_file)
 
     # Analyse cage.
-    analyse_ligand(
+    analyse_complex(
         name=name,
-        file_name=file_name,
         output_dir=calculation_output,
         forcefield=forcefield,
         database=database,
@@ -383,11 +437,15 @@ def structure_calculator(
     )
 
 
-def progress_plot(generations, output, num_generations):
+def progress_plot(
+    generations: list,
+    output: pathlib.Path,
+    num_generations: int,
+) -> None:
     fig, ax = plt.subplots(figsize=(8, 5))
-    fitnesses = []
-    for generation in generations:
-        fitnesses.append(generation.calculate_fitness_values())
+    fitnesses = [
+        generation.calculate_fitness_values() for generation in generations
+    ]
 
     ax.plot(
         [max(i) for i in fitnesses],
@@ -433,26 +491,99 @@ def progress_plot(generations, output, num_generations):
     plt.close("all")
 
 
+def check_fit(
+    chromosome: tuple[int, ...],
+    num_beads: int,
+    max_shell: int,
+) -> bool:
+    """Check if chromosome has an allowed topology."""
+    if sum(chromosome) != num_beads:
+        return False
+
+    idx = chromosome[0]
+    fit = True
+    sum_g = np.sum(chromosome[:idx]).astype(int)
+    while fit and sum_g < num_beads:
+        check_chr = False
+        for x in range(idx, sum_g + 1):
+            if chromosome[x] != 0:
+                check_chr = True
+        if not check_chr and sum_g < num_beads:
+            fit = False
+        else:
+            # additional requirement to avoid
+            # null summation in idx if
+            # chromosome[idx] == 0
+            if chromosome[idx] != 0:
+                idx += chromosome[idx]
+            else:
+                idx += 1
+            sum_g = np.sum(chromosome[:idx])
+    if fit:
+        for c in chromosome:
+            if c > max_shell:
+                fit = False
+                break
+    return fit
+
+
 @dataclass
-class PolymerTopology:
-    repeating_unit: str
+class HostGeneration(cgexplore.systems_optimisation.Generation):
+    """Define the chromosomes in a single generation."""
 
-    def construct(
-        self,
-        building_blocks: abc.Iterable[stk.BuildingBlock],
-    ) -> stk.ConstructedMolecule:
-        """Construct the molecule."""
-        return stk.ConstructedMolecule(
-            stk.polymer.Linear(
-                building_blocks=building_blocks,
-                repeating_unit=self.repeating_unit,
-                num_repeating_units=1,
+    def calculate_fitness_values(self) -> list[float]:
+        """Calculate the fitness of all chromosomes."""
+        return [
+            self.fitness_calculator(
+                chromosome=i,
+                chromosome_generator=self.chromosome_generator,
+                database=self.database,
+                calculation_output=self.calculation_output,
+                structure_output=self.structure_output,
             )
-        )
+            for i in self.chromosomes
+        ]
+
+    def run_structures(self, host_structure: stk.BuildingBlock) -> None:
+        """Run the production and analyse of all chromosomes."""
+        length = len(self.chromosomes)
+        for i, chromosome in enumerate(self.chromosomes):
+            logging.info(f"building {chromosome} ({i+1} of {length})")
+            self.structure_calculator(
+                chromosome=chromosome,
+                database=self.database,
+                calculation_output=self.calculation_output,
+                structure_output=self.structure_output,
+                host_structure=host_structure,
+            )
+
+    def select_best(
+        self,
+        selection_size: int,
+    ) -> abc.Iterable[cgexplore.systems_optimisation.Chromosome]:
+        """Select the best in the generation by fitness."""
+        temp = [
+            (
+                i,
+                self.fitness_calculator(
+                    chromosome=i,
+                    chromosome_generator=self.chromosome_generator,
+                    database=self.database,
+                    calculation_output=self.calculation_output,
+                    structure_output=self.structure_output,
+                ),
+            )
+            for i in self.chromosomes
+        ]
+        best_indices = tuple(
+            sorted(range(len(temp)), key=lambda i: temp[i][1], reverse=True)
+        )[:selection_size]
+
+        return [self.chromosomes[i] for i in best_indices]
 
 
-def main():
-    raise SystemExit("this does not work yet!")
+def main() -> None:
+
     wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
     struct_output = wd / "ligand_structures"
     cgexplore.utilities.check_directory(struct_output)
@@ -462,10 +593,11 @@ def main():
     cgexplore.utilities.check_directory(data_dir)
     figure_dir = wd / "ligand_figures"
     cgexplore.utilities.check_directory(figure_dir)
+    all_dir = figure_dir / "all"
+    cgexplore.utilities.check_directory(all_dir)
     best_dir = figure_dir / "best"
     cgexplore.utilities.check_directory(best_dir)
 
-    prefix = "opt"
     database = cgexplore.utilities.AtomliteDatabase(data_dir / "test.db")
 
     abead = cgexplore.molecular.CgBead(
@@ -474,297 +606,114 @@ def main():
         bead_type="a",
         coordination=3,
     )
-    bbead = cgexplore.molecular.CgBead(
-        element_string="Ba",
-        bead_class="b",
-        bead_type="b",
-        coordination=2,
-    )
     cbead = cgexplore.molecular.CgBead(
-        element_string="C",
+        element_string="Fe",
         bead_class="c",
         bead_type="c",
         coordination=2,
     )
-    dbead = cgexplore.molecular.CgBead(
-        element_string="O",
-        bead_class="o",
-        bead_type="o",
-        coordination=2,
+    # Host beads.
+    h1bead = cgexplore.molecular.CgBead(
+        element_string="Pd",
+        bead_class="m",
+        bead_type="m",
+        coordination=4,
     )
-    ebead = cgexplore.molecular.CgBead(
-        element_string="N",
+    h2bead = cgexplore.molecular.CgBead(
+        element_string="C",
         bead_class="n",
         bead_type="n",
+        coordination=3,
+    )
+    h3bead = cgexplore.molecular.CgBead(
+        element_string="Pb",
+        bead_class="b",
+        bead_type="b",
         coordination=2,
     )
 
-    chromosome_gen = cgexplore.systems_optimisation.ChromosomeGenerator(
-        prefix=prefix,
-        present_beads=(abead, bbead, cbead, dbead, ebead),
-        vdw_bond_cutoff=2,
-    )
-    chromosome_gen.add_gene(
-        iteration=(
-            ("AC", PolymerTopology("AC")),
-            ("ABC", PolymerTopology("ABC")),
-            ("ABBC", PolymerTopology("ABBC")),
-        ),
-        gene_type="topology",
-    )
+    num_beads = 6
+    compositions = [
+        i
+        for i in it.product(range(num_beads + 1), repeat=num_beads)
+        if check_fit(i, num_beads=num_beads, max_shell=6)
+    ]
+    compositions = sorted(compositions, reverse=True)
 
-    # A precursors.
-    chromosome_gen.add_gene(
-        iteration=(
-            cgexplore.molecular.LinearPrecursor(
-                composition=(1,),
-                present_beads=(abead, ebead),
-                binder_beads=(abead,),
-                placer_beads=(ebead,),
-            ),
-            cgexplore.molecular.TrianglePrecursor(
-                present_beads=(abead, bbead, ebead),
-                binder_beads=(abead,),
-                placer_beads=(bbead, ebead),
-            ),
-            cgexplore.molecular.SquarePrecursor(
-                present_beads=(abead, bbead, bbead, ebead),
-                binder_beads=(abead,),
-                placer_beads=(bbead, ebead),
-            ),
-            cgexplore.molecular.SquarePrecursor(
-                present_beads=(abead, bbead, ebead, bbead),
-                binder_beads=(abead,),
-                placer_beads=(bbead, bbead),
-            ),
-        ),
-        gene_type="precursor",
-    )
-
-    # B precursors.
-    chromosome_gen.add_gene(
-        iteration=(
-            cgexplore.molecular.LinearPrecursor(
-                composition=(1,),
-                present_beads=(cbead, cbead),
-                binder_beads=(cbead,),
-                placer_beads=(cbead,),
-            ),
-            cgexplore.molecular.LinearPrecursor(
-                composition=(2,),
-                present_beads=(cbead, dbead, cbead),
-                binder_beads=(cbead,),
-                placer_beads=(dbead,),
-            ),
-        ),
-        gene_type="precursor",
-    )
-    # C precursors.
-    chromosome_gen.add_gene(
-        iteration=(
-            cgexplore.molecular.LinearPrecursor(
-                composition=(1,),
-                present_beads=(abead, ebead),
-                binder_beads=(abead,),
-                placer_beads=(ebead,),
-            ),
-            cgexplore.molecular.TrianglePrecursor(
-                present_beads=(abead, bbead, ebead),
-                binder_beads=(abead,),
-                placer_beads=(bbead, ebead),
-            ),
-            cgexplore.molecular.SquarePrecursor(
-                present_beads=(abead, bbead, bbead, ebead),
-                binder_beads=(abead,),
-                placer_beads=(bbead, ebead),
-            ),
-            cgexplore.molecular.SquarePrecursor(
-                present_beads=(abead, bbead, ebead, bbead),
-                binder_beads=(abead,),
-                placer_beads=(bbead, bbead),
-            ),
-        ),
-        gene_type="precursor",
-    )
-
-    nb_scale = (1, 5, 10, 15)
-    nb_sizes = (0.7, 1, 1.5, 2)
-    bond_lengths = (1, 1.5, 2, 2.5)
-    angle_values = (60, 90, 120, 150, 180)
-    torsion_values = (180, 120, 60, 0)
-    torsion_strengths = (0, 50)
-    definer_dict = {}
-    present_beads = (abead, bbead, cbead, dbead, ebead)
-    for options in present_beads:
-        type_string = f"{options.bead_type}"
-        definer_dict[type_string] = ("nb", nb_scale, nb_sizes)
-    for options in it.combinations_with_replacement(present_beads, 2):
-        type_string = f"{options[0].bead_type}{options[1].bead_type}"
-        definer_dict[type_string] = ("bond", bond_lengths, 1e5)
-    for options in it.combinations_with_replacement(present_beads, 3):
-        type_string = (
-            f"{options[0].bead_type}{options[1].bead_type}"
-            f"{options[2].bead_type}"
-        )
-        definer_dict[type_string] = ("angle", angle_values, 1e2)
-    for options in it.combinations_with_replacement(present_beads, 4):
-        continue
-        type_string = (
-            f"{options[0].bead_type}{options[1].bead_type}"
-            f"{options[2].bead_type}{options[3].bead_type}"
-        )
-        definer_dict[type_string] = (
-            "tors",
-            "0123",
-            torsion_values,
-            torsion_strengths,
-            1,
-        )
-    # Hard code some.
-    definer_dict["ao"] = ("bond", 1.5, 1e5)
-    definer_dict["bc"] = ("bond", 1.5, 1e5)
-    definer_dict["co"] = ("bond", 1.0, 1e5)
-    definer_dict["cc"] = ("bond", 1.0, 1e5)
-    definer_dict["oo"] = ("bond", 1.0, 1e5)
-    definer_dict["ccb"] = ("angle", 180.0, 1e2)
-    definer_dict["aoc"] = ("angle", 180.0, 1e2)
-    definer_dict["aoo"] = ("angle", 180.0, 1e2)
-    definer_dict["bco"] = ("angle", tuple(i for i in range(90, 181, 5)), 1e2)
-    definer_dict["cbc"] = ("angle", 180.0, 1e2)
-    definer_dict["oao"] = ("angle", tuple(i for i in range(50, 121, 5)), 1e2)
-
-    chromosome_gen.add_forcefield_dict(definer_dict=definer_dict)
-
+    # Settings.
     seeds = [4, 280, 999, 2196]
     num_generations = 20
     selection_size = 10
 
-    for seed in seeds:
-        generator = np.random.default_rng(seed)
+    # Now we want to optimise this for binding a specific host (actually a
+    # series of hosts).
+    hosts = [
+        stk.BuildingBlock.init_from_file(
+            str(wd / "hosts" / "6P8_4C1m1b1_3C1n1b1_f9_optc.mol")
+        ),
+        stk.BuildingBlock.init_from_file(
+            str(wd / "hosts" / "6P8_4C1m1b1_3C1n1b1_f27_optc.mol")
+        ),
+    ]
+    for host_id, host in enumerate(hosts):
+        prefix = f"opt{host_id}"
 
-        initial_population = chromosome_gen.select_random_population(
-            generator,
-            size=selection_size,
+        chromosome_gen = cgexplore.systems_optimisation.ChromosomeGenerator(
+            prefix=prefix,
+            present_beads=(abead, cbead, h1bead, h2bead, h3bead),
+            vdw_bond_cutoff=2,
         )
 
-        # Yield this.
-        generations = []
-        generation = cgexplore.systems_optimisation.Generation(
-            chromosomes=initial_population,
-            chromosome_generator=chromosome_gen,
-            fitness_calculator=fitness_calculator,
-            structure_calculator=structure_calculator,
-            structure_output=struct_output,
-            calculation_output=calc_dir,
-            database=database,
+        chromosome_gen.add_gene(
+            iteration=(
+                cgexplore.molecular.PrecursorGenerator(
+                    composition=i,
+                    present_beads=(
+                        abead,
+                        cbead,
+                        cbead,
+                        cbead,
+                        cbead,
+                        cbead,
+                        cbead,
+                    ),
+                    binder_beads=(cbead,),
+                    placer_beads=(abead,),
+                    bead_distance=1.5,
+                )
+                for i in compositions
+            ),
+            gene_type="precursor",
         )
 
-        generation.run_structures()
-        _ = generation.calculate_fitness_values()
-        generations.append(generation)
+        # Add modifications to nonbonded interactions.
+        nb_scale = (1, 5, 10, 15)
+        nb_sizes = (0.7, 1, 1.5, 2)
+        definer_dict = {}
+        present_beads = (abead, cbead)
+        for options in present_beads:
+            type_string = f"{options.bead_type}"
+            definer_dict[type_string] = ("nb", nb_scale, nb_sizes)
 
-        progress_plot(
-            generations=generations,
-            output=figure_dir / f"fitness_progress_{seed}.png",
-            num_generations=num_generations,
-        )
-        raise SystemExit
-        for generation_id in range(1, num_generations + 1):
-            logging.info(f"doing generation {generation_id} of seed {seed}")
-            logging.info(
-                f"initial size is {generation.get_generation_size()}."
-            )
-            logging.info("doing mutations.")
-            merged_chromosomes = []
-            merged_chromosomes.extend(
-                chromosome_gen.mutate_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    gene_range=chromosome_gen.get_term_ids(),
-                    selection="random",
-                    num_to_select=5,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromosome_gen.mutate_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    gene_range=chromosome_gen.get_topo_ids(),
-                    selection="random",
-                    num_to_select=5,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromosome_gen.mutate_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    gene_range=chromosome_gen.get_prec_ids(),
-                    selection="random",
-                    num_to_select=5,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromosome_gen.mutate_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    gene_range=chromosome_gen.get_term_ids(),
-                    selection="roulette",
-                    num_to_select=5,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromosome_gen.mutate_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    gene_range=chromosome_gen.get_topo_ids(),
-                    selection="roulette",
-                    num_to_select=5,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromosome_gen.mutate_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    gene_range=chromosome_gen.get_prec_ids(),
-                    selection="roulette",
-                    num_to_select=5,
-                    database=database,
-                )
+        # Host nonbonded terms are constant.
+        definer_dict["m"] = ("nb", 10, 1)
+        definer_dict["n"] = ("nb", 10, 1)
+        definer_dict["b"] = ("nb", 10, 1)
+
+        chromosome_gen.add_forcefield_dict(definer_dict=definer_dict)
+
+        for seed in seeds:
+            generator = np.random.default_rng(seed)
+
+            initial_population = chromosome_gen.select_random_population(
+                generator,
+                size=selection_size,
             )
 
-            # logging.info("Doing crossovers.")
-            merged_chromosomes.extend(
-                chromosome_gen.crossover_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    selection="random",
-                    num_to_select=5,
-                    database=database,
-                )
-            )
-
-            merged_chromosomes.extend(
-                chromosome_gen.crossover_population(
-                    list_of_chromosomes=generation.chromosomes,
-                    generator=generator,
-                    selection="roulette",
-                    num_to_select=5,
-                    database=database,
-                )
-            )
-
-            # Add the best 5 to the new generation.
-            merged_chromosomes.extend(generation.select_best(selection_size=5))
-
-            generation = cgexplore.systems_optimisation.Generation(
-                chromosomes=chromosome_gen.dedupe_population(
-                    merged_chromosomes
-                ),
+            # Yield this.
+            generations = []
+            generation = HostGeneration(
+                chromosomes=initial_population,
                 chromosome_generator=chromosome_gen,
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
@@ -772,152 +721,337 @@ def main():
                 calculation_output=calc_dir,
                 database=database,
             )
-            logging.info(f"new size is {generation.get_generation_size()}.")
 
-            # Build, optimise and analyse each structure.
-            generation.run_structures()
+            generation.run_structures(host)
             _ = generation.calculate_fitness_values()
-
-            # Add final state to generations.
             generations.append(generation)
-
-            # Select the best of the generation for the next generation.
-            # TODO: maybe make this roulete?
-            best = generation.select_best(selection_size=selection_size)
-            generation = cgexplore.systems_optimisation.Generation(
-                chromosomes=chromosome_gen.dedupe_population(best),
-                chromosome_generator=chromosome_gen,
-                fitness_calculator=fitness_calculator,
-                structure_calculator=structure_calculator,
-                structure_output=struct_output,
-                calculation_output=calc_dir,
-                database=database,
-            )
-            logging.info(f"final size is {generation.get_generation_size()}.")
 
             progress_plot(
                 generations=generations,
-                output=figure_dir / f"fitness_progress_{seed}.png",
+                output=figure_dir / f"fitness_progress_{seed}_{host_id}.png",
                 num_generations=num_generations,
             )
 
-            # Output best structures as images.
-            best_chromosome = generation.select_best(selection_size=1)[0]
-            best_name = (
-                f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
+            for generation_id in range(1, num_generations + 1):
+                logging.info(
+                    f"doing generation {generation_id} of seed {seed} with "
+                    f"host {host_id}"
+                )
+                logging.info(
+                    f"initial size is {generation.get_generation_size()}."
+                )
+                logging.info("doing mutations.")
+                merged_chromosomes = []
+                merged_chromosomes.extend(
+                    chromosome_gen.mutate_population(
+                        list_of_chromosomes=generation.chromosomes,
+                        generator=generator,
+                        gene_range=chromosome_gen.get_term_ids(),
+                        selection="random",
+                        num_to_select=5,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromosome_gen.mutate_population(
+                        list_of_chromosomes=generation.chromosomes,
+                        generator=generator,
+                        gene_range=chromosome_gen.get_prec_ids(),
+                        selection="random",
+                        num_to_select=5,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromosome_gen.mutate_population(
+                        list_of_chromosomes=generation.chromosomes,
+                        generator=generator,
+                        gene_range=chromosome_gen.get_term_ids(),
+                        selection="roulette",
+                        num_to_select=5,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromosome_gen.mutate_population(
+                        list_of_chromosomes=generation.chromosomes,
+                        generator=generator,
+                        gene_range=chromosome_gen.get_prec_ids(),
+                        selection="roulette",
+                        num_to_select=5,
+                        database=database,
+                    )
+                )
+
+                merged_chromosomes.extend(
+                    chromosome_gen.crossover_population(
+                        list_of_chromosomes=generation.chromosomes,
+                        generator=generator,
+                        selection="random",
+                        num_to_select=5,
+                        database=database,
+                    )
+                )
+
+                merged_chromosomes.extend(
+                    chromosome_gen.crossover_population(
+                        list_of_chromosomes=generation.chromosomes,
+                        generator=generator,
+                        selection="roulette",
+                        num_to_select=5,
+                        database=database,
+                    )
+                )
+
+                # Add the best 5 to the new generation.
+                merged_chromosomes.extend(
+                    generation.select_best(selection_size=5)
+                )
+
+                generation = HostGeneration(
+                    chromosomes=chromosome_gen.dedupe_population(
+                        merged_chromosomes
+                    ),
+                    chromosome_generator=chromosome_gen,
+                    fitness_calculator=fitness_calculator,
+                    structure_calculator=structure_calculator,
+                    structure_output=struct_output,
+                    calculation_output=calc_dir,
+                    database=database,
+                )
+                logging.info(
+                    f"new size is {generation.get_generation_size()}."
+                )
+
+                # Build, optimise and analyse each structure.
+                generation.run_structures(host_structure=host)
+                _ = generation.calculate_fitness_values()
+
+                # Add final state to generations.
+                generations.append(generation)
+
+                # Select the best of the generation for the next generation.
+                logging.info("maybe use roulette here?")
+                best = generation.select_best(selection_size=selection_size)
+                generation = HostGeneration(
+                    chromosomes=chromosome_gen.dedupe_population(best),
+                    chromosome_generator=chromosome_gen,
+                    fitness_calculator=fitness_calculator,
+                    structure_calculator=structure_calculator,
+                    structure_output=struct_output,
+                    calculation_output=calc_dir,
+                    database=database,
+                )
+                logging.info(
+                    f"final size is {generation.get_generation_size()}."
+                )
+
+                progress_plot(
+                    generations=generations,
+                    output=figure_dir
+                    / f"fitness_progress_{seed}_{host_id}.png",
+                    num_generations=num_generations,
+                )
+
+                # Output best structures as images.
+                best_chromosome = generation.select_best(selection_size=1)[0]
+                best_name = (
+                    f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
+                )
+                best_file = struct_output / (f"{best_name}_optc.mol")
+                cgexplore.utilities.Pymol(
+                    output_dir=best_dir,
+                    file_prefix=f"{prefix}_{seed}_g{generation_id}_h{host_id}_best",
+                    settings={
+                        "grid_mode": 0,
+                        "rayx": 1000,
+                        "rayy": 1000,
+                        "stick_rad": 0.3,
+                        "vdw": 0,
+                        "zoom_string": "custom",
+                        "orient": False,
+                    },
+                    pymol_path=pymol_path(),
+                ).visualise(
+                    [best_file],
+                    orient_atoms=None,
+                )
+
+            logging.info(
+                f"top scorer is {best_name} (seed: {seed}, host: {host_id})"
             )
 
-        logging.info(f"top scorer is {best_name} (seed: {seed})")
-
-    # Report.
-    found = set()
-    for generation in generations:
-        for chromo in generation.chromosomes:
-            found.add(chromo.name)
-    logging.info(
-        f"{len(found)} chromosomes found in EA (of "
-        f"{chromosome_gen.get_num_chromosomes()})"
-    )
-
-    fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
-    ax, ax1 = axs
-    xys = defaultdict(list)
-    plotted = 0
-    for entry in database.get_entries():
-        tstr = entry.properties["topology"]
-
-        fitness = fitness_calculator(
-            chromosome=chromosome_gen.select_chromosome(
-                tuple(entry.properties["chromosome"])
-            ),
-            chromosome_generator=chromosome_gen,
-            database=database,
-            structure_output=struct_output,
-            calculation_output=calc_dir,
+        # Report.
+        found = set()
+        for generation in generations:
+            for chromo in generation.chromosomes:
+                found.add(chromo.name)
+        logging.info(
+            f"{len(found)} chromosomes found in EA (of "
+            f"{chromosome_gen.get_num_chromosomes()})"
         )
 
-        ax.scatter(
-            entry.properties["opt_pore_data"]["min_distance"],
-            entry.properties["energy_per_bb"],
-            c=fitness,
-            edgecolor="none",
-            s=70,
-            marker="o",
-            alpha=1.0,
-            vmin=0,
-            vmax=40,
-            cmap="Blues",
-        )
-        xys[
-            (
-                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
-                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
+        fig, axs = plt.subplots(ncols=2, nrows=2, figsize=(16, 10))
+        (ax, ax1), (ax2, ax3) = axs
+
+        plotted = 0
+        for entry in database.get_entries():
+
+            fitness = fitness_calculator(
+                chromosome=chromosome_gen.select_chromosome(
+                    tuple(entry.properties["chromosome"])
+                ),
+                chromosome_generator=chromosome_gen,
+                database=database,
+                structure_output=struct_output,
+                calculation_output=calc_dir,
             )
-        ].append(
-            (
-                entry.properties["topology"],
-                entry.properties["energy_per_bb"],
-                fitness,
+            chromosome = chromosome_gen.select_chromosome(
+                entry.properties["chromosome"]
             )
+            (precursor,) = chromosome.get_precursors()
+
+            first_number = precursor.composition[0]
+
+            if "forcefield_dict" not in entry.properties:
+                continue
+            a_bead_s = entry.properties["forcefield_dict"]["s_dict"]["a"]
+            a_bead_e = entry.properties["forcefield_dict"]["e_dict"]["a"]
+            c_bead_s = entry.properties["forcefield_dict"]["s_dict"]["c"]
+            c_bead_e = entry.properties["forcefield_dict"]["e_dict"]["c"]
+
+            ax.scatter(
+                entry.properties["centroid_distance"],
+                entry.properties["energy_decomposition"]["potential"],
+                c=fitness,
+                edgecolor="none",
+                s=70,
+                marker="o",
+                alpha=1.0,
+                vmin=0,
+                vmax=10,
+                cmap="Blues",
+            )
+            ax1.scatter(
+                entry.properties["centroid_distance"],
+                entry.properties["energy_decomposition"]["potential"],
+                c=first_number,
+                edgecolor="none",
+                s=70,
+                marker="o",
+                alpha=1.0,
+                vmin=0,
+                vmax=6,
+                cmap="Blues",
+            )
+            ax2.scatter(
+                a_bead_s,
+                c_bead_s,
+                c=fitness,
+                edgecolor="none",
+                s=70,
+                marker="o",
+                alpha=1.0,
+                vmin=0,
+                vmax=10,
+                cmap="Blues",
+            )
+            ax3.scatter(
+                a_bead_e,
+                c_bead_e,
+                c=fitness,
+                edgecolor="none",
+                s=70,
+                marker="o",
+                alpha=1.0,
+                vmin=0,
+                vmax=10,
+                cmap="Blues",
+            )
+            plotted += 1
+
+        ax.tick_params(axis="both", which="major", labelsize=16)
+        ax.set_xlabel("centroid distance", fontsize=16)
+        ax.set_ylabel("energy", fontsize=16)
+        ax.set_title(
+            f"plotted: {plotted}, found: {len(found)}, "
+            f"possible: {chromosome_gen.get_num_chromosomes()}",
+            fontsize=16,
         )
-        plotted += 1
-
-    for x, y in xys:
-        fitness_threshold = 10
-        stable = [
-            i[0]
-            for i in xys[(x, y)]
-            if i[1] < isomer_energy() and i[2] > fitness_threshold
-        ]
-        # highfitness = [i[0] for i in xys[(x, y)] if i[2] > 10]
-        if len(stable) == 0:
-            cmaps = ["white"]
-        else:
-            cmaps = sorted([colours()[i] for i in stable])
-
-        if len(cmaps) > 8:
-            cmaps = ["k"]
-        cgexplore.utilities.draw_pie(
-            colours=cmaps,
-            xpos=x,
-            ypos=y,
-            size=400,
-            ax=ax1,
+        ax1.tick_params(axis="both", which="major", labelsize=16)
+        ax1.set_xlabel("centroid distance", fontsize=16)
+        ax1.set_ylabel("energy", fontsize=16)
+        ax1.set_title(
+            "by first num in composition",
+            fontsize=16,
         )
 
-    ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("pore size", fontsize=16)
-    ax.set_ylabel("energy", fontsize=16)
-    ax.set_yscale("log")
-    ax.set_title(
-        f"plotted: {plotted}, found: {len(found)}, "
-        f"possible: {chromosome_gen.get_num_chromosomes()}"
+        ax2.tick_params(axis="both", which="major", labelsize=16)
+        ax2.set_xlabel("a bead sigma", fontsize=16)
+        ax2.set_ylabel("c bead sigma", fontsize=16)
+
+        ax3.tick_params(axis="both", which="major", labelsize=16)
+        ax3.set_xlabel("a bead epsilon", fontsize=16)
+        ax3.set_ylabel("c bead epsilon", fontsize=16)
+
+        fig.tight_layout()
+        fig.savefig(
+            figure_dir / f"space_explored_{host_id}.png",
+            dpi=360,
+            bbox_inches="tight",
+        )
+        plt.close()
+
+    # Visualise all ligand topologies.
+    chromosome_gen = cgexplore.systems_optimisation.ChromosomeGenerator(
+        prefix=prefix,
+        present_beads=(abead, cbead, h1bead, h2bead, h3bead),
+        vdw_bond_cutoff=2,
     )
-    ax1.tick_params(axis="both", which="major", labelsize=16)
-    ax1.set_xlabel("ditopic", fontsize=16)
-    ax1.set_ylabel("tritopic", fontsize=16)
-    ax1.set_title(f"E: {isomer_energy()}, F: {fitness_threshold}", fontsize=16)
 
-    for tstr in colours():
-        ax1.scatter(
-            None,
-            None,
-            c=colours()[tstr],
-            edgecolor="none",
-            s=60,
-            marker="o",
-            alpha=1.0,
-            label=tstr,
-        )
-
-    ax1.legend(fontsize=16)
-    fig.tight_layout()
-    fig.savefig(
-        figure_dir / f"space_explored.png",
-        dpi=360,
-        bbox_inches="tight",
+    chromosome_gen.add_gene(
+        iteration=(
+            cgexplore.molecular.PrecursorGenerator(
+                composition=i,
+                present_beads=(
+                    abead,
+                    cbead,
+                    cbead,
+                    cbead,
+                    cbead,
+                    cbead,
+                    cbead,
+                ),
+                binder_beads=(cbead,),
+                placer_beads=(abead,),
+                bead_distance=1.5,
+            )
+            for i in compositions
+        ),
+        gene_type="precursor",
     )
-    plt.close()
+    for chromosome in chromosome_gen.yield_chromosomes():
+        (bb,) = chromosome.get_building_blocks()
+        viz_file = struct_output / f"{chromosome.get_string()}_unopt.mol"
+        bb.write(viz_file)
+        cgexplore.utilities.Pymol(
+            output_dir=all_dir,
+            file_prefix=f"{prefix}_{chromosome.get_string()}",
+            settings={
+                "grid_mode": 0,
+                "rayx": 1000,
+                "rayy": 1000,
+                "stick_rad": 0.7,
+                "vdw": 0,
+                "zoom_string": "custom",
+                "zoom_scale": 1,
+                "orient": False,
+            },
+            pymol_path=pymol_path(),
+        ).visualise(
+            [viz_file],
+            orient_atoms=None,
+        )
 
 
 if __name__ == "__main__":
