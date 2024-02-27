@@ -6,7 +6,7 @@ from cgexplore._internal.molecular.beads import (
     periodic_table,
     string_to_atom_number,
 )
-from cgexplore._internal.molecular.conformer import Conformer
+from cgexplore._internal.molecular.conformer import Conformer, SpindryConformer
 from cgexplore._internal.molecular.ensembles import Ensemble, Timestep
 from cgexplore._internal.molecular.molecule_construction import (
     FourC0Arm,
@@ -41,6 +41,7 @@ __all__ = [
     "TwoC2Arm",
     "TwoC3Arm",
     "Conformer",
+    "SpindryConformer",
     "Timestep",
     "Ensemble",
     "CgBead",
