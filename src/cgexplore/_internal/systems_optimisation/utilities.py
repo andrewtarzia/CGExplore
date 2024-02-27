@@ -204,6 +204,7 @@ def yield_near_models(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path | str,
+    replace_name: str,
     neighbour_library: list,
 ) -> abc.Iterator[stk.Molecule]:
     """Yield structures of models with neighbouring force field parameters.
@@ -227,10 +228,8 @@ def yield_near_models(
         An stk molecule.
 
     """
-    ff_name = name.split("_")[1]
-
     for new_ff_id in neighbour_library:
-        new_name = name.replace(ff_name, f"{new_ff_id}")
+        new_name = name.replace(replace_name, f"{new_ff_id}")
         new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
         if new_fina_mol_file.exists():
             yield molecule.with_structure_from_file(str(new_fina_mol_file))
