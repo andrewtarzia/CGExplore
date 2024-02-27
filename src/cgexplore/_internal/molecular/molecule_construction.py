@@ -47,25 +47,24 @@ class PrecursorGenerator:
     def _get_clusters(self, edges: list[tuple]) -> list[list]:
         tmp_connections = []
         for connection in edges:
-            tmp_connections = [
-                [node, connection]
-                for node in connection
-                if (node in k for k in edges)
-            ]
+            for node in connection:
+                if (node in k for k in edges):
+                    tmp_connections.append([node, connection])  # noqa: PERF401
 
-        cluster_list = []
+        cl_list = []
         for i in range(len(edges) + 1):
             k = [elem[1] for elem in tmp_connections if elem[0] == i]
-            cluster_list.append(k)
+            cl_list.append(k)
 
         t = [
-            {val for sublist in elem for val in sublist}
-            for elem in cluster_list
+            set([val for sublist in elem for val in sublist])  # noqa: C403
+            for elem in cl_list
         ]
 
         cluster = []
-        for o, l in enumerate(t):  # noqa: E741
-            li = list(l)
+        for o, link in enumerate(t):
+            li = [m for m in link]  # noqa: C416
+
             li.remove(o)
             cluster.append([o, li])
         return cluster
@@ -92,7 +91,7 @@ class PrecursorGenerator:
         # attach only one bead
         elif num_beads == 1 and center_idx > 0:
             rad = 2 * np.pi
-            v = coordinates[center_idx] - coordinates[cluster[1][0]]
+            v = coordinates[center_idx] - coordinates[np.min(cluster[1])]
             u = vnorm_r(np.dot(get_rotation(rad), v), self.bead_distance)
             coordinates[ndx] = u + coordinates[center_idx]
         # loop for a multiple bead addition
@@ -100,7 +99,9 @@ class PrecursorGenerator:
             rad = -2 * np.pi / (num_beads + 1)
             rot_tmp = rad
             for _ in range(num_beads):
-                v_tmp = coordinates[center_idx] - coordinates[cluster[1][0]]
+                v_tmp = (
+                    coordinates[center_idx] - coordinates[np.min(cluster[1])]
+                )
                 u_tmp = vnorm_r(
                     np.dot(get_rotation(rot_tmp + np.pi), v_tmp),
                     self.bead_distance,
