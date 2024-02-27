@@ -66,6 +66,14 @@ class Chromosome:
             if self.gene_dict[i][2] == "precursor"
         )
 
+    def get_precursors(self) -> tuple:
+        """Get the chromosomes precursors."""
+        return tuple(
+            self.gene_dict[i][1]
+            for i in self.gene_dict
+            if self.gene_dict[i][2] == "precursor"
+        )
+
     def get_forcefield(self) -> ForceField:  # noqa: C901
         """Get chromosome forcefield."""
         changed_tuples = tuple(
