@@ -20,7 +20,11 @@ from cgexplore._internal.utilities.utilities import (
     convert_pyramid_angle,
     draw_pie,
 )
-from cgexplore._internal.utilities.visualisation import Pymol
+from cgexplore._internal.utilities.visualisation import (
+    Pymol,
+    add_structure_to_ax,
+    add_text_to_ax,
+)
 
 __all__ = [
     "Pymol",
@@ -38,4 +42,6 @@ __all__ = [
     "soften_forcefield",
     "yield_near_models",
     "yield_shifted_models",
+    "add_structure_to_ax",
+    "add_text_to_ax",
 ]
