@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to visulize structures in matplotlib.
@@ -294,7 +293,9 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs, strict=False)):
+    for i, (sname, ax) in enumerate(
+        zip(structure_names, flat_axs, strict=False)
+    ):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[
             ton["cage_name"] == naming_convention_map(sname[0], sname[1])
