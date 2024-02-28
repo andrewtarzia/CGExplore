@@ -9,6 +9,8 @@ Author: Andrew Tarzia
 import pathlib
 import subprocess as sp
 
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
 import stk
 
 
@@ -148,3 +150,14 @@ class Pymol:
             capture_output=True,
             check=True,
         )
+
+
+def add_text_to_ax(x: float, y: float, ax: plt.Axes, text: str) -> None:
+    """Add a string to an axis."""
+    ax.text(x=x, y=y, s=text, fontsize=16, transform=ax.transAxes)
+
+
+def add_structure_to_ax(ax: plt.Axes, png_file: pathlib.Path) -> None:
+    """Add an image to an axis."""
+    img = mpimg.imread(png_file)
+    ax.imshow(img)
