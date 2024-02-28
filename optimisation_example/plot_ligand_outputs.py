@@ -77,7 +77,6 @@ def visualise_structures(
             "stick_rad": 0.3,
             "vdw": 0,
             "zoom_string": "custom",
-            "zoom_scale": 1,
             "orient": False,
         },
         pymol_path=pymol_path(),
@@ -116,6 +115,7 @@ def visualise_structures(
         bbox_inches="tight",
     )
     plt.close()
+    raise SystemExit
 
 
 def analyse_complex(
@@ -750,561 +750,209 @@ def main() -> None:
 
     database = cgexplore.utilities.AtomliteDatabase(data_dir / "test.db")
 
-    xbead = cgexplore.molecular.CgBead(
-        element_string="Co",
-        bead_class="x",
-        bead_type="x",
-        coordination=3,
-    )
-    ybead = cgexplore.molecular.CgBead(
-        element_string="Fe",
-        bead_class="y",
-        bead_type="y",
-        coordination=2,
-    )
-    # Host beads.
-    h1bead = cgexplore.molecular.CgBead(
-        element_string="Pd",
-        bead_class="m",
-        bead_type="m",
-        coordination=4,
-    )
-    h2bead = cgexplore.molecular.CgBead(
-        element_string="C",
-        bead_class="n",
-        bead_type="n",
-        coordination=3,
-    )
-    h3bead = cgexplore.molecular.CgBead(
-        element_string="Pb",
-        bead_class="b",
-        bead_type="b",
-        coordination=2,
-    )
-    h4bead = cgexplore.molecular.CgBead(
-        element_string="Ba",
-        bead_class="a",
-        bead_type="a",
-        coordination=2,
-    )
-    h5bead = cgexplore.molecular.CgBead(
-        element_string="Ag",
-        bead_class="c",
-        bead_type="c",
-        coordination=2,
-    )
+    fig, axs = plt.subplots(ncols=3, nrows=2, figsize=(16, 10))
+    (ax, ax1, ax2), (ax3, ax4, ax5) = axs
 
-    num_beads = 6
-    compositions = [
-        i
-        for i in it.product(range(num_beads + 1), repeat=num_beads)
-        if check_fit(i, num_beads=num_beads, max_shell=6)
-    ]
-    compositions = sorted(compositions, reverse=True)
-
-    # Settings.
-    seeds = [4, 280, 999, 2196]
-    num_generations = 20
-    selection_size = 10
-
-    # Now we want to optimise this for binding a specific host (actually a
-    # series of hosts).
-    hosts = [
-        stk.BuildingBlock.init_from_file(
-            str(wd / "hosts" / "6P8_4C1m1b1_3C1n1b1_f9_optc.mol")
-        ),
-        stk.BuildingBlock.init_from_file(
-            str(wd / "hosts" / "6P8_4C1m1b1_3C1n1b1_f27_optc.mol")
-        ),
-        stk.BuildingBlock.init_from_file(
-            str(wd / "hosts" / "4P6_3C1n1b1_2C1c1a1_f127_optc.mol")
-        ),
-        stk.BuildingBlock.init_from_file(
-            str(wd / "hosts" / "4P6_3C1n1b1_2C1c1a1_f291_optc.mol")
-        ),
-        stk.BuildingBlock.init_from_file(
-            str(wd / "hosts" / "6P12_4C1m1b1_2C1c1a1_f182_optc.mol")
-        ),
-        stk.BuildingBlock.init_from_file(
-            str(wd / "hosts" / "6P12_4C1m1b1_2C1c1a1_f78_optc.mol")
-        ),
-    ]
-    host_info = {
-        "host0": ("Pd", 6),
-        "host1": ("Pd", 6),
-        "host2": ("Ag", 6),
-        "host3": ("Ag", 6),
-        "host4": ("Pd", 6),
-        "host5": ("Pd", 6),
+    datas = {f"host{i}": defaultdict(list) for i in range(6)}
+    host_shapes = {
+        "host0": "OC-6",
+        "host1": "OC-6",
+        "host2": "OC-6",
+        "host3": "OC-6",
+        "host4": "OC-6",
+        "host5": "OC-6",
     }
-    for host_id, host in enumerate(hosts):
-        prefix = f"opt{host_id}"
-
-        # Add some host measures to database.
-        host_name = f"host{host_id}"
-        if not database.has_molecule(key=host_name):
-            database.add_molecule(molecule=host, key=host_name)
-            database.add_properties(
-                key=host_name,
-                property_dict={"prefix": "host"},
-            )
-
-        entry = database.get_entry(key=host_name)
+    plotted = 0
+    for entry in database.get_entries():
         properties = entry.properties
+        if properties["prefix"] == "host":
+            continue
 
-        if "node_shape_measures" not in properties:
-            shape_calc = cgexplore.analysis.ShapeMeasure(
-                output_dir=(calc_dir / f"{host_name}_nshape"),
-                shape_path=shape_path(),
-                shape_string=None,
-            )
+        if "host_name" not in properties:
+            continue
+        host_name = properties["host_name"]
 
-            n_shape_mol = shape_calc.get_shape_molecule_byelement(
-                molecule=host,
-                element=host_info[host_name][0],
-                expected_points=host_info[host_name][1],
-            )
-            node_shape_measures = shape_calc.calculate(n_shape_mol)
-
-            host_analysis = cgexplore.analysis.GeomMeasure()
-            database.add_properties(
-                key=host_name,
-                property_dict={
-                    "host_shape": node_shape_measures,
-                    "host_pore": host_analysis.calculate_min_distance(host),
-                    "host_size": host_analysis.calculate_max_diameter(host),
-                },
-            )
-
-        chromosome_gen = cgexplore.systems_optimisation.ChromosomeGenerator(
-            prefix=prefix,
-            present_beads=(
-                xbead,
-                ybead,
-                h1bead,
-                h2bead,
-                h3bead,
-                h4bead,
-                h5bead,
-            ),
-            vdw_bond_cutoff=2,
+        datas[host_name]["chromosomes"].append(properties["chromosome"])
+        datas[host_name]["fitness"].append(properties["fitness"])
+        datas[host_name]["host_shape"].append(
+            properties["host_shape"][host_shapes[host_name]]
+        )
+        datas[host_name]["host_size"].append(properties["host_size"])
+        datas[host_name]["host_pore"].append(
+            properties["host_pore"]["min_distance"]
+        )
+        datas[host_name]["guest_diameters"].append(
+            properties["guest_diameters"]
+        )
+        datas[host_name]["centroid_distance"].append(
+            properties["centroid_distance"]
+        )
+        datas[host_name]["potential"].append(
+            properties["energy_decomposition"]["potential"]
         )
 
-        chromosome_gen.add_gene(
-            iteration=(
-                cgexplore.molecular.PrecursorGenerator(
-                    composition=i,
-                    present_beads=(
-                        xbead,
-                        ybead,
-                        ybead,
-                        ybead,
-                        ybead,
-                        ybead,
-                        ybead,
-                    ),
-                    binder_beads=(),
-                    placer_beads=(),
-                    bead_distance=1.5,
-                )
-                for i in compositions
-            ),
-            gene_type="precursor",
+        plotted += 1
+
+    xwidth = 2
+    for host_name in datas:
+        xdata = datas[host_name]["fitness"]
+        xbins = np.arange(0 - xwidth, 50 + xwidth, xwidth)
+        ax.hist(
+            x=xdata,
+            bins=xbins,
+            density=True,
+            # bottom=fn,
+            histtype="stepfilled",
+            stacked=True,
+            linewidth=1.0,
+            # facecolor=leg_info()[ami]["c"],
+            alpha=1.0,
+            # color=leg_info()[ami]['c'],
+            # color='white',
+            edgecolor="k",
+            label=f"{host_name}: {len(xdata)}",
         )
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("fitness", fontsize=16)
+    ax.set_ylabel("frequency", fontsize=16)
+    ax.legend(fontsize=16)
+    ax.set_yscale("log")
 
-        # Add modifications to nonbonded interactions.
-        nb_epsilons = (1, 5, 10, 15)
-        nb_sigmas = (0.7, 1, 1.5, 2)
-        definer_dict = {}
-        present_beads = (xbead, ybead)
-        for options in present_beads:
-            type_string = f"{options.bead_type}"
-            definer_dict[type_string] = ("nb", nb_epsilons, nb_sigmas)
-
-        # Host nonbonded terms are constant.
-        definer_dict["m"] = ("nb", 10, 1)
-        definer_dict["n"] = ("nb", 10, 1)
-        definer_dict["b"] = ("nb", 10, 1)
-        definer_dict["a"] = ("nb", 10, 1)
-        definer_dict["c"] = ("nb", 10, 1)
-
-        chromosome_gen.add_forcefield_dict(definer_dict=definer_dict)
-
-        for seed in seeds:
-
-            generator = np.random.default_rng(seed)
-
-            initial_population = chromosome_gen.select_random_population(
-                generator,
-                size=selection_size,
-            )
-
-            # Yield this.
-            generations = []
-
-            generation = HostGeneration(
-                chromosomes=initial_population,
-                chromosome_generator=chromosome_gen,
-                fitness_calculator=fitness_calculator,
-                structure_calculator=structure_calculator,
-                structure_output=struct_output,
-                calculation_output=calc_dir,
-                database=database,
-            )
-
-            generation.run_structures(host)
-            _ = generation.calculate_fitness_values()
-            generations.append(generation)
-
-            progress_plot(
-                generations=generations,
-                output=figure_dir / f"fitness_progress_{seed}_{host_id}.png",
-                num_generations=num_generations,
-            )
-
-            for generation_id in range(1, num_generations + 1):
-
-                logging.info(
-                    f"doing generation {generation_id} of seed {seed} with "
-                    f"host {host_id}"
-                )
-                logging.info(
-                    f"initial size is {generation.get_generation_size()}."
-                )
-                logging.info("doing mutations.")
-                merged_chromosomes = []
-                merged_chromosomes.extend(
-                    chromosome_gen.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromosome_gen.get_term_ids(),
-                        selection="random",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromosome_gen.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromosome_gen.get_prec_ids(),
-                        selection="random",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromosome_gen.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromosome_gen.get_term_ids(),
-                        selection="roulette",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-                merged_chromosomes.extend(
-                    chromosome_gen.mutate_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        gene_range=chromosome_gen.get_prec_ids(),
-                        selection="roulette",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-
-                merged_chromosomes.extend(
-                    chromosome_gen.crossover_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        selection="random",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-
-                merged_chromosomes.extend(
-                    chromosome_gen.crossover_population(
-                        list_of_chromosomes=generation.chromosomes,
-                        generator=generator,
-                        selection="roulette",
-                        num_to_select=5,
-                        database=database,
-                    )
-                )
-
-                # Add the best 5 to the new generation.
-                merged_chromosomes.extend(
-                    generation.select_best(selection_size=5)
-                )
-
-                generation = HostGeneration(
-                    chromosomes=chromosome_gen.dedupe_population(
-                        merged_chromosomes
-                    ),
-                    chromosome_generator=chromosome_gen,
-                    fitness_calculator=fitness_calculator,
-                    structure_calculator=structure_calculator,
-                    structure_output=struct_output,
-                    calculation_output=calc_dir,
-                    database=database,
-                )
-                logging.info(
-                    f"new size is {generation.get_generation_size()}."
-                )
-
-                # Build, optimise and analyse each structure.
-                generation.run_structures(host_structure=host)
-                _ = generation.calculate_fitness_values()
-
-                # Add final state to generations.
-                generations.append(generation)
-
-                # Select the best of the generation for the next generation.
-                logging.info("maybe use roulette here?")
-                best = generation.select_best(selection_size=selection_size)
-                generation = HostGeneration(
-                    chromosomes=chromosome_gen.dedupe_population(best),
-                    chromosome_generator=chromosome_gen,
-                    fitness_calculator=fitness_calculator,
-                    structure_calculator=structure_calculator,
-                    structure_output=struct_output,
-                    calculation_output=calc_dir,
-                    database=database,
-                )
-                logging.info(
-                    f"final size is {generation.get_generation_size()}."
-                )
-
-                progress_plot(
-                    generations=generations,
-                    output=figure_dir
-                    / f"fitness_progress_{seed}_{host_id}.png",
-                    num_generations=num_generations,
-                )
-
-                # Output best structures as images.
-                best_chromosome = generation.select_best(selection_size=1)[0]
-                best_name = (
-                    f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
-                )
-                best_energy = database.get_property(
-                    key=f"{best_chromosome.prefix}_{best_chromosome.get_string()}",
-                    property_key="energy_decomposition",
-                    property_type=dict,
-                )["potential"]
-                summary_string = f"E={round(best_energy,2)}"
-                liga_name = best_chromosome.get_string()[:-4]
-                (precursor,) = best_chromosome.get_precursors()
-                ligand_string = "".join(str(i) for i in precursor.composition)
-
-                visualise_structures(
-                    file_prefix=f"{prefix}_{seed}_g{generation_id}_h{host_id}_best",
-                    best_name=best_name,
-                    liga_name=liga_name,
-                    summary_string=summary_string,
-                    ligand_string=ligand_string,
-                    image_dir=best_dir,
-                    structure_dir=struct_output,
-                )
-
-            logging.info(
-                f"top scorer is {best_name} (seed: {seed}, host: {host_id})"
-            )
-
-        # Report.
-        found = set()
-        for generation in generations:
-            for chromo in generation.chromosomes:
-                found.add(chromo.name)
-        logging.info(
-            f"{len(found)} chromosomes found in EA (of "
-            f"{chromosome_gen.get_num_chromosomes()})"
+    xys = {i: [] for i in datas if i != "host0"}
+    for chromosome in datas["host0"]["chromosomes"]:
+        fitness_x = next(
+            datas["host0"]["fitness"][i]
+            for i in range(len(datas["host0"]["fitness"]))
+            if datas["host0"]["chromosomes"][i] == chromosome
         )
-
-        fig, axs = plt.subplots(ncols=3, nrows=2, figsize=(16, 10))
-        (ax, ax1, ax2), (ax3, ax4, ax5) = axs
-
-        plotted = 0
-        datas = defaultdict(list)
-        for entry in database.get_entries():
-            if prefix != entry.properties["prefix"]:
+        for host_name in xys:
+            if host_name == "host0":
                 continue
-
-            datas["fitness"].append(entry.properties["fitness"])
-            chromosome = chromosome_gen.select_chromosome(
-                entry.properties["chromosome"]
-            )
-            (precursor,) = chromosome.get_precursors()
-
-            datas["centroid_distance"].append(
-                entry.properties["centroid_distance"]
-            )
-            datas["potential"].append(
-                entry.properties["energy_decomposition"]["potential"]
-            )
-
-            datas["first_number"].append(precursor.composition[0])
-
-            datas["x_bead_s"].append(
-                entry.properties["forcefield_dict"]["s_dict"]["x"]
-            )
-            datas["x_bead_e"].append(
-                entry.properties["forcefield_dict"]["e_dict"]["x"]
-            )
-            datas["y_bead_s"].append(
-                entry.properties["forcefield_dict"]["s_dict"]["y"]
-            )
-            datas["y_bead_e"].append(
-                entry.properties["forcefield_dict"]["e_dict"]["y"]
-            )
-
-            datas["diameter_1"].append(entry.properties["guest_diameters"][0])
-            datas["diameter_2"].append(entry.properties["guest_diameters"][1])
-
-            ratio_1, ratio_2 = entry.properties["guest_ratios"]["0"]
-            datas["ratio_1"].append(ratio_1)
-            datas["ratio_2"].append(ratio_2)
-            plotted += 1
-
-        add_scatter(ax=ax, x="centroid_distance", y="potential", datas=datas)
-        add_scatter(ax=ax4, x="diameter_1", y="diameter_2", datas=datas)
-        add_scatter(ax=ax5, x="ratio_1", y="ratio_2", datas=datas)
-
-        length = len(datas["fitness"])
-        xwidth = 2
-        fitness_lim = (min(datas["fitness"]), max(datas["fitness"]))
-        fit_thresh = 10
-        for fn in (1, 2, 3, 4, 5, 6):
-            xdata = [
-                datas["fitness"][i]
-                for i in range(length)
-                if datas["first_number"][i] == fn
-                # and datas["fitness"][i] > fit_thresh
+            fitness_y = [
+                datas[host_name]["fitness"][i]
+                for i in range(len(datas[host_name]["fitness"]))
+                if datas[host_name]["chromosomes"][i] == chromosome
             ]
-            if len(xdata) == 0:
-                continue
+            if len(fitness_y) == 1:
+                xys[host_name].append((fitness_x, fitness_y[0]))
 
-            xbins = np.arange(
-                fitness_lim[0] - xwidth, fitness_lim[1] + xwidth, xwidth
-            )
-            ax1.hist(
-                x=xdata,
-                bins=xbins,
-                density=True,
-                # bottom=fn,
-                histtype="stepfilled",
-                stacked=True,
-                linewidth=1.0,
-                # facecolor=leg_info()[ami]["c"],
-                alpha=1.0,
-                # color=leg_info()[ami]['c'],
-                # color='white',
-                edgecolor="k",
-                label=fn,
-            )
-
-        xwidth = 0.2
-        xlim = (0, 3)
-        for x_name in ("x_bead_s", "y_bead_s"):
-            xdata = [
-                datas[x_name][i]
-                for i in range(length)
-                if datas["fitness"][i] > fit_thresh
-            ]
-            if len(xdata) == 0:
-                continue
-
-            xbins = np.arange(xlim[0] - xwidth, xlim[1] + xwidth, xwidth)
-            ax2.hist(
-                x=xdata,
-                bins=xbins,
-                density=False,
-                histtype="stepfilled",
-                stacked=True,
-                linewidth=1.0,
-                alpha=0.8,
-                edgecolor="k",
-                label=x_name,
-            )
-
-        xwidth = 0.5
-        xlim = (0, 20)
-        for x_name in ("x_bead_e", "y_bead_e"):
-            xdata = [
-                datas[x_name][i]
-                for i in range(length)
-                if datas["fitness"][i] > fit_thresh
-            ]
-            if len(xdata) == 0:
-                continue
-
-            xbins = np.arange(xlim[0] - xwidth, xlim[1] + xwidth, xwidth)
-            ax3.hist(
-                x=xdata,
-                bins=xbins,
-                density=False,
-                histtype="stepfilled",
-                stacked=True,
-                linewidth=1.0,
-                alpha=0.8,
-                edgecolor="k",
-                label=x_name,
-            )
-
-        ax.tick_params(axis="both", which="major", labelsize=16)
-        ax.set_xlabel("centroid distance", fontsize=16)
-        ax.set_ylabel("energy", fontsize=16)
-        ax.set_xlim(-0.5, 4)
-        ax.set_ylim(-140, 10)
-        ax.set_title(
-            f"plotted: {plotted}, found: {len(found)}, "
-            f"possible: {chromosome_gen.get_num_chromosomes()}",
-            fontsize=16,
+    for host_name in xys:
+        xs = [i[0] for i in xys[host_name]]
+        ys = [i[1] for i in xys[host_name]]
+        ax1.scatter(
+            xs,
+            ys,
+            alpha=1.0,
+            s=40,
+            edgecolor="none",
+            label=host_name,
         )
+    ax1.tick_params(axis="both", which="major", labelsize=16)
+    ax1.set_xlabel("host 0 fitness", fontsize=16)
+    ax1.set_ylabel("host X fitness", fontsize=16)
+    ax1.legend(fontsize=16)
+    ax1.plot((0, 50), (0, 50), c="gray", ls="--")
 
-        ax1.tick_params(axis="both", which="major", labelsize=16)
-        ax1.set_xlabel("fitness", fontsize=16)
-        ax1.set_ylabel("frequency", fontsize=16)
-        ax1.legend(fontsize=16)
-        ax1.set_xlim(0, 120)
-        ax1.set_yscale("log")
-
-        ax2.tick_params(axis="both", which="major", labelsize=16)
-        ax2.set_xlabel("sigma", fontsize=16)
-        ax2.set_ylabel("count high fitness", fontsize=16)
-        ax2.legend(fontsize=16)
-        ax2.set_xlim(0, 3)
-
-        ax3.tick_params(axis="both", which="major", labelsize=16)
-        ax3.set_xlabel("epsilon", fontsize=16)
-        ax3.set_ylabel("count high fitness", fontsize=16)
-        ax3.legend(fontsize=16)
-        ax3.set_xlim(0, 20)
-
-        ax4.tick_params(axis="both", which="major", labelsize=16)
-        ax4.set_xlabel("diameter 1", fontsize=16)
-        ax4.set_ylabel("diameter 2", fontsize=16)
-        ax4.set_xlim(0, 5)
-        ax4.set_ylim(0, 10)
-
-        ax5.tick_params(axis="both", which="major", labelsize=16)
-        ax5.set_xlabel("NPR1", fontsize=16)
-        ax5.set_ylabel("NPR2", fontsize=16)
-        ax5.plot((0.5, 0, 1, 0.5), (0.5, 1, 1, 0.5), c="k", lw=1, alpha=0.4)
-        ax5.text(x=0.55, y=0.5, s="d", fontsize=16)
-        ax5.text(x=0, y=1.05, s="r", fontsize=16)
-        ax5.text(x=1, y=1.05, s="s", fontsize=16)
-        ax5.set_ylim(0.45, 1.1)
-
-        fig.tight_layout()
-        fig.savefig(
-            figure_dir / f"space_explored_{host_id}.png",
-            dpi=360,
-            bbox_inches="tight",
+    xwidth = 5
+    for host_name in datas:
+        xdata = datas[host_name]["potential"]
+        xbins = np.arange(-140 - xwidth, 10 + xwidth, xwidth)
+        ax2.hist(
+            x=xdata,
+            bins=xbins,
+            density=True,
+            # bottom=fn,
+            histtype="stepfilled",
+            stacked=True,
+            linewidth=1.0,
+            # facecolor=leg_info()[ami]["c"],
+            alpha=1.0,
+            # color=leg_info()[ami]['c'],
+            # color='white',
+            edgecolor="k",
         )
-        plt.close()
+    ax2.tick_params(axis="both", which="major", labelsize=16)
+    ax2.set_xlabel("potential", fontsize=16)
+    ax2.set_ylabel("frequency", fontsize=16)
+
+    xwidth = 0.2
+    for host_name in datas:
+        xdata = datas[host_name]["centroid_distance"]
+        xbins = np.arange(0 - xwidth, 4 + xwidth, xwidth)
+        ax5.hist(
+            x=xdata,
+            bins=xbins,
+            density=True,
+            # bottom=fn,
+            histtype="stepfilled",
+            stacked=True,
+            linewidth=1.0,
+            # facecolor=leg_info()[ami]["c"],
+            alpha=1.0,
+            # color=leg_info()[ami]['c'],
+            # color='white',
+            edgecolor="k",
+        )
+    ax5.tick_params(axis="both", which="major", labelsize=16)
+    ax5.set_xlabel("centroid_distance", fontsize=16)
+    ax5.set_ylabel("frequency", fontsize=16)
+
+    for host_name in datas:
+        xdata = datas[host_name]["host_size"][0]
+        ydata = datas[host_name]["host_pore"][0]
+
+        ax3.scatter(
+            xdata,
+            ydata,
+            alpha=1.0,
+            s=120,
+            edgecolor="k",
+            label=host_name,
+        )
+    ax3.tick_params(axis="both", which="major", labelsize=16)
+    ax3.set_xlabel("host max size", fontsize=16)
+    ax3.set_ylabel("host pore", fontsize=16)
+    ax3.legend(fontsize=16)
+
+    fitness_threshold = 5
+    for host_name in datas:
+        length = len(datas[host_name]["fitness"])
+        xdata = [
+            datas[host_name]["guest_diameters"][i][0]
+            for i in range(length)
+            if datas[host_name]["fitness"][i] > fitness_threshold
+        ]
+        ydata = [
+            datas[host_name]["guest_diameters"][i][1]
+            for i in range(length)
+            if datas[host_name]["fitness"][i] > fitness_threshold
+        ]
+        # ydata = [
+        #     datas[host_name]["fitness"][i]
+        #     for i in range(length)
+        #     if datas[host_name]["fitness"][i] > fitness_threshold
+        # ]
+
+        ax4.scatter(
+            xdata,
+            ydata,
+            alpha=1.0,
+            s=80,
+            edgecolor="none",
+            label=host_name,
+        )
+    ax4.tick_params(axis="both", which="major", labelsize=16)
+    ax4.set_xlabel("guest min diameter", fontsize=16)
+    ax4.set_ylabel("guest mid diameter", fontsize=16)
+    ax4.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        figure_dir / "host_data.png",
+        dpi=360,
+        bbox_inches="tight",
+    )
+    plt.close()
 
 
 if __name__ == "__main__":
