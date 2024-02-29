@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Utilities for analysis and plotting.
@@ -183,7 +182,10 @@ def analyse_cage(
             else:
                 if ("a1", "c1") in (cp, tuple(reversed(cp))):
                     c2r0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
-                if ("b1", "n1") in (cp, tuple(reversed(cp))) or ("b1", "m1") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1") in (cp, tuple(reversed(cp))) or (
+                    "b1",
+                    "m1",
+                ) in (cp, tuple(reversed(cp))):
                     clr0 = bt.bond_r.value_in_unit(openmm.unit.angstrom)
 
         c2angle = None
@@ -199,7 +201,11 @@ def analyse_cage(
             else:
                 if ("b1", "a1", "c1") in (cp, tuple(reversed(cp))):
                     c2angle = at.angle.value_in_unit(openmm.unit.degrees)
-                if ("b1", "n1", "b1") in (cp, tuple(reversed(cp))) or ("b1", "m1", "b1") in (cp, tuple(reversed(cp))):
+                if ("b1", "n1", "b1") in (cp, tuple(reversed(cp))) or (
+                    "b1",
+                    "m1",
+                    "b1",
+                ) in (cp, tuple(reversed(cp))):
                     clangle = at.angle.value_in_unit(openmm.unit.degrees)
 
         forcefield_dict = {
