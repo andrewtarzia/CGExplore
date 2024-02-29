@@ -11,7 +11,7 @@ import stk
 import vabene as vb
 from rdkit import RDLogger
 
-from .beads import CgBead, periodic_table
+from .beads import CgBead, string_to_atom_number
 from .utilities import get_rotation, vnorm_r
 
 RDLogger.DisableLog("rdApp.*")
@@ -23,6 +23,7 @@ class GeneratedPrecursor:
     placer_beads: tuple[CgBead, ...]
     molecule: stk.BuildingBlock
     db_key: str
+    composition: str
 
     def __post_init__(self) -> None:
         new_fgs = tuple(
@@ -201,9 +202,10 @@ class PrecursorGenerator:
             [np.array([i[0], i[1], 0]) for i in coordinates]
         )
 
-        pt = periodic_table()
         atoms = [
-            stk.Atom(i, pt[self.present_beads[i].element_string])
+            stk.Atom(
+                i, string_to_atom_number(self.present_beads[i].element_string)
+            )
             for i in self.graph.nodes
         ]
         bonds = []
@@ -306,10 +308,10 @@ class VaBeneGenerator:
         )
 
     def __post_init__(self) -> None:
-        pt = periodic_table()
+
         vb_atoms = tuple(
             vb.Atom(
-                atomic_number=pt[i.element_string],
+                atomic_number=string_to_atom_number(i.element_string),
                 charge=0,
                 max_valence=i.coordination,
             )
