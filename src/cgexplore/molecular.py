@@ -13,7 +13,6 @@ from cgexplore._internal.molecular.molecule_construction import (
     FourC1Arm,
     LinearPrecursor,
     Precursor,
-    PrecursorGenerator,
     SquarePrecursor,
     ThreeC0Arm,
     ThreeC1Arm,
@@ -24,10 +23,15 @@ from cgexplore._internal.molecular.molecule_construction import (
     TwoC2Arm,
     TwoC3Arm,
 )
+from cgexplore._internal.molecular.precursor_generator import (
+    PrecursorGenerator,
+    check_fit,
+)
 
 __all__ = [
     "Precursor",
     "PrecursorGenerator",
+    "check_fit",
     "TrianglePrecursor",
     "SquarePrecursor",
     "LinearPrecursor",
