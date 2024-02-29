@@ -13,7 +13,6 @@ import numpy as np
 import openmm
 import spindry as spd
 import stk
-from scipy.spatial.distance import cdist
 
 
 def pymol_path() -> pathlib.Path:
@@ -125,7 +124,6 @@ def analyse_complex(
     forcefield: cgexplore.forcefields.ForceField,
     chromosome: cgexplore.systems_optimisation.Chromosome,
 ) -> None:
-
     entry = database.get_entry(key=name)
     properties = entry.properties
 
@@ -145,7 +143,6 @@ def analyse_complex(
         e_dict = {}
 
         for at in ff_targets["nonbondeds"]:
-
             s_dict[at.bead_class] = at.sigma.value_in_unit(
                 openmm.unit.angstrom
             )
@@ -172,7 +169,6 @@ def fitness_calculator(
     calculation_output: pathlib.Path,  # noqa: ARG001
     structure_output: pathlib.Path,  # noqa: ARG001
 ) -> float:
-
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
 
     entry = database.get_entry(name)
@@ -189,250 +185,6 @@ def fitness_calculator(
     return fitness
 
 
-class CgAtom(spd.Atom):
-    """A new spindry atom with epsilon."""
-
-    def __init__(
-        self,
-        id: int,  # noqa: A002
-        element_string: str,
-        epsilon: float,
-        sigma: float,
-    ) -> None:
-        """Initialize CgAtom."""
-        super().__init__(id, element_string)
-        self._epsilon = epsilon
-        self._sigma = sigma
-
-    def get_epsilon(self) -> float:
-        """Get the epsilon value."""
-        return self._epsilon
-
-    def get_sigma(self) -> float:
-        """Get the sigma value."""
-        return self._sigma
-
-
-class CgPotential(spd.Potential):
-    """A Cg non-bonded potential function."""
-
-    def _nonbond_potential(
-        self,
-        distance: np.ndarray,
-        sigmas: np.ndarray,
-        epsilons: np.ndarray,
-    ) -> np.ndarray:
-        """Define a Lennard-Jones nonbonded potential.
-
-        This potential has no relation to an empircal forcefield.
-
-        """
-        return epsilons * (
-            (sigmas / distance) ** 12 - (sigmas / distance) ** 6
-        )
-
-    def _combine_sigma(self, radii1: float, radii2: float) -> float:
-        """Combine radii using Lorentz-Berthelot rules."""
-        len1 = len(radii1)
-        len2 = len(radii2)
-
-        mixed = np.zeros((len1, len2))
-        for i in range(len1):
-            for j in range(len2):
-                mixed[i, j] = (radii1[i] + radii2[j]) / 2
-
-        return mixed
-
-    def _combine_epsilon(self, e1: float, e2: float) -> float:
-        """Combine epsilon using Lorentz-Berthelot rules."""
-        len1 = len(e1)
-        len2 = len(e2)
-
-        mixed = np.zeros((len1, len2))
-        for i in range(len1):
-            for j in range(len2):
-                mixed[i, j] = np.sqrt(e1[i] * e2[j])
-
-        return mixed
-
-    def _compute_nonbonded_potential(
-        self,
-        position_matrices: np.ndarray,
-        radii: np.ndarray,
-        epsilons: np.ndarray,
-    ) -> float:
-
-        nonbonded_potential = 0
-        for pos_mat_pair, radii_pair, epsilon_pair in zip(
-            it.combinations(position_matrices, 2),
-            it.combinations(radii, 2),
-            it.combinations(epsilons, 2),
-            strict=False,
-        ):
-
-            pair_dists = cdist(pos_mat_pair[0], pos_mat_pair[1])
-            sigmas = self._combine_sigma(radii_pair[0], radii_pair[1])
-            epsilons = self._combine_epsilon(epsilon_pair[0], epsilon_pair[1])
-            nonbonded_potential += np.sum(
-                self._nonbond_potential(
-                    distance=pair_dists.flatten(),
-                    sigmas=sigmas.flatten(),
-                    epsilons=epsilons.flatten(),
-                )
-            )
-
-        return nonbonded_potential
-
-    def compute_potential(self, supramolecule: spd.SupraMolecule) -> float:
-        """Compure the potential of the molecule."""
-        component_position_matrices = (
-            i.get_position_matrix() for i in supramolecule.get_components()
-        )
-        component_radii = (
-            tuple(j.get_sigma() for j in i.get_atoms())
-            for i in supramolecule.get_components()
-        )
-        component_epsilon = (
-            tuple(j.get_epsilon() for j in i.get_atoms())
-            for i in supramolecule.get_components()
-        )
-        return self._compute_nonbonded_potential(
-            position_matrices=component_position_matrices,
-            radii=component_radii,
-            epsilons=component_epsilon,
-        )
-
-
-class Laundrette:
-    """Class to run rigid-body docking."""
-
-    def __init__(
-        self,
-        num_dockings: int,
-        naming_prefix: str,
-        output_dir: pathlib.Path,
-        forcefield: cgexplore.forcefields.ForceField,
-        seed: int,
-    ) -> None:
-        """Initialise Laundrette."""
-        self._num_dockings = num_dockings
-        self._naming_prefix = naming_prefix
-        self._output_dir = output_dir
-        self._potential = CgPotential()
-        self._forcefield = forcefield
-        self._rng = np.random.default_rng(seed=seed)
-
-    def _get_supramolecule(
-        self,
-        hgcomplex: stk.ConstructedMolecule,
-    ) -> spd.Potential:
-        nonbonded_targets = self._forcefield.get_targets()["nonbondeds"]
-
-        epsilons = []
-        sigmas = []
-        for atom in hgcomplex.get_atoms():
-            atom_estring = atom.__class__.__name__
-            cgbead = (
-                self._forcefield.get_bead_library().get_cgbead_from_element(
-                    atom_estring
-                )
-            )
-            for target_term in nonbonded_targets:
-                if target_term.bead_class != cgbead.bead_class:
-                    continue
-                epsilons.append(
-                    target_term.epsilon.value_in_unit(
-                        openmm.unit.kilojoules_per_mole
-                    )
-                )
-                sigmas.append(
-                    target_term.sigma.value_in_unit(openmm.unit.angstrom)
-                )
-
-        return spd.SupraMolecule(
-            atoms=(
-                CgAtom(
-                    id=atom.get_id(),
-                    element_string=atom.__class__.__name__,
-                    epsilon=epsilons[atom.get_id()],
-                    sigma=sigmas[atom.get_id()],
-                )
-                for atom in hgcomplex.get_atoms()
-            ),
-            bonds=(
-                spd.Bond(
-                    id=i,
-                    atom_ids=(
-                        bond.get_atom1().get_id(),
-                        bond.get_atom2().get_id(),
-                    ),
-                )
-                for i, bond in enumerate(hgcomplex.get_bonds())
-            ),
-            position_matrix=hgcomplex.get_position_matrix(),
-        )
-
-    def run_dockings(
-        self,
-        host_bb: stk.BuildingBlock,
-        guest_bb: stk.BuildingBlock,
-    ) -> abc.Iterable[cgexplore.molecular.SpindryConformer]:
-        """Run the docking algorithm."""
-        for docking_id in range(self._num_dockings):
-            logging.info(f"docking run: {docking_id+1}")
-
-            guest = stk.host_guest.Guest(
-                building_block=guest_bb,
-                start_vector=guest_bb.get_direction(),
-                end_vector=self._rng.random((1, 3))[0],
-                # Change the displacement of the guest.
-                displacement=self._rng.random((1, 3))[0],
-            )
-
-            hgcomplex = stk.ConstructedMolecule(
-                topology_graph=stk.host_guest.Complex(
-                    host=stk.BuildingBlock.init_from_molecule(host_bb),
-                    guests=guest,
-                ),
-            )
-            supramolecule = self._get_supramolecule(hgcomplex=hgcomplex)
-
-            cg = spd.Spinner(
-                step_size=1.0,
-                rotation_step_size=2.0,
-                num_conformers=200,
-                max_attempts=500,
-                potential_function=self._potential,
-                beta=1.0,
-                random_seed=None,
-            )
-            cid = 1
-            for supraconformer in cg.get_conformers(supramolecule):
-
-                yield cgexplore.molecular.SpindryConformer(
-                    supramolecule=supraconformer,
-                    conformer_id=cid,
-                    source=docking_id,
-                    energy_decomposition={
-                        "potential": supraconformer.get_potential()
-                    },
-                )
-                cid += 1
-
-
-def calculate_min_atom_distance(supramolecule: spd.SupraMolecule) -> float:
-    component_position_matrices = (
-        i.get_position_matrix() for i in supramolecule.get_components()
-    )
-
-    min_distance = 1e24
-    for pos_mat_pair in it.combinations(component_position_matrices, 2):
-        pair_dists = cdist(pos_mat_pair[0], pos_mat_pair[1])
-        min_distance = min([min_distance, min(pair_dists.flatten())])
-
-    return min_distance
-
-
 def structure_calculator(
     chromosome: cgexplore.systems_optimisation.Chromosome,
     database: cgexplore.utilities.AtomliteDatabase,
@@ -440,7 +192,6 @@ def structure_calculator(
     structure_output: pathlib.Path,
     host_structure: stk.BuildingBlock,
 ) -> None:
-
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
     (bb,) = chromosome.get_building_blocks()
     # Select forcefield by chromosome.
@@ -450,7 +201,7 @@ def structure_calculator(
     opt_file = structure_output / f"{name}_optc.mol"
     conformers = {}
     if not opt_file.exists():
-        laundry = Laundrette(
+        laundry = cgexplore.optimisation.Laundrette(
             num_dockings=10,
             naming_prefix=name,
             output_dir=calculation_output,
@@ -488,18 +239,14 @@ def structure_calculator(
             },
         )
 
-        # Do some analysis while you have the supramolecule.
-        comps = list(min_energy_conformer.supramolecule.get_components())
-
+        # Do some analysis while you have the spd.supramolecule.
         database.add_properties(
             key=name,
             property_dict={
-                "centroid_distance": (
-                    np.linalg.norm(
-                        comps[0].get_centroid() - comps[1].get_centroid()
-                    )
+                "centroid_distance": spd.calculate_centroid_distance(
+                    min_energy_conformer.supramolecule
                 ),
-                "min_hg_distance": calculate_min_atom_distance(
+                "min_hg_distance": spd.calculate_min_atom_distance(
                     min_energy_conformer.supramolecule
                 ),
             },
@@ -593,42 +340,6 @@ def progress_plot(
         bbox_inches="tight",
     )
     plt.close("all")
-
-
-def check_fit(
-    chromosome: tuple[int, ...],
-    num_beads: int,
-    max_shell: int,
-) -> bool:
-    """Check if chromosome has an allowed topology."""
-    if sum(chromosome) != num_beads:
-        return False
-
-    idx = chromosome[0]
-    fit = True
-    sum_g = np.sum(chromosome[:idx]).astype(int)
-    while fit and sum_g < num_beads:
-        check_chr = False
-        for x in range(idx, sum_g + 1):
-            if chromosome[x] != 0:
-                check_chr = True
-        if not check_chr and sum_g < num_beads:
-            fit = False
-        else:
-            # additional requirement to avoid
-            # null summation in idx if
-            # chromosome[idx] == 0
-            if chromosome[idx] != 0:
-                idx += chromosome[idx]
-            else:
-                idx += 1
-            sum_g = np.sum(chromosome[:idx])
-    if fit:
-        for c in chromosome:
-            if c > max_shell:
-                fit = False
-                break
-    return fit
 
 
 @dataclass
@@ -733,7 +444,6 @@ def add_scatter(ax: plt.Axes, x: str, y: str, datas: dict) -> None:
 
 
 def main() -> None:
-
     wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
     struct_output = wd / "ligand_structures"
     cgexplore.utilities.check_directory(struct_output)
@@ -798,7 +508,7 @@ def main() -> None:
     compositions = [
         i
         for i in it.product(range(num_beads + 1), repeat=num_beads)
-        if check_fit(i, num_beads=num_beads, max_shell=6)
+        if cgexplore.molecular.check_fit(i, num_beads=num_beads, max_shell=6)
     ]
     compositions = sorted(compositions, reverse=True)
 
@@ -931,7 +641,6 @@ def main() -> None:
         chromosome_gen.add_forcefield_dict(definer_dict=definer_dict)
 
         for seed in seeds:
-
             generator = np.random.default_rng(seed)
 
             initial_population = chromosome_gen.select_random_population(
@@ -963,7 +672,6 @@ def main() -> None:
             )
 
             for generation_id in range(1, num_generations + 1):
-
                 logging.info(
                     f"doing generation {generation_id} of seed {seed} with "
                     f"host {host_id}"
