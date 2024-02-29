@@ -24,14 +24,20 @@ from cgexplore._internal.molecular.molecule_construction import (
     TwoC3Arm,
 )
 from cgexplore._internal.molecular.precursor_generator import (
+    GeneratedPrecursor,
     PrecursorGenerator,
+    VaBene,
+    VaBeneGenerator,
     check_fit,
 )
 
 __all__ = [
     "Precursor",
+    "GeneratedPrecursor",
     "PrecursorGenerator",
     "check_fit",
+    "VaBeneGenerator",
+    "VaBene",
     "TrianglePrecursor",
     "SquarePrecursor",
     "LinearPrecursor",
