@@ -8,7 +8,7 @@ Author: Andrew Tarzia
 import logging
 import pathlib
 from collections import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 
@@ -31,6 +31,7 @@ class Generation:
     structure_output: pathlib.Path
     calculation_output: pathlib.Path
     database: AtomliteDatabase
+    options: dict = field(default_factory=dict)
 
     def get_generation_size(self) -> int:
         """Get the number of chromosomes in a generation."""
@@ -45,6 +46,7 @@ class Generation:
                 database=self.database,
                 calculation_output=self.calculation_output,
                 structure_output=self.structure_output,
+                options=self.options,
             )
             for i in self.chromosomes
         ]
@@ -59,6 +61,7 @@ class Generation:
                 database=self.database,
                 calculation_output=self.calculation_output,
                 structure_output=self.structure_output,
+                options=self.options,
             )
 
     def select_best(self, selection_size: int) -> abc.Iterable[Chromosome]:
@@ -72,6 +75,7 @@ class Generation:
                     database=self.database,
                     calculation_output=self.calculation_output,
                     structure_output=self.structure_output,
+                    options=self.options,
                 ),
             )
             for i in self.chromosomes
