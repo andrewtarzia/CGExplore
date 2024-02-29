@@ -125,7 +125,6 @@ def analyse_complex(
     forcefield: cgexplore.forcefields.ForceField,
     chromosome: cgexplore.systems_optimisation.Chromosome,
 ) -> None:
-
     entry = database.get_entry(key=name)
     properties = entry.properties
 
@@ -145,7 +144,6 @@ def analyse_complex(
         e_dict = {}
 
         for at in ff_targets["nonbondeds"]:
-
             s_dict[at.bead_class] = at.sigma.value_in_unit(
                 openmm.unit.angstrom
             )
@@ -172,7 +170,6 @@ def fitness_calculator(
     calculation_output: pathlib.Path,  # noqa: ARG001
     structure_output: pathlib.Path,  # noqa: ARG001
 ) -> float:
-
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
 
     entry = database.get_entry(name)
@@ -261,7 +258,6 @@ class CgPotential(spd.Potential):
         radii: np.ndarray,
         epsilons: np.ndarray,
     ) -> float:
-
         nonbonded_potential = 0
         for pos_mat_pair, radii_pair, epsilon_pair in zip(
             it.combinations(position_matrices, 2),
@@ -269,7 +265,6 @@ class CgPotential(spd.Potential):
             it.combinations(epsilons, 2),
             strict=False,
         ):
-
             pair_dists = cdist(pos_mat_pair[0], pos_mat_pair[1])
             sigmas = self._combine_sigma(radii_pair[0], radii_pair[1])
             epsilons = self._combine_epsilon(epsilon_pair[0], epsilon_pair[1])
@@ -408,7 +403,6 @@ class Laundrette:
             )
             cid = 1
             for supraconformer in cg.get_conformers(supramolecule):
-
                 yield cgexplore.molecular.SpindryConformer(
                     supramolecule=supraconformer,
                     conformer_id=cid,
@@ -440,7 +434,6 @@ def structure_calculator(
     structure_output: pathlib.Path,
     host_structure: stk.BuildingBlock,
 ) -> None:
-
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
     (bb,) = chromosome.get_building_blocks()
     # Select forcefield by chromosome.
@@ -733,7 +726,6 @@ def add_scatter(ax: plt.Axes, x: str, y: str, datas: dict) -> None:
 
 
 def main() -> None:
-
     wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
     struct_output = wd / "ligand_structures"
     cgexplore.utilities.check_directory(struct_output)
