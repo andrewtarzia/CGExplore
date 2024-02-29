@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import spindry as spd
 import stk
 
-from .beads import periodic_table
+from .beads import string_to_atom_number
 
 
 @dataclass
@@ -35,10 +35,11 @@ class SpindryConformer:
 
     def to_stk_molecule(self) -> stk.Molecule:
         """Get an stk molecule from spindry."""
-        pt = periodic_table()
-
         atoms = [
-            stk.Atom(id=i.get_id(), atomic_number=pt[i.get_element_string()])
+            stk.Atom(
+                id=i.get_id(),
+                atomic_number=string_to_atom_number(i.get_element_string()),
+            )
             for i in self.supramolecule.get_atoms()
         ]
         bonds = [

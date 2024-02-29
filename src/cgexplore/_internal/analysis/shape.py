@@ -15,7 +15,7 @@ import subprocess as sp
 import numpy as np
 import stk
 
-from cgexplore._internal.molecular.beads import periodic_table
+from cgexplore._internal.molecular.beads import string_to_atom_number
 
 logging.basicConfig(
     level=logging.INFO,
@@ -52,7 +52,7 @@ def fill_position_matrix_molecule(
     position_matrix = []
     atoms: list[stk.Atom] = []
 
-    target_anum = periodic_table()[element]
+    target_anum = string_to_atom_number(element)
     for atom in molecule.get_atoms():
         atomic_number = atom.get_atomic_number()  # type: ignore[union-attr]
         if atomic_number == target_anum:
@@ -109,7 +109,7 @@ def fill_position_matrix(
     position_matrix = []
     atoms: list[stk.Atom] = []
 
-    target_anum = periodic_table()[element]
+    target_anum = string_to_atom_number(element)
     for ai in constructed_molecule.get_atom_infos():
         if (
             ai.get_building_block() == target_bb

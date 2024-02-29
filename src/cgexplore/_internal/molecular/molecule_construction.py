@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import numpy as np
 import stk
 
-from .beads import CgBead, periodic_table
+from .beads import CgBead, string_to_atom_number
 
 
 @dataclass
@@ -24,9 +24,11 @@ class LinearPrecursor:
     placer_beads: tuple[CgBead, ...]
 
     def __post_init__(self) -> None:
-        pt = periodic_table()
+
         atoms = [
-            stk.Atom(i, pt[self.present_beads[i].element_string])
+            stk.Atom(
+                i, string_to_atom_number(self.present_beads[i].element_string)
+            )
             for i in range(len(self.present_beads))
         ]
 
@@ -112,9 +114,10 @@ class TrianglePrecursor:
             )
         )
 
-        pt = periodic_table()
         atoms = [
-            stk.Atom(i, pt[self.present_beads[i].element_string])
+            stk.Atom(
+                i, string_to_atom_number(self.present_beads[i].element_string)
+            )
             for i in range(len(self.present_beads))
         ]
         bonds = [
@@ -168,9 +171,10 @@ class SquarePrecursor:
             )
         )
 
-        pt = periodic_table()
         atoms = [
-            stk.Atom(i, pt[self.present_beads[i].element_string])
+            stk.Atom(
+                i, string_to_atom_number(self.present_beads[i].element_string)
+            )
             for i in range(len(self.present_beads))
         ]
         bonds = [

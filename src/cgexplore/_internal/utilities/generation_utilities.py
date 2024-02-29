@@ -20,7 +20,7 @@ from cgexplore._internal.forcefields.assigned_system import (
     MartiniSystem,
 )
 from cgexplore._internal.forcefields.forcefield import ForceField
-from cgexplore._internal.molecular.beads import periodic_table
+from cgexplore._internal.molecular.beads import string_to_atom_number
 from cgexplore._internal.molecular.conformer import Conformer
 from cgexplore._internal.molecular.ensembles import Ensemble
 from cgexplore._internal.optimisation.openmm_optimizer import (
@@ -518,6 +518,6 @@ def yield_shifted_models(
 
     """
     for bead in forcefield.get_present_beads():
-        atom_number = periodic_table()[bead.element_string]
+        atom_number = string_to_atom_number(bead.element_string)
         for kick in kicks:
             yield shift_beads(molecule, atom_number, kick)
