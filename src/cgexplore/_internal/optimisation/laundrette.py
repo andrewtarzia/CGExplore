@@ -34,6 +34,11 @@ class Laundrette:
         output_dir: pathlib.Path,
         forcefield: ForceField,
         seed: int,
+        step_size: float = 1.0,
+        rotation_step_size: float = 2.0,
+        num_conformers: int = 200,
+        max_attempts: int = 500,
+        beta: float = 1.0,
     ) -> None:
         """Initialise Laundrette."""
         self._num_dockings = num_dockings
@@ -41,7 +46,13 @@ class Laundrette:
         self._output_dir = output_dir
         self._potential = spd.VaryingEpsilonPotential()
         self._forcefield = forcefield
+        self._seed = seed
         self._rng = np.random.default_rng(seed=seed)
+        self._step_size = step_size
+        self._rotation_step_size = rotation_step_size
+        self._num_conformers = num_conformers
+        self._max_attempts = max_attempts
+        self._beta = beta
 
     def _get_supramolecule(
         self,
@@ -119,16 +130,19 @@ class Laundrette:
             supramolecule = self._get_supramolecule(hgcomplex=hgcomplex)
 
             cg = spd.Spinner(
-                step_size=1.0,
-                rotation_step_size=2.0,
-                num_conformers=200,
-                max_attempts=500,
+                step_size=self._step_size,
+                rotation_step_size=self._rotation_step_size,
+                num_conformers=self._num_conformers,
+                max_attempts=self._max_attempts,
+                beta=self._beta,
                 potential_function=self._potential,
-                beta=1.0,
-                random_seed=None,
+                random_seed=self._seed,
             )
             cid = 1
-            for supraconformer in cg.get_conformers(supramolecule):
+            for supraconformer in cg.get_conformers(
+                supramolecule,
+                verbose=False,
+            ):
                 yield SpindryConformer(
                     supramolecule=supraconformer,
                     conformer_id=cid,
