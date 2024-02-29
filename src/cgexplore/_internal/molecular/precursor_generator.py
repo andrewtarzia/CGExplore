@@ -19,14 +19,12 @@ RDLogger.DisableLog("rdApp.*")
 
 @dataclass
 class GeneratedPrecursor:
-
     binder_beads: tuple[CgBead, ...]
     placer_beads: tuple[CgBead, ...]
     molecule: stk.BuildingBlock
     db_key: str
 
     def __post_init__(self) -> None:
-
         new_fgs = tuple(
             stk.SmartsFunctionalGroupFactory(
                 smarts=(
