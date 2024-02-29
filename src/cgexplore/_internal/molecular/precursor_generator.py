@@ -1,20 +1,56 @@
 # Distributed under the terms of the MIT License.
 
-"""Classes of topologies of precursors.
-
-Author: Andrew Tarzia
-
-"""
-
+"""Classes of topologies of precursors."""
 import itertools as it
+from collections import abc
 from dataclasses import dataclass
 
 import networkx as nx
 import numpy as np
 import stk
+import vabene as vb
+from rdkit import RDLogger
 
 from .beads import CgBead, periodic_table
 from .utilities import get_rotation, vnorm_r
+
+RDLogger.DisableLog("rdApp.*")
+
+
+@dataclass
+class GeneratedPrecursor:
+
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+    molecule: stk.BuildingBlock
+    db_key: str
+
+    def __post_init__(self) -> None:
+
+        new_fgs = tuple(
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{self.binder_beads[i].element_string}]"
+                    f"[{self.placer_beads[j].element_string}]"
+                ),
+                bonders=(0,),
+                deleters=(),
+                placers=(0, 1),
+            )
+            for i, j in it.product(
+                range(len(self.binder_beads)), range(len(self.placer_beads))
+            )
+        )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=self.molecule,
+            functional_groups=new_fgs,
+        )
+
+    def get_smiles(self) -> str:
+        return stk.Smiles().get_key(self.building_block)
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
 
 
 def check_fit(
@@ -212,3 +248,122 @@ class PrecursorGenerator:
 
     def get_building_block(self) -> stk.BuildingBlock:
         return self.building_block
+
+
+@dataclass
+class VaBene:
+    present_beads: tuple[CgBead, ...]
+    building_block: stk.BuildingBlock
+
+    def get_smiles(self) -> str:
+        return stk.Smiles().get_key(self.building_block)
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
+
+
+@dataclass
+class VaBeneGenerator:
+    """Generate custom Precursor based on vabene algorithm."""
+
+    present_beads: tuple[CgBead, ...]
+    num_beads: int
+    seed: int
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+    scale: float
+
+    def _remove_hydrogens(self, molecule: stk.Molecule) -> stk.Molecule:
+        new_atoms = []
+        atom_id_map = {}
+        for atom in molecule.get_atoms():
+            if atom.get_atomic_number() == 1:
+                continue
+            atom_id_map[atom.get_id()] = len(new_atoms)
+            new_atoms.append(
+                stk.Atom(
+                    id=atom_id_map[atom.get_id()],
+                    atomic_number=atom.get_atomic_number(),
+                    charge=atom.get_charge(),
+                )
+            )
+
+        new_bonds = [
+            stk.Bond(
+                atom1=new_atoms[bond.get_atom1().get_id()],
+                atom2=new_atoms[bond.get_atom2().get_id()],
+                order=1,
+            )
+            for bond in molecule.get_bonds()
+            if bond.get_atom1().get_id() in atom_id_map
+            and bond.get_atom2().get_id() in atom_id_map
+        ]
+        new_position_matrix = [
+            molecule.get_position_matrix()[i] for i in atom_id_map
+        ]
+        return stk.BuildingBlock.init(
+            atoms=tuple(new_atoms),
+            bonds=tuple(new_bonds),
+            position_matrix=np.array(new_position_matrix),
+        )
+
+    def __post_init__(self) -> None:
+        pt = periodic_table()
+        vb_atoms = tuple(
+            vb.Atom(
+                atomic_number=pt[i.element_string],
+                charge=0,
+                max_valence=i.coordination,
+            )
+            for i in self.present_beads
+        )
+
+        self.atom_factory = vb.RandomAtomFactory(
+            atoms=vb_atoms,
+            num_atoms=self.num_beads,
+            random_seed=self.seed,
+        )
+
+        self.bond_factory = vb.RandomBondFactory(
+            random_seed=self.seed,
+            max_bond_order=1,
+        )
+
+    def get_precursors(self, num_precursors: int) -> abc.Iterable[VaBene]:
+        for _ in range(num_precursors):
+            atoms = tuple(self.atom_factory.get_atoms())
+            bonds = self.bond_factory.get_bonds(atoms)
+            molecule = vb.Molecule(atoms, bonds)
+            try:
+                stk_molecule = stk.BuildingBlock.init_from_vabene_molecule(
+                    molecule
+                )
+            except RuntimeError:
+                # Skip failed ETKDG inputs.
+                continue
+
+            stk_molecule = self._remove_hydrogens(stk_molecule)
+
+            new_fgs = tuple(
+                stk.SmartsFunctionalGroupFactory(
+                    smarts=(
+                        f"[{self.binder_beads[i].element_string}]"
+                        f"[{self.placer_beads[j].element_string}]"
+                    ),
+                    bonders=(0,),
+                    deleters=(),
+                    placers=(0, 1),
+                )
+                for i, j in it.product(
+                    range(len(self.binder_beads)),
+                    range(len(self.placer_beads)),
+                )
+            )
+            building_block = stk.BuildingBlock.init_from_molecule(
+                molecule=stk_molecule,
+                functional_groups=new_fgs,
+            )
+            yield VaBene(
+                building_block=building_block,
+                present_beads=self.present_beads,
+            )
