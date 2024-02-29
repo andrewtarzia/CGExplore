@@ -1,5 +1,6 @@
 """optimisation package."""
 
+from cgexplore._internal.optimisation.laundrette import Laundrette
 from cgexplore._internal.optimisation.openmm_optimizer import (
     CGOMMDynamics,
     CGOMMOptimizer,
@@ -12,4 +13,5 @@ __all__ = [
     "OMMTrajectory",
     "CGOMMDynamics",
     "CGOMMOptimizer",
+    "Laundrette",
 ]
