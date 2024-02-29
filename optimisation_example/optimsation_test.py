@@ -217,7 +217,6 @@ def analyse_cage(
         if n_shape_mol is None:
             node_shape_measures = None
         else:
-
             node_shape_measures = shape_calc.calculate(n_shape_mol)
 
         database.add_properties(
@@ -235,7 +234,6 @@ def optimise_cage(
     database: cgexplore.utilities.AtomliteDatabase,
     chromosome: cgexplore.systems_optimisation.Chromosome,
 ) -> cgexplore.molecular.Conformer:
-
     fina_mol_file = output_dir / f"{name}_final.mol"
 
     # Do not rerun if database entry exists.

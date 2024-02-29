@@ -50,7 +50,6 @@ def check_fit(
 
 
 def main() -> None:
-
     wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
     struct_output = wd / "ligand_structures"
     cgexplore.utilities.check_directory(struct_output)
