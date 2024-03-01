@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to plot parities.
@@ -9,7 +8,6 @@ Author: Andrew Tarzia
 
 import json
 import logging
-import os
 import sys
 
 import matplotlib.pyplot as plt
@@ -88,7 +86,7 @@ def parity_1(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "par_1.pdf"),
+        figure_output / "par_1.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -120,7 +118,7 @@ def parity_2(all_data, geom_data, figure_output):
             target_c2s = []
             measured_c2 = []
             energies = []
-            for i, row in tor_frame.iterrows():
+            for _, row in tor_frame.iterrows():
                 target_bite_angle = float(row["target_bite_angle"])
                 target_angle = (target_bite_angle / 2) + 90
                 name = str(row["index"])
@@ -184,7 +182,7 @@ def parity_2(all_data, geom_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "par_2.pdf"),
+        figure_output / "par_2.pdf",
         dpi=320,
         bbox_inches="tight",
     )
@@ -210,7 +208,7 @@ def pore_b2b_distance(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "pore_vs_minb2b.pdf"),
+        figure_output / "pore_vs_minb2b.pdf",
         dpi=720,
         bbox_inches="tight",
     )

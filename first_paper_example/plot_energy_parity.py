@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to plot parities.
@@ -8,7 +7,6 @@ Author: Andrew Tarzia
 """
 
 import logging
-import os
 import sys
 
 import matplotlib.pyplot as plt
@@ -30,7 +28,7 @@ logging.basicConfig(
 
 def energy_parity(all_data, dupl_data, figure_output):
     logging.info("running energy_parity")
-    print(len(all_data), len(dupl_data))
+    print(len(all_data), len(dupl_data))  # noqa: T201
 
     cmap = {
         "4P6": "#086788",
@@ -50,7 +48,7 @@ def energy_parity(all_data, dupl_data, figure_output):
         if dupl_energy < 0.01 and orig_energy < 0.01:
             continue
         if abs(dupl_energy - orig_energy) > 0.01:
-            print(index_name, dupl_energy, orig_energy)
+            print(index_name, dupl_energy, orig_energy)  # noqa: T201
             ax.scatter(
                 orig_energy,
                 dupl_energy,
@@ -81,26 +79,26 @@ def energy_parity(all_data, dupl_data, figure_output):
     ax.set_yscale("log")
     ax.set_title(f"{count_} (of {len(dupl_data)}) far examples", fontsize=16)
 
-    legend_elements = []
-    for tstr in cmap:
-        legend_elements.append(
-            Line2D(
-                [0],
-                [0],
-                marker="o",
-                color="w",
-                label=convert_topo(tstr),
-                markerfacecolor=cmap[tstr],
-                markersize=7,
-                markeredgecolor="white",
-                alpha=0.8,
-            )
+    legend_elements = [
+        Line2D(
+            [0],
+            [0],
+            marker="o",
+            color="w",
+            label=convert_topo(tstr),
+            markerfacecolor=cmap[tstr],
+            markersize=7,
+            markeredgecolor="white",
+            alpha=0.8,
         )
+        for tstr in cmap
+    ]
+
     ax.legend(handles=legend_elements, fontsize=16, ncol=1)
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "energy_parity.pdf"),
+        figure_output / "energy_parity.pdf",
         dpi=720,
         bbox_inches="tight",
     )

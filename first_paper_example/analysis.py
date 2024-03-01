@@ -8,7 +8,6 @@ Author: Andrew Tarzia
 
 import json
 import logging
-import os
 
 import numpy as np
 import openmm
@@ -43,15 +42,15 @@ def analyse_cage(
     forcefield,
     node_element,
     ligand_element,
-    database,
+    database,  # noqa: ARG001
 ):
     logging.warning("currently not using databasing for analysis.")
 
-    output_file = os.path.join(output_dir, f"{name}_res.json")
-    shape_molfile1 = os.path.join(output_dir, f"{name}_shape1.mol")
-    shape_molfile2 = os.path.join(output_dir, f"{name}_shape2.mol")
+    output_file = output_dir / f"{name}_res.json"
+    shape_molfile1 = output_dir / f"{name}_shape1.mol"
+    shape_molfile2 = output_dir / f"{name}_shape2.mol"
 
-    if not os.path.exists(output_file):
+    if not output_file.exists():
         logging.info(f"analysing {name}")
 
         energy_decomp = {}
@@ -71,7 +70,7 @@ def analyse_cage(
                     energy_decomp[key] = value
         fin_energy = energy_decomp["total energy_kJ/mol"]
         try:
-            assert (
+            assert (  # noqa: S101
                 sum(
                     energy_decomp[i]
                     for i in energy_decomp
@@ -79,12 +78,12 @@ def analyse_cage(
                 )
                 == fin_energy
             )
-        except AssertionError:
-            msg = (
+        except AssertionError as ex:
+            ex.add_note(
                 f"energy decompisition does not sum to total energy for {name}"
                 f": {energy_decomp}"
             )
-            raise AssertionError(msg)
+            raise
 
         n_shape_mol = get_shape_molecule_byelement(
             molecule=conformer.molecule,
@@ -248,21 +247,19 @@ def angle_str(num=None, unit=True):
 
     if num is None:
         return f"$x$-topic angle{un}"
-    else:
-        if num == 3:
-            return f"tritopic angle{un}"
-        elif num == 4:
-            return f"tetratopic angle{un}"
-        elif num == 2:
-            return f"ditopic angle{un}"
-        return None
+
+    return {
+        2: f"ditopic angle{un}",
+        3: f"tritopic angle{un}",
+        4: f"tetratopic angle{un}",
+    }
 
 
 def eb_str(no_unit=False):
     if no_unit:
         return r"$E_{\mathrm{b}}$"
-    else:
-        return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
+
+    return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
 
 
 def pore_str():
@@ -307,7 +304,7 @@ def topology_labels(short):
             "12+24",
             "6+8",
         )
-    elif short == "P":
+    elif short == "P":  # noqa: RET505
         return (
             "2P3",
             "4P6",
@@ -372,15 +369,9 @@ def convert_topo(topo_str):
 
 def convert_tors(topo_str, num=True):
     if num:
-        return {
-            "ton": "5 eV",
-            "toff": "none",
-        }[topo_str]
-    else:
-        return {
-            "ton": "restricted",
-            "toff": "not restricted",
-        }[topo_str]
+        return {"ton": "5 eV", "toff": "none"}[topo_str]
+
+    return {"ton": "restricted", "toff": "not restricted"}[topo_str]
 
 
 def convert_vdws(vstr):
@@ -390,7 +381,7 @@ def convert_vdws(vstr):
     }[vstr]
 
 
-def Xc_map(tstr):
+def Xc_map(tstr):  # noqa: N802
     """Maps topology string to pyramid angle."""
     return {
         "2P3": 3,
@@ -499,7 +490,7 @@ def mapshape_to_topology(mode, from_shape=False):
                 "OP-8": ("8P12", "8P16"),
             }
 
-        elif mode == "l":
+        elif mode == "l":  # noqa: RET505
             return {
                 "TP-3": ("2P3",),
                 "mvOC-3": ("2P3",),
@@ -513,7 +504,7 @@ def mapshape_to_topology(mode, from_shape=False):
                 "OP-8": ("6P8",),
             }
         return None
-    else:
+    else:  # noqa: RET505
         if mode == "n":
             return {
                 "4P6": "T-4",
@@ -528,7 +519,7 @@ def mapshape_to_topology(mode, from_shape=False):
                 "6P8": "OC-6",
             }
 
-        elif mode == "l":
+        elif mode == "l":  # noqa: RET505
             return {
                 "2P3": "TP-3",
                 "4P6": "OC-6",
@@ -600,7 +591,7 @@ def data_to_array(json_files, output_dir):
     output_csv = output_dir / "all_array.csv"
     geom_json = output_dir / "all_geom.json"
 
-    if os.path.exists(output_csv):
+    if output_csv.exists():
         input_array = pd.read_csv(output_csv)
         return input_array.loc[
             :, ~input_array.columns.str.contains("^Unnamed")

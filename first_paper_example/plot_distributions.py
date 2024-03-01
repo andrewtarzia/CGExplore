@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to plot distribitions.
@@ -9,7 +8,6 @@ Author: Andrew Tarzia
 
 import json
 import logging
-import os
 import sys
 
 import matplotlib as mpl
@@ -67,7 +65,7 @@ def identity_distributions(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "all_bb_dists.pdf"),
+        figure_output / "all_bb_dists.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -240,7 +238,7 @@ def geom_distributions(all_data, geom_data, figure_output):
 
         fig.tight_layout()
         fig.savefig(
-            os.path.join(figure_output, f"gd_{comp}.pdf"),
+            figure_output / f"gd_{comp}.pdf",
             dpi=720,
             bbox_inches="tight",
         )
@@ -393,7 +391,7 @@ def single_value_distributions(all_data, figure_output):
         fig.tight_layout()
         tpname = tp.replace("/", "")
         fig.savefig(
-            os.path.join(figure_output, f"sing_{tpname}.pdf"),
+            figure_output / f"sing_{tpname}.pdf",
             dpi=720,
             bbox_inches="tight",
         )
@@ -446,7 +444,7 @@ def plot_sorted(bb_data, color_map, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "sorted_isomers.pdf"),
+        figure_output / "sorted_isomers.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -518,14 +516,14 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "mixed_isomers.pdf"),
+        figure_output / "mixed_isomers.pdf",
         dpi=720,
         bbox_inches="tight",
     )
     plt.close()
 
 
-def plot_clangle(cl_data, color_map, figure_output):
+def plot_clangle(cl_data, figure_output):
     max_ = 6
 
     clangles = sorted([int(i) for i in cl_data])
@@ -587,7 +585,7 @@ def plot_clangle(cl_data, color_map, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "clangled_isomers.pdf"),
+        figure_output / "clangled_isomers.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -636,7 +634,7 @@ def plot_average(bb_data, color_map, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "average_isomers.pdf"),
+        figure_output / "average_isomers.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -685,7 +683,7 @@ def mixed_distributions(all_data, figure_output):
 
     plot_sorted(bb_data, color_map, figure_output)
     plot_mixed_unstable(bb_data, color_map, figure_output)
-    plot_clangle(cl_data, color_map, figure_output)
+    plot_clangle(cl_data, figure_output)
     plot_average(bb_data, color_map, figure_output)
 
 
@@ -732,7 +730,7 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "flexeffect_biteangle.png"),
+        figure_output / "flexeffect_biteangle.png",
         dpi=360,
         bbox_inches="tight",
     )
@@ -788,7 +786,7 @@ def plot_topology_flex(data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "flexeffect_topologies.pdf"),
+        figure_output / "flexeffect_topologies.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -889,7 +887,7 @@ def plot_topology_pore_flex(data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "flexeffect_porosites.pdf"),
+        figure_output / "flexeffect_porosites.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -980,7 +978,7 @@ def correlation_matrix(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "correlation_matrix.pdf"),
+        figure_output / "correlation_matrix.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -1055,7 +1053,7 @@ def energy_correlation_matrix(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "energy_correlation_matrix.pdf"),
+        figure_output / "energy_correlation_matrix.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -1116,7 +1114,7 @@ def opt_outcome_distributions(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "opt_source_counts.pdf"),
+        figure_output / "opt_source_counts.pdf",
         dpi=720,
         bbox_inches="tight",
     )
