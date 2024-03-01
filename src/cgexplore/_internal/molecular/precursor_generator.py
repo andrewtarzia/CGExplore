@@ -308,7 +308,6 @@ class VaBeneGenerator:
         )
 
     def __post_init__(self) -> None:
-
         vb_atoms = tuple(
             vb.Atom(
                 atomic_number=string_to_atom_number(i.element_string),

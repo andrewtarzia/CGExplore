@@ -24,7 +24,6 @@ class LinearPrecursor:
     placer_beads: tuple[CgBead, ...]
 
     def __post_init__(self) -> None:
-
         atoms = [
             stk.Atom(
                 i, string_to_atom_number(self.present_beads[i].element_string)

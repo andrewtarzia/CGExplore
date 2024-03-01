@@ -700,7 +700,8 @@ def si_shape_fig(
         for shape_type in ("n", "l"):
             try:
                 shape = mapshape_to_topology(
-                    shape_type, False  # noqa: FBT003
+                    shape_type,
+                    False,
                 )[tstr]
             except KeyError:
                 continue
