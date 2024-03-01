@@ -1,10 +1,6 @@
 # Distributed under the terms of the MIT License.
 
-"""Optimisation Generation module.
-
-Author: Andrew Tarzia
-
-"""
+"""Optimisation Generation module."""
 import logging
 import pathlib
 from collections import abc
@@ -85,3 +81,16 @@ class Generation:
         )[:selection_size]
 
         return [self.chromosomes[i] for i in best_indices]
+
+    def select_elite(
+        self,
+        proportion_threshold: float,
+    ) -> abc.Iterable[Chromosome]:
+        """Select the elite in the generation by fitness."""
+        num_in_generation = self.get_generation_size()
+        proportion_to_select = round(num_in_generation * proportion_threshold)
+        return self.select_best(proportion_to_select)
+
+    def select_all(self) -> abc.Iterable[Chromosome]:
+        """Select all in the generation."""
+        return list(self.chromosomes)
