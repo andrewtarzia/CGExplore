@@ -144,11 +144,7 @@ class AtomliteDatabase:
         Parameters:
             properties:
                 The paths of the properties to retrieve.
-                Valid paths are described
-                `here <https://www.sqlite.org/json1.html#path_arguments>`_.
-                You can also view various code
-                :ref:`examples<examples-valid-property-paths>`
-                in our docs.
+                Valid paths are described in the :mod:`atomlite` docs.
 
             allow_missing:
                 If ``True``, rows with some missing properties will be
