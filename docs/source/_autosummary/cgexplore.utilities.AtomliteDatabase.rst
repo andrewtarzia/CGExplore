@@ -24,6 +24,7 @@ cgexplore.utilities.AtomliteDatabase
       ~AtomliteDatabase.get_molecule
       ~AtomliteDatabase.get_num_entries
       ~AtomliteDatabase.get_property
+      ~AtomliteDatabase.get_property_df
       ~AtomliteDatabase.has_molecule
       ~AtomliteDatabase.keep_if
       ~AtomliteDatabase.remove_entry

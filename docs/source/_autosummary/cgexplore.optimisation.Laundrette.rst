@@ -1,9 +1,9 @@
-cgexplore.utilities.Pymol
-=========================
+cgexplore.optimisation.Laundrette
+=================================
 
-.. currentmodule:: cgexplore.utilities
+.. currentmodule:: cgexplore.optimisation
 
-.. autoclass:: Pymol
+.. autoclass:: Laundrette
    :members:
    :inherited-members:
    :undoc-members:
@@ -17,8 +17,7 @@ cgexplore.utilities.Pymol
    .. autosummary::
       :nosignatures:
    
-      ~Pymol.visualise
-      ~Pymol.visualise_host_guest
+      ~Laundrette.run_dockings
    
    
 

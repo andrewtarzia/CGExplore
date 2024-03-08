@@ -20,7 +20,9 @@ cgexplore.systems\_optimisation.Generation
       ~Generation.calculate_fitness_values
       ~Generation.get_generation_size
       ~Generation.run_structures
+      ~Generation.select_all
       ~Generation.select_best
+      ~Generation.select_elite
    
    
 
@@ -37,5 +39,6 @@ cgexplore.systems\_optimisation.Generation
       ~Generation.structure_output
       ~Generation.calculation_output
       ~Generation.database
+      ~Generation.options
    
    
