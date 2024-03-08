@@ -9,6 +9,7 @@ import sqlite3
 from collections import abc
 
 import atomlite
+import polars as pl
 import stk
 
 logging.basicConfig(
@@ -132,3 +133,31 @@ class AtomliteDatabase:
         for entry in self.get_entries():
             if entry.properties[column] == value:
                 yield entry
+
+    def get_property_df(
+        self,
+        properties: abc.Sequence[str],
+        allow_missing: bool = False,  # noqa: FBT001, FBT002
+    ) -> pl.DataFrame:
+        """Get a DataFrame of the properties in the database.
+
+        Parameters:
+            properties:
+                The paths of the properties to retrieve.
+                Valid paths are described
+                `here <https://www.sqlite.org/json1.html#path_arguments>`_.
+                You can also view various code
+                :ref:`examples<examples-valid-property-paths>`
+                in our docs.
+
+            allow_missing:
+                If ``True``, rows with some missing properties will be
+                included in the DataFrame and hold ``null`` values.
+
+        Returns:
+            A DataFrame of the property entries in the database.
+        """
+        return self._db.get_property_df(
+            properties=properties,
+            allow_missing=allow_missing,
+        )
