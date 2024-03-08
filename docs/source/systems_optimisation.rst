@@ -50,6 +50,10 @@ how a :class:`cgexplore.systems_optimisation.Chromosome` is translated into a
 model and how to calculate that models fitness. These are provided as functions
 by the user of the form:
 
+.. note::
+  The `options` argument allows the user to provide custom information or
+  functions in a dictionary.
+
 .. code-block:: python
 
   def fitness_calculator(
@@ -58,10 +62,15 @@ by the user of the form:
     database,
     calculation_output,
     structure_output,
+    options={},
   ):
     """Calculate the fitness of a chromosome.
 
     All arguments are needed, even if not used.
+
+    Returns:
+      float
+
     """
     target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
@@ -91,10 +100,12 @@ by the user of the form:
     database,
     calculation_output,
     structure_output,
+    options={},
   ):
     """Define model and calculate its properties.
 
     All arguments are needed, even if not used.
+
     """
     # Build structure.
     topology_str, topology_fun = chromosome.get_topology_information()
