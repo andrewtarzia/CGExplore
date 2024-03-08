@@ -1,6 +1,7 @@
 # Distributed under the terms of the MIT License.
 
 """Optimisation Generation module."""
+
 import logging
 import pathlib
 from collections import abc

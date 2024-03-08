@@ -5,6 +5,7 @@
 Author: Andrew Tarzia
 
 """
+
 import itertools as it
 import logging
 from collections import abc

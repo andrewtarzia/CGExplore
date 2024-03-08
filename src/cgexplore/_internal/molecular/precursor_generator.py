@@ -1,6 +1,7 @@
 # Distributed under the terms of the MIT License.
 
 """Classes of topologies of precursors."""
+
 import itertools as it
 from collections import abc
 from dataclasses import dataclass

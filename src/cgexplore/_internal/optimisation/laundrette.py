@@ -111,8 +111,6 @@ class Laundrette:
     ) -> abc.Iterable[SpindryConformer]:
         """Run the docking algorithm."""
         for docking_id in range(self._num_dockings):
-            logging.info(f"docking run: {docking_id+1}")
-
             guest = stk.host_guest.Guest(
                 building_block=guest_bb,
                 start_vector=guest_bb.get_direction(),
