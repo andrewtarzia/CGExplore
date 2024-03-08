@@ -144,5 +144,7 @@ module = [
   "atomlite.*",
   "networkx.*",
   "martini_openmm.*",
+  "spindry.*",
+  "vabene.*",
 ]
 ignore_missing_imports = true

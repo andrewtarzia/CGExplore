@@ -274,8 +274,11 @@ class VaBeneGenerator:
     placer_beads: tuple[CgBead, ...]
     scale: float
 
-    def _remove_hydrogens(self, molecule: stk.Molecule) -> stk.Molecule:
-        new_atoms = []
+    def _remove_hydrogens(
+        self,
+        molecule: stk.BuildingBlock,
+    ) -> stk.BuildingBlock:
+        new_atoms: list[stk.Atom] = []
         atom_id_map = {}
         for atom in molecule.get_atoms():
             if atom.get_atomic_number() == 1:

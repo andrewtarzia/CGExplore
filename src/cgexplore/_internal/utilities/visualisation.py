@@ -255,8 +255,12 @@ class Pymol:
         """Run pymol to visualise a molecule."""
         pml_file = self._output_dir / f"{self._file_prefix}.pml"
         self._write_host_guest_pymol_script(
-            structure_files=[structure_file],
-            structure_colours=structure_colour,
+            structure_files=[structure_file]
+            if structure_file is not None
+            else None,
+            structure_colours=[structure_colour]
+            if structure_colour is not None
+            else None,
             host_atoms=host_atoms,
             host_transperancy=host_transperancy,
             radii=radii,

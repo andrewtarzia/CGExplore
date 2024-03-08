@@ -113,7 +113,7 @@ class Laundrette:
         for docking_id in range(self._num_dockings):
             guest = stk.host_guest.Guest(
                 building_block=guest_bb,
-                start_vector=guest_bb.get_direction(),
+                start_vector=guest_bb.get_direction(),  # type: ignore[arg-type]
                 end_vector=self._rng.random((1, 3))[0],
                 # Change the displacement of the guest.
                 displacement=self._rng.random((1, 3))[0],
@@ -144,7 +144,7 @@ class Laundrette:
                 yield SpindryConformer(
                     supramolecule=supraconformer,
                     conformer_id=cid,
-                    source=docking_id,
+                    source=str(docking_id),
                     energy_decomposition={
                         "potential": supraconformer.get_potential()
                     },
