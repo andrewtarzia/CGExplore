@@ -564,6 +564,7 @@ def progress_plot(
 
 
 def main() -> None:
+    # Define working directories.
     wd = pathlib.Path(__file__).resolve().parent / "optimisation_output"
     struct_output = wd / "structures"
     cgexplore.utilities.check_directory(struct_output)
@@ -574,9 +575,12 @@ def main() -> None:
     figure_dir = wd / "figures"
     cgexplore.utilities.check_directory(figure_dir)
 
+    # Define a database, and a prefix for naming structure, forcefield and
+    # output files.
     prefix = "opt"
     database = cgexplore.utilities.AtomliteDatabase(data_dir / "test.db")
 
+    # Define the beads in the models used.
     abead = cgexplore.molecular.CgBead(
         element_string="Ag",
         bead_class="a",
@@ -602,6 +606,7 @@ def main() -> None:
         coordination=2,
     )
 
+    # Define the chromosome generator, holding all the changeable genes.
     chromo_it = cgexplore.systems_optimisation.ChromosomeGenerator(
         prefix=prefix,
         present_beads=(abead, bbead, cbead, dbead),
@@ -656,8 +661,8 @@ def main() -> None:
     }
     chromo_it.add_forcefield_dict(definer_dict=definer_dict)
 
-    seeds = [4, 280, 999, 2196]
-    num_generations = 20
+    seeds = [4]
+    num_generations = 10
     selection_size = 10
 
     for seed in seeds:
