@@ -11,19 +11,6 @@ import openmm
 import stk
 
 
-def pymol_path() -> pathlib.Path:
-    return pathlib.Path(
-        "/home/atarzia/software/pymol-open-source-build/bin/pymol"
-    )
-
-
-def shape_path() -> pathlib.Path:
-    return pathlib.Path(
-        "/home/atarzia/software/shape_2.1_linux_64/"
-        "SHAPE_2.1_linux_64/shape_2.1_linux64"
-    )
-
-
 def isomer_energy() -> float:
     return 0.3
 
@@ -64,9 +51,7 @@ def colours() -> dict[str, str]:
 def analyse_cage(
     database: cgexplore.utilities.AtomliteDatabase,
     name: str,
-    output_dir: pathlib.Path,
     forcefield: cgexplore.forcefields.ForceField,
-    node_element: str,
     chromosome: cgexplore.systems_optimisation.Chromosome,
 ) -> None:
     entry = database.get_entry(key=name)
@@ -202,28 +187,6 @@ def analyse_cage(
             property_dict={"forcefield_dict": forcefield_dict},
         )
 
-    if "node_shape_measures" not in properties:
-        shape_calc = cgexplore.analysis.ShapeMeasure(
-            output_dir=(output_dir / f"{name}_nshape"),
-            shape_path=shape_path(),
-            shape_string=None,
-        )
-
-        n_shape_mol = shape_calc.get_shape_molecule_byelement(
-            molecule=molecule,
-            element=node_element,
-            expected_points=node_expected_topologies(topology_str),
-        )
-        if n_shape_mol is None:
-            node_shape_measures = None
-        else:
-            node_shape_measures = shape_calc.calculate(n_shape_mol)
-
-        database.add_properties(
-            key=name,
-            property_dict={"node_shape_measures": node_shape_measures},
-        )
-
 
 def optimise_cage(
     molecule: stk.Molecule,
@@ -346,6 +309,7 @@ def optimise_cage(
         molecule=molecule,
         name=name,
         output_dir=output_dir,
+        replace_name=chromosome.get_string(),
         neighbour_library=neighbour_library,
     ):
         conformer = cgexplore.utilities.run_optimisation(
@@ -441,6 +405,7 @@ def fitness_calculator(
     database: cgexplore.utilities.AtomliteDatabase,
     calculation_output: pathlib.Path,
     structure_output: pathlib.Path,
+    options: dict,  # noqa: ARG001
 ) -> float:
     target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
@@ -484,6 +449,7 @@ def fitness_calculator(
                     database=database,
                     calculation_output=calculation_output,
                     structure_output=structure_output,
+                    options={},
                 )
 
             other_entry = database.get_entry(other_name)
@@ -509,6 +475,7 @@ def structure_calculator(
     database: cgexplore.utilities.AtomliteDatabase,
     calculation_output: pathlib.Path,
     structure_output: pathlib.Path,
+    options: dict,  # noqa: ARG001
 ) -> None:
     # Build structure.
     topology_str, topology_fun = chromosome.get_topology_information()
@@ -536,9 +503,7 @@ def structure_calculator(
     # Analyse cage.
     analyse_cage(
         name=name,
-        output_dir=calculation_output,
         forcefield=forcefield,
-        node_element="Ag",
         database=database,
         chromosome=chromosome,
     )
@@ -599,7 +564,7 @@ def progress_plot(
 
 
 def main() -> None:
-    wd = pathlib.Path("/home/atarzia/workingspace/cage_optimisation_tests")
+    wd = pathlib.Path(__file__).resolve().parent / "optimisation_output"
     struct_output = wd / "structures"
     cgexplore.utilities.check_directory(struct_output)
     calc_dir = wd / "calculations"
@@ -608,8 +573,6 @@ def main() -> None:
     cgexplore.utilities.check_directory(data_dir)
     figure_dir = wd / "figures"
     cgexplore.utilities.check_directory(figure_dir)
-    best_dir = figure_dir / "best"
-    cgexplore.utilities.check_directory(best_dir)
 
     prefix = "opt"
     database = cgexplore.utilities.AtomliteDatabase(data_dir / "test.db")
@@ -657,24 +620,11 @@ def main() -> None:
     # Set some basic building blocks up. This should be run by an algorithm
     # later.
     chromo_it.add_gene(
-        iteration=(
-            cgexplore.molecular.TwoC1Arm(bead=bbead, abead1=cbead),
-            # cgexplore.molecular.TwoC2Arm(
-            #     bead=bbead, abead1=cbead, abead2=cbead
-            # ),
-            # cgexplore.molecular.TwoC3Arm(
-            #     bead=bbead, abead1=cbead, abead2=cbead, abead3=cbead
-            # ),
-        ),
+        iteration=(cgexplore.molecular.TwoC1Arm(bead=bbead, abead1=cbead),),
         gene_type="precursor",
     )
     chromo_it.add_gene(
-        iteration=(
-            cgexplore.molecular.ThreeC1Arm(bead=abead, abead1=dbead),
-            # cgexplore.molecular.ThreeC2Arm(
-            #     bead=abead, abead1=dbead, abead2=dbead
-            # ),
-        ),
+        iteration=(cgexplore.molecular.ThreeC1Arm(bead=abead, abead1=dbead),),
         gene_type="precursor",
     )
 
@@ -706,7 +656,6 @@ def main() -> None:
     }
     chromo_it.add_forcefield_dict(definer_dict=definer_dict)
 
-    chromo_it.define_chromosomes()
     seeds = [4, 280, 999, 2196]
     num_generations = 20
     selection_size = 10
@@ -729,6 +678,7 @@ def main() -> None:
             structure_output=struct_output,
             calculation_output=calc_dir,
             database=database,
+            options={},
         )
         generation.run_structures()
         _ = generation.calculate_fitness_values()
@@ -834,6 +784,7 @@ def main() -> None:
                 structure_output=struct_output,
                 calculation_output=calc_dir,
                 database=database,
+                options={},
             )
             logging.info(f"new size is {generation.get_generation_size()}.")
 
@@ -845,7 +796,6 @@ def main() -> None:
             generations.append(generation)
 
             # Select the best of the generation for the next generation.
-            logging.info("maybe make this roulete?")
             best = generation.select_best(selection_size=selection_size)
             generation = cgexplore.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(best),
@@ -855,6 +805,7 @@ def main() -> None:
                 structure_output=struct_output,
                 calculation_output=calc_dir,
                 database=database,
+                options={},
             )
             logging.info(f"final size is {generation.get_generation_size()}.")
 
@@ -868,23 +819,6 @@ def main() -> None:
             best_chromosome = generation.select_best(selection_size=1)[0]
             best_name = (
                 f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
-            )
-            best_file = struct_output / (f"{best_name}_optc.mol")
-            cgexplore.utilities.Pymol(
-                output_dir=best_dir,
-                file_prefix=f"{prefix}_{seed}_g{generation_id}_best",
-                settings={
-                    "grid_mode": 0,
-                    "rayx": 1000,
-                    "rayy": 1000,
-                    "stick_rad": 0.7,
-                    "vdw": 0,
-                    "zoom_string": "custom",
-                },
-                pymol_path=pymol_path(),
-            ).visualise(
-                [best_file],
-                orient_atoms=None,
             )
 
         logging.info(f"top scorer is {best_name} (seed: {seed})")
@@ -914,6 +848,7 @@ def main() -> None:
             database=database,
             structure_output=struct_output,
             calculation_output=calc_dir,
+            options={},
         )
 
         ax.scatter(

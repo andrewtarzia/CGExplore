@@ -220,6 +220,9 @@ def yield_near_models(
         output_dir:
             Directory with optimisation outputs saved.
 
+        replace_name:
+            String to replace in filename.
+
         neighbour_library:
             IDs of force fields with nearby parameters, defined in
             `define_forcefields.py`.
