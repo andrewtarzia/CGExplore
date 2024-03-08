@@ -308,7 +308,7 @@ class VaBeneGenerator:
         return stk.BuildingBlock.init(
             atoms=tuple(new_atoms),
             bonds=tuple(new_bonds),
-            position_matrix=np.array(new_position_matrix),
+            position_matrix=np.array(new_position_matrix) * self.scale,
         )
 
     def __post_init__(self) -> None:
