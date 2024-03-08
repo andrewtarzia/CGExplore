@@ -5,6 +5,7 @@
 Contains class in https://github.com/maccallumlab/martini_openmm/tree/master
 
 """
+
 import contextlib
 import logging
 import pathlib

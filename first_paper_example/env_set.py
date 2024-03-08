@@ -1,3 +1,5 @@
+"""Define the environment variables."""
+
 import pathlib
 
 from cgexplore.utilities import check_directory

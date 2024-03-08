@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to plot property, input maps.
@@ -10,7 +9,6 @@ Author: Andrew Tarzia
 import itertools as it
 import logging
 import math
-import os
 import sys
 
 import matplotlib as mpl
@@ -109,7 +107,7 @@ def nobiteangle_relationship(all_data, figure_output):
         fig.tight_layout()
         filename = f"cr_{tstr}.pdf"
         fig.savefig(
-            os.path.join(figure_output, filename),
+            figure_output / filename,
             dpi=720,
             bbox_inches="tight",
         )
@@ -207,7 +205,7 @@ def bite_angle_relationship(all_data, figure_output):
         fig.tight_layout()
         filename = f"ar_{tstr}.pdf"
         fig.savefig(
-            os.path.join(figure_output, filename),
+            figure_output / filename,
             dpi=720,
             bbox_inches="tight",
         )
@@ -312,14 +310,14 @@ def selectivity_map(all_data, figure_output):
 
         fig.tight_layout()
         fig.savefig(
-            os.path.join(figure_output, f"sel_{prop}.pdf"),
+            figure_output / f"sel_{prop}.pdf",
             dpi=720,
             bbox_inches="tight",
         )
         plt.close()
 
 
-def selfsort_legend(all_data, figure_output):
+def selfsort_legend(figure_output):
     logging.info("running selfsort_legend")
 
     for cltitle in ("3C1", "4C1"):
@@ -345,7 +343,7 @@ def selfsort_legend(all_data, figure_output):
         fig.tight_layout()
         filename = f"ss_{cltitle}_legend.pdf"
         fig.savefig(
-            os.path.join(figure_output, filename),
+            figure_output / filename,
             dpi=720,
             bbox_inches="tight",
         )
@@ -421,7 +419,7 @@ def selfsort_map(all_data, figure_output):
         fig.tight_layout()
         filename = f"ss_{cltitle}_{tor}_{vdw}.pdf"
         fig.savefig(
-            os.path.join(figure_output, filename),
+            figure_output / filename,
             dpi=720,
             bbox_inches="tight",
         )
@@ -508,7 +506,7 @@ def kinetic_selfsort_map(all_data, figure_output):
         fig.tight_layout()
         filename = f"kss_{cltitle}_{tor}_{vdw}.pdf"
         fig.savefig(
-            os.path.join(figure_output, filename),
+            figure_output / filename,
             dpi=720,
             bbox_inches="tight",
         )
@@ -587,7 +585,7 @@ def angle_map(all_data, figure_output):
         fig.tight_layout()
         filename = f"am_{tstr}.png"
         fig.savefig(
-            os.path.join(figure_output, filename),
+            figure_output / filename,
             dpi=360,
             bbox_inches="tight",
         )
@@ -646,7 +644,7 @@ def angle_map_4p6(all_data, figure_output):
         fig.tight_layout()
         filename = f"am_{tstr}_fig2_4p6.pdf"
         fig.savefig(
-            os.path.join(figure_output, filename),
+            figure_output / filename,
             dpi=720,
             bbox_inches="tight",
         )
@@ -714,14 +712,14 @@ def pd_4p82_figure(all_data, figure_output):
     fig.tight_layout()
     filename = "4p82_test.png"
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=360,
         bbox_inches="tight",
     )
     plt.close()
 
 
-def pdII_figure_bite_angle(all_data, figure_output):
+def pdII_figure_bite_angle(all_data, figure_output):  # noqa: N802
     logging.info("running pdII_figure_bite_angle")
 
     color_map = ("2P4", "3P6", "4P8", "6P12", "12P24")
@@ -781,7 +779,7 @@ def pdII_figure_bite_angle(all_data, figure_output):
     fig.tight_layout()
     filename = "pdII_figure_bite_angle.pdf"
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=720,
         bbox_inches="tight",
     )
@@ -808,7 +806,7 @@ def main():
 
     bite_angle_relationship(all_data, figure_output)
     angle_map(all_data, figure_output)
-    selfsort_legend(all_data, figure_output)
+    selfsort_legend(figure_output)
     selfsort_map(all_data, figure_output)
     pdII_figure_bite_angle(all_data, figure_output)
     pd_4p82_figure(all_data, figure_output)

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to plot phase spaces.
@@ -8,7 +7,6 @@ Author: Andrew Tarzia
 """
 
 import logging
-import os
 import sys
 
 import matplotlib as mpl
@@ -62,7 +60,7 @@ def shape_vector_distributions(all_data, figure_output):
             if shape[0] != shape_type:
                 continue
 
-            shape_type = shape[0]
+            shape_type_ = shape[0]
 
             for tor in ("toff", "ton"):
                 tdata = trim[trim["torsions"] == tor]
@@ -87,7 +85,7 @@ def shape_vector_distributions(all_data, figure_output):
                 [
                     convert_topo(i)
                     for i in mapshape_to_topology(
-                        mode=shape_type,
+                        mode=shape_type_,
                         from_shape=True,
                     )[shape[2:]]
                 ]
@@ -110,7 +108,7 @@ def shape_vector_distributions(all_data, figure_output):
 
         fig.tight_layout()
         fig.savefig(
-            os.path.join(figure_output, f"shape_vectors_{shape_type}.pdf"),
+            figure_output / f"shape_vectors_{shape_type}.pdf",
             dpi=720,
             bbox_inches="tight",
         )
@@ -173,15 +171,14 @@ def shape_similarities(all_data, figure_output):
         ax.axhline(y=height, c="k")
         height += yjump
 
-    legend_elements = []
-    for i in cmap:
-        legend_elements.append(
-            Patch(
-                facecolor=cmap[i][0],
-                label=f"{i[1]}: {convert_tors(i[0], num=False)}",
-                alpha=0.7,
-            ),
+    legend_elements = [
+        Patch(
+            facecolor=cmap[i][0],
+            label=f"{i[1]}: {convert_tors(i[0], num=False)}",
+            alpha=0.7,
         )
+        for i in cmap
+    ]
 
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("cosine similarity", fontsize=16)
@@ -189,7 +186,7 @@ def shape_similarities(all_data, figure_output):
     ax.legend(ncol=2, handles=legend_elements, fontsize=16)
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "shape_similarities.pdf"),
+        figure_output / "shape_similarities.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -286,7 +283,7 @@ def shape_topology(all_data, figure_output):
             fig.tight_layout()
             filename = f"shape_topology_{shape_type}_{tstr}.pdf"
             fig.savefig(
-                os.path.join(figure_output, filename),
+                figure_output / filename,
                 dpi=720,
                 bbox_inches="tight",
             )
@@ -307,9 +304,8 @@ def shape_topology_main(all_data, figure_output):
             if tstr not in ("6P9", "6P12", "8P12", "8P16"):
                 continue
 
-            else:
-                fig, ax = plt.subplots(figsize=(5, 4))
-                tor_tests = ("ton",)
+            fig, ax = plt.subplots(figsize=(5, 4))
+            tor_tests = ("ton",)
 
             try:
                 target_shape = mapshape_to_topology(shape_type, False)[tstr]
@@ -375,7 +371,7 @@ def shape_topology_main(all_data, figure_output):
             fig.tight_layout()
             filename = f"shape_topology_{shape_type}_{tstr}_main.pdf"
             fig.savefig(
-                os.path.join(figure_output, filename),
+                figure_output / filename,
                 dpi=720,
                 bbox_inches="tight",
             )
@@ -499,7 +495,7 @@ def shape_input_relationships(all_data, figure_output):
             fig.tight_layout()
             filename = f"shape_{shape_type}_map_{tstr}.pdf"
             fig.savefig(
-                os.path.join(figure_output, filename),
+                figure_output / filename,
                 dpi=720,
                 bbox_inches="tight",
             )
@@ -615,10 +611,7 @@ def plot_topology_flex(data, comparison, mode, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(
-            figure_output,
-            f"flexshapeeffect_topologies_{mode}_{comparison}.pdf",
-        ),
+        figure_output / f"flexshapeeffect_topologies_{mode}_{comparison}.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -746,10 +739,7 @@ def plot_shape_flex(data, mode, figure_output):
 
         fig.tight_layout()
         fig.savefig(
-            os.path.join(
-                figure_output,
-                f"flexshapeeffect_shapes_{mode}_{tstr}.pdf",
-            ),
+            figure_output / f"flexshapeeffect_shapes_{mode}_{tstr}.pdf",
             dpi=720,
             bbox_inches="tight",
         )
@@ -864,7 +854,7 @@ def shape_persistence_map(all_data, figure_output):
     fig.tight_layout()
     filename = "shape_persistence_map.pdf"
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=720,
         bbox_inches="tight",
     )
@@ -927,7 +917,7 @@ def shape_summary(all_data, figure_output):
                         lowevalues.append(dist)
                 if len(lowevalues) != 0:
                     tp = np.std(lowevalues)
-                    print(
+                    print(  # noqa: T201
                         len(values),
                         len(lowevalues),
                         tor,
@@ -964,7 +954,7 @@ def shape_summary(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "shape_summary.pdf"),
+        figure_output / "shape_summary.pdf",
         dpi=720,
         bbox_inches="tight",
     )

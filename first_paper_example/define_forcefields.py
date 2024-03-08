@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module containing force field definitions.
@@ -772,10 +771,10 @@ def neighbour_3p4_library(ffnum: int) -> list[int]:
 def get_neighbour_library(ffnum: int, fftype: str) -> list[int]:
     if fftype == "2p3":
         return neighbour_2p3_library(ffnum)
-    elif fftype == "2p4":
+    if fftype == "2p4":
         return neighbour_2p4_library(ffnum)
-    elif fftype == "3p4":
+    if fftype == "3p4":
         return neighbour_3p4_library(ffnum)
-    else:
-        msg = f"{fftype} not known"
-        raise ValueError(msg)
+
+    msg = f"{fftype} not known"
+    raise ValueError(msg)

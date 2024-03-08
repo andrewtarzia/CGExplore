@@ -18,6 +18,7 @@ cgexplore.forcefields.ForceField
       :nosignatures:
    
       ~ForceField.assign_terms
+      ~ForceField.get_all_possible_terms
       ~ForceField.get_bead_library
       ~ForceField.get_hr_file_name
       ~ForceField.get_identifier

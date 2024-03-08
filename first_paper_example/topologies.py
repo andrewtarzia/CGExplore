@@ -43,6 +43,8 @@ def cage_topology_options(fg_set):
 
 
 class M4L82(stk.cage.Cage):
+    """New topology definition."""
+
     _non_linears = (
         stk.cage.NonLinearVertex(0, [0, 0, np.sqrt(6) / 2]),
         stk.cage.NonLinearVertex(1, [-1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]),
@@ -125,6 +127,8 @@ class M4L82(stk.cage.Cage):
 
 
 class CGM4L8(stk.cage.M4L8):
+    """New topology definition."""
+
     _vertex_prototypes = (
         stk.cage.NonLinearVertex(0, [2, 0, 0]),
         stk.cage.NonLinearVertex(1, [0, 2, 0]),
@@ -161,6 +165,8 @@ class CGM4L8(stk.cage.M4L8):
 
 
 class CGM12L24(stk.cage.M12L24):
+    """New topology definition."""
+
     _vertex_prototypes = (
         stk.cage.NonLinearVertex(0, [1.25, 0, 0]),
         stk.cage.NonLinearVertex(1, [-1.25, 0, 0]),
@@ -251,7 +257,7 @@ class CGM12L24(stk.cage.M12L24):
         stk.Edge(47, _vertex_prototypes[11], _vertex_prototypes[35]),
     )
 
-    def _get_scale(self, building_block_vertices):
+    def _get_scale(self, building_block_vertices):  # noqa: ARG002
         return 10
 
     def get_vertex_alignments(self):

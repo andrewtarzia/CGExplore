@@ -18,6 +18,7 @@ cgexplore.utilities.Pymol
       :nosignatures:
    
       ~Pymol.visualise
+      ~Pymol.visualise_host_guest
    
    
 

@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to visulize structures in matplotlib.
@@ -142,7 +141,7 @@ def visualise_low_and_high(
     fig.tight_layout()
     filename = "vlh.pdf"
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=360,
         bbox_inches="tight",
     )
@@ -196,7 +195,7 @@ def fig2_a(
     fig.tight_layout()
     filename = "vfig2a.pdf"
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=120,
         bbox_inches="tight",
     )
@@ -256,7 +255,7 @@ def fig2_cd(
     fig.tight_layout()
     filename = "vfig2cd.pdf"
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=120,
         bbox_inches="tight",
     )
@@ -294,7 +293,9 @@ def si_ar_fig(
     )
     flat_axs = axs.flatten()
 
-    for i, (sname, ax) in enumerate(zip(structure_names, flat_axs, strict=False)):
+    for i, (sname, ax) in enumerate(
+        zip(structure_names, flat_axs, strict=False)
+    ):
         ton = all_data[all_data["torsions"] == sname[1]]
         tdata = ton[
             ton["cage_name"] == naming_convention_map(sname[0], sname[1])
@@ -316,7 +317,7 @@ def si_ar_fig(
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=120,
         bbox_inches="tight",
     )
@@ -698,7 +699,10 @@ def si_shape_fig(
 
         for shape_type in ("n", "l"):
             try:
-                shape = mapshape_to_topology(shape_type, False)[tstr]
+                shape = mapshape_to_topology(
+                    shape_type,
+                    False,
+                )[tstr]
             except KeyError:
                 continue
 
@@ -718,7 +722,7 @@ def si_shape_fig(
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, filename),
+        figure_output / filename,
         dpi=120,
         bbox_inches="tight",
     )
@@ -784,7 +788,7 @@ def generate_image(
     settings,
 ):
     png_file = struct_figure_output / f"{struct_name}_f.png"
-    if not os.path.exists(png_file):
+    if not png_file.exists():
         viz = Pymol(
             output_dir=struct_figure_output,
             file_prefix=f"{struct_name}_f",
@@ -882,8 +886,8 @@ def webapp_csv(
 
             vss_output = figure_output / "vss_figures"
             check_directory(vss_output)
-            figure_file = os.path.join(vss_output, f"vss_{bbpair}_{tors}.png")
-            if not os.path.exists(figure_file):
+            figure_file = vss_output / f"vss_{bbpair}_{tors}.png"
+            if not figure_file.exists():
                 if ncols == 1:
                     fig, ax = plt.subplots(figsize=(5, 5))
                     flat_axs = [ax]
@@ -1039,9 +1043,9 @@ def generate_movies(figure_output):
                     for fi in files:
                         f.write(f"file {fi}\n")
 
-                if os.path.exists(output_file):
+                if output_file.exists():
                     # Delete previous video.
-                    os.remove(output_file)
+                    output_file.unlink()
 
                 # Make video.
                 ffmpeg_cmd = (
@@ -1050,7 +1054,7 @@ def generate_movies(figure_output):
                     '-vf "settb=AVTB,setpts=N/2/TB,fps=2"'
                     f" {output_file}"
                 )
-                os.system(ffmpeg_cmd)
+                os.system(ffmpeg_cmd)  # noqa: S605
 
 
 def naming_convention_map(old_name, tors="toff"):

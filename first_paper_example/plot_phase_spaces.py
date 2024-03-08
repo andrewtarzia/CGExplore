@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to plot phase spaces.
@@ -8,7 +7,6 @@ Author: Andrew Tarzia
 """
 
 import logging
-import os
 import sys
 
 import matplotlib.pyplot as plt
@@ -275,7 +273,7 @@ def phase_space_2(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "ps_2.pdf"),
+        figure_output / "ps_2.pdf",
         dpi=720,
         bbox_inches="tight",
     )
@@ -314,7 +312,7 @@ def phase_space_6p8(all_data, figure_output):
 
     fig.tight_layout()
     fig.savefig(
-        os.path.join(figure_output, "ps_6p8.pdf"),
+        figure_output / "ps_6p8.pdf",
         dpi=720,
         bbox_inches="tight",
     )

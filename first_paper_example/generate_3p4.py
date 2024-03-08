@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Script to generate and optimise CG models.
@@ -26,7 +25,7 @@ logging.basicConfig(
 RDLogger.DisableLog("rdApp.*")
 
 
-def main():
+def main() -> None:
     first_line = f"Usage: {__file__}.py"
     if len(sys.argv) != 1:
         logging.info(f"{first_line}")

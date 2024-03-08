@@ -53,7 +53,9 @@ class ForceField:
         prefix: str,
         present_beads: tuple[CgBead, ...],
         bond_targets: tuple[TargetBond | TargetMartiniBond, ...],
-        angle_targets: tuple[TargetAngle | TargetMartiniAngle, ...],
+        angle_targets: tuple[
+            TargetAngle | TargetCosineAngle | TargetMartiniAngle, ...
+        ],
         torsion_targets: tuple[TargetTorsion | TargetMartiniTorsion, ...],
         nonbonded_targets: tuple[TargetNonbonded, ...],
         vdw_bond_cutoff: int,
@@ -546,6 +548,61 @@ class ForceField:
             bead_set=self._bead_library,
             vdw_bond_cutoff=self._vdw_bond_cutoff,
         )
+
+    def get_all_possible_terms(self, molecule: stk.Molecule) -> None:
+        """Check if there are missing terms in forcefield."""
+        found = set()
+        for bond in molecule.get_bonds():
+            atoms = (bond.get_atom1(), bond.get_atom2())
+            atom_estrings = [i.__class__.__name__ for i in atoms]
+            cgbeads = [
+                self._bead_library.get_cgbead_from_element(i)
+                for i in atom_estrings
+            ]
+            cgbead_string = tuple(i.bead_type for i in cgbeads)
+            rev_cgbead_string = tuple(reversed(cgbead_string))
+            if rev_cgbead_string in found:
+                found.add(rev_cgbead_string)
+            else:
+                found.add(cgbead_string)
+        logging.info(f"found bond terms ({len(found)}): {found}")
+
+        found = set()
+        for found_angle in find_angles(molecule):
+            atom_estrings = [i.__class__.__name__ for i in found_angle.atoms]
+            cgbeads = [
+                self._bead_library.get_cgbead_from_element(i)
+                for i in atom_estrings
+            ]
+            cgbead_string = tuple(i.bead_type for i in cgbeads)
+            rev_cgbead_string = tuple(reversed(cgbead_string))
+            if rev_cgbead_string in found:
+                found.add(rev_cgbead_string)
+            else:
+                found.add(cgbead_string)
+        logging.info(f"found angle terms ({len(found)}): {found}")
+
+        found = set()
+        for found_torsion in find_torsions(molecule, 4):
+            atom_estrings = [i.__class__.__name__ for i in found_torsion.atoms]
+            cgbeads = [
+                self._bead_library.get_cgbead_from_element(i)
+                for i in atom_estrings
+            ]
+            cgbead_string = tuple(i.bead_type for i in cgbeads)
+            rev_cgbead_string = tuple(reversed(cgbead_string))
+            if rev_cgbead_string in found:
+                found.add(rev_cgbead_string)
+            else:
+                found.add(cgbead_string)
+        logging.info(f"found torsion terms ({len(found)}): {found}")
+
+        found = set()
+        for atom in molecule.get_atoms():
+            atom_estring = atom.__class__.__name__
+            cgbead = self._bead_library.get_cgbead_from_element(atom_estring)
+            found.add(cgbead.bead_class)  # type: ignore[arg-type]
+        logging.info(f"found nonbonded terms ({len(found)}): {found}")
 
     def get_bead_library(self) -> BeadLibrary:
         """Get beads in forcefield."""

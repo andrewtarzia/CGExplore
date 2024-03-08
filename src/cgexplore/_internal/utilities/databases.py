@@ -9,6 +9,7 @@ import sqlite3
 from collections import abc
 
 import atomlite
+import polars as pl
 import stk
 
 logging.basicConfig(
@@ -66,6 +67,10 @@ class AtomliteDatabase:
             atomlite.PropertyEntry(key=key, properties=property_dict)
         )
 
+    def remove_property(self, key: str, property_path: str) -> None:
+        """Add properties to an entry by key."""
+        self._db.remove_property(key=key, path=property_path)
+
     def get_property(
         self,
         key: str,
@@ -73,31 +78,37 @@ class AtomliteDatabase:
         property_type: type,
     ) -> atomlite.Json:
         """Get the properties of an entry."""
-        if property_type is bool:
-            value = self._db.get_bool_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
+        try:
+            if property_type is bool:
+                value = self._db.get_bool_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is float:
+                value = self._db.get_float_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is str:
+                value = self._db.get_str_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is int:
+                value = self._db.get_int_property(  # type: ignore[assignment]
+                    key=key,
+                    path=f"$.{property_key}",
+                )
+            elif property_type is dict:
+                value = self.get_entry(key).properties[property_key]  # type: ignore[assignment]
+            else:
+                msg = f"{property_key} has unexpected type"
+                raise RuntimeError(msg)
+        except KeyError as ex:
+            ex.add_note(
+                f"{key} does not have {property_key} of {property_type}"
             )
-        elif property_type is float:
-            value = self._db.get_float_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
-            )
-        elif property_type is str:
-            value = self._db.get_str_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
-            )
-        elif property_type is int:
-            value = self._db.get_int_property(  # type: ignore[assignment]
-                key=key,
-                path=f"$.{property_key}",
-            )
-        elif property_type is dict:
-            value = self.get_entry(key).properties[property_key]  # type: ignore[assignment]
-        else:
-            msg = f"{property_key} has unexpected type"
-            raise RuntimeError(msg)
+            raise
 
         if value is None:
             msg = f"{property_key} has no value"
@@ -122,3 +133,27 @@ class AtomliteDatabase:
         for entry in self.get_entries():
             if entry.properties[column] == value:
                 yield entry
+
+    def get_property_df(
+        self,
+        properties: abc.Sequence[str],
+        allow_missing: bool = False,  # noqa: FBT001, FBT002
+    ) -> pl.DataFrame:
+        """Get a DataFrame of the properties in the database.
+
+        Parameters:
+            properties:
+                The paths of the properties to retrieve.
+                Valid paths are described in the :mod:`atomlite` docs.
+
+            allow_missing:
+                If ``True``, rows with some missing properties will be
+                included in the DataFrame and hold ``null`` values.
+
+        Returns:
+            A DataFrame of the property entries in the database.
+        """
+        return self._db.get_property_df(
+            properties=properties,
+            allow_missing=allow_missing,
+        )

@@ -30,6 +30,8 @@ cgexplore.utilities
       :toctree:
       :nosignatures:
    
+      add_structure_to_ax
+      add_text_to_ax
       check_directory
       convert_pyramid_angle
       draw_pie

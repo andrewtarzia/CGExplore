@@ -14,7 +14,7 @@ check:
   trap error=1 ERR
 
   echo
-  (set -x; ruff . )
+  (set -x; ruff check . )
 
   echo
   ( set -x; ruff format --check . )
@@ -23,7 +23,7 @@ check:
   ( set -x; mypy src )
 
   echo
-  ( set -x; pytest --cov=cgexplore --cov-report term-missing )
+  ( set -x; pytest --cov=src --cov-report term-missing )
 
   test $error = 0
 
@@ -31,7 +31,7 @@ check:
 # Auto-fix code issues.
 fix:
   ruff format .
-  ruff --fix .
+  ruff check --fix .
 
 
 # Build docs.

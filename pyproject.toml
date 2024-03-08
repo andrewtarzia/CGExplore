@@ -36,6 +36,11 @@ dev = [
   "sphinx_rtd_theme",
 ]
 
+[project.scripts]
+delete-property = "cgexplore._internal.scripts.delete_property:main"
+get-energies = "cgexplore._internal.scripts.get_energies:main"
+get-values = "cgexplore._internal.scripts.get_values:main"
+
 [project.urls]
 github = "https://github.com/andrewtarzia/CGExplore"
 
@@ -50,9 +55,7 @@ where = [
 
 [tool.ruff]
 line-length = 79
-exclude = [
-  "first_paper_example",
-]
+exclude = []
 
 [tool.ruff.lint]
 select = ["ALL"]
@@ -75,6 +78,31 @@ convention = "google"
   "INP001",
   "T201",
   "PLR0913",
+]
+"first_paper_example/*" = [
+  "D103",
+  "C901",
+  "INP001",
+  "ERA001",
+  "ANN001",
+  "ANN201",
+  "ANN202",
+  "D102",
+  "PLR2004",
+  "FBT002",
+  "FBT003",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
+]
+"optimisation_example/*" = [
+  "D103",
+  "C901",
+  "INP001",
+  "ERA001",
+  "PLR0912",
+  "PLR0913",
+  "PLR0915",
 ]
 "docs/source/conf.py" = ["D100", "INP001"]
 
@@ -114,6 +142,9 @@ module = [
   "openmmtools.*",
   "openmm.*",
   "atomlite.*",
+  "networkx.*",
   "martini_openmm.*",
+  "spindry.*",
+  "vabene.*",
 ]
 ignore_missing_imports = true

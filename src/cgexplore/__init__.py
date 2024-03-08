@@ -5,6 +5,7 @@ from cgexplore import (
     forcefields,
     molecular,
     optimisation,
+    systems_optimisation,
     terms,
     utilities,
 )
@@ -14,6 +15,7 @@ __all__ = [
     "utilities",
     "forcefields",
     "optimisation",
+    "systems_optimisation",
     "molecular",
     "terms",
 ]

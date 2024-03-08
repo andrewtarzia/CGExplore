@@ -6,11 +6,208 @@ Author: Andrew Tarzia
 
 """
 
+from dataclasses import dataclass
 
 import numpy as np
 import stk
 
-from .beads import CgBead
+from .beads import CgBead, string_to_atom_number
+
+
+@dataclass
+class LinearPrecursor:
+    """Define a linear precursor."""
+
+    composition: tuple[int, ...]
+    present_beads: tuple[CgBead, ...]
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+
+    def __post_init__(self) -> None:
+        atoms = [
+            stk.Atom(
+                i, string_to_atom_number(self.present_beads[i].element_string)
+            )
+            for i in range(len(self.present_beads))
+        ]
+
+        coordinates = [np.array([0, 0, 0])]
+        bonds = []
+        for i in range(self.composition[0]):
+            coordinates.append(np.array([1 * (i + 1), 0, 0]))
+            bonds.append(stk.Bond(atoms[i], atoms[i + 1], order=1))
+
+        model = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=tuple(bonds),
+            position_matrix=np.array(coordinates),
+        )
+
+        if self.composition[0] == 0:
+            new_fgs = (
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0],),
+                    bonders=(atoms[0],),
+                    deleters=(),
+                    placers=(atoms[0],),
+                ),
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0],),
+                    bonders=(atoms[0],),
+                    deleters=(),
+                    placers=(atoms[0],),
+                ),
+            )
+        elif self.composition[0] == 1:
+            new_fgs = (
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0], atoms[1]),
+                    bonders=(atoms[0],),
+                    deleters=(),
+                    placers=(atoms[0], atoms[1]),
+                ),
+                stk.GenericFunctionalGroup(
+                    atoms=(atoms[0], atoms[1]),
+                    bonders=(atoms[1],),
+                    deleters=(),
+                    placers=(atoms[0], atoms[1]),
+                ),
+            )
+        else:
+            new_fgs = (  # type: ignore[assignment]
+                stk.SmartsFunctionalGroupFactory(
+                    smarts=(
+                        f"[{self.placer_beads[0].element_string}]"
+                        f"[{self.binder_beads[0].element_string}]"
+                    ),
+                    bonders=(1,),
+                    deleters=(),
+                    placers=(0, 1),
+                ),
+            )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=model,
+            functional_groups=new_fgs,
+        )
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
+
+
+@dataclass
+class TrianglePrecursor:
+    """Define a triangle precursor."""
+
+    present_beads: tuple[CgBead, ...]
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+
+    def __post_init__(self) -> None:
+        _x = 2 * np.sqrt(3) / 4
+        _y = 2
+        coordinates = np.array(
+            (
+                np.array([0, _x, 0]),
+                np.array([_y / 2, -_x, 0]),
+                np.array([-_y / 2, -_x, 0]),
+            )
+        )
+
+        atoms = [
+            stk.Atom(
+                i, string_to_atom_number(self.present_beads[i].element_string)
+            )
+            for i in range(len(self.present_beads))
+        ]
+        bonds = [
+            stk.Bond(atoms[0], atoms[1], order=1),
+            stk.Bond(atoms[1], atoms[2], order=1),
+            stk.Bond(atoms[2], atoms[0], order=1),
+        ]
+
+        model = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=tuple(bonds),
+            position_matrix=coordinates,
+        )
+
+        new_fgs = (
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{self.placer_beads[0].element_string}]"
+                    f"[{self.binder_beads[0].element_string}]"
+                    f"[{self.placer_beads[1].element_string}]"
+                ),
+                bonders=(1,),
+                deleters=(),
+                placers=(0, 1, 2),
+            ),
+        )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=model,
+            functional_groups=new_fgs,
+        )
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
+
+
+@dataclass
+class SquarePrecursor:
+    """Define a square precursor."""
+
+    present_beads: tuple[CgBead, ...]
+    binder_beads: tuple[CgBead, ...]
+    placer_beads: tuple[CgBead, ...]
+
+    def __post_init__(self) -> None:
+        coordinates = np.array(
+            (
+                np.array([1, 1, 0]),
+                np.array([1, -1, 0]),
+                np.array([-1, -1, 0]),
+                np.array([-1, 1, 0]),
+            )
+        )
+
+        atoms = [
+            stk.Atom(
+                i, string_to_atom_number(self.present_beads[i].element_string)
+            )
+            for i in range(len(self.present_beads))
+        ]
+        bonds = [
+            stk.Bond(atoms[0], atoms[1], order=1),
+            stk.Bond(atoms[1], atoms[2], order=1),
+            stk.Bond(atoms[2], atoms[3], order=1),
+            stk.Bond(atoms[3], atoms[0], order=1),
+        ]
+
+        model = stk.BuildingBlock.init(
+            atoms=tuple(atoms),
+            bonds=tuple(bonds),
+            position_matrix=coordinates,
+        )
+
+        new_fgs = (
+            stk.SmartsFunctionalGroupFactory(
+                smarts=(
+                    f"[{self.placer_beads[0].element_string}]"
+                    f"[{self.binder_beads[0].element_string}]"
+                    f"[{self.placer_beads[1].element_string}]"
+                ),
+                bonders=(1,),
+                deleters=(),
+                placers=(0, 1, 2),
+            ),
+        )
+        self.building_block = stk.BuildingBlock.init_from_molecule(
+            molecule=model,
+            functional_groups=new_fgs,
+        )
+
+    def get_building_block(self) -> stk.BuildingBlock:
+        return self.building_block
 
 
 class Precursor:

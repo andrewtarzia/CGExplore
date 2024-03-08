@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # Distributed under the terms of the MIT License.
 
 """Module for cage generation utilities.
@@ -9,7 +8,7 @@ Author: Andrew Tarzia
 
 import itertools as it
 import logging
-import os
+import pathlib
 
 import openmm
 import stk
@@ -35,12 +34,12 @@ logging.basicConfig(
 def optimise_cage(
     molecule,
     name,
-    output_dir,
+    output_dir: pathlib.Path,
     forcefield,
     platform,
     database,
 ):
-    fina_mol_file = os.path.join(output_dir, f"{name}_final.mol")
+    fina_mol_file = output_dir / f"{name}_final.mol"
     # Do not rerun if database entry exists.
     if database.has_molecule(key=name):
         final_molecule = database.get_molecule(key=name)
@@ -55,12 +54,12 @@ def optimise_cage(
         )
 
     # Do not rerun if final mol exists.
-    if os.path.exists(fina_mol_file):
+    if fina_mol_file.exists():
         ensemble = Ensemble(
             base_molecule=molecule,
-            base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
-            conformer_xyz=os.path.join(output_dir, f"{name}_ensemble.xyz"),
-            data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
+            base_mol_path=output_dir / f"{name}_base.mol",
+            conformer_xyz=output_dir / f"{name}_ensemble.xyz",
+            data_json=output_dir / f"{name}_ensemble.json",
             overwrite=False,
         )
         conformer = ensemble.get_lowest_e_conformer()
@@ -79,9 +78,9 @@ def optimise_cage(
 
     ensemble = Ensemble(
         base_molecule=molecule,
-        base_mol_path=os.path.join(output_dir, f"{name}_base.mol"),
-        conformer_xyz=os.path.join(output_dir, f"{name}_ensemble.xyz"),
-        data_json=os.path.join(output_dir, f"{name}_ensemble.json"),
+        base_mol_path=output_dir / f"{name}_base.mol",
+        conformer_xyz=output_dir / f"{name}_ensemble.xyz",
+        data_json=output_dir / f"{name}_ensemble.json",
         overwrite=True,
     )
     temp_molecule = run_constrained_optimisation(

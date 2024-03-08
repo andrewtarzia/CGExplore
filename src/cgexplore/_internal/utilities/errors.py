@@ -6,7 +6,6 @@ Author: Andrew Tarzia
 
 """
 
-
 import logging
 
 logging.basicConfig(
