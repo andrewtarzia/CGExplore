@@ -199,7 +199,7 @@ class Pymol:
 
         radii_string = ""
         for element in radii:
-            r = radii[element]
+            r = 0 if element in host_atoms else radii[element] / 2
             radii_string += f"alter (name {element}),vdw={r}\n"
         transperancy_string = (
             f"set sphere_transparency, {host_transperancy}, cage"
@@ -220,8 +220,8 @@ class Pymol:
             f"{lstring}\n"
             f"{cstring}\n"
             f"set grid_mode, {self._settings['grid_mode']}\n"
-            "as spheres\n"
             f"{selection_string}\n"
+            "as spheres, (not cage)\n"
             f"{radii_string}\n"
             f"{epsilon_string}\n"
             "rebuild\n"
