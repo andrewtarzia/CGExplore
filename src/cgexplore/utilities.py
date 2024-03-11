@@ -15,6 +15,7 @@ from cgexplore._internal.utilities.generation_utilities import (
     yield_near_models,
     yield_shifted_models,
 )
+from cgexplore._internal.utilities.spindry_utilities import get_supramolecule
 from cgexplore._internal.utilities.utilities import (
     check_directory,
     convert_pyramid_angle,
@@ -44,4 +45,5 @@ __all__ = [
     "yield_shifted_models",
     "add_structure_to_ax",
     "add_text_to_ax",
+    "get_supramolecule",
 ]
