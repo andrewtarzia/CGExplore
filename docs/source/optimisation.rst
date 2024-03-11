@@ -22,14 +22,6 @@ Dynamics
   CGOMMDynamics <_autosummary/cgexplore.optimisation.CGOMMDynamics>
   OMMTrajectory <_autosummary/cgexplore.optimisation.OMMTrajectory>
 
-Host-guest conformer generation using SpinDry
----------------------------------------------
-
-.. toctree::
-  :maxdepth: 1
-
-  Laundrette <_autosummary/cgexplore.optimisation.Laundrette>
-
 
 
 Utilties

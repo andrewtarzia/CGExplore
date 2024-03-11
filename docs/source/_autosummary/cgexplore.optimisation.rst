@@ -18,7 +18,6 @@ cgexplore.optimisation
    
       CGOMMDynamics
       CGOMMOptimizer
-      Laundrette
       OMMTrajectory
    
    

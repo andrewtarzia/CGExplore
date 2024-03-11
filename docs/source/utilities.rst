@@ -12,6 +12,14 @@ Databasing
 
   AtomliteDatabase <_autosummary/cgexplore.utilities.AtomliteDatabase>
 
+Host-guest conformer generation using SpinDry
+---------------------------------------------
+
+.. toctree::
+  :maxdepth: 1
+
+  get_supramolecule <_autosummary/cgexplore.utilities.get_supramolecule>
+
 Optimisation
 ------------
 
