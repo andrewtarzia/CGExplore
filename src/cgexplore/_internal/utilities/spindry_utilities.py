@@ -20,6 +20,28 @@ logging.basicConfig(
 )
 
 
+def get_unforced_supramolecule(
+    hgcomplex: stk.ConstructedMolecule,
+) -> spd.Potential:
+    return spd.SupraMolecule(
+        atoms=(
+            spd.Atom(id=atom.get_id(), element_string=atom.__class__.__name__)
+            for atom in hgcomplex.get_atoms()
+        ),
+        bonds=(
+            spd.Bond(
+                id=i,
+                atom_ids=(
+                    bond.get_atom1().get_id(),
+                    bond.get_atom2().get_id(),
+                ),
+            )
+            for i, bond in enumerate(hgcomplex.get_bonds())
+        ),
+        position_matrix=hgcomplex.get_position_matrix(),
+    )
+
+
 def get_supramolecule(
     hgcomplex: stk.ConstructedMolecule,
     forcefield: ForceField,
