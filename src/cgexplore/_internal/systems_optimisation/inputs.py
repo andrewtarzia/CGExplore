@@ -476,7 +476,12 @@ class ChromosomeGenerator:
                 ]
                 for i in list_of_chromosomes
             ]
-            weights = [i / sum(fitness_values) for i in fitness_values]
+            # Handle if all fitness values are 0.
+            try:
+                weights = [i / sum(fitness_values) for i in fitness_values]
+            except ZeroDivisionError:
+                weights = [1 / len(fitness_values) for i in fitness_values]
+
             selected = generator.choice(
                 np.asarray(list_of_chromosomes),
                 size=num_to_select,
@@ -550,7 +555,12 @@ class ChromosomeGenerator:
                 ]
                 for i in list_of_chromosomes
             ]
-            weights = [i / sum(fitness_values) for i in fitness_values]
+            # Handle if all fitness values are 0.
+            try:
+                weights = [i / sum(fitness_values) for i in fitness_values]
+            except ZeroDivisionError:
+                weights = [1 / len(fitness_values) for i in fitness_values]
+
             selected = generator.choice(
                 np.asarray(list_of_chromosomes),
                 size=(num_to_select, 2),
