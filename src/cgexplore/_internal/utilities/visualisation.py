@@ -222,6 +222,7 @@ class Pymol:
             f"set grid_mode, {self._settings['grid_mode']}\n"
             f"{selection_string}\n"
             "as spheres, (not cage)\n"
+            "hide spheres, (cage)\n"
             f"{radii_string}\n"
             f"{epsilon_string}\n"
             "rebuild\n"
