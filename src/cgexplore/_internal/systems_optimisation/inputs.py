@@ -59,6 +59,14 @@ class Chromosome:
             if self.gene_dict[i][2] == "topology"
         )
 
+    def get_vertex_alignments(self) -> tuple:
+        """Get the chromosomes vertex alignments."""
+        return tuple(
+            self.gene_dict[i][1]
+            for i in self.gene_dict
+            if self.gene_dict[i][2] == "vertex_alignment"
+        )
+
     def get_building_blocks(self) -> tuple:
         """Get the chromosomes building blocks."""
         return tuple(
@@ -215,14 +223,25 @@ class ChromosomeGenerator:
                 For topology:
                 For precursor:
                 For forcefield:
+                For vertex_alignment:
 
             gene_type:
                 A string defining the gene type.
-                Can be `term`, `topology`, `precursor`, `forcefield`.
+                Can be `term`, `topology`, `precursor`, `forcefield`,
+                `vertex_alignment`.
 
         """
-        if gene_type not in ("term", "topology", "precursor", "forcefield"):
-            msg = "gene_type not `term`, `topology`, `precursor`, `forcefield`"
+        if gene_type not in (
+            "term",
+            "topology",
+            "precursor",
+            "forcefield",
+            "vertex_alignment",
+        ):
+            msg = (
+                "gene_type not `term`, `topology`, `precursor`, `forcefield`, "
+                "`vertex_alignment`"
+            )
             raise RuntimeError(msg)
 
         known_types = set(self.chromosome_types.values())
@@ -326,6 +345,14 @@ class ChromosomeGenerator:
             i
             for i in self.chromosome_types
             if self.chromosome_types[i] == "topology"
+        )
+
+    def get_va_ids(self) -> tuple[int, ...]:
+        """Get chromosome indices associated with vertex alignments."""
+        return tuple(
+            i
+            for i in self.chromosome_types
+            if self.chromosome_types[i] == "vertex_alignment"
         )
 
     def get_prec_ids(self) -> tuple[int, ...]:
