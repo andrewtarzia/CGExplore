@@ -525,13 +525,14 @@ class ChromosomeGenerator:
             gene_dict = {}
             chromosome_name = [0 for i in range(len(self.chromosome_map))]
             for gene_id in self.chromosome_map:
-                if gene_id in gene_range:
+                if gene_id not in gene_range:
                     gene = chromosome.name[gene_id]
                 else:
                     chromosome_options = tuple(
                         range(len(self.chromosome_map[gene_id]))
                     )
                     gene = generator.choice(chromosome_options)
+
                 gene_value = self.chromosome_map[gene_id][gene]
                 gene_type = self.chromosome_types[gene_id]
                 gene_dict[gene_id] = (gene, gene_value, gene_type)
