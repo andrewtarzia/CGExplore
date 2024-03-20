@@ -83,6 +83,28 @@ class Generation:
 
         return [self.chromosomes[i] for i in best_indices]
 
+    def select_worst(self, selection_size: int) -> abc.Iterable[Chromosome]:
+        """Select the worst in the generation by fitness."""
+        temp = [
+            (
+                i,
+                self.fitness_calculator(
+                    chromosome=i,
+                    chromosome_generator=self.chromosome_generator,
+                    database=self.database,
+                    calculation_output=self.calculation_output,
+                    structure_output=self.structure_output,
+                    options=self.options,
+                ),
+            )
+            for i in self.chromosomes
+        ]
+        best_indices = tuple(
+            sorted(range(len(temp)), key=lambda i: temp[i][1], reverse=False)
+        )[:selection_size]
+
+        return [self.chromosomes[i] for i in best_indices]
+
     def select_elite(
         self,
         proportion_threshold: float,
