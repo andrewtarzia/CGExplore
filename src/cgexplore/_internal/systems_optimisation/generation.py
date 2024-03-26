@@ -117,3 +117,21 @@ class Generation:
     def select_all(self) -> abc.Iterable[Chromosome]:
         """Select all in the generation."""
         return list(self.chromosomes)
+
+    def calculate_elite_fitness(
+        self,
+        proportion_threshold: float,
+    ) -> abc.Iterable[Chromosome]:
+        """Select the elite in the generation by fitness."""
+        elite = self.select_elite(proportion_threshold)
+        return min(
+            self.fitness_calculator(
+                chromosome=i,
+                chromosome_generator=self.chromosome_generator,
+                database=self.database,
+                calculation_output=self.calculation_output,
+                structure_output=self.structure_output,
+                options=self.options,
+            )
+            for i in elite
+        )
