@@ -10,8 +10,6 @@ from rdkit.Chem import AllChem
 
 from cgexplore._internal.terms.utilities import find_torsions
 
-from .utilities import get_dihedral
-
 
 class GeomMeasure:
     """Class to perform geometry calculations."""
@@ -131,7 +129,7 @@ class GeomMeasure:
                         for i in target_torsion.measured_atom_ids
                     )
 
-                torsion_value = get_dihedral(
+                torsion_value = stko.calculate_dihedral(
                     pt1=next(iter(molecule.get_atomic_positions(new_ids[0]))),
                     pt2=next(iter(molecule.get_atomic_positions(new_ids[1]))),
                     pt3=next(iter(molecule.get_atomic_positions(new_ids[2]))),
