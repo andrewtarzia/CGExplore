@@ -1,0 +1,58 @@
+<?xml version="1.0" ?>
+<System openmmVersion="8.1.1" type="System" version="1">
+	<PeriodicBoxVectors>
+		<A x="2" y="0" z="0"/>
+		<B x="0" y="2" z="0"/>
+		<C x="0" y="0" z="2"/>
+	</PeriodicBoxVectors>
+	<Particles>
+		<Particle mass="10"/>
+		<Particle mass="10"/>
+		<Particle mass="10"/>
+		<Particle mass="10"/>
+		<Particle mass="10"/>
+		<Particle mass="10"/>
+	</Particles>
+	<Constraints/>
+	<Forces>
+		<Force forceGroup="0" name="HarmonicBondForce" type="HarmonicBondForce" usesPeriodic="0" version="2">
+			<Bonds>
+				<Bond d=".1" k="100000" p1="0" p2="1"/>
+				<Bond d=".1" k="100000" p1="1" p2="2"/>
+				<Bond d=".1" k="100000" p1="3" p2="4"/>
+				<Bond d=".1" k="100000" p1="4" p2="5"/>
+				<Bond d=".2" k="100000" p1="2" p2="3"/>
+			</Bonds>
+		</Force>
+		<Force cutoff="1" energy="epsilon*((sigma)/(r))^12;epsilon = sqrt(epsilon1*epsilon2);sigma = 0.5*(sigma1+sigma2);" forceGroup="0" method="0" name="CustomNonbondedForce" switchingDistance="-1" type="CustomNonbondedForce" useLongRangeCorrection="0" useSwitchingFunction="0" version="3">
+			<PerParticleParameters>
+				<Parameter name="sigma"/>
+				<Parameter name="epsilon"/>
+			</PerParticleParameters>
+			<GlobalParameters/>
+			<ComputedValues/>
+			<EnergyParameterDerivatives/>
+			<Particles>
+				<Particle param1=".1" param2="10"/>
+				<Particle param1=".1" param2="10"/>
+				<Particle param1=".1" param2="10"/>
+				<Particle param1=".2" param2="2"/>
+				<Particle param1=".2" param2="2"/>
+				<Particle param1=".2" param2="2"/>
+			</Particles>
+			<Exclusions>
+				<Exclusion p1="0" p2="1"/>
+				<Exclusion p1="0" p2="2"/>
+				<Exclusion p1="1" p2="2"/>
+				<Exclusion p1="1" p2="3"/>
+				<Exclusion p1="2" p2="3"/>
+				<Exclusion p1="2" p2="4"/>
+				<Exclusion p1="3" p2="4"/>
+				<Exclusion p1="3" p2="5"/>
+				<Exclusion p1="4" p2="5"/>
+			</Exclusions>
+			<Functions/>
+			<InteractionGroups/>
+		</Force>
+	</Forces>
+</System>
