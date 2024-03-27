@@ -1,18 +1,12 @@
+from dataclasses import dataclass
+
 import cgexplore
 import stk
 
 
+@dataclass(slots=True, frozen=True)
 class CaseData:
-    """A test case."""
-
-    def __init__(
-        self,
-        molecule: stk.Molecule,
-        forcefield: cgexplore.forcefields.ForceField,
-        xml_string: str,
-        name: str,
-    ) -> None:
-        self.molecule = molecule
-        self.forcefield = forcefield
-        self.xml_string = xml_string
-        self.name = name
+    molecule: stk.Molecule
+    forcefield: cgexplore.forcefields.ForceField
+    known_decomposition: dict[str, tuple[float, str]]
+    name: str

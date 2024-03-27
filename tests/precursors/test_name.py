@@ -9,9 +9,6 @@ def test_name(precursor: CaseData) -> None:
         precursor:
             The precursor.
 
-    Returns:
-        None : :class:`NoneType`
-
     """
     print(precursor.precursor.get_name(), precursor.precursor_name)
     assert precursor.precursor.get_name() == precursor.precursor_name
