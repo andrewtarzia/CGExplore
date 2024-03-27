@@ -57,3 +57,8 @@ def test_openmmoptimizer(molecule: CaseData) -> None:
     test_txt = stk.MolWriter().to_string(conformer.molecule)
     print(known_txt, test_txt)
     assert known_txt == test_txt
+
+    (
+        output_dir / f"test_{molecule.name}_test_{molecule.name}_omm.out"
+    ).unlink()
+    (output_dir / f"test_{molecule.name}_opt_tests_test_syst.xml").unlink()
