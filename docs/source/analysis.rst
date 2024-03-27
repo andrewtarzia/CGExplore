@@ -20,13 +20,6 @@ see:
 
   GeomMeasure <_autosummary/cgexplore.analysis.GeomMeasure>
 
-To calculate torsions:
-
-.. toctree::
-  :maxdepth: 1
-
-  get_dihedral <_autosummary/cgexplore.analysis.get_dihedral>
-
 Shape
 -----
 
@@ -40,17 +33,11 @@ I recommend using what is in this class:
 
   ShapeMeasure <_autosummary/cgexplore.analysis.ShapeMeasure>
 
-Old utility functions (will be removed one day):
+Utility functions:
 
 .. toctree::
   :maxdepth: 1
 
-  fill_position_matrix_molecule <_autosummary/cgexplore.analysis.fill_position_matrix_molecule>
-  fill_position_matrix <_autosummary/cgexplore.analysis.fill_position_matrix>
-  get_shape_molecule_byelement <_autosummary/cgexplore.analysis.get_shape_molecule_byelement>
-  get_shape_molecule_ligands <_autosummary/cgexplore.analysis.get_shape_molecule_ligands>
-  get_shape_molecule_nodes <_autosummary/cgexplore.analysis.get_shape_molecule_nodes>
   known_shape_vectors <_autosummary/cgexplore.analysis.known_shape_vectors>
-  test_shape_mol <_autosummary/cgexplore.analysis.test_shape_mol>
 
 

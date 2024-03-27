@@ -17,12 +17,14 @@ cgexplore.systems\_optimisation.Generation
    .. autosummary::
       :nosignatures:
    
+      ~Generation.calculate_elite_fitness
       ~Generation.calculate_fitness_values
       ~Generation.get_generation_size
       ~Generation.run_structures
       ~Generation.select_all
       ~Generation.select_best
       ~Generation.select_elite
+      ~Generation.select_worst
    
    
 

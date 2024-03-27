@@ -78,8 +78,6 @@ Utilities
 .. toctree::
   :maxdepth: 1
 
-  angle_between <_autosummary/cgexplore.forcefields.angle_between>
-  unit_vector <_autosummary/cgexplore.forcefields.unit_vector>
   MartiniTopology <_autosummary/cgexplore.forcefields.MartiniTopology>
   get_martini_mass_by_type <_autosummary/cgexplore.forcefields.get_martini_mass_by_type>
 

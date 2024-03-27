@@ -23,12 +23,3 @@ Dynamics
   OMMTrajectory <_autosummary/cgexplore.optimisation.OMMTrajectory>
 
 
-
-Utilties
---------
-
-.. toctree::
-  :maxdepth: 1
-
-  get_atom_distance <_autosummary/cgexplore.optimisation.get_atom_distance>
-

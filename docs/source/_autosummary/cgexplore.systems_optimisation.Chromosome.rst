@@ -22,6 +22,7 @@ cgexplore.systems\_optimisation.Chromosome
       ~Chromosome.get_precursors
       ~Chromosome.get_string
       ~Chromosome.get_topology_information
+      ~Chromosome.get_vertex_alignments
    
    
 
