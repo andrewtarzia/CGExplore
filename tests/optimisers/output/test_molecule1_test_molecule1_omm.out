@@ -1,4 +1,4 @@
-start time: 1711568432.320147
+start time: 1711569090.959616
 atoms: 6
 energy decomposition:
 (0, 'HarmonicBondForce'): 8125.0 kJ/mol
@@ -12,5 +12,5 @@ energy decomposition:
 (1, 'CustomNonbondedForce'): 0.02951405569911003 kJ/mol
 total energy: 0.029535295445945048 kJ/mol
 
-end time: 1711568432.3467138
-total time: 0.026566743850708008 [s]
+end time: 1711569090.9856966
+total time: 0.026080608367919922 [s]

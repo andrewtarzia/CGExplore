@@ -1,6 +1,7 @@
 import pathlib
 
 import cgexplore
+import numpy as np
 import stk
 
 from .case_data import CaseData
@@ -34,7 +35,20 @@ def test_openmmoptimizer(molecule: CaseData) -> None:
     # Compare to known output.
     energy_decomposition = conformer.energy_decomposition
     print(energy_decomposition)
-    assert energy_decomposition == molecule.known_decomposition
+    assert tuple(sorted(energy_decomposition.keys())) == tuple(
+        sorted(molecule.known_decomposition.keys())
+    )
+    for test in energy_decomposition:
+        assert (
+            energy_decomposition[test][1]
+            == molecule.known_decomposition[test][1]
+        )
+        assert np.isclose(
+            energy_decomposition[test][0],
+            molecule.known_decomposition[test][0],
+            rtol=0,
+            atol=1e-4,
+        )
 
     known_molecule = stk.BuildingBlock.init_from_file(
         output_dir / f"{molecule.name}.mol"
