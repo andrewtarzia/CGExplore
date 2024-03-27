@@ -19,8 +19,6 @@ from .conformer import Conformer
 
 @dataclass
 class Timestep:
-    """Define timestep information."""
-
     molecule: stk.Molecule
     timestep: float
 
@@ -107,40 +105,6 @@ class Ensemble:
                 conf_id = conf_lines[1].rstrip().split()[1]
                 trajectory[int(conf_id)] = conf_lines
         return trajectory
-
-    def _yield_from_xyz(self) -> abc.Iterator[Conformer]:
-        num_atoms = self._molecule_num_atoms
-        new_pos_mat: list = []
-
-        with open(self._conformer_xyz) as f:
-            lines = f.readlines()
-            conformer_starts = range(0, len(lines), num_atoms + 2)
-
-            for cs in conformer_starts:
-                conf_lines = lines[cs : cs + num_atoms + 2]
-                conf_id = int(conf_lines[1].rstrip().split()[1])
-                new_pos_mat = []
-                for exyz in conf_lines[2:]:
-                    x = float(exyz.rstrip().split()[1])
-                    y = float(exyz.rstrip().split()[2])
-                    z = float(exyz.rstrip().split()[3])
-                    new_pos_mat.append([x, y, z])
-
-                if len(new_pos_mat) != num_atoms:
-                    msg = (
-                        f"num atoms ({num_atoms}) does not match size of "
-                        f"collected position matrix ({len(new_pos_mat)})."
-                    )
-                    raise ValueError(msg)
-                yield Conformer(
-                    molecule=(
-                        self._base_molecule.with_position_matrix(
-                            np.array(new_pos_mat)
-                        )
-                    ),
-                    energy_decomposition={},
-                    conformer_id=conf_id,
-                )
 
     def yield_conformers(self) -> abc.Iterator[Conformer]:
         """Yield conformers."""

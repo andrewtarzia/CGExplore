@@ -14,8 +14,6 @@ logging.basicConfig(
 
 @dataclass
 class CgBead:
-    """Define a coarse-grained bead."""
-
     element_string: str
     bead_type: str
     bead_class: str

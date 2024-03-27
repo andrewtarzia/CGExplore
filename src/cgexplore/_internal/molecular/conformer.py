@@ -16,8 +16,6 @@ from .beads import string_to_atom_number
 
 @dataclass
 class Conformer:
-    """Define conformer information."""
-
     molecule: stk.Molecule
     energy_decomposition: dict
     conformer_id: int | None = None
@@ -26,8 +24,6 @@ class Conformer:
 
 @dataclass
 class SpindryConformer:
-    """Define conformer information."""
-
     supramolecule: spd.SupraMolecule
     energy_decomposition: dict
     conformer_id: int | None = None

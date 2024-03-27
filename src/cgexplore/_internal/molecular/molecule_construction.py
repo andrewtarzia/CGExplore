@@ -16,8 +16,6 @@ from .beads import CgBead, string_to_atom_number
 
 @dataclass
 class LinearPrecursor:
-    """Define a linear precursor."""
-
     composition: tuple[int, ...]
     present_beads: tuple[CgBead, ...]
     binder_beads: tuple[CgBead, ...]
@@ -96,8 +94,6 @@ class LinearPrecursor:
 
 @dataclass
 class TrianglePrecursor:
-    """Define a triangle precursor."""
-
     present_beads: tuple[CgBead, ...]
     binder_beads: tuple[CgBead, ...]
     placer_beads: tuple[CgBead, ...]
@@ -154,8 +150,6 @@ class TrianglePrecursor:
 
 @dataclass
 class SquarePrecursor:
-    """Define a square precursor."""
-
     present_beads: tuple[CgBead, ...]
     binder_beads: tuple[CgBead, ...]
     placer_beads: tuple[CgBead, ...]
