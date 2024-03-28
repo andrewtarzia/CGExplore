@@ -2,6 +2,7 @@
 
 import logging
 import pathlib
+import time
 from collections import defaultdict
 
 import cgexplore
@@ -399,14 +400,15 @@ def optimise_cage(
     return min_energy_conformer
 
 
-def fitness_calculator(
+def fitness_function(
     chromosome: cgexplore.systems_optimisation.Chromosome,
     chromosome_generator: cgexplore.systems_optimisation.ChromosomeGenerator,
-    database: cgexplore.utilities.AtomliteDatabase,
+    database_path: pathlib.Path,
     calculation_output: pathlib.Path,
     structure_output: pathlib.Path,
     options: dict,  # noqa: ARG001
 ) -> float:
+    database = cgexplore.utilities.AtomliteDatabase(database_path)
     target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
     entry = database.get_entry(name)
@@ -444,9 +446,9 @@ def fitness_calculator(
         if stoich_map(other_tstr) <= current_stoich:
             if not database.has_molecule(other_name):
                 # Run calculation.
-                structure_calculator(
+                structure_function(
                     chromosome=other_chromosome,
-                    database=database,
+                    database_path=database_path,
                     calculation_output=calculation_output,
                     structure_output=structure_output,
                     options={},
@@ -470,13 +472,14 @@ def fitness_calculator(
     return fitness
 
 
-def structure_calculator(
+def structure_function(
     chromosome: cgexplore.systems_optimisation.Chromosome,
-    database: cgexplore.utilities.AtomliteDatabase,
+    database_path: pathlib.Path,
     calculation_output: pathlib.Path,
     structure_output: pathlib.Path,
     options: dict,  # noqa: ARG001
 ) -> None:
+    database = cgexplore.utilities.AtomliteDatabase(database_path)
     # Build structure.
     topology_str, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
@@ -521,29 +524,32 @@ def progress_plot(
 
     ax.plot(
         [max(i) for i in fitnesses],
-        c="#F9A03F",
+        markerfacecolor="#F9A03F",
         label="max",
         lw=2,
+        c="k",
         marker="o",
-        markersize=6,
+        markersize=10,
         markeredgecolor="k",
     )
     ax.plot(
         [np.mean(i) for i in fitnesses],
-        c="#086788",
+        markerfacecolor="#086788",
         lw=2,
+        c="k",
         marker="o",
-        markersize=6,
+        markersize=10,
         markeredgecolor="k",
         label="mean",
     )
     ax.plot(
         [min(i) for i in fitnesses],
-        c="#7A8B99",
+        markerfacecolor="#7A8B99",
         label="min",
         lw=2,
+        c="k",
         marker="o",
-        markersize=6,
+        markersize=10,
         markeredgecolor="k",
     )
 
@@ -578,7 +584,8 @@ def main() -> None:
     # Define a database, and a prefix for naming structure, forcefield and
     # output files.
     prefix = "opt"
-    database = cgexplore.utilities.AtomliteDatabase(data_dir / "test.db")
+    database_path = data_dir / "test.db"
+    database = cgexplore.utilities.AtomliteDatabase(database_path)
 
     # Define the beads in the models used.
     abead = cgexplore.molecular.CgBead(
@@ -661,10 +668,30 @@ def main() -> None:
     }
     chromo_it.add_forcefield_dict(definer_dict=definer_dict)
 
-    seeds = [4]
-    num_generations = 10
-    selection_size = 10
+    # Define fitness calculator.
+    fitness_calculator = cgexplore.systems_optimisation.FitnessCalculator(
+        fitness_function=fitness_function,
+        chromosome_generator=chromo_it,
+        structure_output=struct_output,
+        calculation_output=calc_dir,
+        database_path=database_path,
+        options={},
+    )
 
+    # Define structure calculator.
+    structure_calculator = cgexplore.systems_optimisation.StructureCalculator(
+        structure_function=structure_function,
+        structure_output=struct_output,
+        calculation_output=calc_dir,
+        database_path=database_path,
+        options={},
+    )
+
+    seeds = [4]
+    num_generations = 5
+    selection_size = 10
+    num_processes = 1
+    timing_file = data_dir / f"np_{num_processes}.txt"
     for seed in seeds:
         generator = np.random.default_rng(seed)
 
@@ -677,14 +704,11 @@ def main() -> None:
         generations = []
         generation = cgexplore.systems_optimisation.Generation(
             chromosomes=initial_population,
-            chromosome_generator=chromo_it,
             fitness_calculator=fitness_calculator,
             structure_calculator=structure_calculator,
-            structure_output=struct_output,
-            calculation_output=calc_dir,
-            database=database,
-            options={},
+            num_processes=num_processes,
         )
+
         generation.run_structures()
         _ = generation.calculate_fitness_values()
         generations.append(generation)
@@ -783,19 +807,21 @@ def main() -> None:
 
             generation = cgexplore.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(merged_chromosomes),
-                chromosome_generator=chromo_it,
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
-                structure_output=struct_output,
-                calculation_output=calc_dir,
-                database=database,
-                options={},
+                num_processes=num_processes,
             )
             logging.info(f"new size is {generation.get_generation_size()}.")
 
             # Build, optimise and analyse each structure.
+            st = time.time()
             generation.run_structures()
+            str_time = time.time() - st
+            st = time.time()
             _ = generation.calculate_fitness_values()
+            fit_time = time.time() - st
+            with open(timing_file, "a") as f:
+                f.write(f"{str_time},{fit_time}\n")
 
             # Add final state to generations.
             generations.append(generation)
@@ -804,13 +830,9 @@ def main() -> None:
             best = generation.select_best(selection_size=selection_size)
             generation = cgexplore.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(best),
-                chromosome_generator=chromo_it,
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
-                structure_output=struct_output,
-                calculation_output=calc_dir,
-                database=database,
-                options={},
+                num_processes=num_processes,
             )
             logging.info(f"final size is {generation.get_generation_size()}.")
 
@@ -845,16 +867,11 @@ def main() -> None:
     for entry in database.get_entries():
         tstr = entry.properties["topology"]
 
-        fitness = fitness_calculator(
-            chromosome=chromo_it.select_chromosome(
-                tuple(entry.properties["chromosome"])
-            ),
-            chromosome_generator=chromo_it,
-            database=database,
-            structure_output=struct_output,
-            calculation_output=calc_dir,
-            options={},
-        )
+        if "fitness" not in entry.properties:
+            continue
+        # Caution here, this is the fitness at point of calculation of each
+        # entry. Not after the reevaluation of the self-sorting.
+        fitness = entry.properties["fitness"]
 
         ax.scatter(
             entry.properties["opt_pore_data"]["min_distance"],
@@ -934,6 +951,50 @@ def main() -> None:
     fig.tight_layout()
     fig.savefig(
         figure_dir / "space_explored.png",
+        dpi=360,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    for num_processes in (1, 2, 3, 4, 5, 6, 7, 8):
+        timing_file = data_dir / f"np_{num_processes}.txt"
+        if not timing_file.exists():
+            continue
+        with timing_file.open("r") as f:
+            lines = f.readlines()
+        str_times = [float(i.strip().split(",")[0]) for i in lines]
+        fit_times = [float(i.strip().split(",")[1]) for i in lines]
+        if num_processes == 1:
+            lbl1 = "structure"
+            lbl2 = "fitness"
+        else:
+            lbl1 = None
+            lbl2 = None
+        ax.scatter(
+            [num_processes for i in str_times],
+            str_times,
+            c="tab:blue",
+            s=100,
+            edgecolor="k",
+            label=lbl1,
+        )
+        ax.scatter(
+            [num_processes for i in fit_times],
+            fit_times,
+            c="tab:orange",
+            s=100,
+            edgecolor="k",
+            label=lbl2,
+        )
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("num processes", fontsize=16)
+    ax.set_ylabel("time [s]", fontsize=16)
+    ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        figure_dir / "timings.png",
         dpi=360,
         bbox_inches="tight",
     )
