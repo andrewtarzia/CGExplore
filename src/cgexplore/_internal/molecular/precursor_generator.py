@@ -251,7 +251,7 @@ class PrecursorGenerator:
         return self.building_block
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class VaBene:
     present_beads: tuple[CgBead, ...]
     building_block: stk.BuildingBlock

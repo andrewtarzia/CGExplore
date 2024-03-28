@@ -17,7 +17,7 @@ import stk
 from .conformer import Conformer
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Timestep:
     molecule: stk.Molecule
     timestep: float

@@ -43,11 +43,7 @@ def define_bond(
     interaction_list: list,
     present_beads: tuple[CgBead, ...],
 ) -> TargetBond:
-    """Define target from a known structured list.
-
-    TODO: Handle other forces.
-    TODO: Use generic dataclasses.
-    """
+    """Define target from a known structured list."""
     return TargetBond(
         type1=interaction_key[0],
         type2=interaction_key[1],
@@ -70,11 +66,7 @@ def define_angle(
     interaction_list: list,
     present_beads: tuple[CgBead, ...],
 ) -> TargetAngle:
-    """Define target from a known structured list.
-
-    TODO: Handle other forces.
-    TODO: Use generic dataclasses.
-    """
+    """Define target from a known structured list."""
     return TargetAngle(
         type1=interaction_key[0],
         type2=interaction_key[1],
@@ -99,11 +91,7 @@ def define_cosine_angle(
     interaction_list: list,
     present_beads: tuple[CgBead, ...],
 ) -> TargetCosineAngle:
-    """Define target from a known structured list.
-
-    TODO: Handle other forces.
-    TODO: Use generic dataclasses.
-    """
+    """Define target from a known structured list."""
     return TargetCosineAngle(
         type1=interaction_key[0],
         type2=interaction_key[1],
@@ -125,11 +113,7 @@ def define_torsion(
     interaction_list: list,
     present_beads: tuple[CgBead, ...],
 ) -> TargetTorsion:
-    """Define target from a known structured list.
-
-    TODO: Handle other forces.
-    TODO: Use generic dataclasses.
-    """
+    """Define target from a known structured list."""
     measured_atom_ids = tuple(int(i) for i in interaction_list[1])
     if len(measured_atom_ids) != 4:  # noqa: PLR2004
         msg = (
@@ -163,7 +147,6 @@ def define_nonbonded(
     """Define target from a known structured list.
 
     TODO: Handle other forces.
-    TODO: Use generic dataclasses.
     """
     return TargetNonbonded(
         bead_class=interaction_key[0],

@@ -20,7 +20,7 @@ logging.basicConfig(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Torsion:
     """Class containing torsion defintion."""
 
@@ -33,7 +33,7 @@ class Torsion:
     funct: int = 0
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetTorsion:
     """Defines a target term to search for in a molecule."""
 
@@ -71,7 +71,7 @@ class TargetTorsion:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetTorsionRange:
     """Defines a target term and ranges in parameters to search for."""
 
@@ -97,7 +97,7 @@ class TargetTorsionRange:
             )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class FoundTorsion:
     """Define a found forcefield term."""
 
@@ -105,7 +105,7 @@ class FoundTorsion:
     atom_ids: tuple[int, ...]
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetMartiniTorsion:
     """Defines a target angle to search for in a molecule."""
 
@@ -132,7 +132,7 @@ class TargetMartiniTorsion:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class MartiniTorsionRange:
     """Defines a target torsion and ranges in parameters to search for."""
 

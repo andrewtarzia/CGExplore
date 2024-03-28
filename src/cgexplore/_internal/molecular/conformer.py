@@ -14,7 +14,7 @@ import stk
 from .beads import string_to_atom_number
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Conformer:
     molecule: stk.Molecule
     energy_decomposition: dict
@@ -22,7 +22,7 @@ class Conformer:
     source: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class SpindryConformer:
     supramolecule: spd.SupraMolecule
     energy_decomposition: dict

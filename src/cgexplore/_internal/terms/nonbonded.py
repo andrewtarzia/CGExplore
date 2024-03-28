@@ -19,7 +19,7 @@ logging.basicConfig(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Nonbonded:
     """Class containing term defintion."""
 
@@ -31,7 +31,7 @@ class Nonbonded:
     force: str
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetNonbonded:
     """Defines a target term to search for in a molecule."""
 
@@ -65,7 +65,7 @@ class TargetNonbonded:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetNonbondedRange:
     """Defines a target term and ranges in parameters to search for."""
 

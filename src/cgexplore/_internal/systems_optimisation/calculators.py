@@ -15,7 +15,7 @@ logging.basicConfig(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class StructureCalculator:
     structure_function: abc.Callable
     structure_output: pathlib.Path
@@ -34,7 +34,7 @@ class StructureCalculator:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class FitnessCalculator:
     fitness_function: abc.Callable
     chromosome_generator: ChromosomeGenerator

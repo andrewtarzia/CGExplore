@@ -17,7 +17,7 @@ logging.basicConfig(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Generation:
     """Define the chromosomes in a single generation."""
 

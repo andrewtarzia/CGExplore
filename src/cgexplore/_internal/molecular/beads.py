@@ -12,7 +12,7 @@ logging.basicConfig(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CgBead:
     element_string: str
     bead_type: str
