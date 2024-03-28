@@ -25,14 +25,6 @@ cgexplore.optimisation
 
    
    
-   .. rubric:: Functions
-
-   .. autosummary::
-      :toctree:
-      :nosignatures:
-   
-      get_atom_distance
-   
    
 
    

@@ -14,6 +14,7 @@ from heapq import nsmallest
 
 import numpy as np
 import stk
+import stko
 from openmm import openmm
 
 from cgexplore._internal.molecular.beads import BeadLibrary, CgBead
@@ -36,7 +37,6 @@ from cgexplore._internal.utilities.errors import ForceFieldUnitError
 from cgexplore._internal.utilities.utilities import convert_pyramid_angle
 
 from .assigned_system import AssignedSystem, ForcedSystem, MartiniSystem
-from .utilities import angle_between
 
 logging.basicConfig(
     level=logging.INFO,
@@ -312,10 +312,10 @@ class ForceField:
             angles = pyramid_angles[central_name]
             all_angles_values = {
                 i: np.degrees(
-                    angle_between(
-                        v1=pos_mat[X.atoms[1].get_id()]
+                    stko.vector_angle(
+                        vector1=pos_mat[X.atoms[1].get_id()]
                         - pos_mat[X.atoms[0].get_id()],
-                        v2=pos_mat[X.atoms[1].get_id()]
+                        vector2=pos_mat[X.atoms[1].get_id()]
                         - pos_mat[X.atoms[2].get_id()],
                     )
                 )
@@ -358,10 +358,10 @@ class ForceField:
             angles = octahedral_angles[central_name]
             all_angles_values = {
                 i: np.degrees(
-                    angle_between(
-                        v1=pos_mat[X.atoms[1].get_id()]
+                    stko.vector_angle(
+                        vector1=pos_mat[X.atoms[1].get_id()]
                         - pos_mat[X.atoms[0].get_id()],
-                        v2=pos_mat[X.atoms[1].get_id()]
+                        vector2=pos_mat[X.atoms[1].get_id()]
                         - pos_mat[X.atoms[2].get_id()],
                     )
                 )

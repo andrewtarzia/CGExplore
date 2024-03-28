@@ -28,13 +28,13 @@ cgexplore.terms.TargetPyramidAngle
    .. autosummary::
    
       ~TargetPyramidAngle.opposite_angle
-      ~TargetPyramidAngle.type1
-      ~TargetPyramidAngle.type2
-      ~TargetPyramidAngle.type3
+      ~TargetPyramidAngle.angle
+      ~TargetPyramidAngle.angle_k
       ~TargetPyramidAngle.element1
       ~TargetPyramidAngle.element2
       ~TargetPyramidAngle.element3
-      ~TargetPyramidAngle.angle
-      ~TargetPyramidAngle.angle_k
+      ~TargetPyramidAngle.type1
+      ~TargetPyramidAngle.type2
+      ~TargetPyramidAngle.type3
    
    

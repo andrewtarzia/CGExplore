@@ -14,20 +14,16 @@ import stk
 from .beads import string_to_atom_number
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Conformer:
-    """Define conformer information."""
-
     molecule: stk.Molecule
     energy_decomposition: dict
     conformer_id: int | None = None
     source: str | None = None
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class SpindryConformer:
-    """Define conformer information."""
-
     supramolecule: spd.SupraMolecule
     energy_decomposition: dict
     conformer_id: int | None = None

@@ -22,7 +22,7 @@ logging.basicConfig(
 _angle_k_unit = openmm.unit.kilojoules_per_mole / openmm.unit.radian**2
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Angle:
     """Class containing angle defintion."""
 
@@ -35,7 +35,7 @@ class Angle:
     funct: int = 0
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class CosineAngle:
     """Class containing cosine-angle defintion."""
 
@@ -48,7 +48,7 @@ class CosineAngle:
     force: str | None
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetAngle:
     """Defines a target angle to search for in a molecule."""
 
@@ -84,7 +84,7 @@ class TargetAngle:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetAngleRange:
     """Defines a target angle and ranges in parameters to search for."""
 
@@ -112,7 +112,7 @@ class TargetAngleRange:
             )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetCosineAngle:
     """Defines a target angle to search for in a molecule."""
 
@@ -150,7 +150,7 @@ class TargetCosineAngle:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetCosineAngleRange:
     """Defines a target angle and ranges in parameters to search for."""
 
@@ -180,7 +180,7 @@ class TargetCosineAngleRange:
             )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetPyramidAngle(TargetAngle):
     """Defines a target angle to search for in a molecule."""
 
@@ -199,7 +199,7 @@ class TargetPyramidAngle(TargetAngle):
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class PyramidAngleRange:
     """Defines a target angle and ranges in parameters to search for."""
 
@@ -239,7 +239,7 @@ class PyramidAngleRange:
             )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class FoundAngle:
     """Define a found forcefield term."""
 
@@ -247,7 +247,7 @@ class FoundAngle:
     atom_ids: tuple[int, ...]
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetMartiniAngle:
     """Defines a target angle to search for in a molecule."""
 
@@ -274,7 +274,7 @@ class TargetMartiniAngle:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class MartiniAngleRange:
     """Defines a target angle and ranges in parameters to search for."""
 

@@ -9,9 +9,6 @@ def test_functional_groups(precursor: CaseData) -> None:
         precursor:
             The precursor.
 
-    Returns:
-        None : :class:`NoneType`
-
     """
     fgs = list(
         precursor.precursor.get_building_block().get_functional_groups()

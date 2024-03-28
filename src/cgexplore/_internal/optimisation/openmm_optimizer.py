@@ -14,12 +14,11 @@ from collections import abc
 import numpy as np
 import pandas as pd
 import stk
+import stko
 from openmm import app, openmm
 
 from cgexplore._internal.forcefields.assigned_system import ForcedSystem
 from cgexplore._internal.molecular.ensembles import Timestep
-
-from .utilities import get_atom_distance
 
 logging.basicConfig(
     level=logging.INFO,
@@ -212,8 +211,8 @@ class CGOMMOptimizer:
 
         self._output_string += "   constraints applied:\n"
         for constraint in self._atom_constraints:
-            current_distance = get_atom_distance(
-                molecule=molecule,
+            current_distance = stko.get_atom_distance(
+                position_matrix=molecule.get_position_matrix(),
                 atom1_id=constraint[0],
                 atom2_id=constraint[1],
             )

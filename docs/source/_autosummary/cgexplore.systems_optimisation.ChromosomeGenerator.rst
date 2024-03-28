@@ -26,6 +26,7 @@ cgexplore.systems\_optimisation.ChromosomeGenerator
       ~ChromosomeGenerator.get_prec_ids
       ~ChromosomeGenerator.get_term_ids
       ~ChromosomeGenerator.get_topo_ids
+      ~ChromosomeGenerator.get_va_ids
       ~ChromosomeGenerator.mutate_population
       ~ChromosomeGenerator.select_chromosome
       ~ChromosomeGenerator.select_random_population

@@ -1,5 +1,9 @@
 """analysis package."""
 
+from cgexplore._internal.systems_optimisation.calculators import (
+    FitnessCalculator,
+    StructureCalculator,
+)
 from cgexplore._internal.systems_optimisation.generation import Generation
 from cgexplore._internal.systems_optimisation.inputs import (
     Chromosome,
@@ -14,6 +18,8 @@ __all__ = [
     "ChromosomeGenerator",
     "Chromosome",
     "Generation",
+    "StructureCalculator",
+    "FitnessCalculator",
     "yield_near_models",
     "get_neighbour_library",
 ]

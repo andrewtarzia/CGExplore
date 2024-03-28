@@ -16,10 +16,8 @@ from cgexplore._internal.forcefields.martini import (
     get_martini_mass_by_type,
 )
 from cgexplore._internal.forcefields.utilities import (
-    angle_between,
     cosine_periodic_angle_force,
     custom_excluded_volume_force,
-    unit_vector,
 )
 
 __all__ = [
@@ -34,6 +32,4 @@ __all__ = [
     "MartiniForceFieldLibrary",
     "cosine_periodic_angle_force",
     "custom_excluded_volume_force",
-    "angle_between",
-    "unit_vector",
 ]

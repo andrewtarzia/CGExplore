@@ -212,7 +212,7 @@ class ForcedSystem:
         raise NotImplementedError
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class AssignedSystem(ForcedSystem):
     """A system with forces assigned."""
 
@@ -321,7 +321,7 @@ class AssignedSystem(ForcedSystem):
         return system
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, slots=True)
 class MartiniSystem(ForcedSystem):
     """Assign a system using martini_openmm."""
 

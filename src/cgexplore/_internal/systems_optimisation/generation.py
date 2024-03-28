@@ -3,13 +3,13 @@
 """Optimisation Generation module."""
 
 import logging
-import pathlib
 from collections import abc
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from cgexplore._internal.utilities.databases import AtomliteDatabase
+import pathos
 
-from .inputs import Chromosome, ChromosomeGenerator
+from .calculators import FitnessCalculator, StructureCalculator
+from .inputs import Chromosome
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,18 +17,14 @@ logging.basicConfig(
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Generation:
     """Define the chromosomes in a single generation."""
 
     chromosomes: list[Chromosome]
-    chromosome_generator: ChromosomeGenerator
-    fitness_calculator: abc.Callable
-    structure_calculator: abc.Callable
-    structure_output: pathlib.Path
-    calculation_output: pathlib.Path
-    database: AtomliteDatabase
-    options: dict = field(default_factory=dict)
+    fitness_calculator: FitnessCalculator
+    structure_calculator: StructureCalculator
+    num_processes: int = 1
 
     def get_generation_size(self) -> int:
         """Get the number of chromosomes in a generation."""
@@ -36,44 +32,36 @@ class Generation:
 
     def calculate_fitness_values(self) -> list[float]:
         """Calculate the fitness of all chromosomes."""
+        length = len(self.chromosomes)
+        logging.info(f"calculating fitness values of {length} systems...")
+        if self.num_processes > 1:
+            with pathos.pools.ProcessPool(self.num_processes) as pool:
+                return pool.map(
+                    self.fitness_calculator.calculate, self.chromosomes
+                )
+
         return [
-            self.fitness_calculator(
-                chromosome=i,
-                chromosome_generator=self.chromosome_generator,
-                database=self.database,
-                calculation_output=self.calculation_output,
-                structure_output=self.structure_output,
-                options=self.options,
-            )
+            self.fitness_calculator.calculate(chromosome=i)
             for i in self.chromosomes
         ]
 
     def run_structures(self) -> None:
         """Run the production and analyse of all chromosomes."""
         length = len(self.chromosomes)
-        for i, chromosome in enumerate(self.chromosomes):
-            logging.info(f"building {chromosome} ({i+1} of {length})")
-            self.structure_calculator(
-                chromosome=chromosome,
-                database=self.database,
-                calculation_output=self.calculation_output,
-                structure_output=self.structure_output,
-                options=self.options,
-            )
+        logging.info(f"generating structures of {length} systems...")
+        if self.num_processes > 1:
+            with pathos.pools.ProcessPool(self.num_processes) as pool:
+                pool.map(self.structure_calculator.calculate, self.chromosomes)
+        else:
+            for chromosome in self.chromosomes:
+                self.structure_calculator.calculate(chromosome=chromosome)
 
     def select_best(self, selection_size: int) -> abc.Iterable[Chromosome]:
         """Select the best in the generation by fitness."""
         temp = [
             (
                 i,
-                self.fitness_calculator(
-                    chromosome=i,
-                    chromosome_generator=self.chromosome_generator,
-                    database=self.database,
-                    calculation_output=self.calculation_output,
-                    structure_output=self.structure_output,
-                    options=self.options,
-                ),
+                self.fitness_calculator.calculate(chromosome=i),
             )
             for i in self.chromosomes
         ]
@@ -88,14 +76,7 @@ class Generation:
         temp = [
             (
                 i,
-                self.fitness_calculator(
-                    chromosome=i,
-                    chromosome_generator=self.chromosome_generator,
-                    database=self.database,
-                    calculation_output=self.calculation_output,
-                    structure_output=self.structure_output,
-                    options=self.options,
-                ),
+                self.fitness_calculator.calculate(chromosome=i),
             )
             for i in self.chromosomes
         ]
@@ -121,17 +102,9 @@ class Generation:
     def calculate_elite_fitness(
         self,
         proportion_threshold: float,
-    ) -> abc.Iterable[Chromosome]:
+    ) -> float:
         """Select the elite in the generation by fitness."""
         elite = self.select_elite(proportion_threshold)
         return min(
-            self.fitness_calculator(
-                chromosome=i,
-                chromosome_generator=self.chromosome_generator,
-                database=self.database,
-                calculation_output=self.calculation_output,
-                structure_output=self.structure_output,
-                options=self.options,
-            )
-            for i in elite
+            self.fitness_calculator.calculate(chromosome=i) for i in elite
         )

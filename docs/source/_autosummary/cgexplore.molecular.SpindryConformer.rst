@@ -27,9 +27,9 @@ cgexplore.molecular.SpindryConformer
 
    .. autosummary::
    
-      ~SpindryConformer.conformer_id
-      ~SpindryConformer.source
       ~SpindryConformer.supramolecule
       ~SpindryConformer.energy_decomposition
+      ~SpindryConformer.conformer_id
+      ~SpindryConformer.source
    
    

@@ -29,12 +29,12 @@ cgexplore.terms.TargetTorsion
 
    .. autosummary::
    
-      ~TargetTorsion.funct
       ~TargetTorsion.search_string
       ~TargetTorsion.search_estring
       ~TargetTorsion.measured_atom_ids
       ~TargetTorsion.phi0
       ~TargetTorsion.torsion_k
       ~TargetTorsion.torsion_n
+      ~TargetTorsion.funct
    
    

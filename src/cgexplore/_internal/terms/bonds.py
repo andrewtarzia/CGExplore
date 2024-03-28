@@ -23,7 +23,7 @@ logging.basicConfig(
 _bond_k_unit = openmm.unit.kilojoules_per_mole / openmm.unit.nanometer**2
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Bond:
     """Class containing bond defintion."""
 
@@ -36,7 +36,7 @@ class Bond:
     funct: int = 0
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetBond:
     """Defines a target term to search for in a molecule."""
 
@@ -71,7 +71,7 @@ class TargetBond:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetBondRange:
     """Defines a target term and ranges in parameters to search for."""
 
@@ -95,7 +95,7 @@ class TargetBondRange:
             )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetPairedBondRange:
     """Defines a target term and ranges in parameters to search for."""
 
@@ -128,7 +128,7 @@ class TargetPairedBondRange:
                 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TargetMartiniBond:
     """Defines a target angle to search for in a molecule."""
 
@@ -153,7 +153,7 @@ class TargetMartiniBond:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class MartiniBondRange:
     """Defines a target bond and ranges in parameters to search for."""
 

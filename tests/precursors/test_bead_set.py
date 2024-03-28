@@ -9,9 +9,6 @@ def test_bead_set(precursor: CaseData) -> None:
         precursor:
             The precursor.
 
-    Returns:
-        None : :class:`NoneType`
-
     """
     bead_set = precursor.precursor.get_bead_set()
     print(bead_set)

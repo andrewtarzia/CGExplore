@@ -26,12 +26,12 @@ cgexplore.terms.Bond
 
    .. autosummary::
    
-      ~Bond.funct
       ~Bond.atom_names
       ~Bond.atom_ids
       ~Bond.bond_r
       ~Bond.bond_k
       ~Bond.atoms
       ~Bond.force
+      ~Bond.funct
    
    

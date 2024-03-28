@@ -26,12 +26,12 @@ cgexplore.terms.Torsion
 
    .. autosummary::
    
-      ~Torsion.funct
       ~Torsion.atom_names
       ~Torsion.atom_ids
       ~Torsion.phi0
       ~Torsion.torsion_k
       ~Torsion.torsion_n
       ~Torsion.force
+      ~Torsion.funct
    
    

@@ -28,12 +28,12 @@ cgexplore.forcefields.AssignedSystem
 
    .. autosummary::
    
-      ~AssignedSystem.mass
       ~AssignedSystem.molecule
       ~AssignedSystem.forcefield_terms
       ~AssignedSystem.system_xml
       ~AssignedSystem.topology_xml
       ~AssignedSystem.bead_set
       ~AssignedSystem.vdw_bond_cutoff
+      ~AssignedSystem.mass
    
    

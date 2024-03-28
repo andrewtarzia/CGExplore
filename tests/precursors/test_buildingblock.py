@@ -12,8 +12,7 @@ def test_building_block(precursor: CaseData) -> None:
         precursor:
             The precursor.
 
-    Returns:
-        None : :class:`NoneType`
+
 
     """
     print(precursor.precursor.get_building_block())
