@@ -26,9 +26,9 @@ cgexplore.molecular.Conformer
 
    .. autosummary::
    
-      ~Conformer.conformer_id
-      ~Conformer.source
       ~Conformer.molecule
       ~Conformer.energy_decomposition
+      ~Conformer.conformer_id
+      ~Conformer.source
    
    

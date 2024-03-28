@@ -26,12 +26,12 @@ cgexplore.terms.Angle
 
    .. autosummary::
    
-      ~Angle.funct
       ~Angle.atom_names
       ~Angle.atom_ids
       ~Angle.angle
       ~Angle.angle_k
       ~Angle.atoms
       ~Angle.force
+      ~Angle.funct
    
    
