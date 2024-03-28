@@ -9,7 +9,7 @@ from .case_data import CaseData
 def fit_calc(
     chromosome: cgexplore.systems_optimisation.Chromosome,
     chromosome_generator: cgexplore.systems_optimisation.ChromosomeGenerator,  # noqa: ARG001
-    database: cgexplore.utilities.AtomliteDatabase,  # noqa: ARG001
+    database_path: pathlib.Path,  # noqa: ARG001
     calculation_output: pathlib.Path,  # noqa: ARG001
     structure_output: pathlib.Path,  # noqa: ARG001
     options: dict,  # noqa: ARG001
@@ -19,7 +19,7 @@ def fit_calc(
 
 def str_calc(
     chromosome: cgexplore.systems_optimisation.Chromosome,  # noqa: ARG001
-    database: cgexplore.utilities.AtomliteDatabase,  # noqa: ARG001
+    database_path: pathlib.Path,  # noqa: ARG001
     calculation_output: pathlib.Path,  # noqa: ARG001
     structure_output: pathlib.Path,  # noqa: ARG001
     options: dict,  # noqa: ARG001
@@ -47,13 +47,22 @@ def test_generation(chromosome_generator: CaseData) -> None:
     )
     generation = cgexplore.systems_optimisation.Generation(
         chromosomes=population1,
-        chromosome_generator=chromo_it,
-        fitness_calculator=fit_calc,
-        structure_calculator=str_calc,
-        structure_output=output_dir,
-        calculation_output=output_dir,
-        database=cgexplore.utilities.AtomliteDatabase(output_dir / "t.db"),
-        options={},
+        num_processes=chromosome_generator.np,
+        fitness_calculator=cgexplore.systems_optimisation.FitnessCalculator(
+            fitness_function=fit_calc,
+            chromosome_generator=chromo_it,
+            structure_output=output_dir,
+            calculation_output=output_dir,
+            database_path=output_dir / "t.db",
+            options={},
+        ),
+        structure_calculator=cgexplore.systems_optimisation.StructureCalculator(
+            structure_function=str_calc,
+            structure_output=output_dir,
+            calculation_output=output_dir,
+            database_path=output_dir / "t.db",
+            options={},
+        ),
     )
 
     assert generation.get_generation_size() == size

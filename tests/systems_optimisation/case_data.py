@@ -20,4 +20,5 @@ class CaseData:
     pop1_best: tuple
     pop1_worst: tuple
     pop1_elite_fitness: int
+    np: int
     name: str
