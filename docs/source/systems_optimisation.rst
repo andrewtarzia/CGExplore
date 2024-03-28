@@ -48,7 +48,13 @@ Fitness and Structure Calculation
 A :class:`cgexplore.systems_optimisation.Generation` requires the definition of
 how a :class:`cgexplore.systems_optimisation.Chromosome` is translated into a
 model and how to calculate that models fitness. These are provided as functions
-by the user of the form:
+by the user (described below) to:
+
+.. toctree::
+  :maxdepth: 1
+
+  FitnessCalculator <_autosummary/cgexplore.systems_optimisation.FitnessCalculator>
+  StructureCalculator <_autosummary/cgexplore.systems_optimisation.StructureCalculator>
 
 .. note::
   The `options` argument allows the user to provide custom information or
@@ -56,10 +62,10 @@ by the user of the form:
 
 .. code-block:: python
 
-  def fitness_calculator(
+  def fitness_function(
     chromosome,
     chromosome_generator,
-    database,
+    database_path,
     calculation_output,
     structure_output,
     options={},
@@ -72,6 +78,7 @@ by the user of the form:
       float
 
     """
+    database = cgexplore.utilities.AtomliteDatabase(database_path)
     target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
 
@@ -95,9 +102,9 @@ by the user of the form:
 
 .. code-block:: python
 
-  def structure_calculator(
+  def structure_function(
     chromosome,
-    database,
+    database_path,
     calculation_output,
     structure_output,
     options={},
@@ -107,6 +114,7 @@ by the user of the form:
     All arguments are needed, even if not used.
 
     """
+    database = cgexplore.utilities.AtomliteDatabase(database_path)
     # Build structure.
     topology_str, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
@@ -214,6 +222,10 @@ for brevity):
 
 .. code-block:: python
 
+  # Define the structure and fitness calculators.
+  fitness_calculator = cgexplore.systems_optimisation.FitnessCalculator(...)
+  structure_calculator = cgexplore.systems_optimisation.StructureCalculator(...)
+
   # Set a random number generator for consistency. Normally, run over multiple
   # seeds.
   generator = np.random.default_rng(seed)
@@ -228,13 +240,9 @@ for brevity):
   # Define a generation!
   generation = cgexplore.systems_optimisation.Generation(
       chromosomes=initial_population,
-      chromosome_generator=chromo_it,
       fitness_calculator=fitness_calculator,
       structure_calculator=structure_calculator,
-      structure_output=struct_output,
-      calculation_output=calc_dir,
-      database=database,
-      options={},
+      num_processes=num_processes,
   )
   # Run the structures, and get its fitness.
   generation.run_structures()

@@ -34,13 +34,9 @@ cgexplore.systems\_optimisation.Generation
 
    .. autosummary::
    
+      ~Generation.num_processes
       ~Generation.chromosomes
-      ~Generation.chromosome_generator
       ~Generation.fitness_calculator
       ~Generation.structure_calculator
-      ~Generation.structure_output
-      ~Generation.calculation_output
-      ~Generation.database
-      ~Generation.options
    
    

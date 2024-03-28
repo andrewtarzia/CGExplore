@@ -18,7 +18,9 @@ cgexplore.systems\_optimisation
    
       Chromosome
       ChromosomeGenerator
+      FitnessCalculator
       Generation
+      StructureCalculator
    
    
 

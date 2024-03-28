@@ -144,6 +144,7 @@ module = [
   "atomlite.*",
   "networkx.*",
   "martini_openmm.*",
+  "pathos.*",
   "spindry.*",
   "vabene.*",
 ]
