@@ -11,6 +11,7 @@ import os
 import pathlib
 import shutil
 import subprocess as sp
+from collections.abc import Sequence
 
 import numpy as np
 import stk
@@ -358,7 +359,7 @@ class ShapeMeasure:
 
         return centroids
 
-    def _get_possible_shapes(self, num_vertices: int) -> tuple[dict, ...]:
+    def _get_possible_shapes(self, num_vertices: int) -> Sequence[dict]:
         ref_dict = self.reference_shape_dict()
         return tuple(
             ref_dict[i]
