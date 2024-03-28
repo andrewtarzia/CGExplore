@@ -975,13 +975,29 @@ def main() -> None:
             [num_processes for i in str_times],
             str_times,
             c="tab:blue",
+            s=40,
+            edgecolor="none",
+            alpha=0.4,
+        )
+        ax.scatter(
+            [num_processes for i in fit_times],
+            fit_times,
+            c="tab:orange",
+            s=40,
+            edgecolor="none",
+            alpha=0.4,
+        )
+        ax.scatter(
+            num_processes,
+            sum(str_times) / len(str_times),
+            c="tab:blue",
             s=100,
             edgecolor="k",
             label=lbl1,
         )
         ax.scatter(
-            [num_processes for i in fit_times],
-            fit_times,
+            num_processes,
+            sum(fit_times) / len(fit_times),
             c="tab:orange",
             s=100,
             edgecolor="k",
@@ -990,6 +1006,7 @@ def main() -> None:
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("num processes", fontsize=16)
     ax.set_ylabel("time [s]", fontsize=16)
+    ax.set_ylim(0, None)
     ax.legend(fontsize=16)
 
     fig.tight_layout()
