@@ -19,8 +19,10 @@ from cgexplore.terms import (
     TargetBond,
     TargetCosineAngle,
     TargetNonbonded,
+    TargetPyramidAngle,
     TargetTorsion,
 )
+from cgexplore.utilities import convert_pyramid_angle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,6 +79,38 @@ def define_angle(
         angle=openmm.unit.Quantity(
             value=interaction_list[1], unit=openmm.unit.degrees
         ),
+        angle_k=openmm.unit.Quantity(
+            value=interaction_list[2],
+            unit=openmm.unit.kilojoule
+            / openmm.unit.mole
+            / openmm.unit.radian**2,
+        ),
+    )
+
+
+def define_pyramid_angle(
+    interaction_key: str,
+    interaction_list: list,
+    present_beads: tuple[CgBead, ...],
+) -> TargetAngle:
+    """Define target from a known structured list."""
+    angle = openmm.unit.Quantity(
+        value=interaction_list[1],
+        unit=openmm.unit.degrees,
+    )
+    opposite_angle = openmm.unit.Quantity(
+        value=convert_pyramid_angle(angle.value_in_unit(angle.unit)),
+        unit=angle.unit,
+    )
+    return TargetPyramidAngle(
+        type1=interaction_key[0],
+        type2=interaction_key[1],
+        type3=interaction_key[2],
+        element1=element_from_type(interaction_key[0], present_beads),
+        element2=element_from_type(interaction_key[1], present_beads),
+        element3=element_from_type(interaction_key[2], present_beads),
+        angle=angle,
+        opposite_angle=opposite_angle,
         angle_k=openmm.unit.Quantity(
             value=interaction_list[2],
             unit=openmm.unit.kilojoule
