@@ -23,6 +23,7 @@ from .utilities import (
     define_bond,
     define_cosine_angle,
     define_nonbonded,
+    define_pyramid_angle,
     define_torsion,
 )
 
@@ -83,7 +84,7 @@ class Chromosome:
             if self.gene_dict[i][2] == "precursor"
         )
 
-    def get_forcefield(self) -> ForceField:  # noqa: C901
+    def get_forcefield(self) -> ForceField:  # noqa: C901, PLR0912
         """Get chromosome forcefield."""
         changed_tuples = tuple(
             self.gene_dict[i][1]
@@ -144,6 +145,15 @@ class Chromosome:
                     )
                 )
 
+            elif term[0] == "pyramid":
+                angle_terms.append(
+                    define_pyramid_angle(
+                        interaction_key=key_,
+                        interaction_list=term,
+                        present_beads=self.present_beads,
+                    )
+                )
+
             elif term[0] == "cosine":
                 angle_terms.append(
                     define_cosine_angle(
@@ -170,6 +180,10 @@ class Chromosome:
                         present_beads=self.present_beads,
                     )
                 )
+
+            else:
+                msg = f"{term[0]} not found in known terms."
+                raise RuntimeError(msg)
 
         return ForceField(
             identifier=self.get_string(),
@@ -498,7 +512,9 @@ class ChromosomeGenerator:
             )
         elif selection == "roulette":
             fitness_values: list[float | int] = [
-                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[  # type: ignore[misc]
+                database.get_property_entry(
+                    f"{i.prefix}_{i.get_string()}"
+                ).properties[  # type: ignore[misc]
                     "fitness"
                 ]
                 for i in list_of_chromosomes
@@ -578,7 +594,9 @@ class ChromosomeGenerator:
             )
         elif selection == "roulette":
             fitness_values: list[float | int] = [
-                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[  # type: ignore[misc]
+                database.get_property_entry(
+                    f"{i.prefix}_{i.get_string()}"
+                ).properties[  # type: ignore[misc]
                     "fitness"
                 ]
                 for i in list_of_chromosomes
