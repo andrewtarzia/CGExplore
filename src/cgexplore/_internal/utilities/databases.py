@@ -45,6 +45,13 @@ class AtomliteDatabase:
         except sqlite3.IntegrityError:
             self._db.update_entries(entry)
 
+    def add_entries(self, entries: abc.Sequence[atomlite.Entry]) -> None:
+        """Add molecules to database as entry."""
+        try:
+            self._db.add_entries(entries)
+        except sqlite3.IntegrityError:
+            self._db.update_entries(entries)
+
     def get_entries(self) -> abc.Iterator[atomlite.Entry]:
         """Get all entries."""
         return self._db.get_entries()
