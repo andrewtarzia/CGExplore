@@ -30,6 +30,7 @@ from cgexplore._internal.molecular.precursor_generator import (
     VaBeneGenerator,
     check_fit,
 )
+from cgexplore._internal.molecular.utilities import spd_to_stk
 
 __all__ = [
     "Precursor",
@@ -58,6 +59,7 @@ __all__ = [
     "BeadLibrary",
     "periodic_table",
     "string_to_atom_number",
+    "spd_to_stk",
     # "ShapePrecursor",
     # "DiatomShape",
     # "HexagonShape",
