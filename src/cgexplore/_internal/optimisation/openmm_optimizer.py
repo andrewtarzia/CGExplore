@@ -337,6 +337,14 @@ class CGOMMOptimizer:
         simulation, _ = self._setup_simulation(assigned_system)
         return self._get_energy(simulation)
 
+    def calculate_energy_decomposition(
+        self,
+        assigned_system: ForcedSystem,
+    ) -> float:
+        """Calculate energy of a system."""
+        simulation, system = self._setup_simulation(assigned_system)
+        return self._run_energy_decomp(simulation, system)
+
     def read_final_energy_decomposition(self) -> dict:
         """Read the final energy decomposition in an output file."""
         decomp_data = (
