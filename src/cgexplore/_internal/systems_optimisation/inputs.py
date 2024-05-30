@@ -22,6 +22,7 @@ from .utilities import (
     define_angle,
     define_bond,
     define_cosine_angle,
+    define_lennardjones,
     define_nonbonded,
     define_pyramid_angle,
     define_torsion,
@@ -181,6 +182,15 @@ class Chromosome:
                     )
                 )
 
+            elif term[0] == "custom-lj":
+                nonbonded_terms.append(
+                    define_lennardjones(
+                        interaction_key=key_,
+                        interaction_list=term,
+                        present_beads=self.present_beads,
+                    )
+                )
+
             else:
                 msg = f"{term[0]} not found in known terms."
                 raise RuntimeError(msg)
@@ -194,6 +204,7 @@ class Chromosome:
             torsion_targets=tuple(torsion_terms),
             nonbonded_targets=tuple(nonbonded_terms),
             vdw_bond_cutoff=self.vdw_bond_cutoff,
+            verbose=False,
         )
 
     def __str__(self) -> str:

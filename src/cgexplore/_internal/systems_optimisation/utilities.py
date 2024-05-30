@@ -178,10 +178,7 @@ def define_nonbonded(
     interaction_list: list,
     present_beads: tuple[CgBead, ...],
 ) -> TargetNonbonded:
-    """Define target from a known structured list.
-
-    TODO: Handle other forces.
-    """
+    """Define target from a known structured list."""
     return TargetNonbonded(
         bead_class=interaction_key[0],
         bead_element=element_from_type(interaction_key[0], present_beads),
@@ -190,9 +187,31 @@ def define_nonbonded(
             unit=openmm.unit.kilojoules_per_mole,
         ),
         sigma=openmm.unit.Quantity(
-            value=interaction_list[2], unit=openmm.unit.angstrom
+            value=interaction_list[2],
+            unit=openmm.unit.angstrom,
         ),
         force="custom-excl-vol",
+    )
+
+
+def define_lennardjones(
+    interaction_key: str,
+    interaction_list: list,
+    present_beads: tuple[CgBead, ...],
+) -> TargetNonbonded:
+    """Define target from a known structured list."""
+    return TargetNonbonded(
+        bead_class=interaction_key[0],
+        bead_element=element_from_type(interaction_key[0], present_beads),
+        epsilon=openmm.unit.Quantity(
+            value=interaction_list[1],
+            unit=openmm.unit.kilojoules_per_mole,
+        ),
+        sigma=openmm.unit.Quantity(
+            value=interaction_list[2],
+            unit=openmm.unit.angstrom,
+        ),
+        force="custom-lj",
     )
 
 
