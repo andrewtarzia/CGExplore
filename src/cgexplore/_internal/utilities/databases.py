@@ -100,11 +100,7 @@ class AtomliteDatabase:
         value: float | str | bool | None,
     ) -> None:
         """Add properties to an entry by key."""
-        self._db.set_property(
-            key=key,
-            path=property_path,
-            property=value,
-        )
+        self._db.set_property(key=key, path=property_path, property=value)
 
     def get_property(
         self,
