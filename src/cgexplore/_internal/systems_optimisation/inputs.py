@@ -49,6 +49,10 @@ class Chromosome:
     definer_dict: dict[str, tuple]
     chromosomed_terms: dict[str, list[int]]
 
+    def get_separated_string(self) -> str:
+        """Get chromosome name separated by `-` as string."""
+        return "-".join(tuple(str(i) for i in self.name))
+
     def get_string(self) -> str:
         """Get chromosome name as string."""
         return "".join(str(i) for i in self.name)
