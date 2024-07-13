@@ -385,6 +385,79 @@ class CGOMMOptimizer:
         return molecule
 
 
+class CGOMMSinglePoint(CGOMMOptimizer):
+    """Get energy of CG models using OpenMM."""
+
+    def __init__(
+        self,
+        fileprefix: str,
+        output_dir: pathlib.Path,
+        assigned_system: ForcedSystem,
+        platform: str | None = None,
+    ) -> None:
+        """Initialize CGOMMSinglePoint."""
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
+        self._assigned_system = assigned_system
+
+        self._max_iterations = 0
+
+        if platform is not None:
+            self._platform = openmm.Platform.getPlatformByName(platform)
+            if platform == "CUDA":
+                self._properties = {"CudaPrecision": "mixed"}
+            else:
+                self._properties = None
+        else:
+            self._platform = None
+            self._properties = None
+
+        # Default integrator.
+        time_step = 0.1 * openmm.unit.femtoseconds
+        self._integrator = openmm.VerletIntegrator(time_step)
+        self._simulation, self._system = self._setup_simulation(
+            assigned_system
+        )
+
+    def _setup_simulation(
+        self,
+        assigned_system: ForcedSystem,
+    ) -> tuple[app.Simulation, openmm.System]:
+        system = assigned_system.get_openmm_system()
+        topology = assigned_system.get_openmm_topology()
+
+        for i, f in enumerate(system.getForces()):
+            f.setForceGroup(i)
+
+        # Define simulation.
+        simulation = app.Simulation(
+            topology,
+            system,
+            self._integrator,
+            platform=self._platform,
+            platformProperties=self._properties,
+        )
+
+        # Set positions from structure.
+        simulation.context.setPositions(
+            assigned_system.molecule.get_position_matrix() / 10
+        )
+
+        return simulation, system
+
+    def calculate_energy_decomposition(
+        self,
+        molecule: stk.Molecule,
+    ) -> float:
+        """Calculate energy of a molecule that must match assigned system."""
+        # Set positions from structure.
+        self._simulation.context.setPositions(
+            molecule.get_position_matrix() / 10
+        )
+
+        return self._run_energy_decomp(self._simulation, self._system)
+
+
 class CGOMMDynamics(CGOMMOptimizer):
     """Optimiser of CG models using OpenMM and Molecular Dynamics."""
 
