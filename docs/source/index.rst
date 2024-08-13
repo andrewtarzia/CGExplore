@@ -58,7 +58,7 @@ Install :mod:`.CGExplore` with pip::
   pip install cgexplore
 
 
-Install `OpenMM` `openmm <https://openmm.org/>`_::
+Install `openmm <https://openmm.org/>`_::
 
   mamba install openmm
 
@@ -67,7 +67,7 @@ or::
   conda install -c conda-forge openmm
 
 
-Install `openmmtools` `openmmtools <https://openmmtools.readthedocs.io/en/stable/gettingstarted.html>`_::
+Install `openmmtools <https://openmmtools.readthedocs.io/en/stable/gettingstarted.html>`_::
 
   mamba install openmmtools
 
