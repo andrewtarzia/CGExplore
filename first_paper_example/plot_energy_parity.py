@@ -7,7 +7,6 @@ Author: Andrew Tarzia
 """
 
 import logging
-import sys
 
 import matplotlib.pyplot as plt
 from analysis import (
@@ -106,13 +105,6 @@ def energy_parity(all_data, dupl_data, figure_output):
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if len(sys.argv) != 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()
@@ -124,13 +116,11 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    logging.info(f"there are {len(all_data)} collected data")
 
     dupl_all_data = data_to_array(
         json_files=dupl_calculation_output.glob("*_res.json"),
         output_dir=dupl_data_output,
     )
-    logging.info(f"there are {len(dupl_all_data)} collected data")
 
     energy_parity(all_data, dupl_all_data, figure_output)
 
