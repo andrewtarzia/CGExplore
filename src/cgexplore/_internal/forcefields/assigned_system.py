@@ -294,7 +294,7 @@ class AssignedSystem(ForcedSystem):
     def _write_topology_xml(self, molecule: stk.Molecule) -> None:
         ff_str = self._get_topology_xml_string(molecule)
 
-        with open(self.topology_xml, "w") as f:
+        with self.topology_xml.open("w") as f:
             f.write(ff_str)
 
     def get_openmm_topology(self) -> app.topology.Topology:
@@ -337,7 +337,7 @@ class AssignedSystem(ForcedSystem):
         system = self._add_atoms(system)
         system = self._add_forces(system)
 
-        with open(self.system_xml, "w") as f:
+        with self.system_xml.open("w") as f:
             f.write(openmm.XmlSerializer.serialize(system))
 
         return system
@@ -487,7 +487,7 @@ class MartiniSystem(ForcedSystem):
         string += torsions_string
         string += constraints_string
 
-        with open(self.topology_itp, "w") as f:
+        with self.topology_itp.open("w") as f:
             f.write(string)
 
     def get_openmm_topology(self) -> app.topology.Topology:
@@ -502,6 +502,6 @@ class MartiniSystem(ForcedSystem):
         system = topology.get_openmm_system()
 
         system = self._add_forces(system)
-        with open(self.system_xml, "w") as f:
+        with self.system_xml.open("w") as f:
             f.write(openmm.XmlSerializer.serialize(system))
         return system

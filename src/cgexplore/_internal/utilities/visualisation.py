@@ -118,7 +118,7 @@ class Pymol:
             "quit\n"
         )
 
-        with open(pml_file, "w") as f:
+        with pml_file.open("w") as f:
             f.write(string)
 
     def visualise(
@@ -135,8 +135,8 @@ class Pymol:
             pml_file=pml_file,
             orient_atoms=orient_atoms,
         )
-        _ = sp.run(
-            [f"{self._pymol}", "-c", "-q", f"{pml_file}"],  # noqa: S603
+        _ = sp.run(  # noqa: S603
+            [f"{self._pymol}", "-c", "-q", f"{pml_file}"],
             stdin=sp.PIPE,
             capture_output=True,
             check=True,
@@ -237,7 +237,7 @@ class Pymol:
             "quit\n"
         )
 
-        with open(pml_file, "w") as f:
+        with pml_file.open("w") as f:
             f.write(string)
 
     def visualise_host_guest(  # noqa: PLR0913
@@ -272,8 +272,8 @@ class Pymol:
             epsilon_max=epsilon_max,
             epsilon_palette=epsilon_palette,
         )
-        _ = sp.run(
-            [f"{self._pymol}", "-c", "-q", f"{pml_file}"],  # noqa: S603
+        _ = sp.run(  # noqa: S603
+            [f"{self._pymol}", "-c", "-q", f"{pml_file}"],
             stdin=sp.PIPE,
             capture_output=True,
             check=True,

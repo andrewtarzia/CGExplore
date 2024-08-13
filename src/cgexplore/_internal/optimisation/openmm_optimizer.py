@@ -76,7 +76,7 @@ class OMMTrajectory:
         new_pos_mat: list = []
         atom_trigger = "HETATM"
 
-        with open(self._traj_path) as f:
+        with self._traj_path.open("r") as f:
             for line in f.readlines():
                 if end_trigger in line:
                     if len(new_pos_mat) != num_atoms:
@@ -122,7 +122,7 @@ class OMMTrajectory:
 class CGOMMOptimizer:
     """Optimiser of CG models using OpenMM."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         fileprefix: str,
         output_dir: pathlib.Path,
@@ -263,7 +263,7 @@ class CGOMMOptimizer:
         self,
         simulation: app.Simulation,
         system: openmm.System,
-    ) -> dict:
+    ) -> dict[str, float]:
         fgroups = self._group_forces(system)
         egroups = self._get_energy_decomposition(
             context=simulation.context,
@@ -340,7 +340,7 @@ class CGOMMOptimizer:
     def calculate_energy_decomposition(
         self,
         assigned_system: ForcedSystem,
-    ) -> float:
+    ) -> dict[str, float]:
         """Calculate energy of a system."""
         simulation, system = self._setup_simulation(assigned_system)
         return self._run_energy_decomp(simulation, system)
@@ -380,7 +380,7 @@ class CGOMMOptimizer:
         self._output_string += f"end time: {end_time}\n"
         total_time = end_time - start_time
         self._output_string += f"total time: {total_time} [s]\n"
-        with open(self._output_path, "w") as f:
+        with self._output_path.open("w") as f:
             f.write(self._output_string)
         return molecule
 
@@ -445,10 +445,10 @@ class CGOMMSinglePoint(CGOMMOptimizer):
 
         return simulation, system
 
-    def calculate_energy_decomposition(
+    def calculate_molecule_energy_decomposition(
         self,
         molecule: stk.Molecule,
-    ) -> float:
+    ) -> dict[str, float]:
         """Calculate energy of a molecule that must match assigned system."""
         # Set positions from structure.
         self._simulation.context.setPositions(
@@ -632,7 +632,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._output_string += f"end time: {end_time}\n"
         total_time = end_time - start_time
         self._output_string += f"total time: {total_time} [s]\n"
-        with open(self._output_path, "w") as f:
+        with self._output_path.open("w") as f:
             f.write(self._output_string)
 
         return self._get_trajectory(assigned_system.molecule)

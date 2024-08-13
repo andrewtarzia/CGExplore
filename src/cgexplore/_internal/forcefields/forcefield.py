@@ -59,7 +59,7 @@ class ForceField:
         torsion_targets: tuple[TargetTorsion | TargetMartiniTorsion, ...],
         nonbonded_targets: tuple[TargetNonbonded, ...],
         vdw_bond_cutoff: int,
-        verbose: bool = True,  # noqa: FBT002, FBT001
+        verbose: bool = True,
     ) -> None:
         """Initialize ForceField."""
         # Check if you should use MartiniForceField.
@@ -152,7 +152,7 @@ class ForceField:
 
         unassigned = sorted(i for i in found if i not in assigned)
         if len(unassigned) > 0 and self._verbose:
-            logging.info(f"unassigned bond terms: {unassigned}")
+            logging.info("unassigned bond terms: %s", unassigned)
         return tuple(bond_terms)
 
     def _assign_angle_terms(  # noqa: C901, PLR0912, PLR0915
@@ -176,7 +176,9 @@ class ForceField:
             except KeyError:
                 if self._verbose:
                     logging.info(
-                        f"Angle not assigned ({found_angle}; {atom_estrings})."
+                        "Angle not assigned (%s; %s).",
+                        found_angle,
+                        atom_estrings,
                     )
 
             cgbead_string = tuple(i.bead_type for i in cgbeads)
@@ -399,7 +401,7 @@ class ForceField:
                 )
         unassigned = sorted(i for i in found if i not in assigned)
         if len(unassigned) > 0 and self._verbose:
-            logging.info(f"unassigned angle terms: {unassigned}")
+            logging.info("unassigned angle terms: %s", unassigned)
         return tuple(angle_terms)
 
     def _assign_torsion_terms(
@@ -474,8 +476,9 @@ class ForceField:
 
         if len(assigned) > 0 and self._verbose:
             logging.info(
-                f"assigned torsion terms: {sorted(assigned)} "
-                f"({len(self._torsion_targets)} targets) "
+                "assigned torsion terms: %s (%s targets) ",
+                sorted(assigned),
+                len(self._torsion_targets),
             )
         return tuple(torsion_terms)
 
@@ -514,7 +517,7 @@ class ForceField:
                 )
         unassigned = sorted(i for i in found if i not in assigned)
         if len(unassigned) > 0 and self._verbose:
-            logging.info(f"unassigned nonbonded terms: {unassigned}")
+            logging.info("unassigned nonbonded terms: %s", unassigned)
         return tuple(nonbonded_terms)
 
     def assign_terms(
@@ -569,7 +572,7 @@ class ForceField:
             else:
                 found.add(cgbead_string)
         if self._verbose:
-            logging.info(f"found bond terms ({len(found)}): {found}")
+            logging.info("found bond terms (%s): %s", len(found), found)
 
         found = set()
         for found_angle in find_angles(molecule):
@@ -585,7 +588,7 @@ class ForceField:
             else:
                 found.add(cgbead_string)
         if self._verbose:
-            logging.info(f"found angle terms ({len(found)}): {found}")
+            logging.info("found angle terms (%s): %s", len(found), found)
 
         found = set()
         for found_torsion in find_torsions(molecule, 4):
@@ -601,7 +604,7 @@ class ForceField:
             else:
                 found.add(cgbead_string)
         if self._verbose:
-            logging.info(f"found torsion terms ({len(found)}): {found}")
+            logging.info("found torsion terms (%s): %s", len(found), found)
 
         found = set()
         for atom in molecule.get_atoms():
@@ -609,7 +612,7 @@ class ForceField:
             cgbead = self._bead_library.get_cgbead_from_element(atom_estring)
             found.add(cgbead.bead_class)  # type: ignore[arg-type]
         if self._verbose:
-            logging.info(f"found nonbonded terms ({len(found)}): {found}")
+            logging.info("found nonbonded terms (%s): %s", len(found), found)
 
     def get_bead_library(self) -> BeadLibrary:
         """Get beads in forcefield."""
@@ -646,7 +649,7 @@ class ForceField:
 
     def write_human_readable(self, output_dir: pathlib.Path) -> None:
         """Write forcefield definition to human-readable file."""
-        with open(output_dir / self.get_hr_file_name(), "w") as f:
+        with (output_dir / self.get_hr_file_name()).open("w") as f:
             f.write(f"prefix: {self._prefix}\n")
             f.write(f"identifier: {self._identifier}\n")
             f.write(f"vdw bond cut off: {self._vdw_bond_cutoff}\n")

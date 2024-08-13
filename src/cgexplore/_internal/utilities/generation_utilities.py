@@ -74,7 +74,7 @@ def optimise_ligand(
     if opt1_mol_file.exists():
         molecule = molecule.with_structure_from_file(str(opt1_mol_file))
     else:
-        logging.info(f"optimising {name}, no max_iterations")
+        logging.info("optimising %s, no max_iterations", name)
         assigned_system = forcefield.assign_terms(
             molecule=molecule,
             name=name,
@@ -92,7 +92,7 @@ def optimise_ligand(
         logging.info("optimised with energy:")
         for i in energy_decomp:
             e, u = energy_decomp[i]
-            logging.info(f"{i}: {round(e, 2)} [{u}]")
+            logging.info("%s: %s [%s]", i, round(e, 2), u)
 
     return molecule
 
@@ -451,7 +451,7 @@ def yield_near_models(
         new_name = name.replace(ff_name, f"f{new_ff_id}")
         new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
         if new_fina_mol_file.exists():
-            logging.info(f"found neigh: {new_fina_mol_file}")
+            logging.info("found neigh: %s", new_fina_mol_file)
             yield molecule.with_structure_from_file(str(new_fina_mol_file))
 
 

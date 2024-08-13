@@ -358,7 +358,7 @@ class ChromosomeGenerator:
         for chromosome in self.yield_chromosomes():
             all_chromosomes[chromosome.name] = chromosome
         self.chromosomes = all_chromosomes
-        logging.info(f"there are {len(self.chromosomes)} chromosomes")
+        logging.info("there are %s chromosomes", len(self.chromosomes))
 
     def get_term_ids(self) -> tuple[int, ...]:
         """Get chromosome indices associated with terms."""
@@ -593,7 +593,7 @@ class ChromosomeGenerator:
 
         return mutated
 
-    def crossover_population(  # noqa: PLR0913
+    def crossover_population(
         self,
         list_of_chromosomes: list[Chromosome],
         generator: np.random.Generator,

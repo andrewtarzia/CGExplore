@@ -138,7 +138,7 @@ class PrecursorGenerator:
             cluster.append([o, li])
         return cluster
 
-    def _place_beads(  # noqa: PLR0913
+    def _place_beads(
         self,
         coordinates: np.ndarray,
         num_beads: int,

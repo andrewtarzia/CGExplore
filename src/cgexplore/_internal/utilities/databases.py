@@ -168,7 +168,7 @@ class AtomliteDatabase:
     def get_property_df(
         self,
         properties: abc.Sequence[str],
-        allow_missing: bool = False,  # noqa: FBT001, FBT002
+        allow_missing: bool = False,
     ) -> pl.DataFrame:
         """Get a DataFrame of the properties in the database.
 

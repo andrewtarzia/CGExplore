@@ -26,13 +26,13 @@ class Timestep:
 class Ensemble:
     """Class to contain ensemble information."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         base_molecule: stk.Molecule,
         base_mol_path: str,
         conformer_xyz: str,
         data_json: str,
-        overwrite: bool,  # noqa: FBT001
+        overwrite: bool,
     ) -> None:
         """Initialize Ensemble class."""
         self._base_molecule = base_molecule
@@ -58,11 +58,11 @@ class Ensemble:
 
     def write_conformers_to_file(self) -> None:
         """Write conformers to xyz file."""
-        with open(self._conformer_xyz, "w") as f:
+        with self._conformer_xyz.open("w") as f:
             for conf in self._trajectory:
                 xyz_string = self._trajectory[conf]
                 f.write("\n".join(xyz_string))
-        with open(self._data_json, "w") as f:
+        with self._data_json.open("w") as f:
             json.dump(self._data, f, indent=4)
 
     def add_conformer(self, conformer: Conformer, source: str) -> None:
@@ -95,7 +95,7 @@ class Ensemble:
         """Load trajectory."""
         num_atoms = self._molecule_num_atoms
         trajectory = {}
-        with open(self._conformer_xyz) as f:
+        with self._conformer_xyz.open("r") as f:
             lines = f.readlines()
             conformer_starts = range(0, len(lines), num_atoms + 2)
             for cs in conformer_starts:
@@ -190,7 +190,7 @@ class Ensemble:
                 return dict(x.items())
 
         try:
-            with open(self._data_json) as f:
+            with self._data_json.open("r") as f:
                 return json.load(f, object_hook=keystoint)
         except FileNotFoundError:
             return {}
