@@ -785,6 +785,54 @@ def pdII_figure_bite_angle(all_data, figure_output):  # noqa: N802
     plt.close()
 
 
+def pd_3p64p8_figure_bite_angle(all_data, figure_output):
+    logging.info("running pd_3p64p8_figure_bite_angle")
+
+    color_map = ("3P6", "4P8")
+
+    fig, ax = plt.subplots(figsize=(8, 2.5))
+    trim = all_data[all_data["vdws"] == "von"]
+    trim = trim[trim["torsions"] == "ton"]
+    trim = trim[trim["clangle"] == 90]
+
+    target_ba = (20, 30, 40, 50, 60, 70, 80)
+    tstr_points = {"3P6": [], "4P8": []}
+    for ba in target_ba:
+        ba_data = trim[trim["target_bite_angle"] == ba]
+        for tstr in color_map:
+            tdata = ba_data[ba_data["topology"] == tstr]
+            ey = float(tdata["energy_per_bb"].iloc[0])
+            tstr_points[tstr].append((ba, ey))
+
+    next(ax._get_lines.prop_cycler)["color"]  # noqa: SLF001
+    for tstr in color_map:
+        ax.plot(
+            [i[0] for i in tstr_points[tstr]],
+            [i[1] for i in tstr_points[tstr]],
+            alpha=1.0,
+            # edgecolor="k",
+            lw=3,
+            marker="o",
+            markeredgecolor="k",
+            markersize=13,
+            label=convert_topo(tstr),
+        )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel(r"target bite angle [$^\circ$]", fontsize=16)
+    ax.set_ylabel(eb_str(), fontsize=16)
+    ax.set_ylim(0, 2)
+
+    fig.tight_layout()
+    filename = "pd_3p64p8_figure_bite_angle.pdf"
+    fig.savefig(
+        figure_output / filename,
+        dpi=720,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+
 def main():
     figure_output = figures()
     calculation_output = calculations()
@@ -801,6 +849,7 @@ def main():
     selfsort_map(all_data, figure_output)
     pdII_figure_bite_angle(all_data, figure_output)
     pd_4p82_figure(all_data, figure_output)
+    pd_3p64p8_figure_bite_angle(all_data, figure_output)
     angle_map_4p6(all_data, figure_output)
     kinetic_selfsort_map(all_data, figure_output)
     selectivity_map(all_data, figure_output)
