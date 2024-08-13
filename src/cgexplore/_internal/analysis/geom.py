@@ -72,8 +72,8 @@ class GeomMeasure:
     def calculate_torsions(
         self,
         molecule: stk.Molecule,
-        absolute: bool,  # noqa: FBT001
-        as_search_string: bool = False,  # noqa: FBT001, FBT002
+        absolute: bool,
+        as_search_string: bool = False,
     ) -> dict[str, list[float]]:
         """Calculate the value of target torsions."""
         if self._target_torsions is None:

@@ -1,10 +1,6 @@
 # Distributed under the terms of the MIT License.
 
-"""Classes of topologies of cages.
-
-Author: Andrew Tarzia
-
-"""
+"""Classes of topologies of cages."""
 
 import numpy as np
 import stk
