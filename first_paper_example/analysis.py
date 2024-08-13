@@ -45,7 +45,7 @@ def analyse_cage(
     shape_molfile2 = output_dir / f"{name}_shape2.mol"
 
     if not output_file.exists():
-        logging.info(f"analysing {name}")
+        logging.info("analysing %s", name)
 
         energy_decomp = {}
         for component in conformer.energy_decomposition:
@@ -90,14 +90,14 @@ def analyse_cage(
             shape_string=None,
         )
 
-        n_shape_mol = node_shape.get_shape_molecule_byelement(
+        n_shape_mol = node_shape.get_shape_molecule_byelements(
             molecule=conformer.molecule,
-            element=node_element,
+            elements=node_element,
             expected_points=node_expected_topologies(),
         )
-        l_shape_mol = liga_shape.get_shape_molecule_byelement(
+        l_shape_mol = liga_shape.get_shape_molecule_byelements(
             molecule=conformer.molecule,
-            element=ligand_element,
+            elements=ligand_element,
             expected_points=ligand_expected_topologies(),
         )
         if n_shape_mol is None:
@@ -233,7 +233,7 @@ def analyse_cage(
             "max_diameter": max_diameter,
             "forcefield_dict": forcefield_dict,
         }
-        with open(output_file, "w") as f:
+        with output_file.open("w") as f:
             json.dump(res_dict, f, indent=4)
 
 
@@ -598,8 +598,8 @@ def data_to_array(json_files, output_dir):
     len_jsons = len(json_files)
     count = 0
     for j_file in json_files:
-        logging.info(f"arraying {j_file.name} ({count}/{len_jsons})")
-        with open(j_file) as f:
+        logging.info("arraying %s (%s/%s)", j_file.name, count, len_jsons)
+        with j_file.open("r") as f:
             res_dict = json.load(f)
 
         row = {}
@@ -705,7 +705,7 @@ def data_to_array(json_files, output_dir):
 
     input_array.to_csv(output_csv, index=False)
 
-    with open(geom_json, "w") as f:
+    with geom_json.open("w") as f:
         json.dump(geom_data, f, indent=4)
 
     return input_array
