@@ -20,6 +20,7 @@ cgexplore.systems\_optimisation.Chromosome
       ~Chromosome.get_building_blocks
       ~Chromosome.get_forcefield
       ~Chromosome.get_precursors
+      ~Chromosome.get_separated_string
       ~Chromosome.get_string
       ~Chromosome.get_topology_information
       ~Chromosome.get_vertex_alignments

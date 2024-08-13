@@ -13,14 +13,17 @@ from collections import abc
 import openmm
 import stk
 
+from cgexplore.forcefields import ForceField
 from cgexplore.molecular import CgBead
 from cgexplore.terms import (
     TargetAngle,
     TargetBond,
     TargetCosineAngle,
     TargetNonbonded,
+    TargetPyramidAngle,
     TargetTorsion,
 )
+from cgexplore.utilities import convert_pyramid_angle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -77,6 +80,38 @@ def define_angle(
         angle=openmm.unit.Quantity(
             value=interaction_list[1], unit=openmm.unit.degrees
         ),
+        angle_k=openmm.unit.Quantity(
+            value=interaction_list[2],
+            unit=openmm.unit.kilojoule
+            / openmm.unit.mole
+            / openmm.unit.radian**2,
+        ),
+    )
+
+
+def define_pyramid_angle(
+    interaction_key: str,
+    interaction_list: list,
+    present_beads: tuple[CgBead, ...],
+) -> TargetAngle:
+    """Define target from a known structured list."""
+    angle = openmm.unit.Quantity(
+        value=interaction_list[1],
+        unit=openmm.unit.degrees,
+    )
+    opposite_angle = openmm.unit.Quantity(
+        value=convert_pyramid_angle(angle.value_in_unit(angle.unit)),
+        unit=angle.unit,
+    )
+    return TargetPyramidAngle(
+        type1=interaction_key[0],
+        type2=interaction_key[1],
+        type3=interaction_key[2],
+        element1=element_from_type(interaction_key[0], present_beads),
+        element2=element_from_type(interaction_key[1], present_beads),
+        element3=element_from_type(interaction_key[2], present_beads),
+        angle=angle,
+        opposite_angle=opposite_angle,
         angle_k=openmm.unit.Quantity(
             value=interaction_list[2],
             unit=openmm.unit.kilojoule
@@ -144,10 +179,7 @@ def define_nonbonded(
     interaction_list: list,
     present_beads: tuple[CgBead, ...],
 ) -> TargetNonbonded:
-    """Define target from a known structured list.
-
-    TODO: Handle other forces.
-    """
+    """Define target from a known structured list."""
     return TargetNonbonded(
         bead_class=interaction_key[0],
         bead_element=element_from_type(interaction_key[0], present_beads),
@@ -156,9 +188,31 @@ def define_nonbonded(
             unit=openmm.unit.kilojoules_per_mole,
         ),
         sigma=openmm.unit.Quantity(
-            value=interaction_list[2], unit=openmm.unit.angstrom
+            value=interaction_list[2],
+            unit=openmm.unit.angstrom,
         ),
         force="custom-excl-vol",
+    )
+
+
+def define_lennardjones(
+    interaction_key: str,
+    interaction_list: list,
+    present_beads: tuple[CgBead, ...],
+) -> TargetNonbonded:
+    """Define target from a known structured list."""
+    return TargetNonbonded(
+        bead_class=interaction_key[0],
+        bead_element=element_from_type(interaction_key[0], present_beads),
+        epsilon=openmm.unit.Quantity(
+            value=interaction_list[1],
+            unit=openmm.unit.kilojoules_per_mole,
+        ),
+        sigma=openmm.unit.Quantity(
+            value=interaction_list[2],
+            unit=openmm.unit.angstrom,
+        ),
+        force="custom-lj",
     )
 
 
@@ -219,3 +273,97 @@ def yield_near_models(
         new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
         if new_fina_mol_file.exists():
             yield molecule.with_structure_from_file(str(new_fina_mol_file))
+
+
+def get_forcefield_from_dict(
+    identifier: str,
+    prefix: str,
+    vdw_bond_cutoff: int,
+    present_beads: tuple[CgBead, ...],
+    definer_dict: dict,
+) -> ForceField:
+    """Get forcefield from a definer dict."""
+    bond_terms: list = []
+    angle_terms: list[TargetAngle | TargetCosineAngle] = []
+    torsion_terms: list = []
+    nonbonded_terms: list = []
+    for key_ in definer_dict:
+        term = definer_dict[key_]  # type: ignore[assignment]
+
+        if term[0] == "bond":
+            bond_terms.append(
+                define_bond(
+                    interaction_key=key_,
+                    interaction_list=term,
+                    present_beads=present_beads,
+                )
+            )
+
+        elif term[0] == "angle":
+            angle_terms.append(
+                define_angle(
+                    interaction_key=key_,
+                    interaction_list=term,
+                    present_beads=present_beads,
+                )
+            )
+
+        elif term[0] == "pyramid":
+            angle_terms.append(
+                define_pyramid_angle(
+                    interaction_key=key_,
+                    interaction_list=term,
+                    present_beads=present_beads,
+                )
+            )
+
+        elif term[0] == "cosine":
+            angle_terms.append(
+                define_cosine_angle(
+                    interaction_key=key_,
+                    interaction_list=term,
+                    present_beads=present_beads,
+                )
+            )
+
+        elif term[0] == "tors":
+            torsion_terms.append(
+                define_torsion(
+                    interaction_key=key_,
+                    interaction_list=term,
+                    present_beads=present_beads,
+                )
+            )
+
+        elif term[0] == "nb":
+            nonbonded_terms.append(
+                define_nonbonded(
+                    interaction_key=key_,
+                    interaction_list=term,
+                    present_beads=present_beads,
+                )
+            )
+
+        elif term[0] == "custom-lj":
+            nonbonded_terms.append(
+                define_lennardjones(
+                    interaction_key=key_,
+                    interaction_list=term,
+                    present_beads=present_beads,
+                )
+            )
+
+        else:
+            msg = f"{term[0]} not found in known terms."
+            raise RuntimeError(msg)
+
+    return ForceField(
+        identifier=identifier,
+        prefix=prefix,
+        present_beads=present_beads,
+        bond_targets=tuple(bond_terms),
+        angle_targets=tuple(angle_terms),
+        torsion_targets=tuple(torsion_terms),
+        nonbonded_targets=tuple(nonbonded_terms),
+        vdw_bond_cutoff=vdw_bond_cutoff,
+    )

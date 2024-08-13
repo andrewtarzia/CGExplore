@@ -55,7 +55,7 @@ class MartiniTopology:
             # 'NA             97\n'
             # 'CL             97\n'
         )
-        with open(self._top_file, "w") as f:
+        with self._top_file.open("w") as f:
             f.write(string)
 
     def get_openmm_topology(self) -> app.topology.Topology:

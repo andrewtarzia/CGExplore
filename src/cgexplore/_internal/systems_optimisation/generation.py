@@ -33,7 +33,7 @@ class Generation:
     def calculate_fitness_values(self) -> list[float]:
         """Calculate the fitness of all chromosomes."""
         length = len(self.chromosomes)
-        logging.info(f"calculating fitness values of {length} systems...")
+        logging.info("calculating fitness values of %s systems...", length)
         if self.num_processes > 1:
             with pathos.pools.ProcessPool(self.num_processes) as pool:
                 return pool.map(
@@ -48,7 +48,7 @@ class Generation:
     def run_structures(self) -> None:
         """Run the production and analyse of all chromosomes."""
         length = len(self.chromosomes)
-        logging.info(f"generating structures of {length} systems...")
+        logging.info("generating structures of %s systems...", length)
         if self.num_processes > 1:
             with pathos.pools.ProcessPool(self.num_processes) as pool:
                 pool.map(self.structure_calculator.calculate, self.chromosomes)

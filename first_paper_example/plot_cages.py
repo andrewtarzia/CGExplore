@@ -9,7 +9,6 @@ Author: Andrew Tarzia
 import logging
 import math
 import os
-import sys
 
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
@@ -108,12 +107,12 @@ def visualise_low_and_high(
         high_e = tdata[tdata["energy_per_bb"] == max_e].iloc[0]
 
         logging.info(
-            f"low E: {low_e.cage_name!s}; "
-            f"E={round(low_e.energy_per_bb, 2)}"
+            "low E: %s; E=%s", low_e.cage_name, round(low_e.energy_per_bb, 2)
         )
         logging.info(
-            f"high E: {high_e.cage_name!s}; "
-            f"E={round(high_e.energy_per_bb, 2)}"
+            "high E: %s; E=%s",
+            high_e.cage_name,
+            round(high_e.energy_per_bb, 2),
         )
         high_e_name = str(high_e["index"])
         low_e_name = str(low_e["index"])
@@ -708,7 +707,7 @@ def si_shape_fig(
 
             c_column = f"{shape_type}_{shape}"
             svalue = tdata.iloc[0][c_column]
-            logging.info(f"{sindex}: {shape_type}: {shape}, {svalue}")
+            logging.info("%s: %s: %s, %s", sindex, shape_type, shape, svalue)
 
         add_structure_to_ax(
             ax=ax,
@@ -832,7 +831,7 @@ def webapp_csv(
     total = len(bbpairs)
 
     for bbpair in bbpairs:
-        logging.info(f"viz self sort of {bbpair} ({count} of {total})")
+        logging.info("viz self sort of %s (%s of %s)", bbpair, count, total)
         bbdata = all_data[all_data["bbpair"] == bbpair]
 
         bbdict = {}
@@ -935,7 +934,7 @@ def webapp_csv(
 
     for csv_name in csv_files:
         filename = figure_output / f"{csv_name}_bbdata.csv"
-        with open(filename, "w") as f:
+        with filename.open("w") as f:
             f.write(
                 "name,clangle,bite_angle,c2angle,c3angle,"
                 "restricted topologies,unrestricted topologies,"
@@ -991,13 +990,15 @@ def check_odd_outcomes(
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
                 tofflbl = f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
                 logging.info(
-                    f"for {cage_name}: ton: {ton_energy}, "
-                    f"toff: {toff_energy}"
+                    "for %s: ton: %s, toff: %s",
+                    cage_name,
+                    ton_energy,
+                    toff_energy,
                 )
                 outcomes.append((cage_name, "ton", tonlbl))
                 outcomes.append((pair_name, "toff", tofflbl))
 
-        logging.info(f"{tstr}: {len(outcomes)} odd outcomes")
+        logging.info("%s: %s odd outcomes", tstr, len(outcomes))
         if len(outcomes) == 0:
             continue
         si_ar_fig(
@@ -1033,13 +1034,13 @@ def generate_movies(figure_output):
                     for i in astr
                 ]
                 output_file = f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.mkv"
-                logging.info(f"gen movie to {output_file}")
+
                 output_file = figure_output / output_file
                 concat_file = (
                     figure_output
                     / f"vss_{cltopo}{clseq}b00002C1c0000a_{tors}.txt"
                 )
-                with open(concat_file, "w") as f:
+                with concat_file.open("w") as f:
                     for fi in files:
                         f.write(f"file {fi}\n")
 
@@ -1104,18 +1105,11 @@ def naming_convention_map(old_name, tors="toff"):
             ffid += 1
 
     new_name = f"{tstr}_{bb1name}_{bb2name}_f{ffid}"
-    logging.info(f"analysing {old_name} as {new_name}")
+    logging.info("analysing  %s as %s", old_name, new_name)
     return new_name
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if len(sys.argv) != 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
     struct_output = structures()
     figure_output = figures()
     calculation_output = calculations()
@@ -1127,7 +1121,6 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    logging.info(f"there are {len(all_data)} collected data")
 
     generate_images_of_all(
         all_data,

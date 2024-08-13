@@ -9,7 +9,6 @@ Author: Andrew Tarzia
 import itertools as it
 import logging
 import math
-import sys
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -787,13 +786,6 @@ def pdII_figure_bite_angle(all_data, figure_output):  # noqa: N802
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if len(sys.argv) != 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()
@@ -802,7 +794,6 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    logging.info(f"there are {len(all_data)} collected data")
 
     bite_angle_relationship(all_data, figure_output)
     angle_map(all_data, figure_output)

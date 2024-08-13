@@ -8,7 +8,6 @@ Author: Andrew Tarzia
 
 import json
 import logging
-import sys
 
 import matplotlib as mpl
 import matplotlib.patches as mpatches
@@ -45,8 +44,7 @@ def identity_distributions(all_data, figure_output):
     categories = {i: 0 for i in topology_labels(short="P")}
     count1 = all_data["topology"].value_counts()
 
-    for tstr, count in count1.items():
-        categories[tstr] = count
+    categories = dict(count1.items())
 
     categories = {convert_topo(i): categories[i] for i in categories}
     num_cages = len(all_data)
@@ -1062,7 +1060,7 @@ def energy_correlation_matrix(all_data, figure_output):
 
 def get_min_energy_from_omm_out(outfile):
     try:
-        with open(outfile) as f:
+        with outfile.open("r") as f:
             min_energy = 1e24
             lines = f.readlines()
             for line in lines:
@@ -1087,16 +1085,12 @@ def opt_outcome_distributions(all_data, figure_output):
 
     fig, ax = plt.subplots(figsize=(16, 5))
 
-    categories = {
-        "opt1": 0,
-        "shifted": 0,
-        "nearby_opt": 0,
-        "smd": 0,
-    }
     count1 = all_data["source"].value_counts()
 
-    for source, count in count1.items():
-        categories[source] = count
+    categories = dict(count1.items())
+    for cat in ("opt1", "shifted", "nearby_opt", "smd"):
+        if cat not in categories:
+            categories[cat] = 0
 
     num_cages = len(all_data)
 
@@ -1122,13 +1116,6 @@ def opt_outcome_distributions(all_data, figure_output):
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if len(sys.argv) != 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()
@@ -1137,11 +1124,8 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    logging.info(f"there are {len(all_data)} collected data")
-    opt_data = all_data[all_data["optimised"]]
-    logging.info(f"there are {len(opt_data)} successfully opted")
 
-    with open(data_output / "all_geom.json") as f:
+    with (data_output / "all_geom.json").open("r") as f:
         geom_data = json.load(f)
 
     identity_distributions(all_data, figure_output)

@@ -33,7 +33,7 @@ def main() -> None:
 
     if args.name == "all":
         count = 0
-        logging.info(f"showing all energies in ({args.min}, {args.max})")
+        logging.info("showing all energies in (%s, %s)", args.min, args.max)
         for entry in database.get_entries():
             properties = entry.properties
             if "energy_per_bb" not in properties:
@@ -42,14 +42,16 @@ def main() -> None:
             energy = properties["energy_per_bb"]
             if energy > min_energy and energy < max_energy:
                 logging.info(
-                    f"energy of {name} is {round(energy, 3)} kJmol-1"  # type: ignore[arg-type]
+                    "energy of %s is %s kJmol-1",
+                    name,
+                    round(energy, 3),  # type: ignore[arg-type]
                 )
                 count += 1
-        logging.info(f"showed {count} energies")
+        logging.info("showed %s energies", count)
     else:
         entry = database.get_entry(key=args.name)
         energy = entry.properties["energy_per_bb"]
-        logging.info(f"energy of {args.name} is {round(energy, 3)} kJmol-1")  # type: ignore[arg-type]
+        logging.info("energy of %s is %s kJmol-1", args.name, round(energy, 3))  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

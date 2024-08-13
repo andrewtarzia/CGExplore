@@ -33,9 +33,9 @@ def test_shape(molecule: CaseData) -> None:
             output_dir=output_dir,
             shape_path=expected_shape_path,
         )
-        shape_mol = shape_calc.get_shape_molecule_byelement(
+        shape_mol = shape_calc.get_shape_molecule_byelements(
             molecule=molecule.molecule,
-            element="C",
+            elements="C",
             expected_points=molecule.expected_points,
         )
 

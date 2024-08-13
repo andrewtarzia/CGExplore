@@ -31,8 +31,7 @@ def convert_pyramid_angle(outer_angle: float) -> float:
 
 def check_directory(path: pathlib.Path) -> None:
     """Check if a directory exists, make if not."""
-    if not path.exists():
-        path.mkdir()
+    path.mkdir(exist_ok=True, parents=True)
 
 
 def draw_pie(

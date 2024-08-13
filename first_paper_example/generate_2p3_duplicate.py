@@ -7,13 +7,12 @@ Author: Andrew Tarzia
 """
 
 import logging
-import sys
 
 import stk
 from bead_libraries import arm_bead, binder_bead, core_bead, trigonal_bead
 from cgexplore.molecular import ThreeC1Arm, TwoC1Arm
 from cgexplore.utilities import AtomliteDatabase, check_directory
-from define_forcefields import define_2p3_forcefield_library
+from define_forcefields import define_forcefield_library
 from env_set import cages, ligands
 from generation import build_populations
 from rdkit import RDLogger
@@ -26,13 +25,6 @@ RDLogger.DisableLog("rdApp.*")
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if len(sys.argv) != 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
     struct_output = cages() / "duplicate_structures"
     check_directory(struct_output)
     calculation_output = cages() / "duplicate_calculations"
@@ -50,7 +42,7 @@ def main():
     )
 
     logging.info("defining force field")
-    forcefieldlibrary = define_2p3_forcefield_library(
+    forcefieldlibrary = define_forcefield_library(
         present_beads=present_beads,
         prefix="2p3",
     )

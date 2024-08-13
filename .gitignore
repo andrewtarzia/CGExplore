@@ -133,3 +133,6 @@ src/cgexplore/_version.py
 testff_iterations.json
 .vscode
 optimisation_example/optimisation_output
+
+# ruff
+.ruff_cache/

@@ -27,17 +27,6 @@ def stoich_map(tstr: str) -> int:
     }[tstr]
 
 
-def node_expected_topologies(tstr: str) -> int:
-    """Number of nodes map to topologies."""
-    return {
-        "2P3": 2,
-        "4P6": 4,
-        "4P62": 4,
-        "6P9": 6,
-        "8P12": 8,
-    }[tstr]
-
-
 def colours() -> dict[str, str]:
     """Colours map to topologies."""
     return {
@@ -235,7 +224,7 @@ def optimise_cage(
         )
         return ensemble.get_lowest_e_conformer()
 
-    logging.info(f"optimising {name}")
+    logging.info("optimising %s", name)
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
     ensemble = cgexplore.molecular.Ensemble(
         base_molecule=molecule,
@@ -354,15 +343,15 @@ def optimise_cage(
         platform=platform,
     )
     if soft_md_trajectory is None:
-        logging.info(f"!!!!! {name} MD exploded !!!!!")
-        raise RuntimeError
+        msg = f"!!!!! {name} MD exploded !!!!!"
+        raise RuntimeError(msg)
 
     soft_md_data = soft_md_trajectory.get_data()
 
     # Check that the trajectory is as long as it should be.
     if len(soft_md_data) != num_steps / traj_freq:
-        logging.info(f"!!!!! {name} MD failed !!!!!")
-        raise RuntimeError
+        msg = f"!!!!! {name} MD failed !!!!!"
+        raise RuntimeError(msg)
 
     # Go through each conformer from soft MD.
     # Optimise them all.
@@ -714,9 +703,9 @@ def main() -> None:
         generations.append(generation)
 
         for generation_id in range(1, num_generations + 1):
-            logging.info(f"doing generation {generation_id} of seed {seed}")
+            logging.info("doing generation %s of seed %s", generation_id, seed)
             logging.info(
-                f"initial size is {generation.get_generation_size()}."
+                "initial size is %s.", generation.get_generation_size()
             )
             logging.info("doing mutations.")
             merged_chromosomes = []
@@ -811,7 +800,7 @@ def main() -> None:
                 structure_calculator=structure_calculator,
                 num_processes=num_processes,
             )
-            logging.info(f"new size is {generation.get_generation_size()}.")
+            logging.info("new size is %s.", generation.get_generation_size())
 
             # Build, optimise and analyse each structure.
             st = time.time()
@@ -820,7 +809,7 @@ def main() -> None:
             st = time.time()
             _ = generation.calculate_fitness_values()
             fit_time = time.time() - st
-            with open(timing_file, "a") as f:
+            with timing_file.open("a") as f:
                 f.write(f"{str_time},{fit_time}\n")
 
             # Add final state to generations.
@@ -834,7 +823,7 @@ def main() -> None:
                 structure_calculator=structure_calculator,
                 num_processes=num_processes,
             )
-            logging.info(f"final size is {generation.get_generation_size()}.")
+            logging.info("final size is %s.", generation.get_generation_size())
 
             progress_plot(
                 generations=generations,
@@ -848,7 +837,7 @@ def main() -> None:
                 f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
             )
 
-        logging.info(f"top scorer is {best_name} (seed: {seed})")
+        logging.info("top scorer is %s (seed: %s)", best_name, seed)
 
     # Report.
     found = set()
@@ -856,8 +845,9 @@ def main() -> None:
         for chromo in generation.chromosomes:
             found.add(chromo.name)
     logging.info(
-        f"{len(found)} chromosomes found in EA (of "
-        f"{chromo_it.get_num_chromosomes()})"
+        "%s chromosomes found in EA (of %s)",
+        len(found),
+        chromo_it.get_num_chromosomes(),
     )
 
     fig, axs = plt.subplots(ncols=2, figsize=(16, 5))

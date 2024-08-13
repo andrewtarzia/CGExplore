@@ -18,6 +18,7 @@ cgexplore.optimisation
    
       CGOMMDynamics
       CGOMMOptimizer
+      CGOMMSinglePoint
       OMMTrajectory
    
    

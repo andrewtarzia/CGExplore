@@ -18,7 +18,11 @@ requires a :class:`cgexplore.forcefields.ForcedSystem`.
    Actually use :class:`cgexplore.forcefields.AssignedSystem` or
    :class:`cgexplore.forcefields.MartiniSystem`.
 
+.. note::
 
+   Developing libraries of forcefields for iteration can be much simpler
+   in the Systems Optimisation module, using the `definer dictionary`
+   interface and chromosomes (see the `optimisation_example`).
 
 Libraries
 ---------

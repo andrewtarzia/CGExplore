@@ -22,6 +22,7 @@ from .martini import MartiniTopology, get_martini_mass_by_type
 from .utilities import (
     cosine_periodic_angle_force,
     custom_excluded_volume_force,
+    custom_lennard_jones_force,
 )
 
 
@@ -39,6 +40,8 @@ class ForcedSystem:
             "PeriodicTorsionForce": openmm.PeriodicTorsionForce(),
             "custom-excl-vol": custom_excluded_volume_force(),
             "CosinePeriodicAngleForce": cosine_periodic_angle_force(),
+            "NonbondedForce": openmm.NonbondedForce(),
+            "custom-lj": custom_lennard_jones_force(),
         }
         if force_type not in available:
             msg = f"{force_type} not in {available.keys()}"
@@ -167,27 +170,46 @@ class ForcedSystem:
                 if assigned_force.force != force_type:
                     continue
                 try:
-                    force_function.addParticle(
-                        [
-                            assigned_force.sigma.value_in_unit(
+                    if force_type in ("custom-excl-vol", "custom-lj"):
+                        force_function.addParticle(
+                            [
+                                assigned_force.sigma.value_in_unit(
+                                    openmm.unit.nanometer
+                                ),
+                                assigned_force.epsilon.value_in_unit(
+                                    openmm.unit.kilojoules_per_mole
+                                ),
+                            ],
+                        )
+                    elif force_type == "NonbondedForce":
+                        force_function.addParticle(
+                            charge=0,
+                            sigma=assigned_force.sigma.value_in_unit(
                                 openmm.unit.nanometer
                             ),
-                            assigned_force.epsilon.value_in_unit(
+                            epsilon=assigned_force.epsilon.value_in_unit(
                                 openmm.unit.kilojoules_per_mole
                             ),
-                        ],
-                    )
+                        )
 
                 except AttributeError:
                     msg = f"{assigned_force} in nonbondeds does not have units"
                     raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
 
             try:
-                # This method MUST be after terms are assigned.
-                force_function.createExclusionsFromBonds(
-                    exclusion_bonds,
-                    self.vdw_bond_cutoff,
-                )
+                if force_type in ("custom-excl-vol", "custom-lj"):
+                    # This method MUST be after terms are assigned.
+                    force_function.createExclusionsFromBonds(
+                        exclusion_bonds,
+                        self.vdw_bond_cutoff,
+                    )
+                elif force_type == "NonbondedForce":
+                    # This method MUST be after terms are assigned.
+                    force_function.createExceptionsFromBonds(
+                        exclusion_bonds,
+                        coulomb14Scale=1,
+                        lj14Scale=1,
+                    )
             except OpenMMException:
                 msg = f"{force_type} is missing a definition for a particle."
                 raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
@@ -272,7 +294,7 @@ class AssignedSystem(ForcedSystem):
     def _write_topology_xml(self, molecule: stk.Molecule) -> None:
         ff_str = self._get_topology_xml_string(molecule)
 
-        with open(self.topology_xml, "w") as f:
+        with self.topology_xml.open("w") as f:
             f.write(ff_str)
 
     def get_openmm_topology(self) -> app.topology.Topology:
@@ -315,7 +337,7 @@ class AssignedSystem(ForcedSystem):
         system = self._add_atoms(system)
         system = self._add_forces(system)
 
-        with open(self.system_xml, "w") as f:
+        with self.system_xml.open("w") as f:
             f.write(openmm.XmlSerializer.serialize(system))
 
         return system
@@ -465,7 +487,7 @@ class MartiniSystem(ForcedSystem):
         string += torsions_string
         string += constraints_string
 
-        with open(self.topology_itp, "w") as f:
+        with self.topology_itp.open("w") as f:
             f.write(string)
 
     def get_openmm_topology(self) -> app.topology.Topology:
@@ -480,6 +502,6 @@ class MartiniSystem(ForcedSystem):
         system = topology.get_openmm_system()
 
         system = self._add_forces(system)
-        with open(self.system_xml, "w") as f:
+        with self.system_xml.open("w") as f:
             f.write(openmm.XmlSerializer.serialize(system))
         return system

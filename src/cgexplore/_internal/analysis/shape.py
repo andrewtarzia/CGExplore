@@ -24,182 +24,6 @@ logging.basicConfig(
 )
 
 
-def test_shape_mol(
-    topo_expected: dict[str, int],
-    atoms: list,
-    name: str,
-    topo_str: str,
-) -> None:
-    """Test shape molecule.
-
-    Requires hard-coded assumptions.
-    I suggest using the method in `ShapeMeasure`.
-    """
-    num_atoms = len(atoms)
-    if num_atoms != topo_expected[topo_str]:
-        msg = (
-            f"{topo_str} needs {topo_expected[topo_str]} atoms, not "
-            f"{num_atoms}; name={name}"
-        )
-        raise ValueError(msg)
-
-
-def fill_position_matrix_molecule(
-    molecule: stk.Molecule,
-    element: str,
-    old_position_matrix: np.ndarray,
-) -> tuple[list, list]:
-    """Make position matrix from filtering molecule based on element."""
-    position_matrix = []
-    atoms: list[stk.Atom] = []
-
-    target_anum = string_to_atom_number(element)
-    for atom in molecule.get_atoms():
-        atomic_number = atom.get_atomic_number()  # type: ignore[union-attr]
-        if atomic_number == target_anum:
-            new_atom = stk.Atom(
-                id=len(atoms),
-                atomic_number=atom.get_atomic_number(),
-                charge=atom.get_charge(),
-            )
-            atoms.append(new_atom)
-            position_matrix.append(old_position_matrix[atom.get_id()])
-
-    return position_matrix, atoms
-
-
-def get_shape_molecule_byelement(
-    molecule: stk.Molecule,
-    name: str,
-    element: str,
-    topo_expected: dict[str, int],
-) -> stk.Molecule | None:
-    """Get shape molecule.
-
-    Requires hard-coded assumptions.
-    I suggest using the method in `ShapeMeasure`.
-    """
-    splits = name.split("_")
-    topo_str = splits[0]
-    if topo_str not in topo_expected:
-        return None
-
-    old_position_matrix = molecule.get_position_matrix()
-
-    position_matrix, atoms = fill_position_matrix_molecule(
-        molecule=molecule,
-        element=element,
-        old_position_matrix=old_position_matrix,
-    )
-
-    test_shape_mol(topo_expected, atoms, name, topo_str)
-    return stk.BuildingBlock.init(
-        atoms=atoms,
-        bonds=(),
-        position_matrix=np.array(position_matrix),
-    )
-
-
-def fill_position_matrix(
-    constructed_molecule: stk.ConstructedMolecule,
-    target_bb: stk.Molecule,
-    element: str,
-    old_position_matrix: np.ndarray,
-) -> tuple[list, list]:
-    """Make position matrix from filtering molecule based on target BB."""
-    position_matrix = []
-    atoms: list[stk.Atom] = []
-
-    target_anum = string_to_atom_number(element)
-    for ai in constructed_molecule.get_atom_infos():
-        if (
-            ai.get_building_block() == target_bb
-            and ai.get_building_block_atom() is not None
-        ):
-            ai_atom = ai.get_building_block_atom()
-            ai_atomic_number = ai_atom.get_atomic_number()  # type: ignore[union-attr]
-            if ai_atomic_number == target_anum:
-                a = ai.get_atom()
-                new_atom = stk.Atom(
-                    id=len(atoms),
-                    atomic_number=a.get_atomic_number(),
-                    charge=a.get_charge(),
-                )
-                atoms.append(new_atom)
-                position_matrix.append(old_position_matrix[a.get_id()])
-
-    return position_matrix, atoms
-
-
-def get_shape_molecule_nodes(
-    constructed_molecule: stk.ConstructedMolecule,
-    name: str,
-    element: str,
-    topo_expected: dict[str, int],
-) -> stk.Molecule | None:
-    """Get shape molecule.
-
-    Requires hard-coded assumptions.
-    I suggest using the method in `ShapeMeasure`.
-    """
-    splits = name.split("_")
-    topo_str = splits[0]
-    if topo_str not in topo_expected:
-        return None
-    bbs = list(constructed_molecule.get_building_blocks())
-    old_position_matrix = constructed_molecule.get_position_matrix()
-
-    large_c_bb = bbs[0]
-    position_matrix, atoms = fill_position_matrix(
-        constructed_molecule=constructed_molecule,
-        target_bb=large_c_bb,
-        element=element,
-        old_position_matrix=old_position_matrix,
-    )
-
-    test_shape_mol(topo_expected, atoms, name, topo_str)
-    return stk.BuildingBlock.init(
-        atoms=atoms,
-        bonds=(),
-        position_matrix=np.array(position_matrix),
-    )
-
-
-def get_shape_molecule_ligands(
-    constructed_molecule: stk.ConstructedMolecule,
-    name: str,
-    element: str,
-    topo_expected: dict[str, int],
-) -> stk.Molecule | None:
-    """Get shape molecule.
-
-    Requires hard-coded assumptions.
-    I suggest using the method in `ShapeMeasure`.
-    """
-    splits = name.split("_")
-    topo_str = splits[0]
-    bbs = list(constructed_molecule.get_building_blocks())
-    old_position_matrix = constructed_molecule.get_position_matrix()
-
-    if topo_str not in topo_expected:
-        return None
-
-    two_c_bb = bbs[1]
-    position_matrix, atoms = fill_position_matrix(
-        constructed_molecule=constructed_molecule,
-        target_bb=two_c_bb,
-        element=element,
-        old_position_matrix=old_position_matrix,
-    )
-
-    test_shape_mol(topo_expected, atoms, name, topo_str)
-    return stk.BuildingBlock.init(
-        atoms=atoms,
-        bonds=(),
-        position_matrix=np.array(position_matrix),
-    )
-
-
 class ShapeMeasure:
     """Uses Shape to calculate the shape of coordinates.
 
@@ -236,18 +60,45 @@ class ShapeMeasure:
             )
             raise ValueError(msg)
 
-    def get_shape_molecule_byelement(
+    def fill_position_matrix_molecule(
         self,
         molecule: stk.Molecule,
-        element: str,
+        elements: str | Sequence[str],
+        old_position_matrix: np.ndarray,
+    ) -> tuple[list, list]:
+        """Make position matrix from filtering molecule based on element."""
+        position_matrix = []
+        atoms: list[stk.Atom] = []
+
+        if isinstance(elements, str):
+            elements = (elements,)
+
+        target_anum = tuple(string_to_atom_number(i) for i in elements)
+        for atom in molecule.get_atoms():
+            atomic_number = atom.get_atomic_number()  # type: ignore[union-attr]
+            if atomic_number in target_anum:
+                new_atom = stk.Atom(
+                    id=len(atoms),
+                    atomic_number=atom.get_atomic_number(),
+                    charge=atom.get_charge(),
+                )
+                atoms.append(new_atom)
+                position_matrix.append(old_position_matrix[atom.get_id()])
+
+        return position_matrix, atoms
+
+    def get_shape_molecule_byelements(
+        self,
+        molecule: stk.Molecule,
+        elements: str | Sequence[str],
         expected_points: int,
     ) -> stk.Molecule | None:
         """Get molecule to analyse by filtering by element."""
         old_position_matrix = molecule.get_position_matrix()
 
-        position_matrix, atoms = fill_position_matrix_molecule(
+        position_matrix, atoms = self.fill_position_matrix_molecule(
             molecule=molecule,
-            element=element,
+            elements=elements,
             old_position_matrix=old_position_matrix,
         )
 
@@ -258,9 +109,9 @@ class ShapeMeasure:
             position_matrix=np.array(position_matrix),
         )
 
-    def _collect_all_shape_values(self, output_file: str) -> dict:
+    def _collect_all_shape_values(self, output_file: pathlib.Path) -> dict:
         """Collect shape values from output."""
-        with open(output_file) as f:
+        with output_file.open("r") as f:
             lines = f.readlines()
 
         label_idx_map = {}
@@ -272,8 +123,8 @@ class ShapeMeasure:
                     for i in line.rstrip().split("]")[1].split(" ")
                     if i.strip()
                 ]
-                for idx, symb in enumerate(values):
-                    label_idx_map[symb] = idx
+                label_idx_map = {symb: idx for idx, symb in enumerate(values)}
+
                 break
             float_values = [i.strip() for i in line.rstrip().split(",")]
 
@@ -290,7 +141,7 @@ class ShapeMeasure:
 
     def _write_input_file(
         self,
-        input_file: str,
+        input_file: pathlib.Path,
         structure_string: str,
     ) -> None:
         """Write input file for shape."""
@@ -301,21 +152,21 @@ class ShapeMeasure:
 
         title = "$shape run by Andrew Tarzia - central atom=0 always.\n"
         fix_perm = (
-            "%fixperm 0\\n" if num_vertices == 12 else "\n"  # noqa: PLR2004
+            "%fixperm 0\n" if num_vertices > 12 else "\n"  # noqa: PLR2004
         )
         size_of_poly = f"{num_vertices} 0\n"
         codes = " ".join(shape_numbers) + "\n"
 
         string = title + fix_perm + size_of_poly + codes + structure_string
 
-        with open(input_file, "w") as f:
+        with input_file.open("w") as f:
             f.write(string)
 
     def _run_calculation(self, structure_string: str) -> dict:
         """Calculate the shape of a molecule."""
-        input_file = "shp.dat"
-        std_out = "shp.out"
-        output_file = "shp.tab"
+        input_file = pathlib.Path("shp.dat")
+        std_out = pathlib.Path("shp.out")
+        output_file = pathlib.Path("shp.tab")
 
         self._write_input_file(
             input_file=input_file,
@@ -324,15 +175,15 @@ class ShapeMeasure:
 
         # Note that sp.call will hold the program until completion
         # of the calculation.
-        captured_output = sp.run(
-            [f"{self._shape_path}", f"{input_file}"],  # noqa: S603
+        captured_output = sp.run(  # noqa: S603
+            [f"{self._shape_path}", f"{input_file}"],
             stdin=sp.PIPE,
             capture_output=True,
             check=True,
             # Shell is required to run complex arguments.
         )
 
-        with open(std_out, "w") as f:
+        with std_out.open("w") as f:
             f.write(str(captured_output.stdout))
 
         return self._collect_all_shape_values(output_file)
@@ -352,7 +203,7 @@ class ShapeMeasure:
 
         centroids = [molecule.get_centroid(atom_ids=bb_ids[n]) for n in bb_ids]
 
-        with open("cents.xyz", "w") as f:
+        with pathlib.Path("cents.xyz").open("w") as f:
             f.write(f"{len(centroids)}\n\n")
             for c in centroids:
                 f.write(f"Zn {c[0]} {c[1]} {c[2]}\n")

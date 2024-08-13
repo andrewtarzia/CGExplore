@@ -9,16 +9,10 @@ Author: Andrew Tarzia
 import json
 import logging
 
+import cgexplore
 import numpy as np
 import openmm
 import pandas as pd
-from cgexplore.analysis import (
-    GeomMeasure,
-    ShapeMeasure,
-    get_shape_molecule_byelement,
-    known_shape_vectors,
-)
-from cgexplore.terms import TargetTorsion
 from env_set import shape_path
 from topologies import cage_topology_options
 
@@ -51,7 +45,7 @@ def analyse_cage(
     shape_molfile2 = output_dir / f"{name}_shape2.mol"
 
     if not output_file.exists():
-        logging.info(f"analysing {name}")
+        logging.info("analysing %s", name)
 
         energy_decomp = {}
         for component in conformer.energy_decomposition:
@@ -85,42 +79,43 @@ def analyse_cage(
             )
             raise
 
-        n_shape_mol = get_shape_molecule_byelement(
-            molecule=conformer.molecule,
-            name=name,
-            element=node_element,
-            topo_expected=node_expected_topologies(),
+        node_shape = cgexplore.analysis.ShapeMeasure(
+            output_dir=(output_dir / f"{name}_nshape"),
+            shape_path=shape_path(),
+            shape_string=None,
         )
-        l_shape_mol = get_shape_molecule_byelement(
+        liga_shape = cgexplore.analysis.ShapeMeasure(
+            output_dir=(output_dir / f"{name}_lshape"),
+            shape_path=shape_path(),
+            shape_string=None,
+        )
+
+        n_shape_mol = node_shape.get_shape_molecule_byelements(
             molecule=conformer.molecule,
-            name=name,
-            element=ligand_element,
-            topo_expected=ligand_expected_topologies(),
+            elements=node_element,
+            expected_points=node_expected_topologies(),
+        )
+        l_shape_mol = liga_shape.get_shape_molecule_byelements(
+            molecule=conformer.molecule,
+            elements=ligand_element,
+            expected_points=ligand_expected_topologies(),
         )
         if n_shape_mol is None:
             node_shape_measures = None
         else:
             n_shape_mol.write(shape_molfile1)
-            node_shape_measures = ShapeMeasure(
-                output_dir=(output_dir / f"{name}_nshape"),
-                shape_path=shape_path(),
-                shape_string=None,
-            ).calculate(n_shape_mol)
+            node_shape_measures = node_shape.calculate(n_shape_mol)
 
         if l_shape_mol is None:
             lig_shape_measures = None
         else:
-            lig_shape_measures = ShapeMeasure(
-                output_dir=(output_dir / f"{name}_lshape"),
-                shape_path=shape_path(),
-                shape_string=None,
-            ).calculate(l_shape_mol)
+            lig_shape_measures = liga_shape.calculate(l_shape_mol)
             l_shape_mol.write(shape_molfile2)
 
         # Always want to extract target torions if present.
-        g_measure = GeomMeasure(
+        g_measure = cgexplore.analysis.GeomMeasure(
             target_torsions=(
-                TargetTorsion(
+                cgexplore.terms.TargetTorsion(
                     search_string=("b1", "a1", "c1", "a1", "b1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
                     measured_atom_ids=[0, 1, 3, 4],
@@ -238,7 +233,7 @@ def analyse_cage(
             "max_diameter": max_diameter,
             "forcefield_dict": forcefield_dict,
         }
-        with open(output_file, "w") as f:
+        with output_file.open("w") as f:
             json.dump(res_dict, f, indent=4)
 
 
@@ -252,7 +247,7 @@ def angle_str(num=None, unit=True):
         2: f"ditopic angle{un}",
         3: f"tritopic angle{un}",
         4: f"tetratopic angle{un}",
-    }
+    }[num]
 
 
 def eb_str(no_unit=False):
@@ -580,7 +575,7 @@ def get_sv_dist(row, mode):
         msg = "I removed all uses of `shape`b label, check."
         raise ValueError(msg)
 
-    known_sv = known_shape_vectors()[tshape]
+    known_sv = cgexplore.analysis.known_shape_vectors()[tshape]
     current_sv = {i: float(row[f"{mode}_{i}"]) for i in known_sv}
     a = np.array([known_sv[i] for i in known_sv])
     b = np.array([current_sv[i] for i in known_sv])
@@ -603,8 +598,8 @@ def data_to_array(json_files, output_dir):
     len_jsons = len(json_files)
     count = 0
     for j_file in json_files:
-        logging.info(f"arraying {j_file.name} ({count}/{len_jsons})")
-        with open(j_file) as f:
+        logging.info("arraying %s (%s/%s)", j_file.name, count, len_jsons)
+        with j_file.open("r") as f:
             res_dict = json.load(f)
 
         row = {}
@@ -710,7 +705,7 @@ def data_to_array(json_files, output_dir):
 
     input_array.to_csv(output_csv, index=False)
 
-    with open(geom_json, "w") as f:
+    with geom_json.open("w") as f:
         json.dump(geom_data, f, indent=4)
 
     return input_array

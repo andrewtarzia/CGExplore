@@ -94,7 +94,7 @@ def optimise_cage(
     )
 
     try:
-        logging.info(f"optimisation of {name}")
+        logging.info("optimisation of %s", name)
         conformer = run_optimisation(
             assigned_system=AssignedSystem(
                 molecule=temp_molecule,
@@ -116,7 +116,7 @@ def optimise_cage(
 
     # Run optimisations of series of conformers with shifted out
     # building blocks.
-    logging.info(f"optimisation of shifted structures of {name}")
+    logging.info("optimisation of shifted structures of %s", name)
     for test_molecule in yield_shifted_models(
         temp_molecule, forcefield, kicks=(1, 2, 3, 4)
     ):
@@ -141,7 +141,7 @@ def optimise_cage(
                 raise
 
     # Collect and optimise structures nearby in phase space.
-    logging.info(f"optimisation of nearby structures of {name}")
+    logging.info("optimisation of nearby structures of %s", name)
     neighbour_library = get_neighbour_library(
         ffnum=int(forcefield.get_identifier()),
         fftype=forcefield.get_prefix(),
@@ -168,7 +168,7 @@ def optimise_cage(
         )
         ensemble.add_conformer(conformer=conformer, source="nearby_opt")
 
-    logging.info(f"soft MD run of {name}")
+    logging.info("soft MD run of %s", name)
     num_steps = 20000
     traj_freq = 500
     soft_md_trajectory = run_soft_md_cycle(
@@ -194,16 +194,16 @@ def optimise_cage(
         platform=platform,
     )
     if soft_md_trajectory is None:
-        logging.info(f"!!!!! {name} MD exploded !!!!!")
-        msg = "OpenMM Exception"
+        msg = f"!!!!! {name} MD exploded !!!!!"
+
         raise ValueError(msg)
 
     soft_md_data = soft_md_trajectory.get_data()
-    logging.info(f"collected trajectory {len(soft_md_data)} confs long")
+
     # Check that the trajectory is as long as it should be.
     if len(soft_md_data) != num_steps / traj_freq:
-        logging.info(f"!!!!! {name} MD failed !!!!!")
-        raise ValueError
+        msg = f"!!!!! {name} MD failed !!!!!"
+        raise ValueError(msg)
 
     # Go through each conformer from soft MD.
     # Optimise them all.
@@ -229,9 +229,10 @@ def optimise_cage(
     min_energy_conformerid = min_energy_conformer.conformer_id
     min_energy = min_energy_conformer.energy_decomposition["total energy"][0]
     logging.info(
-        f"Min. energy conformer: {min_energy_conformerid} from "
-        f"{min_energy_conformer.source}"
-        f" with energy: {min_energy} kJ.mol-1"
+        "Min. energy conformer: %s from %s with energy: %s kJ.mol-1",
+        min_energy_conformerid,
+        min_energy_conformer.source,
+        min_energy,
     )
 
     # Add to atomlite database.
@@ -260,13 +261,13 @@ def build_populations(
 ):
     count = 0
     for population in populations:
-        logging.info(f"running population {population}")
+        logging.info("running population %s", population)
         popn_dict = populations[population]
         topologies = popn_dict["topologies"]
         forcefields = tuple(popn_dict["fflibrary"].yield_forcefields())
-        logging.info(f"there are {len(topologies)} topologies")
-        logging.info(f"there are {len(forcefields)} ffs")
-        logging.info(f"building {len(forcefields) * len(topologies)} cages")
+        logging.info("there are %s topologies", len(topologies))
+        logging.info("there are %s ffs", len(forcefields))
+        logging.info("building %s cages", len(forcefields) * len(topologies))
         popn_iterator = it.product(topologies, forcefields)
         for cage_topo_str, forcefield in popn_iterator:
             c2_precursor = popn_dict["c2"]
@@ -305,7 +306,7 @@ def build_populations(
             )
             cl_building_block.write(str(ligand_output / f"{cl_name}_optl.mol"))
 
-            logging.info(f"building {name}")
+            logging.info("building %s", name)
             cage = stk.ConstructedMolecule(
                 topology_graph=popn_dict["topologies"][cage_topo_str](
                     building_blocks=(c2_building_block, cl_building_block),
@@ -336,4 +337,4 @@ def build_populations(
                 database=database,
             )
 
-        logging.info(f"{count} {population} cages built.")
+        logging.info("%s %s cages built.", count, population)

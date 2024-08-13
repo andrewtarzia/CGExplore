@@ -3,6 +3,13 @@ Optimisation
 
 A package of the optimisation classes used in `CGExplore`.
 
+Energy calculators
+------------------
+
+.. toctree::
+  :maxdepth: 1
+
+  CGOMMSinglePoint <_autosummary/cgexplore.optimisation.CGOMMSinglePoint>
 
 Geometry optimisations
 ----------------------

@@ -64,7 +64,7 @@ def main() -> None:
 
     elif args.name == "all":
         count = 0
-        logging.info(f"showing all values for path: {args.path}")
+        logging.info("showing all values for path: %s", args.path)
 
         for entry in database.get_entries():
             properties = entry.properties
@@ -74,9 +74,9 @@ def main() -> None:
             except KeyError:
                 continue
 
-            logging.info(f"energy of {name} is {value} ")
+            logging.info("energy of %s is %s", name, value)
             count += 1
-        logging.info(f"showed {count} values")
+        logging.info("showed %s values", count)
     else:
         entry = database.get_entry(key=args.name)
         try:
@@ -89,7 +89,7 @@ def main() -> None:
                 f"path {args.path} not in database for entry {args.name}"
             )
             raise
-        logging.info(f"{args.path} of {args.name} is {value}")
+        logging.info("%s of %s is %s", args.path, args.name, value)
 
 
 if __name__ == "__main__":

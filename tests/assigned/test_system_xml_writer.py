@@ -33,9 +33,9 @@ def test_system_xml_writer(molecule: CaseData) -> None:
             name=molecule.name,
         )
         assigned_system.get_openmm_system()
-        with open(syst_xml_file) as f:
+        with syst_xml_file.open("r") as f:
             xml_string_list = f.readlines()
-        with open(saved_syst_xml_file) as f:
+        with saved_syst_xml_file.open("r") as f:
             test_xml_string_list = f.readlines()
 
         for xml, test in zip(

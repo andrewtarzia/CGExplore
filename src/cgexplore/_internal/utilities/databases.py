@@ -30,6 +30,10 @@ class AtomliteDatabase:
         """Get the number of molecular entries in the database."""
         return self._db.num_entries()
 
+    def get_num_property_entries(self) -> int:
+        """Get the number of property entries in the database."""
+        return self._db.num_property_entries()
+
     def add_molecule(self, molecule: stk.Molecule, key: str) -> None:
         """Add molecule to database as entry."""
         entry = atomlite.Entry.from_rdkit(
@@ -41,9 +45,20 @@ class AtomliteDatabase:
         except sqlite3.IntegrityError:
             self._db.update_entries(entry)
 
+    def add_entries(self, entries: abc.Sequence[atomlite.Entry]) -> None:
+        """Add molecules to database as entry."""
+        try:
+            self._db.add_entries(entries)
+        except sqlite3.IntegrityError:
+            self._db.update_entries(entries)
+
     def get_entries(self) -> abc.Iterator[atomlite.Entry]:
         """Get all entries."""
         return self._db.get_entries()
+
+    def get_property_entries(self) -> abc.Iterator[atomlite.PropertyEntry]:
+        """Get all property entries."""
+        return self._db.get_property_entries()
 
     def get_entry(self, key: str) -> atomlite.Entry:
         """Get specific entry."""
@@ -51,6 +66,13 @@ class AtomliteDatabase:
             msg = f"{key} not in database"
             raise RuntimeError(msg)
         return self._db.get_entry(key)  # type: ignore[return-value]
+
+    def get_property_entry(self, key: str) -> atomlite.PropertyEntry:
+        """Get specific entry."""
+        if not self._db.has_property_entry(key):
+            msg = f"{key} not in database"
+            raise RuntimeError(msg)
+        return self._db.get_property_entry(key)  # type: ignore[return-value]
 
     def get_molecule(self, key: str) -> stk.Molecule:
         """Get a molecule."""
@@ -70,6 +92,15 @@ class AtomliteDatabase:
     def remove_property(self, key: str, property_path: str) -> None:
         """Add properties to an entry by key."""
         self._db.remove_property(key=key, path=property_path)
+
+    def set_property(
+        self,
+        key: str,
+        property_path: str,
+        value: float | str | bool | None,
+    ) -> None:
+        """Add properties to an entry by key."""
+        self._db.set_property(key=key, path=property_path, property=value)
 
     def get_property(
         self,
@@ -137,7 +168,7 @@ class AtomliteDatabase:
     def get_property_df(
         self,
         properties: abc.Sequence[str],
-        allow_missing: bool = False,  # noqa: FBT001, FBT002
+        allow_missing: bool = False,
     ) -> pl.DataFrame:
         """Get a DataFrame of the properties in the database.
 

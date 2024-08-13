@@ -76,7 +76,7 @@ class OMMTrajectory:
         new_pos_mat: list = []
         atom_trigger = "HETATM"
 
-        with open(self._traj_path) as f:
+        with self._traj_path.open("r") as f:
             for line in f.readlines():
                 if end_trigger in line:
                     if len(new_pos_mat) != num_atoms:
@@ -122,7 +122,7 @@ class OMMTrajectory:
 class CGOMMOptimizer:
     """Optimiser of CG models using OpenMM."""
 
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         fileprefix: str,
         output_dir: pathlib.Path,
@@ -263,7 +263,7 @@ class CGOMMOptimizer:
         self,
         simulation: app.Simulation,
         system: openmm.System,
-    ) -> dict:
+    ) -> dict[str, float]:
         fgroups = self._group_forces(system)
         egroups = self._get_energy_decomposition(
             context=simulation.context,
@@ -337,6 +337,14 @@ class CGOMMOptimizer:
         simulation, _ = self._setup_simulation(assigned_system)
         return self._get_energy(simulation)
 
+    def calculate_energy_decomposition(
+        self,
+        assigned_system: ForcedSystem,
+    ) -> dict[str, float]:
+        """Calculate energy of a system."""
+        simulation, system = self._setup_simulation(assigned_system)
+        return self._run_energy_decomp(simulation, system)
+
     def read_final_energy_decomposition(self) -> dict:
         """Read the final energy decomposition in an output file."""
         decomp_data = (
@@ -372,9 +380,82 @@ class CGOMMOptimizer:
         self._output_string += f"end time: {end_time}\n"
         total_time = end_time - start_time
         self._output_string += f"total time: {total_time} [s]\n"
-        with open(self._output_path, "w") as f:
+        with self._output_path.open("w") as f:
             f.write(self._output_string)
         return molecule
+
+
+class CGOMMSinglePoint(CGOMMOptimizer):
+    """Get energy of CG models using OpenMM."""
+
+    def __init__(
+        self,
+        fileprefix: str,
+        output_dir: pathlib.Path,
+        assigned_system: ForcedSystem,
+        platform: str | None = None,
+    ) -> None:
+        """Initialize CGOMMSinglePoint."""
+        self._fileprefix = fileprefix
+        self._output_dir = output_dir
+        self._assigned_system = assigned_system
+
+        self._max_iterations = 0
+
+        if platform is not None:
+            self._platform = openmm.Platform.getPlatformByName(platform)
+            if platform == "CUDA":
+                self._properties = {"CudaPrecision": "mixed"}
+            else:
+                self._properties = None
+        else:
+            self._platform = None
+            self._properties = None
+
+        # Default integrator.
+        time_step = 0.1 * openmm.unit.femtoseconds
+        self._integrator = openmm.VerletIntegrator(time_step)
+        self._simulation, self._system = self._setup_simulation(
+            assigned_system
+        )
+
+    def _setup_simulation(
+        self,
+        assigned_system: ForcedSystem,
+    ) -> tuple[app.Simulation, openmm.System]:
+        system = assigned_system.get_openmm_system()
+        topology = assigned_system.get_openmm_topology()
+
+        for i, f in enumerate(system.getForces()):
+            f.setForceGroup(i)
+
+        # Define simulation.
+        simulation = app.Simulation(
+            topology,
+            system,
+            self._integrator,
+            platform=self._platform,
+            platformProperties=self._properties,
+        )
+
+        # Set positions from structure.
+        simulation.context.setPositions(
+            assigned_system.molecule.get_position_matrix() / 10
+        )
+
+        return simulation, system
+
+    def calculate_molecule_energy_decomposition(
+        self,
+        molecule: stk.Molecule,
+    ) -> dict[str, float]:
+        """Calculate energy of a molecule that must match assigned system."""
+        # Set positions from structure.
+        self._simulation.context.setPositions(
+            molecule.get_position_matrix() / 10
+        )
+
+        return self._run_energy_decomp(self._simulation, self._system)
 
 
 class CGOMMDynamics(CGOMMOptimizer):
@@ -551,7 +632,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._output_string += f"end time: {end_time}\n"
         total_time = end_time - start_time
         self._output_string += f"total time: {total_time} [s]\n"
-        with open(self._output_path, "w") as f:
+        with self._output_path.open("w") as f:
             f.write(self._output_string)
 
         return self._get_trajectory(assigned_system.molecule)

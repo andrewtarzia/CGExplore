@@ -22,7 +22,9 @@ from .utilities import (
     define_angle,
     define_bond,
     define_cosine_angle,
+    define_lennardjones,
     define_nonbonded,
+    define_pyramid_angle,
     define_torsion,
 )
 
@@ -46,6 +48,10 @@ class Chromosome:
     gene_dict: dict[int, tuple]
     definer_dict: dict[str, tuple]
     chromosomed_terms: dict[str, list[int]]
+
+    def get_separated_string(self) -> str:
+        """Get chromosome name separated by `-` as string."""
+        return "-".join(tuple(str(i) for i in self.name))
 
     def get_string(self) -> str:
         """Get chromosome name as string."""
@@ -83,7 +89,7 @@ class Chromosome:
             if self.gene_dict[i][2] == "precursor"
         )
 
-    def get_forcefield(self) -> ForceField:  # noqa: C901
+    def get_forcefield(self) -> ForceField:  # noqa: C901, PLR0912
         """Get chromosome forcefield."""
         changed_tuples = tuple(
             self.gene_dict[i][1]
@@ -144,6 +150,15 @@ class Chromosome:
                     )
                 )
 
+            elif term[0] == "pyramid":
+                angle_terms.append(
+                    define_pyramid_angle(
+                        interaction_key=key_,
+                        interaction_list=term,
+                        present_beads=self.present_beads,
+                    )
+                )
+
             elif term[0] == "cosine":
                 angle_terms.append(
                     define_cosine_angle(
@@ -171,6 +186,19 @@ class Chromosome:
                     )
                 )
 
+            elif term[0] == "custom-lj":
+                nonbonded_terms.append(
+                    define_lennardjones(
+                        interaction_key=key_,
+                        interaction_list=term,
+                        present_beads=self.present_beads,
+                    )
+                )
+
+            else:
+                msg = f"{term[0]} not found in known terms."
+                raise RuntimeError(msg)
+
         return ForceField(
             identifier=self.get_string(),
             prefix=self.prefix,
@@ -180,6 +208,7 @@ class Chromosome:
             torsion_targets=tuple(torsion_terms),
             nonbonded_targets=tuple(nonbonded_terms),
             vdw_bond_cutoff=self.vdw_bond_cutoff,
+            verbose=False,
         )
 
     def __str__(self) -> str:
@@ -329,7 +358,7 @@ class ChromosomeGenerator:
         for chromosome in self.yield_chromosomes():
             all_chromosomes[chromosome.name] = chromosome
         self.chromosomes = all_chromosomes
-        logging.info(f"there are {len(self.chromosomes)} chromosomes")
+        logging.info("there are %s chromosomes", len(self.chromosomes))
 
     def get_term_ids(self) -> tuple[int, ...]:
         """Get chromosome indices associated with terms."""
@@ -498,7 +527,9 @@ class ChromosomeGenerator:
             )
         elif selection == "roulette":
             fitness_values: list[float | int] = [
-                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[  # type: ignore[misc]
+                database.get_property_entry(
+                    f"{i.prefix}_{i.get_string()}"
+                ).properties[  # type: ignore[misc]
                     "fitness"
                 ]
                 for i in list_of_chromosomes
@@ -562,7 +593,7 @@ class ChromosomeGenerator:
 
         return mutated
 
-    def crossover_population(  # noqa: PLR0913
+    def crossover_population(
         self,
         list_of_chromosomes: list[Chromosome],
         generator: np.random.Generator,
@@ -578,7 +609,9 @@ class ChromosomeGenerator:
             )
         elif selection == "roulette":
             fitness_values: list[float | int] = [
-                database.get_entry(f"{i.prefix}_{i.get_string()}").properties[  # type: ignore[misc]
+                database.get_property_entry(
+                    f"{i.prefix}_{i.get_string()}"
+                ).properties[  # type: ignore[misc]
                     "fitness"
                 ]
                 for i in list_of_chromosomes

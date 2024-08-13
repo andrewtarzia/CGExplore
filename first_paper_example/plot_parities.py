@@ -8,7 +8,6 @@ Author: Andrew Tarzia
 
 import json
 import logging
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -216,13 +215,6 @@ def pore_b2b_distance(all_data, figure_output):
 
 
 def main():
-    first_line = f"Usage: {__file__}.py"
-    if len(sys.argv) != 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()
@@ -231,9 +223,8 @@ def main():
         json_files=calculation_output.glob("*_res.json"),
         output_dir=data_output,
     )
-    with open(data_output / "all_geom.json") as f:
+    with (data_output / "all_geom.json").open("r") as f:
         geom_data = json.load(f)
-    logging.info(f"there are {len(all_data)} collected data")
 
     parity_1(all_data, figure_output)
     parity_2(all_data, geom_data, figure_output)
