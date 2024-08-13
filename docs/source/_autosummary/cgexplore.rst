@@ -29,11 +29,11 @@
    :template: module.rst
    :recursive:
 
-   cgexplore.analysis
-   cgexplore.forcefields
-   cgexplore.molecular
-   cgexplore.optimisation
-   cgexplore.systems_optimisation
-   cgexplore.terms
-   cgexplore.utilities
+   analysis
+   forcefields
+   molecular
+   optimisation
+   systems_optimisation
+   terms
+   utilities
 

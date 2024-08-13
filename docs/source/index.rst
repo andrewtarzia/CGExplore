@@ -4,6 +4,7 @@
    :maxdepth: 2
 
    Analysis <analysis>
+   Databasing <databasing>
    Forcefields <forcefields>
    Molecular <molecular>
    Optimisation <optimisation>

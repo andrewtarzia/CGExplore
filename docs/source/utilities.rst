@@ -4,14 +4,6 @@ Utilities
 A package of useful utilities for `CGExplore`.
 
 
-Databasing
-----------
-
-.. toctree::
-  :maxdepth: 1
-
-  AtomliteDatabase <_autosummary/cgexplore.utilities.AtomliteDatabase>
-
 Host-guest conformer generation using SpinDry
 ---------------------------------------------
 

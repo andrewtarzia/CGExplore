@@ -19,7 +19,8 @@ cgexplore.analysis.ShapeMeasure
    
       ~ShapeMeasure.calculate
       ~ShapeMeasure.calculate_from_centroids
-      ~ShapeMeasure.get_shape_molecule_byelement
+      ~ShapeMeasure.fill_position_matrix_molecule
+      ~ShapeMeasure.get_shape_molecule_byelements
       ~ShapeMeasure.reference_shape_dict
    
    

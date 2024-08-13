@@ -53,6 +53,7 @@ cgexplore.molecular
    
       check_fit
       periodic_table
+      spd_to_stk
       string_to_atom_number
    
    
