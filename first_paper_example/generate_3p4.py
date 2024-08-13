@@ -7,12 +7,11 @@ Author: Andrew Tarzia
 """
 
 import logging
-import sys
 
 from bead_libraries import binder_bead, tetragonal_bead, trigonal_bead
 from cgexplore.molecular import FourC1Arm, ThreeC1Arm
 from cgexplore.utilities import AtomliteDatabase
-from define_forcefields import define_3p4_forcefield_library
+from define_forcefields import define_forcefield_library
 from env_set import calculations, ligands, outputdata, structures
 from generation import build_populations
 from rdkit import RDLogger
@@ -26,13 +25,6 @@ RDLogger.DisableLog("rdApp.*")
 
 
 def main() -> None:
-    first_line = f"Usage: {__file__}.py"
-    if len(sys.argv) != 1:
-        logging.info(f"{first_line}")
-        sys.exit()
-    else:
-        pass
-
     struct_output = structures()
     calculation_output = calculations()
     ligand_output = ligands()
@@ -46,7 +38,7 @@ def main() -> None:
     )
 
     logging.info("defining force field")
-    forcefieldlibrary = define_3p4_forcefield_library(
+    forcefieldlibrary = define_forcefield_library(
         present_beads=present_beads,
         prefix="3p4",
     )
