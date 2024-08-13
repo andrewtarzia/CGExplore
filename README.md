@@ -25,7 +25,7 @@ The code can be installed following these steps:
 pip install cgexplore
 ```
 
-5. Install `OpenMM` [docs](https://openmm.org/):
+5. Install [OpenMM](https://openmm.org/):
  ```
 mamba install openmm
 ```
@@ -34,7 +34,7 @@ or
 conda install -c conda-forge openmm
 ```
 
-6. Install `openmmtools` [docs](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
+6. Install [openmmtools](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
 ```
 mamba install openmmtools
 ```
