@@ -7,6 +7,7 @@ from cgexplore import (
     optimisation,
     systems_optimisation,
     terms,
+    topologies,
     utilities,
 )
 
@@ -18,4 +19,5 @@ __all__ = [
     "systems_optimisation",
     "molecular",
     "terms",
+    "topologies",
 ]

@@ -12,6 +12,7 @@
    Terms <terms>
    Utilities <utilities>
    Executables <executables>
+   Topologies <topologies>
    First Paper Example <first_paper_example>
 
 .. toctree::
