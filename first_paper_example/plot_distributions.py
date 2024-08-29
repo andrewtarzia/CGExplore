@@ -8,6 +8,7 @@ Author: Andrew Tarzia
 
 import json
 import logging
+import pathlib
 
 import matplotlib as mpl
 import matplotlib.patches as mpatches
@@ -15,7 +16,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from analysis import (
-    Xc_map,
     angle_str,
     convert_topo,
     convert_tors,
@@ -26,6 +26,7 @@ from analysis import (
     pore_str,
     rg_str,
     topology_labels,
+    xc_map,
 )
 from cgexplore.utilities import convert_pyramid_angle
 from env_set import calculations, figures, outputdata
@@ -36,7 +37,10 @@ logging.basicConfig(
 )
 
 
-def identity_distributions(all_data, figure_output):
+def identity_distributions(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running identity_distributions")
 
     fig, ax = plt.subplots(figsize=(16, 5))
@@ -70,7 +74,10 @@ def identity_distributions(all_data, figure_output):
     plt.close()
 
 
-def geom_distributions(all_data, geom_data, figure_output):
+def geom_distributions(
+    all_data: pd.DataFrame, geom_data: dict, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running geom_distributions")
 
     comparisons = {
@@ -243,7 +250,10 @@ def geom_distributions(all_data, geom_data, figure_output):
         plt.close()
 
 
-def single_value_distributions(all_data, figure_output):
+def single_value_distributions(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running single_value_distributions")
 
     to_plot = {
@@ -396,7 +406,8 @@ def single_value_distributions(all_data, figure_output):
         plt.close()
 
 
-def plot_sorted(bb_data, color_map, figure_output):
+def plot_sorted(bb_data, color_map, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     fig, ax = plt.subplots(figsize=(8, 3.5))
     max_ = 6
 
@@ -449,7 +460,10 @@ def plot_sorted(bb_data, color_map, figure_output):
     plt.close()
 
 
-def plot_mixed_unstable(bb_data, color_map, figure_output):
+def plot_mixed_unstable(
+    bb_data, color_map, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     fig, ax = plt.subplots(figsize=(8, 5))
     max_ = 3
 
@@ -521,7 +535,8 @@ def plot_mixed_unstable(bb_data, color_map, figure_output):
     plt.close()
 
 
-def plot_clangle(cl_data, figure_output):
+def plot_clangle(cl_data, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     max_ = 6
 
     clangles = sorted([int(i) for i in cl_data])
@@ -590,7 +605,8 @@ def plot_clangle(cl_data, figure_output):
     plt.close()
 
 
-def plot_average(bb_data, color_map, figure_output):
+def plot_average(bb_data, color_map, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     fig, ax = plt.subplots(figsize=(8, 5))
     max_ = 11
 
@@ -639,7 +655,10 @@ def plot_average(bb_data, color_map, figure_output):
     plt.close()
 
 
-def mixed_distributions(all_data, figure_output):
+def mixed_distributions(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running mixed distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -685,7 +704,10 @@ def mixed_distributions(all_data, figure_output):
     plot_average(bb_data, color_map, figure_output)
 
 
-def plot_vs_2d_distributions(data, color_map, figure_output):
+def plot_vs_2d_distributions(
+    data, color_map, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     topologies = [i for i in topology_labels(short="P") if i != "6P8"]
 
     topology_data = {}
@@ -722,7 +744,7 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
         ax.set_title(convert_topo(tstr), fontsize=16)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel(angle_str(num=2), fontsize=16)
-        ax.set_ylabel(angle_str(num=Xc_map(tstr)), fontsize=16)
+        ax.set_ylabel(angle_str(num=xc_map(tstr)), fontsize=16)
 
     ax.legend(fontsize=16)
 
@@ -737,7 +759,8 @@ def plot_vs_2d_distributions(data, color_map, figure_output):
     return topology_data
 
 
-def plot_topology_flex(data, figure_output):
+def plot_topology_flex(data, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     fig, ax = plt.subplots(figsize=(8, 5))
 
     categories_ton = {convert_topo(i): 0 for i in data}
@@ -791,7 +814,8 @@ def plot_topology_flex(data, figure_output):
     plt.close()
 
 
-def plot_topology_pore_flex(data, figure_output):
+def plot_topology_pore_flex(data, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     color_map = {"stable": "#086788", "all": "#0B2027"}
 
     topologies = [i for i in topology_labels(short="P") if i != "6P8"]
@@ -892,7 +916,10 @@ def plot_topology_pore_flex(data, figure_output):
     plt.close()
 
 
-def flexeffect_per_property(all_data, figure_output):
+def flexeffect_per_property(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running effect of flexibility distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -912,7 +939,10 @@ def flexeffect_per_property(all_data, figure_output):
     plot_topology_pore_flex(data=trim, figure_output=figure_output)
 
 
-def correlation_matrix(all_data, figure_output):
+def correlation_matrix(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     trim = all_data[all_data["torsions"] == "ton"]
 
     target_cols = [
@@ -983,7 +1013,8 @@ def correlation_matrix(all_data, figure_output):
     plt.close()
 
 
-def col_convert(name):
+def col_convert(name: str) -> str:
+    """Convert columns to names."""
     return {
         "target_bite_angle": "ba",
         "clangle": "xC",
@@ -996,7 +1027,10 @@ def col_convert(name):
     }[name]
 
 
-def energy_correlation_matrix(all_data, figure_output):
+def energy_correlation_matrix(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     target_cols = [
         "energy_per_bb",
         "HarmonicBondForce_kJ/mol",
@@ -1058,7 +1092,8 @@ def energy_correlation_matrix(all_data, figure_output):
     plt.close()
 
 
-def get_min_energy_from_omm_out(outfile):
+def get_min_energy_from_omm_out(outfile: pathlib.Path) -> float | None:
+    """Get min energy from an out file."""
     try:
         with outfile.open("r") as f:
             min_energy = 1e24
@@ -1074,13 +1109,17 @@ def get_min_energy_from_omm_out(outfile):
     return min_energy
 
 
-def check_same_energy(e1, e2):
+def check_same_energy(e1: float | None, e2: float | None) -> bool:
+    """Check if two energies are the same."""
     if e1 is None or e2 is None:
         return False
     return np.isclose(e1, e2, atol=1e-1, rtol=0)
 
 
-def opt_outcome_distributions(all_data, figure_output):
+def opt_outcome_distributions(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running opt_outcome_distributions")
 
     fig, ax = plt.subplots(figsize=(16, 5))
@@ -1115,7 +1154,8 @@ def opt_outcome_distributions(all_data, figure_output):
     plt.close()
 
 
-def main():
+def main() -> None:
+    """Run script."""
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()

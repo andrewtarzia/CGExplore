@@ -1,10 +1,6 @@
 # Distributed under the terms of the MIT License.
 
-"""Script to generate and optimise CG models.
-
-Author: Andrew Tarzia
-
-"""
+"""Script to generate and optimise CG models."""
 
 import logging
 
@@ -25,6 +21,7 @@ RDLogger.DisableLog("rdApp.*")
 
 
 def main() -> None:
+    """Run script."""
     struct_output = structures()
     calculation_output = calculations()
     ligand_output = ligands()

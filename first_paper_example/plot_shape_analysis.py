@@ -7,13 +7,13 @@ Author: Andrew Tarzia
 """
 
 import logging
+import pathlib
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from analysis import (
-    Xc_map,
     angle_str,
     convert_topo,
     convert_tors,
@@ -24,6 +24,7 @@ from analysis import (
     shape_threshold,
     target_shapes,
     topology_labels,
+    xc_map,
 )
 from env_set import calculations, figures, outputdata
 from matplotlib.patches import Patch
@@ -34,7 +35,10 @@ logging.basicConfig(
 )
 
 
-def shape_vector_distributions(all_data, figure_output):
+def shape_vector_distributions(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running shape_vector_distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -114,7 +118,10 @@ def shape_vector_distributions(all_data, figure_output):
         plt.close()
 
 
-def shape_similarities(all_data, figure_output):
+def shape_similarities(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running shape_similarities")
     tstrs = topology_labels(short="P")
 
@@ -192,7 +199,10 @@ def shape_similarities(all_data, figure_output):
     plt.close()
 
 
-def shape_topology(all_data, figure_output):
+def shape_topology(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running shape_topology")
 
     color_map = topology_labels(short="P")
@@ -219,7 +229,9 @@ def shape_topology(all_data, figure_output):
                 flat_axs = axs.flatten()
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[tstr]
+                target_shape = mapshape_to_topology(
+                    shape_type, from_shape=False
+                )[tstr]
             except KeyError:
                 continue
 
@@ -263,7 +275,8 @@ def shape_topology(all_data, figure_output):
                     density=False,
                     histtype="stepfilled",
                     label=(
-                        f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"
+                        f"{eb_str(no_unit=True)} < {isomer_energy()} "
+                        "kJmol$^{-1}$"
                     ),
                 )
                 ax.set_title(
@@ -289,7 +302,10 @@ def shape_topology(all_data, figure_output):
             plt.close()
 
 
-def shape_topology_main(all_data, figure_output):
+def shape_topology_main(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running shape_topology_main")
 
     color_map = topology_labels(short="P")
@@ -307,7 +323,9 @@ def shape_topology_main(all_data, figure_output):
             tor_tests = ("ton",)
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[tstr]
+                target_shape = mapshape_to_topology(
+                    shape_type, from_shape=False
+                )[tstr]
             except KeyError:
                 continue
 
@@ -351,7 +369,8 @@ def shape_topology_main(all_data, figure_output):
                     density=False,
                     histtype="stepfilled",
                     label=(
-                        f"{eb_str(True)} < {isomer_energy()} " "kJmol$^{-1}$"
+                        f"{eb_str(no_unit=True)} < {isomer_energy()} "
+                        "kJmol$^{-1}$"
                     ),
                 )
                 ax.set_title(
@@ -377,7 +396,10 @@ def shape_topology_main(all_data, figure_output):
             plt.close()
 
 
-def shape_input_relationships(all_data, figure_output):
+def shape_input_relationships(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running shape_input_relationships")
 
     color_map = topology_labels(short="P")
@@ -405,7 +427,9 @@ def shape_input_relationships(all_data, figure_output):
                 flat_axs = axs.flatten()
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[tstr]
+                target_shape = mapshape_to_topology(
+                    shape_type, from_shape=False
+                )[tstr]
             except KeyError:
                 continue
 
@@ -478,7 +502,7 @@ def shape_input_relationships(all_data, figure_output):
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)
-                ax.set_ylabel(angle_str(Xc_map(tstr)), fontsize=16)
+                ax.set_ylabel(angle_str(xc_map(tstr)), fontsize=16)
 
             cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
             cmap = mpl.cm.Blues_r
@@ -501,7 +525,10 @@ def shape_input_relationships(all_data, figure_output):
             plt.close()
 
 
-def plot_topology_flex(data, comparison, mode, figure_output):
+def plot_topology_flex(
+    data, comparison, mode, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     if comparison == "shaped":
         id1 = 2
         id2 = 1
@@ -617,7 +644,10 @@ def plot_topology_flex(data, comparison, mode, figure_output):
     plt.close()
 
 
-def flexshapeeffect_per_property(all_data, figure_output):
+def flexshapeeffect_per_property(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     msg = (
         "there is a bug here in handling no stable cases and I do not use this"
     )
@@ -646,9 +676,9 @@ def flexshapeeffect_per_property(all_data, figure_output):
             topology_data[tstr][tor] = {}
             for shape_type in ("n", "l"):
                 try:
-                    target_shape = mapshape_to_topology(shape_type, False)[
-                        tstr
-                    ]
+                    target_shape = mapshape_to_topology(
+                        shape_type, from_shape=False
+                    )[tstr]
                 except KeyError:
                     continue
 
@@ -671,7 +701,8 @@ def flexshapeeffect_per_property(all_data, figure_output):
     plot_topology_flex(topology_data, "stableshaped", "n", figure_output)
 
 
-def plot_shape_flex(data, mode, figure_output):
+def plot_shape_flex(data, mode, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     ylabl = r"% ($s$ < 2)"
 
     for tstr in data:
@@ -684,9 +715,9 @@ def plot_shape_flex(data, mode, figure_output):
         elif mode == "l":
             title = "ditopic shape"
         elif mode == "n":
-            if Xc_map(tstr) == 3:
+            if xc_map(tstr) == 3:  # noqa: PLR2004
                 title = "tritopic shape"
-            elif Xc_map(tstr) == 4:
+            elif xc_map(tstr) == 4:  # noqa: PLR2004
                 title = "tetratopic shape"
 
         ax.set_title(f"{convert_topo(tstr)}: {title}", fontsize=16)
@@ -745,7 +776,10 @@ def plot_shape_flex(data, mode, figure_output):
         plt.close()
 
 
-def flexshapeeffect_per_shape(all_data, figure_output):
+def flexshapeeffect_per_shape(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running shaped percent per topologies")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -789,7 +823,10 @@ def flexshapeeffect_per_shape(all_data, figure_output):
     plot_shape_flex(topology_data, "n", figure_output)
 
 
-def shape_persistence_map(all_data, figure_output):
+def shape_persistence_map(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running shape_input_relationships")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -860,7 +897,8 @@ def shape_persistence_map(all_data, figure_output):
     plt.close()
 
 
-def shape_summary(all_data, figure_output):
+def shape_summary(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     logging.info("running shape_summary")
     color_map = topology_labels(short="P")
     trim = all_data[all_data["vdws"] == "von"]
@@ -882,7 +920,9 @@ def shape_summary(all_data, figure_output):
             tor_tests = ("toff",) if tstr == "6P8" else ("ton", "toff")
 
             try:
-                target_shape = mapshape_to_topology(shape_type, False)[tstr]
+                target_shape = mapshape_to_topology(
+                    shape_type, from_shape=False
+                )[tstr]
             except KeyError:
                 continue
 
@@ -946,7 +986,10 @@ def shape_summary(all_data, figure_output):
         ax.set_xticklabels(xlabls, rotation=45)
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_ylabel(
-            (f"$s$ ({eb_str(True)} < {isomer_energy()}" " kJmol$^{-1}$)"),
+            (
+                f"$s$ ({eb_str(no_unit=True)} < {isomer_energy()}"
+                " kJmol$^{-1}$)"
+            ),
             fontsize=16,
         )
         ax.legend(fontsize=16)
@@ -960,7 +1003,8 @@ def shape_summary(all_data, figure_output):
     plt.close()
 
 
-def main():
+def main() -> None:
+    """Run script."""
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()

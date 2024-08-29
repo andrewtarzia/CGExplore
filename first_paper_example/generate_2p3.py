@@ -24,7 +24,8 @@ logging.basicConfig(
 RDLogger.DisableLog("rdApp.*")
 
 
-def main():
+def main() -> None:
+    """Run script."""
     struct_output = structures()
     calculation_output = calculations()
     ligand_output = ligands()

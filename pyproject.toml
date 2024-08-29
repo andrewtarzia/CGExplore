@@ -90,17 +90,10 @@ convention = "google"
   "PLR0913",
 ]
 "first_paper_example/*" = [
-  "D103",
   "C901",
   "INP001",
   "ERA001",
   "ANN001",
-  "ANN201",
-  "ANN202",
-  "D102",
-  "PLR2004",
-  "FBT002",
-  "FBT003",
   "PLR0912",
   "PLR0913",
   "PLR0915",

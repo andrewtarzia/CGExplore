@@ -1,12 +1,11 @@
 # Distributed under the terms of the MIT License.
 
-"""Module containing force field definitions.
+"""Module containing force field definitions."""
 
-Author: Andrew Tarzia
-
-"""
+from collections import abc
 
 from cgexplore.forcefields import ForceFieldLibrary
+from cgexplore.molecular import CgBead
 from cgexplore.terms import (
     PyramidAngleRange,
     TargetAngleRange,
@@ -17,7 +16,11 @@ from cgexplore.terms import (
 from openmm import openmm
 
 
-def define_forcefield_library(present_beads, prefix):
+def define_forcefield_library(
+    present_beads: abc.Sequence[CgBead],
+    prefix: str,
+) -> ForceFieldLibrary:
+    """Define a forcefield library for iteration."""
     forcefieldlibrary = ForceFieldLibrary(
         present_beads=present_beads,
         vdw_bond_cutoff=2,
@@ -231,6 +234,7 @@ def define_forcefield_library(present_beads, prefix):
 
 
 def neighbour_2p3_library(ffnum: int) -> list[int]:
+    """Define neighbour from forcefield library."""
     new_nums = []
     # Change bnb angle.
     new_nums.append(ffnum - 14)
@@ -247,6 +251,7 @@ def neighbour_2p3_library(ffnum: int) -> list[int]:
 
 
 def neighbour_2p4_library(ffnum: int) -> list[int]:
+    """Define neighbour from forcefield library."""
     new_nums = []
     # Change bmb angle.
     new_nums.append(ffnum - 10)
@@ -263,6 +268,7 @@ def neighbour_2p4_library(ffnum: int) -> list[int]:
 
 
 def neighbour_3p4_library(ffnum: int) -> list[int]:
+    """Define neighbour from forcefield library."""
     new_nums = []
     # Change bmb angle.
     new_nums.append(ffnum - 1)
@@ -274,6 +280,7 @@ def neighbour_3p4_library(ffnum: int) -> list[int]:
 
 
 def get_neighbour_library(ffnum: int, fftype: str) -> list[int]:
+    """Get neighbour library."""
     if fftype == "2p3":
         return neighbour_2p3_library(ffnum)
     if fftype == "2p4":

@@ -1,16 +1,14 @@
 # Distributed under the terms of the MIT License.
 
-"""Script to plot parities.
-
-Author: Andrew Tarzia
-
-"""
+"""Script to plot parities."""
 
 import json
 import logging
+import pathlib
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from analysis import (
     convert_topo,
     convert_tors,
@@ -26,7 +24,8 @@ logging.basicConfig(
 )
 
 
-def parity_1(all_data, figure_output):
+def parity_1(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     logging.info("running parity_1")
 
     tcmap = topology_labels(short="P")
@@ -92,7 +91,10 @@ def parity_1(all_data, figure_output):
     plt.close()
 
 
-def parity_2(all_data, geom_data, figure_output):
+def parity_2(
+    all_data: pd.DataFrame, geom_data: dict, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running parity_2")
 
     c2labels = ("Pb_Ba_Ag",)
@@ -188,7 +190,10 @@ def parity_2(all_data, geom_data, figure_output):
     plt.close()
 
 
-def pore_b2b_distance(all_data, figure_output):
+def pore_b2b_distance(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running pore_b2b parity")
     fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -214,7 +219,8 @@ def pore_b2b_distance(all_data, figure_output):
     plt.close()
 
 
-def main():
+def main() -> None:
+    """Run script."""
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()

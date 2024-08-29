@@ -1,15 +1,13 @@
 # Distributed under the terms of the MIT License.
 
-"""Script to plot phase spaces.
-
-Author: Andrew Tarzia
-
-"""
+"""Script to plot phase spaces."""
 
 import logging
+import pathlib
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from analysis import (
     angle_str,
     convert_topo,
@@ -30,7 +28,8 @@ logging.basicConfig(
 )
 
 
-def phase_space_2(all_data, figure_output):
+def phase_space_2(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     logging.info("doing phase space 2")
 
     vdata = all_data[all_data["vdws"] == "von"]
@@ -106,10 +105,10 @@ def phase_space_2(all_data, figure_output):
     )
     flat_axs = axs.flatten()
 
-    def cltitleconversion(clstr):
+    def cltitleconversion(clstr: str) -> int:
         return {"4C1": 4, "3C1": 3}[clstr]
 
-    def no_conversion(value):
+    def no_conversion(value: float) -> float:
         return value
 
     axmap = (
@@ -241,7 +240,7 @@ def phase_space_2(all_data, figure_output):
         ax.set_xlim(axd["xlim"])
 
         if i in (0, 4):
-            if i == 4:
+            if i == 4:  # noqa: PLR2004
                 legend_map = (
                     (convert_tors("ton", num=False), "#0B2027"),
                     (convert_tors("toff", num=False), "#CA1551"),
@@ -279,7 +278,10 @@ def phase_space_2(all_data, figure_output):
     plt.close()
 
 
-def phase_space_6p8(all_data, figure_output):
+def phase_space_6p8(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("doing 6p8 phase space")
 
     vdata = all_data[all_data["vdws"] == "von"]
@@ -318,7 +320,8 @@ def phase_space_6p8(all_data, figure_output):
     plt.close()
 
 
-def main():
+def main() -> None:
+    """Run script."""
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()

@@ -24,7 +24,8 @@ logging.basicConfig(
 RDLogger.DisableLog("rdApp.*")
 
 
-def main():
+def main() -> None:
+    """Run script."""
     struct_output = cages() / "duplicate_structures"
     check_directory(struct_output)
     calculation_output = cages() / "duplicate_calculations"

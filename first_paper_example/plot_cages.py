@@ -9,9 +9,12 @@ Author: Andrew Tarzia
 import logging
 import math
 import os
+import pathlib
 
+import matplotlib as mpl
 import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
+import pandas as pd
 from analysis import (
     convert_topo,
     data_to_array,
@@ -36,10 +39,14 @@ logging.basicConfig(
 
 
 def generate_images_of_all(
-    all_data,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Generate images of all structures individually.
+
+    This is a slow and expensive process.
+    """
     von = all_data[all_data["vdws"] == "von"]
 
     settings = {
@@ -71,11 +78,12 @@ def generate_images_of_all(
 
 
 def visualise_low_and_high(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Visualise some cages."""
     von = all_data[all_data["vdws"] == "von"]
     tlabels = topology_labels(short="P")
 
@@ -148,11 +156,12 @@ def visualise_low_and_high(
 
 
 def fig2_a(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Visualise some cages."""
     settings = {
         "grid_mode": 0,
         "rayx": 1000,
@@ -202,11 +211,12 @@ def fig2_a(
 
 
 def fig2_cd(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Visualise some cages."""
     settings = {
         "grid_mode": 0,
         "rayx": 1000,
@@ -262,17 +272,18 @@ def fig2_cd(
 
 
 def si_ar_fig(
-    all_data,
-    structure_names,
-    nrows,
-    ncols,
-    filename,
-    struct_output,
-    struct_figure_output,
-    figure_output,
-    figsize=None,
-    titles=None,
-):
+    all_data: pd.DataFrame,
+    structure_names: list[str],
+    nrows: int,
+    ncols: int,
+    filename: str,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+    figure_output: pathlib.Path,
+    figsize: tuple[int, int] | None = None,
+    titles: list[str] | None = None,
+) -> None:
+    """Visualise some cages."""
     if figsize is None:
         figsize = (4, 10)
 
@@ -324,11 +335,12 @@ def si_ar_fig(
 
 
 def si_ar_fig_gen(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Visualise some cages."""
     si_ar_fig(
         all_data=all_data,
         structure_names=(
@@ -631,11 +643,12 @@ def si_ar_fig_gen(
 
 
 def si_shape_fig(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Visualise some cages."""
     structure_names = (
         ("4P6_3C1n0700b0000_2C1c0000a0200", "ton"),
         ("4P6_3C1n0700b0000_2C1c0000a0200", "toff"),
@@ -700,7 +713,7 @@ def si_shape_fig(
             try:
                 shape = mapshape_to_topology(
                     shape_type,
-                    False,
+                    from_shape=False,
                 )[tstr]
             except KeyError:
                 continue
@@ -728,27 +741,30 @@ def si_shape_fig(
     plt.close()
 
 
-def add_energy_to_ax(ax, energy):
+def add_energy_to_ax(ax: mpl.Axes, energy: float) -> None:
+    """Add energy to ax."""
     colorcode = "#345995" if energy <= isomer_energy() else "#CA1551"
 
     ax.set_title(round(energy, 1), fontsize=16, color=colorcode)
 
 
-def add_text_to_ax(ax, text):
+def add_text_to_ax(ax: mpl.Axes, text: str) -> None:
+    """Add text to ax."""
     x = 0.05
     y = 0.25
     ax.text(x=x, y=y, s=text, fontsize=16, transform=ax.transAxes)
 
 
 def add_structure_to_ax(
-    ax,
-    struct_name,
-    struct_output,
-    struct_figure_output,
-    settings,
-    energy=None,
-    title=None,
-):
+    ax: mpl.Axes,
+    struct_name: str,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+    settings: dict,
+    energy: float | None = None,
+    title: str | None = None,
+) -> None:
+    """Visualise some cages."""
     if "2P3" in struct_name:
         orient_atoms = "C"
     elif "2P4" in struct_name:
@@ -780,12 +796,13 @@ def add_structure_to_ax(
 
 
 def generate_image(
-    struct_name,
-    struct_file,
-    struct_figure_output,
-    orient_atoms,
-    settings,
-):
+    struct_name: str,
+    struct_file: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+    orient_atoms: str | None,
+    settings: dict,
+) -> pathlib.Path:
+    """Generate image of cage."""
     png_file = struct_figure_output / f"{struct_name}_f.png"
     if not png_file.exists():
         viz = Pymol(
@@ -802,11 +819,12 @@ def generate_image(
 
 
 def webapp_csv(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Make CSV of cages."""
     logging.info("running webapp_csv")
 
     github_base_url = (
@@ -956,11 +974,12 @@ def webapp_csv(
 
 
 def check_odd_outcomes(
-    all_data,
-    figure_output,
-    struct_output,
-    struct_figure_output,
-):
+    all_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+    struct_output: pathlib.Path,
+    struct_figure_output: pathlib.Path,
+) -> None:
+    """Visualise some cages."""
     topologies = [i for i in topology_labels(short="P") if i != "6P8"]
 
     for tstr in topologies:
@@ -978,13 +997,13 @@ def check_odd_outcomes(
             toff_energy = float(pdata["energy_per_bb"].iloc[0])
 
             # Ignore rounding errors in near zero cases.
-            if ton_energy < 1e-1:
+            if ton_energy < 1e-1:  # noqa: PLR2004
                 continue
             # Not interested in high energy states, which are just a
             # mess.
             if toff_energy > isomer_energy() * 5:
                 continue
-            if toff_energy - ton_energy > 0.001:
+            if toff_energy - ton_energy > 0.001:  # noqa: PLR2004
                 ba = int(next(iter(cdata["target_bite_angle"])))
                 clangle = int(next(iter(cdata["clangle"])))
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
@@ -1015,7 +1034,8 @@ def check_odd_outcomes(
         )
 
 
-def generate_movies(figure_output):
+def generate_movies(figure_output: pathlib.Path) -> None:
+    """Generate a series of movies."""
     logging.info("running generate_movies")
     vss_output = figure_output / "vss_figures"
     astr = [f"a0{i}00" for i in range(19)]
@@ -1058,7 +1078,7 @@ def generate_movies(figure_output):
                 os.system(ffmpeg_cmd)  # noqa: S605
 
 
-def naming_convention_map(old_name, tors="toff"):
+def naming_convention_map(old_name: str, tors: str = "toff") -> str:
     """This only applies because of the change of naming convention.
 
     In future, users should stick to the `new` naming convention.
@@ -1109,7 +1129,8 @@ def naming_convention_map(old_name, tors="toff"):
     return new_name
 
 
-def main():
+def main() -> None:
+    """Run script."""
     struct_output = structures()
     figure_output = figures()
     calculation_output = calculations()
