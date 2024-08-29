@@ -8,7 +8,8 @@ import stk
 from cgexplore.topologies import CGM4L8, CGM12L24, M4L82
 
 
-def cage_topology_options(fg_set):
+def cage_topology_options(fg_set: str) -> dict[str, stk.TopologyGraph]:
+    """Cage topology options for this project."""
     match fg_set:
         case "2p3":
             topologies = {
