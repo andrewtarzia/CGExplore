@@ -109,7 +109,6 @@ def define_forcefield_library(
                 (50, 60, 70, 80, 90, 100, 110, 120),
                 (1e2,),
             ),
-            ("b1", "a1", "c1", "Pb", "Ba", "Ag", range(90, 181, 5), (1e2,)),
             ("m1", "b1", "b1", "Pd", "Pb", "Pb", (180,), (1e2,)),
         )
         pyramids = (
