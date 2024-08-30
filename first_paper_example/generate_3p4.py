@@ -57,7 +57,7 @@ def main() -> None:
         },
     }
 
-    database = AtomliteDatabase(db_file=data_output / "first.db")
+    database = AtomliteDatabase(db_file=data_output / "first_3p4.db")
 
     build_populations(
         populations=populations,
