@@ -1,13 +1,10 @@
 # Distributed under the terms of the MIT License.
 
-"""Utilities for analysis and plotting.
-
-Author: Andrew Tarzia
-
-"""
+"""Utilities for analysis and plotting."""
 
 import json
 import logging
+import pathlib
 
 import cgexplore
 import numpy as np
@@ -22,7 +19,7 @@ logging.basicConfig(
 )
 
 
-def get_paired_cage_name(cage_name):
+def get_paired_cage_name(cage_name: str) -> str:
     """Get new FF number from a cage number based on ton vs toff."""
     ff_num = int(cage_name.split("_")[-1].split("f")[1])
     new_ff_num = ff_num + 1
@@ -30,15 +27,18 @@ def get_paired_cage_name(cage_name):
 
 
 def analyse_cage(
-    conformer,
-    name,
-    output_dir,
-    forcefield,
-    node_element,
-    ligand_element,
-    database,  # noqa: ARG001
-):
-    logging.warning("currently not using databasing for analysis.")
+    conformer: cgexplore.molecular.Conformer,
+    name: str,
+    output_dir: pathlib.Path,
+    forcefield: cgexplore.forcefields.ForceField,
+    node_element: str,
+    ligand_element: str,
+    database,
+) -> None:
+    """Analyse a cage and save it to database and file."""
+    if not database.has_molecule(key=name):
+        msg = f"do calculation first for {name}, it is not in database!"
+        raise RuntimeError(msg)
 
     output_file = output_dir / f"{name}_res.json"
     shape_molfile1 = output_dir / f"{name}_shape1.mol"
@@ -90,15 +90,16 @@ def analyse_cage(
             shape_string=None,
         )
 
+        tstr = name.split("_")[0]
         n_shape_mol = node_shape.get_shape_molecule_byelements(
             molecule=conformer.molecule,
             elements=node_element,
-            expected_points=node_expected_topologies(),
+            expected_points=node_expected_topologies(tstr),
         )
         l_shape_mol = liga_shape.get_shape_molecule_byelements(
             molecule=conformer.molecule,
             elements=ligand_element,
-            expected_points=ligand_expected_topologies(),
+            expected_points=ligand_expected_topologies(tstr),
         )
         if n_shape_mol is None:
             node_shape_measures = None
@@ -236,8 +237,20 @@ def analyse_cage(
         with output_file.open("w") as f:
             json.dump(res_dict, f, indent=4)
 
+    # Added this to be able to save all data into atomlite database for future
+    # usage.
+    # Also changed the general formatting of force_field into forcefield!
+    properties = database.get_entry(key=name).properties
+    if "study" not in properties:
+        with output_file.open("r") as f:
+            res_dict = json.load(f)
+        if "force_field_dict" in res_dict:
+            res_dict["forcefield_dict"] = res_dict["force_field_dict"]
+        database.add_properties(key=name, property_dict=res_dict)
 
-def angle_str(num=None, unit=True):
+
+def angle_str(num: int | None = None, unit: bool = True) -> str:
+    """A unit str."""
     un = " [$^\\circ$]" if unit is True else ""
 
     if num is None:
@@ -250,39 +263,47 @@ def angle_str(num=None, unit=True):
     }[num]
 
 
-def eb_str(no_unit=False):
+def eb_str(no_unit: bool = False) -> str:
+    """A unit str."""
     if no_unit:
         return r"$E_{\mathrm{b}}$"
 
     return r"$E_{\mathrm{b}}$ [kJmol$^{-1}$]"
 
 
-def pore_str():
+def pore_str() -> str:
+    """A unit str."""
     return r"pore size [$\mathrm{\AA}$]"
 
 
-def rg_str():
+def rg_str() -> str:
+    """A unit str."""
     return r"$R_{\mathrm{g}}$ [$\mathrm{\AA}$]"
 
 
-def shape_threshold():
-    return 2
+def shape_threshold() -> float:
+    """A threshold."""
+    return 2.0
 
 
-def isomer_energy():
+def isomer_energy() -> float:
+    """A threshold."""
     # kJ/mol.
     return 0.3
 
 
-def min_radius():
+def min_radius() -> float:
+    """A threshold."""
     return 1.0
 
 
-def min_b2b_distance():
+def min_b2b_distance() -> float:
+    """A threshold."""
     return 0.5
 
 
-def topology_labels(short):
+def topology_labels(short: str) -> tuple[str, ...]:
+    """Get topology labels."""
     if short == "+":
         return (
             "2+3",
@@ -332,7 +353,8 @@ def topology_labels(short):
         )
 
 
-def convert_outcome(topo_str):
+def convert_outcome(topo_str: str) -> str:
+    """Convert topology."""
     return {
         "mixed": "mixed",
         "mixed-2": "mixed (2)",
@@ -344,7 +366,8 @@ def convert_outcome(topo_str):
     }[topo_str]
 
 
-def convert_topo(topo_str):
+def convert_topo(topo_str: str) -> str:
+    """Convert topology."""
     return {
         "2P3": r"Tri$^{2}$Di$^{3}$",
         "4P6": r"Tri$^{4}$Di$^{6}$",
@@ -362,21 +385,23 @@ def convert_topo(topo_str):
     }[topo_str]
 
 
-def convert_tors(topo_str, num=True):
+def convert_tors(topo_str: str, num: bool = True) -> str:
+    """Convert label."""
     if num:
         return {"ton": "5 eV", "toff": "none"}[topo_str]
 
     return {"ton": "restricted", "toff": "not restricted"}[topo_str]
 
 
-def convert_vdws(vstr):
+def convert_vdws(vstr: str) -> str:
+    """Convert label."""
     return {
         "von": "excl. vol.",
         "voff": "no. NB",
     }[vstr]
 
 
-def Xc_map(tstr):  # noqa: N802
+def xc_map(tstr: str) -> int:
     """Maps topology string to pyramid angle."""
     return {
         "2P3": 3,
@@ -395,7 +420,7 @@ def Xc_map(tstr):  # noqa: N802
     }[tstr]
 
 
-def stoich_map(tstr):
+def stoich_map(tstr: str) -> int:
     """Stoichiometry maps to the number of building blocks."""
     return {
         "2P3": 5,
@@ -414,7 +439,8 @@ def stoich_map(tstr):
     }[tstr]
 
 
-def cltypetopo_to_colormap():
+def cltypetopo_to_colormap() -> dict[str, dict]:
+    """Convert label."""
     return {
         "3C1": {
             "2P3": "#1f77b4",
@@ -445,7 +471,8 @@ def cltypetopo_to_colormap():
     }
 
 
-def target_shapes():
+def target_shapes() -> tuple[str, ...]:
+    """Tagrte shapes."""
     return (
         "CU-8",
         "JETBPY-8",
@@ -462,14 +489,18 @@ def target_shapes():
     )
 
 
-def map_cltype_to_topology():
+def map_cltype_to_topology() -> dict[str, tuple[str, ...]]:
+    """Get topologies by Xc type."""
     return {
         "3C1": ("2P3", "4P6", "4P62", "6P9", "8P12"),
         "4C1": ("2P4", "3P6", "4P8", "4P82", "6P12", "8P16", "12P24"),
     }
 
 
-def mapshape_to_topology(mode, from_shape=False):
+def mapshape_to_topology(
+    mode: str, from_shape: bool = False
+) -> dict[str, str | tuple[str, ...]]:
+    """Mape shape to and from topology."""
     if from_shape:
         if mode == "n":
             return {
@@ -525,21 +556,8 @@ def mapshape_to_topology(mode, from_shape=False):
         return None
 
 
-def get_present_beads(c2_bbname):
-    wtopo = c2_bbname[3:]
-    break_strs = [i for i in wtopo if not i.isnumeric()]
-    if len(break_strs) != 2:
-        msg = f"Too many beads found in {c2_bbname}"
-        raise ValueError(msg)
-
-    broken_string = wtopo.split(break_strs[0])[1]
-    bead1name, bead2name = broken_string.split(break_strs[1])
-    bead1name = break_strs[0] + bead1name
-    bead2name = break_strs[1] + bead2name
-    return (bead1name, bead2name)
-
-
-def node_expected_topologies():
+def node_expected_topologies(tstr: str) -> int:
+    """Number of nodes in topologies."""
     return {
         "4P6": 4,
         "4P62": 4,
@@ -551,20 +569,22 @@ def node_expected_topologies():
         "6P12": 6,
         "8P16": 8,
         "6P8": 6,
-    }
+    }[tstr]
 
 
-def ligand_expected_topologies():
+def ligand_expected_topologies(tstr: str) -> int:
+    """Number of nodes in topologies."""
     return {
         "2P3": 3,
         "4P6": 6,
         "4P62": 6,
         "2P4": 4,
         "6P8": 8,
-    }
+    }[tstr]
 
 
-def get_sv_dist(row, mode):
+def get_sv_dist(row: pd.Series, mode: str) -> np.ndarray:
+    """Get shape vector distances."""
     maps = mapshape_to_topology(mode=mode)
     try:
         tshape = maps[str(row["topology"])]
@@ -582,7 +602,8 @@ def get_sv_dist(row, mode):
     return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
 
 
-def data_to_array(json_files, output_dir):
+def data_to_array(json_files, output_dir: pathlib.Path) -> pd.DataFrame:
+    """Convert json files of data into one pandas array."""
     output_csv = output_dir / "all_array.csv"
     geom_json = output_dir / "all_geom.json"
 
@@ -620,7 +641,7 @@ def data_to_array(json_files, output_dir):
         if t_str in cage_topology_options(
             "2p3"
         ) or t_str in cage_topology_options("2p4"):
-            cltitle = "3C1" if row["cltopo"] == 3 else "4C1"
+            cltitle = "3C1" if row["cltopo"] == 3 else "4C1"  # noqa: PLR2004
             row["c2r0"] = res_dict["forcefield_dict"]["c2r0"]
             row["c2angle"] = res_dict["forcefield_dict"]["c2angle"]
             row["target_bite_angle"] = (row["c2angle"] - 90) * 2
