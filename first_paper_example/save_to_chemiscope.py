@@ -36,11 +36,13 @@ def main() -> None:
     """Run script."""
     data_output = outputdata()
 
-    for study in ("2p3", "2p4", "3p4"):
-        database = cgexplore.utilities.AtomliteDatabase(
-            db_file=data_output / f"first_{study}.db"
-        )
+    studies = ("2p3_ton", "2p4_ton", "3p4_toff", "2p3_toff", "2p4_toff")
+    for study in studies:
         chemiscope_json = data_output / f"{study}.json"
+        study_set, torsion_control = study.split("_")
+        database = cgexplore.utilities.AtomliteDatabase(
+            db_file=data_output / f"first_{study_set}.db"
+        )
 
         json_data = {
             "meta": {
@@ -48,9 +50,9 @@ def main() -> None:
                 "description": f"Minimal models from {study}",
                 "authors": ["Andrew Tarzia"],
                 "references": [
-                    "'Systematic exploration of accessible topologies of '",
-                    "'cage molecules via minimalistic models, Chem. Sci, '",
-                    "'DOI: 10.1039/D3SC03991A'",
+                    "'Systematic exploration of accessible topologies of "
+                    "cage molecules via minimalistic models, Chem. Sci, "
+                    "DOI: 10.1039/D3SC03991A'",
                 ],
             },
             "structures": [],
@@ -76,11 +78,6 @@ def main() -> None:
                 "description": "name of topology graph",
                 "unit": "none",
             },
-            "torsion": {
-                "path": ["forcefield_dict", "torsions"],
-                "description": "ton if torsions are restricted, else toff",
-                "unit": "none",
-            },
             "E_b": {
                 "path": ["fin_energy_kjmol"],
                 "description": "energy per building block",
@@ -93,7 +90,7 @@ def main() -> None:
             },
             "s_angle": {
                 "path": ["forcefield_dict", "c2angle"]
-                if study in ("2p3", "2p4")
+                if study in ("2p3_ton", "2p4_ton", "2p3_toff", "2p4_toff")
                 else ["forcefield_dict", "c3angle"],
                 "description": "small input angle of the two options",
                 "unit": "degrees",
@@ -108,6 +105,11 @@ def main() -> None:
         for entry in database.get_entries():
             properties = entry.properties
             tstr = entry.key.split("_")[0]
+            entry_torsion = properties["forcefield_dict"]["torsions"]
+
+            if entry_torsion != torsion_control:
+                continue
+
             for prop in properties_to_get:
                 if prop == "tstr":
                     value = tstr
@@ -152,8 +154,6 @@ def main() -> None:
                 "z": zs,
             }
             json_data["structures"].append(struct_dict)
-
-            break
 
         with chemiscope_json.open("w") as f:
             json.dump(json_data, f, indent=4)
