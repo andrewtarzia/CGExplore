@@ -2,12 +2,13 @@
 
 """Script to test chemiscope writing."""
 
+import itertools as it
 import json
 import logging
 
 import atomlite
 import cgexplore
-from analysis import stoich_map
+from analysis import stoich_map, topology_labels
 from env_set import outputdata
 
 logging.basicConfig(
@@ -32,22 +33,49 @@ def extract_property(path: list[str], properties: dict) -> atomlite.Json:
     return value
 
 
+def axes_show() -> tuple[dict, dict, dict]:
+    """Set 2D plots as defult of angle maps."""
+    x_setter = {"property": "s_angle"}
+    y_setter = {"property": "l_angle"}
+    z_setter = {"property": ""}
+
+    return x_setter, y_setter, z_setter
+
+
 def main() -> None:
     """Run script."""
     data_output = outputdata()
 
-    studies = ("2p3_ton", "2p4_ton", "3p4_toff", "2p3_toff", "2p4_toff")
-    for study in studies:
-        chemiscope_json = data_output / f"{study}.json"
-        study_set, torsion_control = study.split("_")
+    study_map = {
+        "2p3": ("2P3", "4P6", "4P62", "6P9", "8P12"),
+        "2p4": ("2P4", "3P6", "4P8", "4P82", "6P12", "8P16", "12P24"),
+        "3p4": ("6P8",),
+    }
+
+    for tstr, torsion in it.product(
+        topology_labels(short="P"), ("ton", "toff")
+    ):
+        study_pre = next(i for i in study_map if tstr in study_map[i])
+
+        if torsion == "ton" and study_pre == "3p4":
+            continue
+        study = f"{study_pre}_{torsion}"
+
+        chemiscope_json = data_output / f"cs_{study}_{tstr}.json"
+
         database = cgexplore.utilities.AtomliteDatabase(
-            db_file=data_output / f"first_{study_set}.db"
+            db_file=data_output / f"first_{study_pre}.db"
         )
+
+        x_setter, y_setter, z_setter = axes_show()
 
         json_data = {
             "meta": {
-                "name": f"CGGeom: {study}",
-                "description": f"Minimal models from {study}",
+                "name": f"CGGeom: {study_pre}|{tstr}|{torsion}",
+                "description": (
+                    f"Minimal models in {tstr} topology with {torsion} "
+                    "torsion state"
+                ),
                 "authors": ["Andrew Tarzia"],
                 "references": [
                     "'Systematic exploration of accessible topologies of "
@@ -57,10 +85,20 @@ def main() -> None:
             },
             "structures": [],
             "properties": {},
+            "shapes": {},
             "settings": {
+                "target": "structure",
+                "map": {
+                    "x": x_setter,
+                    "y": y_setter,
+                    "z": z_setter,
+                    "color": {"property": "E_b", "min": 0, "max": 1.0},
+                    "palette": "plasma",
+                },
                 "structure": [
                     {
-                        "bonds": True,
+                        "atoms": True,
+                        "bonds": False,
                         "spaceFilling": False,
                         "atomLabels": False,
                         "unitCell": False,
@@ -68,16 +106,11 @@ def main() -> None:
                         "supercell": {"0": 2, "1": 2, "2": 2},
                         "keepOrientation": False,
                     }
-                ]
+                ],
             },
         }
 
         properties_to_get = {
-            "tstr": {
-                "path": None,
-                "description": "name of topology graph",
-                "unit": "none",
-            },
             "E_b": {
                 "path": ["fin_energy_kjmol"],
                 "description": "energy per building block",
@@ -89,9 +122,9 @@ def main() -> None:
                 "unit": "degrees",
             },
             "s_angle": {
-                "path": ["forcefield_dict", "c2angle"]
-                if study in ("2p3_ton", "2p4_ton", "2p3_toff", "2p4_toff")
-                else ["forcefield_dict", "c3angle"],
+                "path": ["forcefield_dict", "c3angle"]
+                if tstr in ("6P8",)
+                else ["forcefield_dict", "c2angle"],
                 "description": "small input angle of the two options",
                 "unit": "degrees",
             },
@@ -104,21 +137,20 @@ def main() -> None:
 
         for entry in database.get_entries():
             properties = entry.properties
-            tstr = entry.key.split("_")[0]
+            entry_tstr = entry.key.split("_")[0]
             entry_torsion = properties["forcefield_dict"]["torsions"]
 
-            if entry_torsion != torsion_control:
+            if entry_torsion != torsion:
+                continue
+
+            if entry_tstr != tstr:
                 continue
 
             for prop in properties_to_get:
-                if prop == "tstr":
-                    value = tstr
-
-                else:
-                    value = extract_property(
-                        path=properties_to_get[prop]["path"],
-                        properties=properties,
-                    )
+                value = extract_property(
+                    path=properties_to_get[prop]["path"],
+                    properties=properties,
+                )
 
                 if prop == "E_b/kjmol-1":
                     value = value / stoich_map(tstr)
