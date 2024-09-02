@@ -26,6 +26,7 @@ from cgexplore._internal.utilities.utilities import (
     check_directory,
     convert_pyramid_angle,
     draw_pie,
+    extract_property,
 )
 from cgexplore._internal.utilities.visualisation import (
     Pymol,
@@ -54,4 +55,5 @@ __all__ = [
     "add_text_to_ax",
     "get_supramolecule",
     "get_unforced_supramolecule",
+    "extract_property",
 ]
