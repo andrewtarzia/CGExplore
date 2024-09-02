@@ -9,6 +9,7 @@ Author: Andrew Tarzia
 import logging
 import pathlib
 
+import atomlite
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -87,3 +88,19 @@ def draw_pie(
         # scatter each of the pie pieces to create pies
         for marker in markers:
             ax.scatter(xpos, ypos, **marker)
+
+
+def extract_property(path: list[str], properties: dict) -> atomlite.Json:
+    """Extract property from nested dict."""
+    if len(path) == 1:
+        value = properties[path[0]]
+    elif len(path) == 2:  # noqa: PLR2004
+        value = properties[path[0]][path[1]]
+    elif len(path) == 3:  # noqa: PLR2004
+        value = properties[path[0]][path[1]][path[2]]
+    elif len(path) == 4:  # noqa: PLR2004
+        value = properties[path[0]][path[1]][path[2]][path[3]]
+    else:
+        msg = f"{path} is too deep ({len(path)})."
+        raise RuntimeError(msg)
+    return value

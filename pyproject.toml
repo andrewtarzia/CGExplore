@@ -17,6 +17,7 @@ dependencies = [
   "stk",
   "stko",
   "atomlite",
+  "chemiscope",
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]

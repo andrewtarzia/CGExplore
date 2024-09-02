@@ -3,9 +3,8 @@ import logging
 import pathlib
 import pprint
 
-import atomlite
-
 from cgexplore._internal.utilities.databases import AtomliteDatabase
+from cgexplore._internal.utilities.utilities import extract_property
 
 
 def _parse_args() -> argparse.Namespace:
@@ -28,21 +27,6 @@ def _parse_args() -> argparse.Namespace:
         help="show paths available in database",
     )
     return parser.parse_args()
-
-
-def extract_property(path: list[str], properties: dict) -> atomlite.Json:
-    if len(path) == 1:
-        value = properties[path[0]]
-    elif len(path) == 2:  # noqa: PLR2004
-        value = properties[path[0]][path[1]]
-    elif len(path) == 3:  # noqa: PLR2004
-        value = properties[path[0]][path[1]][path[2]]
-    elif len(path) == 4:  # noqa: PLR2004
-        value = properties[path[0]][path[1]][path[2]][path[3]]
-    else:
-        msg = f"{path} is too deep ({len(path)})."
-        raise RuntimeError(msg)
-    return value
 
 
 def main() -> None:

@@ -1,5 +1,8 @@
 """utilities package."""
 
+from cgexplore._internal.utilities.chemiscope_interface import (
+    ChemiscopeInterface,
+)
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 from cgexplore._internal.utilities.errors import (
     ForceFieldUnavailableError,
@@ -37,6 +40,7 @@ __all__ = [
     "check_directory",
     "draw_pie",
     "AtomliteDatabase",
+    "ChemiscopeInterface",
     "convert_pyramid_angle",
     "optimise_ligand",
     "run_constrained_optimisation",
