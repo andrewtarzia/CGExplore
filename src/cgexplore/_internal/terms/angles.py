@@ -224,7 +224,7 @@ class PyramidAngleRange:
                 )
             except AttributeError:
                 msg = f"{self} in angles does not have units for parameters"
-                raise ForceFieldUnitError(msg)  # noqa: B904, TRY200
+                raise ForceFieldUnitError(msg)  # noqa: B904
 
             yield TargetPyramidAngle(
                 type1=self.type1,

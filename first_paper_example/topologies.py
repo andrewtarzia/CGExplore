@@ -5,6 +5,7 @@
 from typing import assert_never
 
 import stk
+
 from cgexplore.topologies import CGM4L8, CGM12L24, M4L82
 
 

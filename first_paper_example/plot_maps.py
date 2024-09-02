@@ -26,8 +26,9 @@ from analysis import (
     topology_labels,
     xc_map,
 )
-from cgexplore.utilities import draw_pie
 from env_set import calculations, figures, outputdata
+
+from cgexplore.utilities import draw_pie
 
 logging.basicConfig(
     level=logging.INFO,

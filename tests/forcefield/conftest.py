@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 import stk
+from openmm import openmm
+
 from cgexplore.forcefields import ForceFieldLibrary
 from cgexplore.molecular import CgBead, FourC1Arm
 from cgexplore.terms import (
@@ -16,7 +18,6 @@ from cgexplore.terms import (
     TargetTorsionRange,
     Torsion,
 )
-from openmm import openmm
 
 from .case_data import CaseData
 

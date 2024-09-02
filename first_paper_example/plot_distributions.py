@@ -28,8 +28,9 @@ from analysis import (
     topology_labels,
     xc_map,
 )
-from cgexplore.utilities import convert_pyramid_angle
 from env_set import calculations, figures, outputdata
+
+from cgexplore.utilities import convert_pyramid_angle
 
 logging.basicConfig(
     level=logging.INFO,
@@ -1101,8 +1102,7 @@ def get_min_energy_from_omm_out(outfile: pathlib.Path) -> float | None:
             for line in lines:
                 if "total energy:" in line:
                     new_energy = float(line.rstrip().split()[2])
-                    if new_energy < min_energy:
-                        min_energy = new_energy
+                    min_energy = min(new_energy, min_energy)
     except FileNotFoundError:
         min_energy = None
 

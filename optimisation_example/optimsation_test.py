@@ -5,11 +5,12 @@ import pathlib
 import time
 from collections import defaultdict
 
-import cgexplore
 import matplotlib.pyplot as plt
 import numpy as np
 import openmm
 import stk
+
+import cgexplore
 
 
 def isomer_energy() -> float:

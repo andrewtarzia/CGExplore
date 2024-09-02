@@ -1,4 +1,5 @@
 import stk
+
 from cgexplore.analysis import ShapeMeasure
 
 from .case_data import CaseData

@@ -17,9 +17,10 @@ from analysis import (
     eb_str,
     isomer_energy,
 )
-from cgexplore.utilities import check_directory
 from env_set import cages, calculations, figures, outputdata
 from matplotlib.lines import Line2D
+
+from cgexplore.utilities import check_directory
 
 logging.basicConfig(
     level=logging.INFO,

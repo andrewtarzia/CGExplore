@@ -74,7 +74,7 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in bonds does not have units"
-                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
+                    raise ForceFieldUnitError(msg)  # noqa: B904
 
         return system
 
@@ -121,7 +121,7 @@ class ForcedSystem:
                         )
                 except AttributeError:
                     msg = f"{assigned_force} in angles does not have units"
-                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
+                    raise ForceFieldUnitError(msg)  # noqa: B904
 
         return system
 
@@ -152,7 +152,7 @@ class ForcedSystem:
                     )
                 except AttributeError:
                     msg = f"{assigned_force} in torsions does not have units"
-                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
+                    raise ForceFieldUnitError(msg)  # noqa: B904
 
         return system
 
@@ -194,7 +194,7 @@ class ForcedSystem:
 
                 except AttributeError:
                     msg = f"{assigned_force} in nonbondeds does not have units"
-                    raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
+                    raise ForceFieldUnitError(msg)  # noqa: B904
 
             try:
                 if force_type in ("custom-excl-vol", "custom-lj"):
@@ -212,7 +212,7 @@ class ForcedSystem:
                     )
             except OpenMMException:
                 msg = f"{force_type} is missing a definition for a particle."
-                raise ForceFieldUnitError(msg)  # noqa: TRY200, B904
+                raise ForceFieldUnitError(msg)  # noqa: B904
 
         return system
 

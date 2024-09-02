@@ -9,13 +9,14 @@ Author: Andrew Tarzia
 import logging
 
 from bead_libraries import arm_bead, binder_bead, core_bead, tetragonal_bead
-from cgexplore.molecular import FourC1Arm, TwoC1Arm
-from cgexplore.utilities import AtomliteDatabase
 from define_forcefields import define_forcefield_library
 from env_set import calculations, ligands, outputdata, structures
 from generation import build_populations
 from rdkit import RDLogger
 from topologies import cage_topology_options
+
+from cgexplore.molecular import FourC1Arm, TwoC1Arm
+from cgexplore.utilities import AtomliteDatabase
 
 logging.basicConfig(
     level=logging.INFO,

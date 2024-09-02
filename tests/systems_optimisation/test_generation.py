@@ -1,7 +1,8 @@
 import pathlib
 
-import cgexplore
 import numpy as np
+
+import cgexplore
 
 from .case_data import CaseData
 
@@ -18,11 +19,11 @@ def fit_calc(
 
 
 def str_calc(
-    chromosome: cgexplore.systems_optimisation.Chromosome,  # noqa: ARG001
-    database_path: pathlib.Path,  # noqa: ARG001
-    calculation_output: pathlib.Path,  # noqa: ARG001
-    structure_output: pathlib.Path,  # noqa: ARG001
-    options: dict,  # noqa: ARG001
+    chromosome: cgexplore.systems_optimisation.Chromosome,
+    database_path: pathlib.Path,
+    calculation_output: pathlib.Path,
+    structure_output: pathlib.Path,
+    options: dict,
 ) -> None:
     pass
 

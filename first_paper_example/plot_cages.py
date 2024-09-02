@@ -23,7 +23,6 @@ from analysis import (
     mapshape_to_topology,
     topology_labels,
 )
-from cgexplore.utilities import Pymol, check_directory
 from env_set import (
     calculations,
     figures,
@@ -31,6 +30,8 @@ from env_set import (
     pymol_path,
     structures,
 )
+
+from cgexplore.utilities import Pymol, check_directory
 
 logging.basicConfig(
     level=logging.INFO,

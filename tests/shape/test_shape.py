@@ -2,6 +2,7 @@ import pathlib
 import shutil
 
 import pytest
+
 from cgexplore.analysis import ShapeMeasure
 
 from .case_data import CaseData

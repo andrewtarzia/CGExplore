@@ -10,12 +10,13 @@ import logging
 
 import stk
 from bead_libraries import arm_bead, binder_bead, core_bead, trigonal_bead
-from cgexplore.molecular import ThreeC1Arm, TwoC1Arm
-from cgexplore.utilities import AtomliteDatabase, check_directory
 from define_forcefields import define_forcefield_library
 from env_set import cages, ligands
 from generation import build_populations
 from rdkit import RDLogger
+
+from cgexplore.molecular import ThreeC1Arm, TwoC1Arm
+from cgexplore.utilities import AtomliteDatabase, check_directory
 
 logging.basicConfig(
     level=logging.INFO,

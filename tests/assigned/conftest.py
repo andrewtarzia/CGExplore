@@ -1,6 +1,8 @@
 import numpy as np
 import pytest
 import stk
+from openmm import openmm
+
 from cgexplore.forcefields import ForceField
 from cgexplore.molecular import CgBead
 from cgexplore.terms import (
@@ -9,7 +11,6 @@ from cgexplore.terms import (
     TargetNonbonded,
     TargetTorsion,
 )
-from openmm import openmm
 
 from .case_data import CaseData
 

@@ -23,6 +23,7 @@ class ChemiscopeInterface:
     x_axis_name: str
     y_axis_name: str
     z_axis_name: str
+    color_dict: dict[str, str | float]
     meta_dict: dict[str, str | list]
     properties_to_get: dict[str, dict]
 
@@ -38,7 +39,7 @@ class ChemiscopeInterface:
                     "x": {"property": self.x_axis_name},
                     "y": {"property": self.y_axis_name},
                     "z": {"property": self.z_axis_name},
-                    "color": {"property": "E_b", "min": 0, "max": 1.0},
+                    "color": self.color_dict,
                     "palette": "plasma",
                 },
                 "structure": [
@@ -69,13 +70,13 @@ class ChemiscopeInterface:
                 value = self.properties_to_get[prop]["function"](value)
 
             if prop not in self.json_data["properties"]:
-                self.json_data["properties"][prop] = {
+                self.json_data["properties"][prop] = {  # type: ignore[index]
                     "target": "structure",
                     "values": [],
                     "units": self.properties_to_get[prop]["unit"],
                     "description": self.properties_to_get[prop]["description"],
                 }
-            self.json_data["properties"][prop]["values"].append(value)
+            self.json_data["properties"][prop]["values"].append(value)  # type: ignore[index]
 
     def append_molecule(self, molecule: stk.Molecule) -> None:
         """Append molecule to json data."""
@@ -98,7 +99,7 @@ class ChemiscopeInterface:
             "y": ys,
             "z": zs,
         }
-        self.json_data["structures"].append(struct_dict)
+        self.json_data["structures"].append(struct_dict)  # type: ignore[attr-defined]
 
     def write_json(self) -> None:
         """Write the chemiscope json."""

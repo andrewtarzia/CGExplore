@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
-import cgexplore
 import stk
+
+import cgexplore
 
 
 @dataclass(slots=True, frozen=True)

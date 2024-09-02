@@ -6,12 +6,13 @@ import json
 import logging
 import pathlib
 
-import cgexplore
 import numpy as np
 import openmm
 import pandas as pd
 from env_set import shape_path
 from topologies import cage_topology_options
+
+import cgexplore
 
 logging.basicConfig(
     level=logging.INFO,

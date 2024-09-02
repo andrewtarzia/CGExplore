@@ -10,11 +10,12 @@ import itertools as it
 import logging
 import pathlib
 
-import cgexplore
 import openmm
 import stk
 from analysis import analyse_cage
 from define_forcefields import get_neighbour_library
+
+import cgexplore
 
 logging.basicConfig(
     level=logging.INFO,

@@ -6,9 +6,10 @@ import itertools as it
 import logging
 from collections import abc
 
-import cgexplore
 from analysis import stoich_map, topology_labels
 from env_set import outputdata
+
+import cgexplore
 
 logging.basicConfig(
     level=logging.INFO,

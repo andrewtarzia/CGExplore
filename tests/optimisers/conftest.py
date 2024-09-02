@@ -1,7 +1,8 @@
-import cgexplore
 import pytest
 import stk
 from openmm import openmm
+
+import cgexplore
 
 from .case_data import CaseData
 

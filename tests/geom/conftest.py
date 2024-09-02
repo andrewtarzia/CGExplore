@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import stk
+
 from cgexplore.analysis import GeomMeasure
 from cgexplore.terms import TargetTorsion
 

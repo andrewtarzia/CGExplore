@@ -4,6 +4,8 @@
 
 from collections import abc
 
+from openmm import openmm
+
 from cgexplore.forcefields import ForceFieldLibrary
 from cgexplore.molecular import CgBead
 from cgexplore.terms import (
@@ -13,7 +15,6 @@ from cgexplore.terms import (
     TargetNonbondedRange,
     TargetTorsionRange,
 )
-from openmm import openmm
 
 
 def define_forcefield_library(
