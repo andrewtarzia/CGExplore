@@ -57,6 +57,7 @@ class ChemiscopeInterface:
                 ],
             },
         }
+        self.all_shapes = {}
 
     def append_property(self, property_dict: dict) -> None:
         """Append properties in property_dict to json data."""
@@ -100,6 +101,68 @@ class ChemiscopeInterface:
             "z": zs,
         }
         self.json_data["structures"].append(struct_dict)  # type: ignore[attr-defined]
+
+    def append_bonds_as_shapes(self, molecule: stk.Molecule) -> None:
+        """Append bonds as shapes to json data."""
+        pos_mat = molecule.get_position_matrix()
+
+        # Get bonds and their directions first.
+        bond_vectors = [
+            {
+                "vector": (
+                    pos_mat[bond.get_atom2().get_id()]
+                    - pos_mat[bond.get_atom1().get_id()]
+                ).tolist(),
+                "position": (pos_mat[bond.get_atom1().get_id()]).tolist(),
+            }
+            for bond in molecule.get_bonds()
+        ]
+
+        # Now add to shape list. Each time, adding a new shape per
+        # structure if needed.
+        for i, bond_vector in enumerate(bond_vectors):
+            bname = f"bond_{i}"
+            if bname not in self.all_shapes:
+                if bname == "bond_0":
+                    self.all_shapes[bname] = {
+                        "kind": "cylinder",
+                        "parameters": {
+                            "global": {"radius": 0.12, "color": "#d9d9d9"},
+                            "structure": [],
+                        },
+                    }
+                else:
+                    self.all_shapes[bname] = {
+                        "kind": "cylinder",
+                        "parameters": {
+                            "global": {"radius": 0.12, "color": "#d9d9d9"},
+                            # Add zero placements for previously non-existant
+                            # bond shapes up to the length of bond_0 -1,
+                            # because that should already be at the current
+                            # length that the new one should be.
+                            "structure": [
+                                {"vector": [0, 0, 0], "position": [0, 0, 0]}
+                                for i in range(
+                                    len(
+                                        self.all_shapes["bond_0"][
+                                            "parameters"
+                                        ]["structure"]
+                                    )
+                                    - 1
+                                )
+                            ],
+                        },
+                    }
+
+            self.all_shapes[bname]["parameters"]["structure"].append(
+                bond_vector
+            )
+
+            self.json_data["shapes"] = self.all_shapes
+
+            shape_string = ",".join(self.all_shapes.keys())
+
+            self.json_data["settings"]["structure"][0]["shape"] = shape_string
 
     def write_json(self) -> None:
         """Write the chemiscope json."""

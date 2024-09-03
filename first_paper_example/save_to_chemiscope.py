@@ -55,6 +55,7 @@ def main() -> None:
             x_axis_name="s_angle",
             y_axis_name="l_angle",
             z_axis_name="",
+            color_dict={"property": "E_b", "min": 0, "max": 1.0},
             meta_dict={
                 "name": f"CGGeom: {study_pre}|{tstr}|{torsion}",
                 "description": (
@@ -98,8 +99,6 @@ def main() -> None:
             },
         )
 
-        all_shapes = {}
-        count_added = 0
         for entry in database.get_entries():
             properties = entry.properties
             entry_tstr = entry.key.split("_")[0]
@@ -115,48 +114,10 @@ def main() -> None:
             chemiscope_writer.append_molecule(
                 molecule=database.get_molecule(entry.key)
             )
-            continue
-            # Topology to shape.
-            # Get bonds and their directions first.
-            bond_vectors = [
-                {
-                    "vector": (
-                        pos_mat[bond.get_atom2().get_id()]
-                        - pos_mat[bond.get_atom1().get_id()]
-                    ).tolist(),
-                    "position": (pos_mat[bond.get_atom1().get_id()]).tolist(),
-                }
-                for bond in molecule.get_bonds()
-            ]
+            chemiscope_writer.append_bonds_as_shapes(
+                molecule=database.get_molecule(entry.key)
+            )
 
-            # Now add to shape list. Each time, adding a new shape per
-            # structure if needed.
-            for i, bond_vector in enumerate(bond_vectors):
-                bname = f"bond_{i}"
-                if bname not in all_shapes:
-                    all_shapes[bname] = {
-                        "kind": "cylinder",
-                        "parameters": {
-                            "global": {"radius": 1},
-                            "structure": [
-                                {"vector": [0, 0, 0], "position": [0, 0, 0]}
-                                for i in range(count_added)
-                            ],
-                        },
-                    }
-
-                all_shapes[bname]["parameters"]["structure"].append(
-                    bond_vector
-                )
-
-            count_added += 1
-
-            json_data["shapes"] = all_shapes
-
-            shape_string = ",".join(all_shapes.keys())
-
-            # json_data["settings"]["structure"][0]["shape"] = shape_string
-            break
         chemiscope_writer.write_json()
 
 
