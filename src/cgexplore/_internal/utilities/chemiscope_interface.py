@@ -57,7 +57,7 @@ class ChemiscopeInterface:
                 ],
             },
         }
-        self.all_shapes = {}
+        self.all_shapes: dict[str, dict] = {}
 
     def append_property(self, property_dict: dict) -> None:
         """Append properties in property_dict to json data."""
@@ -162,7 +162,7 @@ class ChemiscopeInterface:
 
             shape_string = ",".join(self.all_shapes.keys())
 
-            self.json_data["settings"]["structure"][0]["shape"] = shape_string
+            self.json_data["settings"]["structure"][0]["shape"] = shape_string  # type: ignore[index]
 
     def write_json(self) -> None:
         """Write the chemiscope json."""
