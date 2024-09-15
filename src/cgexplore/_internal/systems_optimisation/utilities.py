@@ -275,12 +275,13 @@ def yield_near_models(
             yield molecule.with_structure_from_file(str(new_fina_mol_file))
 
 
-def get_forcefield_from_dict(
+def get_forcefield_from_dict(  # noqa: PLR0913
     identifier: str,
     prefix: str,
     vdw_bond_cutoff: int,
     present_beads: tuple[CgBead, ...],
     definer_dict: dict,
+    verbose: bool = True,
 ) -> ForceField:
     """Get forcefield from a definer dict."""
     bond_terms: list = []
@@ -366,4 +367,5 @@ def get_forcefield_from_dict(
         torsion_targets=tuple(torsion_terms),
         nonbonded_targets=tuple(nonbonded_terms),
         vdw_bond_cutoff=vdw_bond_cutoff,
+        verbose=verbose,
     )
