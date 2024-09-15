@@ -26,6 +26,10 @@ class AtomliteDatabase:
         self._db_file = db_file
         self._db = atomlite.Database(db_file)
 
+    def get_database(self) -> atomlite.Database:
+        """Access the atomlite Database object."""
+        return self._db
+
     def get_num_entries(self) -> int:
         """Get the number of molecular entries in the database."""
         return self._db.num_entries()
