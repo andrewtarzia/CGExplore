@@ -529,9 +529,7 @@ class ChromosomeGenerator:
             fitness_values: list[float | int] = [
                 database.get_property_entry(
                     f"{i.prefix}_{i.get_string()}"
-                ).properties[  # type: ignore[misc]
-                    "fitness"
-                ]
+                ).properties["fitness"]  # type: ignore[misc]
                 for i in list_of_chromosomes
             ]
             # Handle if all fitness values are 0.
@@ -611,9 +609,7 @@ class ChromosomeGenerator:
             fitness_values: list[float | int] = [
                 database.get_property_entry(
                     f"{i.prefix}_{i.get_string()}"
-                ).properties[  # type: ignore[misc]
-                    "fitness"
-                ]
+                ).properties["fitness"]  # type: ignore[misc]
                 for i in list_of_chromosomes
             ]
             # Handle if all fitness values are 0.
