@@ -151,5 +151,6 @@ module = [
   "pathos.*",
   "spindry.*",
   "vabene.*",
+  "chemiscope.*",
 ]
 ignore_missing_imports = true
