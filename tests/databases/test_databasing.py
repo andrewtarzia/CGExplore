@@ -42,6 +42,10 @@ def test_databasing(molecule: CaseData) -> None:
             database.get_property(key, property_key="1", property_type=int)
             == prop["1"]
         )
+        assert (
+            database.get_property(key, property_key="3", property_type=str)
+            == prop["3"]
+        )
         if "2" in prop:
             assert (
                 database.get_property(
