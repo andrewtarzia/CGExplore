@@ -1,7 +1,7 @@
 """utilities package."""
 
 from cgexplore._internal.utilities.chemiscope_interface import (
-    ChemiscopeInterface,
+    write_chemiscope_json,
 )
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 from cgexplore._internal.utilities.errors import (
@@ -41,7 +41,7 @@ __all__ = [
     "check_directory",
     "draw_pie",
     "AtomliteDatabase",
-    "ChemiscopeInterface",
+    "write_chemiscope_json",
     "convert_pyramid_angle",
     "optimise_ligand",
     "run_constrained_optimisation",
