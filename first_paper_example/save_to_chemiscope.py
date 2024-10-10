@@ -50,12 +50,67 @@ def main() -> None:
             db_file=data_output / f"first_{study_pre}.db"
         )
 
-        chemiscope_writer = cgexplore.utilities.ChemiscopeInterface(
-            json_file=data_output / f"cs_{study}_{tstr}.json",
-            x_axis_name="s_angle",
-            y_axis_name="l_angle",
-            z_axis_name="",
-            color_dict={"property": "E_b", "min": 0, "max": 1.0},
+        properties_to_get = {
+            "E_b / kjmol-1": {
+                "path": ["fin_energy_kjmol"],
+                "function": divider(tstr),
+            },
+            "l_angle / deg": {
+                "path": ["forcefield_dict", "clangle"],
+                "function": None,
+            },
+            "s_angle / deg": {
+                "path": ["forcefield_dict", "c3angle"]
+                if tstr in ("6P8",)
+                else ["forcefield_dict", "c2angle"],
+                "function": None,
+            },
+            "pore_radius / AA": {
+                "path": ["opt_pore_data", "min_distance"],
+                "function": None,
+            },
+        }
+
+        structures = []
+        properties = {}
+        for entry in database.get_entries():
+            entry_tstr = entry.key.split("_")[0]
+            entry_torsion = entry.properties["forcefield_dict"]["torsions"]
+
+            if entry_torsion != torsion:
+                continue
+
+            if entry_tstr != tstr:
+                continue
+
+            structures.append(database.get_molecule(entry.key))
+
+            for prop in properties_to_get:
+                value = cgexplore.utilities.extract_property(
+                    path=properties_to_get[prop]["path"],
+                    properties=entry.properties,
+                )
+
+                if properties_to_get[prop]["function"] is not None:
+                    value = properties_to_get[prop]["function"](value)
+
+                if prop not in properties:
+                    properties[prop] = []
+                properties[prop].append(value)
+
+        logging.info(
+            "for %s|%s|%s, structures: %s, properties: %s",
+            study,
+            tstr,
+            torsion,
+            len(structures),
+            len(properties),
+        )
+        cgexplore.utilities.write_chemiscope_json(
+            json_file=data_output / f"cs_{study}_{tstr}.json.gz",
+            structures=structures,
+            properties=properties,
+            bonds_as_shapes=True,
             meta_dict={
                 "name": f"CGGeom: {study_pre}|{tstr}|{torsion}",
                 "description": (
@@ -69,56 +124,12 @@ def main() -> None:
                     "DOI: 10.1039/D3SC03991A'",
                 ],
             },
-            properties_to_get={
-                "E_b": {
-                    "path": ["fin_energy_kjmol"],
-                    "description": "energy per building block",
-                    "unit": "kjmol-1",
-                    "function": divider(tstr),
-                },
-                "l_angle": {
-                    "path": ["forcefield_dict", "clangle"],
-                    "description": "large input angle of the two options",
-                    "unit": "degrees",
-                    "function": None,
-                },
-                "s_angle": {
-                    "path": ["forcefield_dict", "c3angle"]
-                    if tstr in ("6P8",)
-                    else ["forcefield_dict", "c2angle"],
-                    "description": "small input angle of the two options",
-                    "unit": "degrees",
-                    "function": None,
-                },
-                "pore_radius": {
-                    "path": ["opt_pore_data", "min_distance"],
-                    "description": "pore radius of the cage",
-                    "unit": "AA",
-                    "function": None,
-                },
-            },
+            x_axis_dict={"property": "s_angle / deg"},
+            y_axis_dict={"property": "l_angle / deg"},
+            z_axis_dict={"property": ""},
+            color_dict={"property": "E_b / kjmol-1", "min": 0, "max": 1.0},
+            bond_hex_colour="#919294",
         )
-
-        for entry in database.get_entries():
-            properties = entry.properties
-            entry_tstr = entry.key.split("_")[0]
-            entry_torsion = properties["forcefield_dict"]["torsions"]
-
-            if entry_torsion != torsion:
-                continue
-
-            if entry_tstr != tstr:
-                continue
-
-            chemiscope_writer.append_property(property_dict=properties)
-            chemiscope_writer.append_molecule(
-                molecule=database.get_molecule(entry.key)
-            )
-            chemiscope_writer.append_bonds_as_shapes(
-                molecule=database.get_molecule(entry.key)
-            )
-
-        chemiscope_writer.write_json()
 
 
 if __name__ == "__main__":
