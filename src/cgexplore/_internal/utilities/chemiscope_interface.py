@@ -37,7 +37,7 @@ def write_chemiscope_json(  # noqa: PLR0913
 
     else:
         shape_dict = None
-        shape_string = False
+        shape_string = ""
         bonds = True
 
     chemiscope.write_input(
