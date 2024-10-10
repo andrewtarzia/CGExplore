@@ -1,15 +1,12 @@
 # Distributed under the terms of the MIT License.
 
-"""Module containing bead libraries.
-
-Author: Andrew Tarzia
-
-"""
+"""Module containing bead libraries."""
 
 from cgexplore.molecular import CgBead
 
 
 def core_bead() -> CgBead:
+    """Define a toy model bead."""
     return CgBead(
         element_string="Ag",
         bead_class="c",
@@ -19,6 +16,7 @@ def core_bead() -> CgBead:
 
 
 def arm_bead() -> CgBead:
+    """Define a toy model bead."""
     return CgBead(
         element_string="Ba",
         bead_class="a",
@@ -28,6 +26,7 @@ def arm_bead() -> CgBead:
 
 
 def binder_bead() -> CgBead:
+    """Define a toy model bead."""
     return CgBead(
         element_string="Pb",
         bead_class="b",
@@ -37,6 +36,7 @@ def binder_bead() -> CgBead:
 
 
 def trigonal_bead() -> CgBead:
+    """Define a toy model bead."""
     return CgBead(
         element_string="C",
         bead_class="n",
@@ -46,6 +46,7 @@ def trigonal_bead() -> CgBead:
 
 
 def tetragonal_bead() -> CgBead:
+    """Define a toy model bead."""
     return CgBead(
         element_string="Pd",
         bead_class="m",

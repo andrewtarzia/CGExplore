@@ -52,7 +52,7 @@ class GeomMeasure:
     def calculate_bonds(
         self,
         molecule: stk.Molecule,
-    ) -> dict[tuple[str, ...], list[float]]:
+    ) -> dict[tuple[str, str], list[float]]:
         """Calculate the bond lengths.
 
         Uses `stko..molecule_analysis.GeometryAnalyser`
@@ -62,7 +62,7 @@ class GeomMeasure:
     def calculate_angles(
         self,
         molecule: stk.Molecule,
-    ) -> dict[tuple[str, ...], list[float]]:
+    ) -> dict[tuple[str, str, str], list[float]]:
         """Calculate the angle values.
 
         Uses `stko..molecule_analysis.GeometryAnalyser`

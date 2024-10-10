@@ -1,5 +1,6 @@
-import cgexplore
 import stk
+
+import cgexplore
 
 
 class CaseData:

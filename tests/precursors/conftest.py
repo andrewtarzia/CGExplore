@@ -1,5 +1,6 @@
 import numpy as np
 import pytest
+
 from cgexplore.molecular import (
     CgBead,
     FourC0Arm,

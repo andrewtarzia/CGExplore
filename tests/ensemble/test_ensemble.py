@@ -1,9 +1,10 @@
 import filecmp
 import pathlib
 
-import cgexplore
 import numpy as np
 from rdkit.Chem import AllChem
+
+import cgexplore
 
 from .case_data import CaseData
 from .utilities import is_equivalent_molecule

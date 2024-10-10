@@ -9,11 +9,12 @@ Author: Andrew Tarzia
 import itertools as it
 import logging
 import math
+import pathlib
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import pandas as pd
 from analysis import (
-    Xc_map,
     angle_str,
     cltypetopo_to_colormap,
     convert_topo,
@@ -23,9 +24,11 @@ from analysis import (
     isomer_energy,
     stoich_map,
     topology_labels,
+    xc_map,
 )
-from cgexplore.utilities import draw_pie
 from env_set import calculations, figures, outputdata
+
+from cgexplore.utilities import draw_pie
 
 logging.basicConfig(
     level=logging.INFO,
@@ -33,7 +36,10 @@ logging.basicConfig(
 )
 
 
-def nobiteangle_relationship(all_data, figure_output):
+def nobiteangle_relationship(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running clangle_relationship")
     trim = all_data[all_data["vdws"] == "von"]
 
@@ -113,7 +119,10 @@ def nobiteangle_relationship(all_data, figure_output):
         plt.close()
 
 
-def bite_angle_relationship(all_data, figure_output):
+def bite_angle_relationship(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running bite_angle_relationship")
 
     trim = all_data[all_data["vdws"] == "von"]
@@ -189,7 +198,7 @@ def bite_angle_relationship(all_data, figure_output):
 
             ax.set_title(
                 (
-                    f"{angle_str(num=Xc_map(tstr), unit=False)} = "
+                    f"{angle_str(num=xc_map(tstr), unit=False)} = "
                     rf"{t_angle}$^\circ$"
                 ),
                 fontsize=16,
@@ -211,7 +220,10 @@ def bite_angle_relationship(all_data, figure_output):
         plt.close()
 
 
-def selectivity_map(all_data, figure_output):
+def selectivity_map(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running selectivity_map")
 
     bite_angles = sorted(
@@ -316,7 +328,8 @@ def selectivity_map(all_data, figure_output):
         plt.close()
 
 
-def selfsort_legend(figure_output):
+def selfsort_legend(figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     logging.info("running selfsort_legend")
 
     for cltitle in ("3C1", "4C1"):
@@ -349,7 +362,8 @@ def selfsort_legend(figure_output):
         plt.close()
 
 
-def selfsort_map(all_data, figure_output):
+def selfsort_map(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     logging.info("running selfsort_map")
 
     cols_to_map = ["clangle", "c2angle"]
@@ -425,7 +439,10 @@ def selfsort_map(all_data, figure_output):
         plt.close()
 
 
-def kinetic_selfsort_map(all_data, figure_output):
+def kinetic_selfsort_map(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running kinetic_selfsort_map")
 
     cols_to_map = ["clangle", "c2angle"]
@@ -512,7 +529,8 @@ def kinetic_selfsort_map(all_data, figure_output):
         plt.close()
 
 
-def angle_map(all_data, figure_output):
+def angle_map(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     logging.info("running angle_map")
 
     color_map = topology_labels(short="P")
@@ -568,7 +586,7 @@ def angle_map(all_data, figure_output):
 
             ax.tick_params(axis="both", which="major", labelsize=16)
 
-            ax.set_ylabel(angle_str(num=Xc_map(tstr)), fontsize=16)
+            ax.set_ylabel(angle_str(num=xc_map(tstr)), fontsize=16)
 
         cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
         cmap = mpl.cm.Blues_r
@@ -591,7 +609,8 @@ def angle_map(all_data, figure_output):
         plt.close()
 
 
-def angle_map_4p6(all_data, figure_output):
+def angle_map_4p6(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
+    """Make a plot."""
     logging.info("running angle_map")
 
     color_map = topology_labels(short="P")
@@ -627,7 +646,7 @@ def angle_map_4p6(all_data, figure_output):
 
             ax.tick_params(axis="both", which="major", labelsize=16)
 
-            ax.set_ylabel(angle_str(num=Xc_map(tstr)), fontsize=16)
+            ax.set_ylabel(angle_str(num=xc_map(tstr)), fontsize=16)
 
         cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
         cmap = mpl.cm.Blues_r
@@ -650,7 +669,10 @@ def angle_map_4p6(all_data, figure_output):
         plt.close()
 
 
-def pd_4p82_figure(all_data, figure_output):
+def pd_4p82_figure(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running angle_map")
 
     tstr = "4P82"
@@ -718,7 +740,10 @@ def pd_4p82_figure(all_data, figure_output):
     plt.close()
 
 
-def pdII_figure_bite_angle(all_data, figure_output):  # noqa: N802
+def pdII_figure_bite_angle(  # noqa: N802
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running pdII_figure_bite_angle")
 
     color_map = ("2P4", "3P6", "4P8", "6P12", "12P24")
@@ -726,7 +751,7 @@ def pdII_figure_bite_angle(all_data, figure_output):  # noqa: N802
     fig, ax = plt.subplots(figsize=(8, 2.5))
     trim = all_data[all_data["vdws"] == "von"]
     trim = trim[trim["torsions"] == "ton"]
-    trim = trim[trim["clangle"] == 90]
+    trim = trim[trim["clangle"] == 90]  # noqa: PLR2004
 
     all_bas = sorted(set(trim["target_bite_angle"]))
     all_ba_points = []
@@ -785,7 +810,10 @@ def pdII_figure_bite_angle(all_data, figure_output):  # noqa: N802
     plt.close()
 
 
-def pd_3p64p8_figure_bite_angle(all_data, figure_output):
+def pd_3p64p8_figure_bite_angle(
+    all_data: pd.DataFrame, figure_output: pathlib.Path
+) -> None:
+    """Make a plot."""
     logging.info("running pd_3p64p8_figure_bite_angle")
 
     color_map = ("3P6", "4P8")
@@ -793,7 +821,7 @@ def pd_3p64p8_figure_bite_angle(all_data, figure_output):
     fig, ax = plt.subplots(figsize=(8, 2.5))
     trim = all_data[all_data["vdws"] == "von"]
     trim = trim[trim["torsions"] == "ton"]
-    trim = trim[trim["clangle"] == 90]
+    trim = trim[trim["clangle"] == 90]  # noqa: PLR2004
 
     target_ba = (20, 30, 40, 50, 60, 70, 80)
     tstr_points = {"3P6": [], "4P8": []}
@@ -833,7 +861,8 @@ def pd_3p64p8_figure_bite_angle(all_data, figure_output):
     plt.close()
 
 
-def main():
+def main() -> None:
+    """Run script."""
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()

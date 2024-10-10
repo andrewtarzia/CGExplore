@@ -1,5 +1,6 @@
-import cgexplore
 import pytest
+
+import cgexplore
 
 from .case_data import CaseData
 

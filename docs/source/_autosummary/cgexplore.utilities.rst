@@ -35,6 +35,7 @@ cgexplore.utilities
       check_directory
       convert_pyramid_angle
       draw_pie
+      extract_property
       get_supramolecule
       get_unforced_supramolecule
       optimise_ligand
@@ -43,6 +44,7 @@ cgexplore.utilities
       run_soft_md_cycle
       shift_beads
       soften_forcefield
+      write_chemiscope_json
       yield_near_models
       yield_shifted_models
    

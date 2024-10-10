@@ -43,7 +43,7 @@ def get_unforced_supramolecule(
 
 
 def get_supramolecule(
-    hgcomplex: stk.ConstructedMolecule,
+    hgcomplex: stk.Molecule,
     forcefield: ForceField,
 ) -> spd.Potential:
     nonbonded_targets = forcefield.get_targets()["nonbondeds"]

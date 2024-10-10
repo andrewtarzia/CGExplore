@@ -1,8 +1,9 @@
 import pathlib
 
-import cgexplore
 import numpy as np
 import stk
+
+import cgexplore
 
 from .case_data import CaseData
 

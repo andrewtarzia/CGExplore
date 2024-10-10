@@ -1,5 +1,8 @@
 """utilities package."""
 
+from cgexplore._internal.utilities.chemiscope_interface import (
+    write_chemiscope_json,
+)
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 from cgexplore._internal.utilities.errors import (
     ForceFieldUnavailableError,
@@ -23,6 +26,7 @@ from cgexplore._internal.utilities.utilities import (
     check_directory,
     convert_pyramid_angle,
     draw_pie,
+    extract_property,
 )
 from cgexplore._internal.utilities.visualisation import (
     Pymol,
@@ -37,6 +41,7 @@ __all__ = [
     "check_directory",
     "draw_pie",
     "AtomliteDatabase",
+    "write_chemiscope_json",
     "convert_pyramid_angle",
     "optimise_ligand",
     "run_constrained_optimisation",
@@ -50,4 +55,5 @@ __all__ = [
     "add_text_to_ax",
     "get_supramolecule",
     "get_unforced_supramolecule",
+    "extract_property",
 ]

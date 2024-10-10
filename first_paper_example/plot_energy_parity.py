@@ -7,17 +7,20 @@ Author: Andrew Tarzia
 """
 
 import logging
+import pathlib
 
 import matplotlib.pyplot as plt
+import pandas as pd
 from analysis import (
     convert_topo,
     data_to_array,
     eb_str,
     isomer_energy,
 )
-from cgexplore.utilities import check_directory
 from env_set import cages, calculations, figures, outputdata
 from matplotlib.lines import Line2D
+
+from cgexplore.utilities import check_directory
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,9 +28,16 @@ logging.basicConfig(
 )
 
 
-def energy_parity(all_data, dupl_data, figure_output):
+def energy_parity(
+    all_data: pd.DataFrame,
+    dupl_data: pd.DataFrame,
+    figure_output: pathlib.Path,
+) -> None:
+    """Plot energy parity."""
     logging.info("running energy_parity")
     print(len(all_data), len(dupl_data))  # noqa: T201
+
+    e_threshold = 0.01
 
     cmap = {
         "4P6": "#086788",
@@ -44,9 +54,9 @@ def energy_parity(all_data, dupl_data, figure_output):
         orig_row = all_data[all_data["index"] == index_name]
         dupl_energy = float(row["energy_per_bb"])
         orig_energy = float(orig_row["energy_per_bb"])
-        if dupl_energy < 0.01 and orig_energy < 0.01:
+        if dupl_energy < e_threshold and orig_energy < e_threshold:
             continue
-        if abs(dupl_energy - orig_energy) > 0.01:
+        if abs(dupl_energy - orig_energy) > e_threshold:
             print(index_name, dupl_energy, orig_energy)  # noqa: T201
             ax.scatter(
                 orig_energy,
@@ -104,7 +114,8 @@ def energy_parity(all_data, dupl_data, figure_output):
     plt.close()
 
 
-def main():
+def main() -> None:
+    """Run script."""
     figure_output = figures()
     calculation_output = calculations()
     data_output = outputdata()

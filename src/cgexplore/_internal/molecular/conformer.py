@@ -1,10 +1,6 @@
 # Distributed under the terms of the MIT License.
 
-"""Module for conformer classes.
-
-Author: Andrew Tarzia
-
-"""
+"""Module for conformer classes."""
 
 from dataclasses import dataclass
 
