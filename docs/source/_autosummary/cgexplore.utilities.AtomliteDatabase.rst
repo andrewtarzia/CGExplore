@@ -20,6 +20,7 @@ cgexplore.utilities.AtomliteDatabase
       ~AtomliteDatabase.add_entries
       ~AtomliteDatabase.add_molecule
       ~AtomliteDatabase.add_properties
+      ~AtomliteDatabase.get_database
       ~AtomliteDatabase.get_entries
       ~AtomliteDatabase.get_entry
       ~AtomliteDatabase.get_molecule

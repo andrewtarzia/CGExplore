@@ -90,16 +90,19 @@ def draw_pie(
             ax.scatter(xpos, ypos, **marker)
 
 
-def extract_property(path: list[str], properties: dict) -> atomlite.Json:
+def extract_property(
+    path: list[str],
+    properties: dict[str, atomlite.Json],
+) -> atomlite.Json:
     """Extract property from nested dict."""
     if len(path) == 1:
         value = properties[path[0]]
     elif len(path) == 2:  # noqa: PLR2004
-        value = properties[path[0]][path[1]]
+        value = properties[path[0]][path[1]]  # type: ignore[index,call-overload]
     elif len(path) == 3:  # noqa: PLR2004
-        value = properties[path[0]][path[1]][path[2]]
+        value = properties[path[0]][path[1]][path[2]]  # type: ignore[index,call-overload]
     elif len(path) == 4:  # noqa: PLR2004
-        value = properties[path[0]][path[1]][path[2]][path[3]]
+        value = properties[path[0]][path[1]][path[2]][path[3]]  # type: ignore[index,call-overload]
     else:
         msg = f"{path} is too deep ({len(path)})."
         raise RuntimeError(msg)

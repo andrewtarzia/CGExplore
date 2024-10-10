@@ -4,16 +4,16 @@
    :maxdepth: 2
 
    Analysis <analysis>
-   Databasing <databasing>
+   Sharing with collaborators <databasing>
    Forcefields <forcefields>
    Molecular <molecular>
    Optimisation <optimisation>
-   Systems Optimisation <systems_optimisation>
+   Systems optimisation <systems_optimisation>
    Terms <terms>
    Utilities <utilities>
    Executables <executables>
    Topologies <topologies>
-   First Paper Example <first_paper_example>
+   First paper example <first_paper_example>
 
 .. toctree::
   :hidden:

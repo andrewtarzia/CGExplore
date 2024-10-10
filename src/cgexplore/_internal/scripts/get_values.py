@@ -65,7 +65,8 @@ def main() -> None:
         entry = database.get_entry(key=args.name)
         try:
             value = extract_property(
-                path=args.path, properties=entry.properties
+                path=args.path,
+                properties=entry.properties,
             )
 
         except KeyError as ex:
