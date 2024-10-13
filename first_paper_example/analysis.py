@@ -92,16 +92,24 @@ def analyse_cage(
         )
 
         tstr = name.split("_")[0]
-        n_shape_mol = node_shape.get_shape_molecule_byelements(
-            molecule=conformer.molecule,
-            elements=node_element,
-            expected_points=node_expected_topologies(tstr),
-        )
-        l_shape_mol = liga_shape.get_shape_molecule_byelements(
-            molecule=conformer.molecule,
-            elements=ligand_element,
-            expected_points=ligand_expected_topologies(tstr),
-        )
+        try:
+            n_shape_mol = node_shape.get_shape_molecule_byelements(
+                molecule=conformer.molecule,
+                elements=node_element,
+                expected_points=node_expected_topologies(tstr),
+            )
+        except KeyError:
+            n_shape_mol = None
+
+        try:
+            l_shape_mol = liga_shape.get_shape_molecule_byelements(
+                molecule=conformer.molecule,
+                elements=ligand_element,
+                expected_points=ligand_expected_topologies(tstr),
+            )
+        except KeyError:
+            l_shape_mol = None
+
         if n_shape_mol is None:
             node_shape_measures = None
         else:
