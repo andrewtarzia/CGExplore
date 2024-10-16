@@ -23,6 +23,15 @@ logging.basicConfig(
 )
 
 
+def failed_cage(
+    name: str,
+    database: cgexplore.utilities.AtomliteDatabase,
+) -> None:
+    """Save failed cage."""
+    res_dict = {"optimised": False}
+    database.add_properties(key=name, property_dict=res_dict)
+
+
 def optimise_cage(
     molecule: stk.Molecule,
     name: str,
@@ -307,28 +316,34 @@ def build_populations(
                 ),
             )
 
-            conformer = optimise_cage(
-                molecule=cage,
-                name=name,
-                output_dir=calculation_output,
-                forcefield=forcefield,
-                platform=platform,
-                database=database,
-            )
-            if conformer is not None:
-                conformer.molecule.write(
-                    str(struct_output / f"{name}_optc.mol")
+            try:
+                conformer = optimise_cage(
+                    molecule=cage,
+                    name=name,
+                    output_dir=calculation_output,
+                    forcefield=forcefield,
+                    platform=platform,
+                    database=database,
                 )
-            count += 1
+                if conformer is not None:
+                    conformer.molecule.write(
+                        str(struct_output / f"{name}_optc.mol")
+                    )
+                count += 1
 
-            analyse_cage(
-                conformer=conformer,
-                name=name,
-                output_dir=calculation_output,
-                forcefield=forcefield,
-                node_element=node_element,
-                ligand_element=ligand_element,
-                database=database,
-            )
+                analyse_cage(
+                    conformer=conformer,
+                    name=name,
+                    output_dir=calculation_output,
+                    forcefield=forcefield,
+                    node_element=node_element,
+                    ligand_element=ligand_element,
+                    database=database,
+                )
+            except openmm.OpenMMException:
+                failed_cage(
+                    name=name,
+                    database=database,
+                )
 
         logging.info("%s %s cages built.", count, population)

@@ -48,9 +48,12 @@ def parity_1(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
             cage_name = str(row["cage_name"])
             pair_name = get_paired_cage_name(cage_name)
             d2_row = tdata[tdata["cage_name"] == pair_name]
-            d2_energy = float(d2_row["energy_per_bb"].iloc[0])
+            try:
+                d2_energy = float(d2_row["energy_per_bb"].iloc[0])
 
-            diffdata.append(d1_energy - d2_energy)
+                diffdata.append(d1_energy - d2_energy)
+            except IndexError:
+                pass
 
         xpos = tcpos[tstr]
 

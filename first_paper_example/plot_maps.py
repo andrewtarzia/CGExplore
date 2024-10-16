@@ -816,7 +816,7 @@ def pd_3p64p8_figure_bite_angle(
     """Make a plot."""
     logging.info("running pd_3p64p8_figure_bite_angle")
 
-    color_map = ("3P6", "4P8")
+    color_map = {"3P6": "tab:orange", "4P8": "tab:green"}
 
     fig, ax = plt.subplots(figsize=(8, 2.5))
     trim = all_data[all_data["vdws"] == "von"]
@@ -832,13 +832,13 @@ def pd_3p64p8_figure_bite_angle(
             ey = float(tdata["energy_per_bb"].iloc[0])
             tstr_points[tstr].append((ba, ey))
 
-    next(ax._get_lines.prop_cycler)["color"]  # noqa: SLF001
     for tstr in color_map:
         ax.plot(
             [i[0] for i in tstr_points[tstr]],
             [i[1] for i in tstr_points[tstr]],
             alpha=1.0,
             # edgecolor="k",
+            markerfacecolor=color_map[tstr],
             lw=3,
             marker="o",
             markeredgecolor="k",

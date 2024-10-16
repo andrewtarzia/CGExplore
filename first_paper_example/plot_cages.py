@@ -742,14 +742,14 @@ def si_shape_fig(
     plt.close()
 
 
-def add_energy_to_ax(ax: mpl.Axes, energy: float) -> None:
+def add_energy_to_ax(ax: mpl.axes, energy: float) -> None:
     """Add energy to ax."""
     colorcode = "#345995" if energy <= isomer_energy() else "#CA1551"
 
     ax.set_title(round(energy, 1), fontsize=16, color=colorcode)
 
 
-def add_text_to_ax(ax: mpl.Axes, text: str) -> None:
+def add_text_to_ax(ax: mpl.axes, text: str) -> None:
     """Add text to ax."""
     x = 0.05
     y = 0.25
@@ -757,7 +757,7 @@ def add_text_to_ax(ax: mpl.Axes, text: str) -> None:
 
 
 def add_structure_to_ax(
-    ax: mpl.Axes,
+    ax: mpl.axes,
     struct_name: str,
     struct_output: pathlib.Path,
     struct_figure_output: pathlib.Path,
@@ -994,8 +994,11 @@ def check_odd_outcomes(
             cdata = ton_data[ton_data["cage_name"] == cage_name]
             pair_name = get_paired_cage_name(cage_name)
             pdata = tdata[tdata["cage_name"] == pair_name]
-            ton_energy = float(cdata["energy_per_bb"].iloc[0])
-            toff_energy = float(pdata["energy_per_bb"].iloc[0])
+            try:
+                ton_energy = float(cdata["energy_per_bb"].iloc[0])
+                toff_energy = float(pdata["energy_per_bb"].iloc[0])
+            except IndexError:
+                continue
 
             # Ignore rounding errors in near zero cases.
             if ton_energy < 1e-1:  # noqa: PLR2004

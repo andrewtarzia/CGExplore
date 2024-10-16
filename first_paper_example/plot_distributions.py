@@ -835,11 +835,13 @@ def plot_topology_pore_flex(data, figure_output: pathlib.Path) -> None:
             cdata = ton_data[ton_data["cage_name"] == cage_name]
             pair_name = get_paired_cage_name(cage_name)
             pdata = tdata[tdata["cage_name"] == pair_name]
-
-            ton_energy = float(cdata["energy_per_bb"].iloc[0])
-            toff_energy = float(pdata["energy_per_bb"].iloc[0])
-            ton_pore = float(cdata["pore"].iloc[0])
-            toff_pore = float(pdata["pore"].iloc[0])
+            try:
+                ton_energy = float(cdata["energy_per_bb"].iloc[0])
+                toff_energy = float(pdata["energy_per_bb"].iloc[0])
+                ton_pore = float(cdata["pore"].iloc[0])
+                toff_pore = float(pdata["pore"].iloc[0])
+            except IndexError:
+                continue
             rel_difference = (ton_pore - toff_pore) / toff_pore
 
             differences.append(rel_difference)
