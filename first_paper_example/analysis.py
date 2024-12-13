@@ -12,7 +12,7 @@ import pandas as pd
 from env_set import shape_path
 from topologies import cage_topology_options
 
-import cgexplore
+import cgexplore as cgx
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,10 +28,10 @@ def get_paired_cage_name(cage_name: str) -> str:
 
 
 def analyse_cage(
-    conformer: cgexplore.molecular.Conformer,
+    conformer: cgx.molecular.Conformer,
     name: str,
     output_dir: pathlib.Path,
-    forcefield: cgexplore.forcefields.ForceField,
+    forcefield: cgx.forcefields.ForceField,
     node_element: str,
     ligand_element: str,
     database,
@@ -80,12 +80,12 @@ def analyse_cage(
             )
             raise
 
-        node_shape = cgexplore.analysis.ShapeMeasure(
+        node_shape = cgx.analysis.ShapeMeasure(
             output_dir=(output_dir / f"{name}_nshape"),
             shape_path=shape_path(),
             shape_string=None,
         )
-        liga_shape = cgexplore.analysis.ShapeMeasure(
+        liga_shape = cgx.analysis.ShapeMeasure(
             output_dir=(output_dir / f"{name}_lshape"),
             shape_path=shape_path(),
             shape_string=None,
@@ -123,9 +123,9 @@ def analyse_cage(
             l_shape_mol.write(shape_molfile2)
 
         # Always want to extract target torions if present.
-        g_measure = cgexplore.analysis.GeomMeasure(
+        g_measure = cgx.analysis.GeomMeasure(
             target_torsions=(
-                cgexplore.terms.TargetTorsion(
+                cgx.terms.TargetTorsion(
                     search_string=("b1", "a1", "c1", "a1", "b1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
                     measured_atom_ids=[0, 1, 3, 4],
@@ -604,7 +604,7 @@ def get_sv_dist(row: pd.Series, mode: str) -> np.ndarray:
         msg = "I removed all uses of `shape`b label, check."
         raise ValueError(msg)
 
-    known_sv = cgexplore.analysis.known_shape_vectors()[tshape]
+    known_sv = cgx.analysis.known_shape_vectors()[tshape]
     current_sv = {i: float(row[f"{mode}_{i}"]) for i in known_sv}
     a = np.array([known_sv[i] for i in known_sv])
     b = np.array([current_sv[i] for i in known_sv])
