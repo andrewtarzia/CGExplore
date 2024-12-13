@@ -313,8 +313,7 @@ class ForceField:
         # For four coordinate systems, apply standard angle theta to
         # neighbouring atoms, then compute pyramid angle for opposing
         # interaction.
-        for central_name in pyramid_angles:
-            angles = pyramid_angles[central_name]
+        for angles in pyramid_angles.values():
             all_angles_values = {
                 i: np.degrees(
                     stko.vector_angle(
@@ -359,8 +358,7 @@ class ForceField:
 
         # For six coordinate systems, assume octahedral geometry.
         # So 90 degrees with 12 smallest angles, 180 degrees for the rest.
-        for central_name in octahedral_angles:
-            angles = octahedral_angles[central_name]
+        for angles in octahedral_angles.values():
             all_angles_values = {
                 i: np.degrees(
                     stko.vector_angle(
