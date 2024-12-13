@@ -8,8 +8,8 @@ A package of the forcefield terms used in `CGExplore`.
 
   Terms module <_autosummary/cgexplore.terms>
 
-As with the discussion of the :class:`cgexplore.forcefields.ForceFieldLibrary`,
-all terms have the actual term (e.g., :class:`cgexplore.terms.Bond`) and a
+As with the discussion of the :class:`cgx.forcefields.ForceFieldLibrary`,
+all terms have the actual term (e.g., :class:`cgx.terms.Bond`) and a
 `Target` and `TargerRange` class, which assist the user in defining variable
 forcefields for a single term.
 

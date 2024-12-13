@@ -128,15 +128,7 @@ New works done with :mod:`.CGExplore`:
 Acknowledgements
 ----------------
 
-This work was completed during my time as a postdoc, and then research fellow
-in the Pavan group at PoliTO (https://www.gmpavanlab.com/).
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+Funded by the European Union - Next Generation EU, Mission 4 Component 1
+CUP E13C22002930006 and the ERC under projects DYNAPOL.
 
 .. _`First Paper Example`: first_paper_example.html

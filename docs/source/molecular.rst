@@ -34,7 +34,7 @@ Precursors
 ----------
 
 These classes provide interfaces between `stk` and :mod:`.CGExplore`. A
-:class:`cgexplore.molecular.Precursor` contains an :class:`stk.BuildingBlock`
+:class:`cgx.molecular.Precursor` contains an :class:`stk.BuildingBlock`
 for molecule construction.
 
 .. toctree::

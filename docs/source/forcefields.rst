@@ -11,12 +11,12 @@ All of these forcefields interface with `OpenMM`.
 
 
 There is a lot of flexibility in how this code is used, however, `OpenMM`
-requires a :class:`cgexplore.forcefields.ForcedSystem`.
+requires a :class:`cgx.forcefields.ForcedSystem`.
 
 .. note::
 
-   Actually use :class:`cgexplore.forcefields.AssignedSystem` or
-   :class:`cgexplore.forcefields.MartiniSystem`.
+   Actually use :class:`cgx.forcefields.AssignedSystem` or
+   :class:`cgx.forcefields.MartiniSystem`.
 
 .. note::
 
