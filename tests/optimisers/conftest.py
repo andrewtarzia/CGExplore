@@ -2,29 +2,29 @@ import pytest
 import stk
 from openmm import openmm
 
-import cgexplore
+import cgexplore as cgx
 
 from .case_data import CaseData
 
-bead1 = cgexplore.molecular.CgBead(
+bead1 = cgx.molecular.CgBead(
     element_string="Ag",
     bead_class="c",
     bead_type="c",
     coordination=2,
 )
-bead2 = cgexplore.molecular.CgBead(
+bead2 = cgx.molecular.CgBead(
     element_string="Ba",
     bead_class="a",
     bead_type="a",
     coordination=2,
 )
-bead3 = cgexplore.molecular.CgBead(
+bead3 = cgx.molecular.CgBead(
     element_string="Pb",
     bead_class="b",
     bead_type="b",
     coordination=2,
 )
-bead4 = cgexplore.molecular.CgBead(
+bead4 = cgx.molecular.CgBead(
     element_string="C",
     bead_class="n",
     bead_type="n",
@@ -38,10 +38,10 @@ bead4 = cgexplore.molecular.CgBead(
             molecule=stk.ConstructedMolecule(
                 topology_graph=stk.polymer.Linear(
                     building_blocks=(
-                        cgexplore.molecular.TwoC1Arm(
+                        cgx.molecular.TwoC1Arm(
                             bead=bead1, abead1=bead2
                         ).get_building_block(),
-                        cgexplore.molecular.TwoC1Arm(
+                        cgx.molecular.TwoC1Arm(
                             bead=bead3, abead1=bead4
                         ).get_building_block(),
                     ),
@@ -49,12 +49,12 @@ bead4 = cgexplore.molecular.CgBead(
                     repeating_unit="AB",
                 ),
             ),
-            forcefield=cgexplore.forcefields.ForceField(
+            forcefield=cgx.forcefields.ForceField(
                 identifier="test",
                 prefix="opt_tests",
                 present_beads=(bead1, bead2, bead3, bead4),
                 bond_targets=(
-                    cgexplore.terms.TargetBond(
+                    cgx.terms.TargetBond(
                         type1="c",
                         type2="a",
                         element1="Ag",
@@ -69,7 +69,7 @@ bead4 = cgexplore.molecular.CgBead(
                             / openmm.unit.nanometer**2,
                         ),
                     ),
-                    cgexplore.terms.TargetBond(
+                    cgx.terms.TargetBond(
                         type1="a",
                         type2="n",
                         element1="Ba",
@@ -84,7 +84,7 @@ bead4 = cgexplore.molecular.CgBead(
                             / openmm.unit.nanometer**2,
                         ),
                     ),
-                    cgexplore.terms.TargetBond(
+                    cgx.terms.TargetBond(
                         type1="b",
                         type2="n",
                         element1="Ba",
@@ -103,7 +103,7 @@ bead4 = cgexplore.molecular.CgBead(
                 angle_targets=(),
                 torsion_targets=(),
                 nonbonded_targets=(
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "c",
                         "Ag",
                         epsilon=openmm.unit.Quantity(
@@ -115,7 +115,7 @@ bead4 = cgexplore.molecular.CgBead(
                         ),
                         force="custom-excl-vol",
                     ),
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "a",
                         "Ba",
                         epsilon=openmm.unit.Quantity(
@@ -127,7 +127,7 @@ bead4 = cgexplore.molecular.CgBead(
                         ),
                         force="custom-excl-vol",
                     ),
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "b",
                         "Pb",
                         epsilon=openmm.unit.Quantity(
@@ -139,7 +139,7 @@ bead4 = cgexplore.molecular.CgBead(
                         ),
                         force="custom-excl-vol",
                     ),
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "n",
                         "C",
                         epsilon=openmm.unit.Quantity(
@@ -168,10 +168,10 @@ bead4 = cgexplore.molecular.CgBead(
             molecule=stk.ConstructedMolecule(
                 topology_graph=stk.polymer.Linear(
                     building_blocks=(
-                        cgexplore.molecular.TwoC1Arm(
+                        cgx.molecular.TwoC1Arm(
                             bead=bead1, abead1=bead2
                         ).get_building_block(),
-                        cgexplore.molecular.TwoC1Arm(
+                        cgx.molecular.TwoC1Arm(
                             bead=bead3, abead1=bead4
                         ).get_building_block(),
                     ),
@@ -179,12 +179,12 @@ bead4 = cgexplore.molecular.CgBead(
                     repeating_unit="AB",
                 ),
             ),
-            forcefield=cgexplore.forcefields.ForceField(
+            forcefield=cgx.forcefields.ForceField(
                 identifier="test",
                 prefix="opt_tests",
                 present_beads=(bead1, bead2, bead3, bead4),
                 bond_targets=(
-                    cgexplore.terms.TargetBond(
+                    cgx.terms.TargetBond(
                         type1="c",
                         type2="a",
                         element1="Ag",
@@ -199,7 +199,7 @@ bead4 = cgexplore.molecular.CgBead(
                             / openmm.unit.nanometer**2,
                         ),
                     ),
-                    cgexplore.terms.TargetBond(
+                    cgx.terms.TargetBond(
                         type1="a",
                         type2="n",
                         element1="Ba",
@@ -214,7 +214,7 @@ bead4 = cgexplore.molecular.CgBead(
                             / openmm.unit.nanometer**2,
                         ),
                     ),
-                    cgexplore.terms.TargetBond(
+                    cgx.terms.TargetBond(
                         type1="b",
                         type2="n",
                         element1="Ba",
@@ -233,7 +233,7 @@ bead4 = cgexplore.molecular.CgBead(
                 angle_targets=(),
                 torsion_targets=(),
                 nonbonded_targets=(
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "c",
                         "Ag",
                         epsilon=openmm.unit.Quantity(
@@ -245,7 +245,7 @@ bead4 = cgexplore.molecular.CgBead(
                         ),
                         force="custom-excl-vol",
                     ),
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "a",
                         "Ba",
                         epsilon=openmm.unit.Quantity(
@@ -257,7 +257,7 @@ bead4 = cgexplore.molecular.CgBead(
                         ),
                         force="custom-excl-vol",
                     ),
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "b",
                         "Pb",
                         epsilon=openmm.unit.Quantity(
@@ -269,7 +269,7 @@ bead4 = cgexplore.molecular.CgBead(
                         ),
                         force="custom-excl-vol",
                     ),
-                    cgexplore.terms.TargetNonbonded(
+                    cgx.terms.TargetNonbonded(
                         "n",
                         "C",
                         epsilon=openmm.unit.Quantity(

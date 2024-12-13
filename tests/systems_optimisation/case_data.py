@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 
-import cgexplore
+import cgexplore as cgx
 
 
 @dataclass(slots=True, frozen=True)
 class CaseData:
     """A test case."""
 
-    chromosome_generator: cgexplore.systems_optimisation.ChromosomeGenerator
+    chromosome_generator: cgx.systems_optimisation.ChromosomeGenerator
     known_map: dict[int, dict]
     known_types: dict[int, dict]
     num: int

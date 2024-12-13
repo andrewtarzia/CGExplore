@@ -1,6 +1,6 @@
 import stk
 
-import cgexplore
+import cgexplore as cgx
 
 
 class CaseData:
@@ -9,11 +9,11 @@ class CaseData:
     def __init__(
         self,
         molecule: stk.Molecule,
-        forcefield_library: cgexplore.forcefields.ForceFieldLibrary,
-        bond_ranges: tuple[cgexplore.terms.TargetBondRange],
-        angle_ranges: tuple[cgexplore.terms.TargetAngleRange],
-        torsion_ranges: tuple[cgexplore.terms.TargetTorsionRange],
-        nonbonded_ranges: tuple[cgexplore.terms.TargetNonbondedRange],
+        forcefield_library: cgx.forcefields.ForceFieldLibrary,
+        bond_ranges: tuple[cgx.terms.TargetBondRange],
+        angle_ranges: tuple[cgx.terms.TargetAngleRange],
+        torsion_ranges: tuple[cgx.terms.TargetTorsionRange],
+        nonbonded_ranges: tuple[cgx.terms.TargetNonbondedRange],
         present_bonds: tuple[tuple],
         present_angles: tuple[tuple],
         present_nonbondeds: tuple[tuple],

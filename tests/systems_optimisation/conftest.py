@@ -1,35 +1,35 @@
 import pytest
 
-import cgexplore
+import cgexplore as cgx
 
 from .case_data import CaseData
 
-abead = cgexplore.molecular.CgBead(
+abead = cgx.molecular.CgBead(
     element_string="Ag",
     bead_class="a",
     bead_type="a",
     coordination=3,
 )
-bbead = cgexplore.molecular.CgBead(
+bbead = cgx.molecular.CgBead(
     element_string="Ba",
     bead_class="b",
     bead_type="b",
     coordination=2,
 )
-cbead = cgexplore.molecular.CgBead(
+cbead = cgx.molecular.CgBead(
     element_string="C",
     bead_class="c",
     bead_type="c",
     coordination=2,
 )
-dbead = cgexplore.molecular.CgBead(
+dbead = cgx.molecular.CgBead(
     element_string="O",
     bead_class="o",
     bead_type="o",
     coordination=2,
 )
 
-chromo_it = cgexplore.systems_optimisation.ChromosomeGenerator(
+chromo_it = cgx.systems_optimisation.ChromosomeGenerator(
     prefix="test",
     present_beads=(abead, bbead, cbead, dbead),
     vdw_bond_cutoff=2,
@@ -78,7 +78,7 @@ definer_dict = {
 }
 chromo_it.add_forcefield_dict(definer_dict=definer_dict)
 
-chromo_it2 = cgexplore.systems_optimisation.ChromosomeGenerator(
+chromo_it2 = cgx.systems_optimisation.ChromosomeGenerator(
     prefix="test2",
     present_beads=(),
     vdw_bond_cutoff=2,

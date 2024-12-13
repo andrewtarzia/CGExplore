@@ -2,14 +2,14 @@ import pathlib
 
 import numpy as np
 
-import cgexplore
+import cgexplore as cgx
 
 from .case_data import CaseData
 
 
 def fit_calc(
-    chromosome: cgexplore.systems_optimisation.Chromosome,
-    chromosome_generator: cgexplore.systems_optimisation.ChromosomeGenerator,  # noqa: ARG001
+    chromosome: cgx.systems_optimisation.Chromosome,
+    chromosome_generator: cgx.systems_optimisation.ChromosomeGenerator,  # noqa: ARG001
     database_path: pathlib.Path,  # noqa: ARG001
     calculation_output: pathlib.Path,  # noqa: ARG001
     structure_output: pathlib.Path,  # noqa: ARG001
@@ -19,7 +19,7 @@ def fit_calc(
 
 
 def str_calc(
-    chromosome: cgexplore.systems_optimisation.Chromosome,
+    chromosome: cgx.systems_optimisation.Chromosome,
     database_path: pathlib.Path,
     calculation_output: pathlib.Path,
     structure_output: pathlib.Path,
@@ -46,10 +46,10 @@ def test_generation(chromosome_generator: CaseData) -> None:
         generator=np.random.default_rng(109),
         size=size,
     )
-    generation = cgexplore.systems_optimisation.Generation(
+    generation = cgx.systems_optimisation.Generation(
         chromosomes=population1,
         num_processes=chromosome_generator.np,
-        fitness_calculator=cgexplore.systems_optimisation.FitnessCalculator(
+        fitness_calculator=cgx.systems_optimisation.FitnessCalculator(
             fitness_function=fit_calc,
             chromosome_generator=chromo_it,
             structure_output=output_dir,
@@ -57,7 +57,7 @@ def test_generation(chromosome_generator: CaseData) -> None:
             database_path=output_dir / "t.db",
             options={},
         ),
-        structure_calculator=cgexplore.systems_optimisation.StructureCalculator(
+        structure_calculator=cgx.systems_optimisation.StructureCalculator(
             structure_function=str_calc,
             structure_output=output_dir,
             calculation_output=output_dir,
