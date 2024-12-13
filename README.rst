@@ -5,8 +5,6 @@
 .. figure:: docs/source/_static/logo.png
 
 
-
-
 Overview
 ========
 
