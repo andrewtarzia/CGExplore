@@ -17,7 +17,7 @@ The code can be installed following these steps:
 
 2. Activate the environment:
  ```
- conda activate NAME
+ mamba activate NAME
  ```
 
 3. Install `CGExplore` with pip:
@@ -29,20 +29,13 @@ pip install cgexplore
  ```
 mamba install openmm
 ```
-or
-```
-conda install -c conda-forge openmm
-```
+
 
 6. Install [openmmtools](https://openmmtools.readthedocs.io/en/stable/gettingstarted.html):
 ```
 mamba install openmmtools
 ```
-or
-```
-conda config --add channels omnia --add channels conda-forge
-conda install openmmtools
-```
+
 
 7. Update directory structure in `env_set.py` if using example code.
 
