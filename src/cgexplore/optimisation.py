@@ -8,8 +8,8 @@ from cgexplore._internal.optimisation.openmm_optimizer import (
 )
 
 __all__ = [
-    "OMMTrajectory",
     "CGOMMDynamics",
     "CGOMMOptimizer",
     "CGOMMSinglePoint",
+    "OMMTrajectory",
 ]

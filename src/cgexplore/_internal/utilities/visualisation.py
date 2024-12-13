@@ -198,16 +198,15 @@ class Pymol:
                 selection_string += f" | name {element}"
 
         radii_string = ""
-        for element in radii:
-            r = 0 if element in host_atoms else radii[element] / 2
+        for element, radius in radii.items():
+            r = 0 if element in host_atoms else radius / 2
             radii_string += f"alter (name {element}),vdw={r}\n"
         transperancy_string = (
             f"set sphere_transparency, {host_transperancy}, cage"
         )
 
         epsilon_string = ""
-        for element in epsilons:
-            b = epsilons[element]
+        for element, b in epsilons.items():
             if element in host_atoms:
                 continue
             epsilon_string += f"alter (name {element}),b={b}\n"

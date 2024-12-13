@@ -2,9 +2,11 @@
 
 from cgexplore import (
     analysis,
+    atomistic,
     forcefields,
     molecular,
     optimisation,
+    scram,
     systems_optimisation,
     terms,
     topologies,
@@ -13,11 +15,13 @@ from cgexplore import (
 
 __all__ = [
     "analysis",
-    "utilities",
+    "atomistic",
     "forcefields",
-    "optimisation",
-    "systems_optimisation",
     "molecular",
+    "optimisation",
+    "scram",
+    "systems_optimisation",
     "terms",
     "topologies",
+    "utilities",
 ]

@@ -9,7 +9,7 @@ from collections import abc
 from analysis import stoich_map, topology_labels
 from env_set import outputdata
 
-import cgexplore
+import cgexplore as cgx
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,7 +46,7 @@ def main() -> None:
             continue
         study = f"{study_pre}_{torsion}"
 
-        database = cgexplore.utilities.AtomliteDatabase(
+        database = cgx.utilities.AtomliteDatabase(
             db_file=data_output / f"first_{study_pre}.db"
         )
 
@@ -86,7 +86,7 @@ def main() -> None:
             structures.append(database.get_molecule(entry.key))
 
             for prop in properties_to_get:
-                value = cgexplore.utilities.extract_property(
+                value = cgx.utilities.extract_property(
                     path=properties_to_get[prop]["path"],
                     properties=entry.properties,
                 )
@@ -106,7 +106,7 @@ def main() -> None:
             len(structures),
             len(properties),
         )
-        cgexplore.utilities.write_chemiscope_json(
+        cgx.utilities.write_chemiscope_json(
             json_file=data_output / f"cs_{study}_{tstr}.json.gz",
             structures=structures,
             properties=properties,

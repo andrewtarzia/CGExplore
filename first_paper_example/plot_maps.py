@@ -76,10 +76,10 @@ def nobiteangle_relationship(
             y_mins = []
             for x in xs:
                 y_list = []
-                for run_num in clan_output:
-                    if x in clan_output[run_num]:
-                        xys.append((x, clan_output[run_num][x]))
-                        y_list.append(clan_output[run_num][x])
+                for clan_val in clan_output.values():
+                    if x in clan_val:
+                        xys.append((x, clan_val[x]))
+                        y_list.append(clan_val[x])
                 y_mins.append(min(y_list))
 
             ax.scatter(
@@ -170,10 +170,10 @@ def bite_angle_relationship(
                 xys = []
                 for x in xs:
                     y_list = []
-                    for run_num in tors_output:
-                        if x in tors_output[run_num]:
-                            y_list.append(tors_output[run_num][x])
-                            xys.append((x, tors_output[run_num][x]))
+                    for tors_val in tors_output.values():
+                        if x in tors_val:
+                            y_list.append(tors_val[x])
+                            xys.append((x, tors_val[x]))
                     y_mins.append(min(y_list))
 
                 ax.scatter(
@@ -243,9 +243,7 @@ def selectivity_map(
             "clbl": eb_str(),
         },
     }
-    for prop in properties:
-        pdict = properties[prop]
-
+    for prop, pdict in properties.items():
         count = 0
         topology_order = {}
         tset = set(all_data["topology"])
@@ -268,11 +266,11 @@ def selectivity_map(
             tordata = all_data[all_data["torsions"] == tors]
             for clangle, ax in zip(clangles, r_axs, strict=True):
                 cdata = tordata[tordata["clangle"] == clangle]
-                for tstr in topology_order:
+                for tstr, yvalue in topology_order.items():
                     xvalues = []
                     yvalues = []
                     cvalues = []
-                    yvalue = topology_order[tstr]
+
                     tdata = cdata[cdata["topology"] == tstr]
                     for ba in bite_angles:
                         plotdata = tdata[tdata["target_bite_angle"] == ba]
@@ -832,13 +830,13 @@ def pd_3p64p8_figure_bite_angle(
             ey = float(tdata["energy_per_bb"].iloc[0])
             tstr_points[tstr].append((ba, ey))
 
-    for tstr in color_map:
+    for tstr, col in color_map.items():
         ax.plot(
             [i[0] for i in tstr_points[tstr]],
             [i[1] for i in tstr_points[tstr]],
             alpha=1.0,
             # edgecolor="k",
-            markerfacecolor=color_map[tstr],
+            markerfacecolor=col,
             lw=3,
             marker="o",
             markeredgecolor="k",

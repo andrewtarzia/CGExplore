@@ -15,7 +15,7 @@ import stk
 from analysis import analyse_cage
 from define_forcefields import get_neighbour_library
 
-import cgexplore
+import cgexplore as cgx
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,7 +25,7 @@ logging.basicConfig(
 
 def failed_cage(
     name: str,
-    database: cgexplore.utilities.AtomliteDatabase,
+    database: cgx.utilities.AtomliteDatabase,
 ) -> None:
     """Save failed cage."""
     res_dict = {"optimised": False}
@@ -36,17 +36,17 @@ def optimise_cage(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path,
-    forcefield: cgexplore.forcefields.ForceField,
+    forcefield: cgx.forcefields.ForceField,
     platform: str,
-    database: cgexplore.utilities.AtomliteDatabase,
-) -> cgexplore.molecular.Conformer:
+    database: cgx.utilities.AtomliteDatabase,
+) -> cgx.molecular.Conformer:
     """Optimise a toy model cage."""
     fina_mol_file = output_dir / f"{name}_final.mol"
     # Do not rerun if database entry exists.
     if database.has_molecule(key=name):
         final_molecule = database.get_molecule(key=name)
         final_molecule.write(fina_mol_file)
-        return cgexplore.molecular.Conformer(
+        return cgx.molecular.Conformer(
             molecule=final_molecule,
             energy_decomposition=database.get_property(
                 key=name,
@@ -57,7 +57,7 @@ def optimise_cage(
 
     # Do not rerun if final mol exists.
     if fina_mol_file.exists():
-        ensemble = cgexplore.molecular.Ensemble(
+        ensemble = cgx.molecular.Ensemble(
             base_molecule=molecule,
             base_mol_path=output_dir / f"{name}_base.mol",
             conformer_xyz=output_dir / f"{name}_ensemble.xyz",
@@ -78,14 +78,14 @@ def optimise_cage(
 
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
 
-    ensemble = cgexplore.molecular.Ensemble(
+    ensemble = cgx.molecular.Ensemble(
         base_molecule=molecule,
         base_mol_path=output_dir / f"{name}_base.mol",
         conformer_xyz=output_dir / f"{name}_ensemble.xyz",
         data_json=output_dir / f"{name}_ensemble.json",
         overwrite=True,
     )
-    temp_molecule = cgexplore.utilities.run_constrained_optimisation(
+    temp_molecule = cgx.utilities.run_constrained_optimisation(
         assigned_system=assigned_system,
         name=name,
         output_dir=output_dir,
@@ -97,8 +97,8 @@ def optimise_cage(
 
     try:
         logging.info("optimisation of %s", name)
-        conformer = cgexplore.utilities.run_optimisation(
-            assigned_system=cgexplore.forcefields.AssignedSystem(
+        conformer = cgx.utilities.run_optimisation(
+            assigned_system=cgx.forcefields.AssignedSystem(
                 molecule=temp_molecule,
                 forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
@@ -119,12 +119,12 @@ def optimise_cage(
     # Run optimisations of series of conformers with shifted out
     # building blocks.
     logging.info("optimisation of shifted structures of %s", name)
-    for test_molecule in cgexplore.utilities.yield_shifted_models(
+    for test_molecule in cgx.utilities.yield_shifted_models(
         temp_molecule, forcefield, kicks=(1, 2, 3, 4)
     ):
         try:
-            conformer = cgexplore.utilities.run_optimisation(
-                assigned_system=cgexplore.forcefields.AssignedSystem(
+            conformer = cgx.utilities.run_optimisation(
+                assigned_system=cgx.forcefields.AssignedSystem(
                     molecule=test_molecule,
                     forcefield_terms=assigned_system.forcefield_terms,
                     system_xml=assigned_system.system_xml,
@@ -148,14 +148,14 @@ def optimise_cage(
         ffnum=int(forcefield.get_identifier()),
         fftype=forcefield.get_prefix(),
     )
-    for test_molecule in cgexplore.utilities.yield_near_models(
+    for test_molecule in cgx.utilities.yield_near_models(
         molecule=molecule,
         name=name,
         output_dir=output_dir,
         neighbour_library=neighbour_library,
     ):
-        conformer = cgexplore.utilities.run_optimisation(
-            assigned_system=cgexplore.forcefields.AssignedSystem(
+        conformer = cgx.utilities.run_optimisation(
+            assigned_system=cgx.forcefields.AssignedSystem(
                 molecule=test_molecule,
                 forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
@@ -173,9 +173,9 @@ def optimise_cage(
     logging.info("soft MD run of %s", name)
     num_steps = 20000
     traj_freq = 500
-    soft_md_trajectory = cgexplore.utilities.run_soft_md_cycle(
+    soft_md_trajectory = cgx.utilities.run_soft_md_cycle(
         name=name,
-        assigned_system=cgexplore.forcefields.AssignedSystem(
+        assigned_system=cgx.forcefields.AssignedSystem(
             molecule=ensemble.get_lowest_e_conformer().molecule,
             forcefield_terms=assigned_system.forcefield_terms,
             system_xml=assigned_system.system_xml,
@@ -210,8 +210,8 @@ def optimise_cage(
     # Go through each conformer from soft MD.
     # Optimise them all.
     for md_conformer in soft_md_trajectory.yield_conformers():
-        conformer = cgexplore.utilities.run_optimisation(
-            assigned_system=cgexplore.forcefields.AssignedSystem(
+        conformer = cgx.utilities.run_optimisation(
+            assigned_system=cgx.forcefields.AssignedSystem(
                 molecule=md_conformer.molecule,
                 forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
@@ -259,13 +259,12 @@ def build_populations(
     node_element: str,
     ligand_element: str,
     platform: str,
-    database: cgexplore.utilities.AtomliteDatabase,
+    database: cgx.utilities.AtomliteDatabase,
 ) -> None:
     """Build a population."""
     count = 0
-    for population in populations:
+    for population, popn_dict in populations.items():
         logging.info("running population %s", population)
-        popn_dict = populations[population]
         topologies = popn_dict["topologies"]
         forcefields = tuple(popn_dict["fflibrary"].yield_forcefields())
         logging.info("there are %s topologies", len(topologies))
@@ -288,7 +287,7 @@ def build_populations(
             c2_name = (
                 f"{c2_precursor.get_name()}_f{forcefield.get_identifier()}"
             )
-            c2_building_block = cgexplore.utilities.optimise_ligand(
+            c2_building_block = cgx.utilities.optimise_ligand(
                 molecule=c2_precursor.get_building_block(),
                 name=c2_name,
                 output_dir=calculation_output,
@@ -300,7 +299,7 @@ def build_populations(
             cl_name = (
                 f"{cl_precursor.get_name()}_f{forcefield.get_identifier()}"
             )
-            cl_building_block = cgexplore.utilities.optimise_ligand(
+            cl_building_block = cgx.utilities.optimise_ligand(
                 molecule=cl_precursor.get_building_block(),
                 name=cl_name,
                 output_dir=calculation_output,

@@ -951,16 +951,15 @@ def webapp_csv(
         csv_files[topo_type][bbpair] = bbdict
         count += 1
 
-    for csv_name in csv_files:
-        filename = figure_output / f"{csv_name}_bbdata.csv"
+    for topo_type, topo_dict in csv_files.items():
+        filename = figure_output / f"{topo_type}_bbdata.csv"
         with filename.open("w") as f:
             f.write(
                 "name,clangle,bite_angle,c2angle,c3angle,"
                 "restricted topologies,unrestricted topologies,"
                 "restricted URL,unrestricted URL\n"
             )
-            for bbpair in csv_files[csv_name]:
-                bbdict = csv_files[csv_name][bbpair]
+            for bbpair, bbdict in topo_dict.items():
                 f.write(
                     f"{bbpair},{bbdict['toff']['clangle']},"
                     f"{bbdict['toff']['bite_angle']},"

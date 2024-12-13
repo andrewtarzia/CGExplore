@@ -10,7 +10,7 @@ import numpy as np
 import openmm
 import stk
 
-import cgexplore
+import cgexplore as cgx
 
 
 def isomer_energy() -> float:
@@ -40,10 +40,10 @@ def colours() -> dict[str, str]:
 
 
 def analyse_cage(
-    database: cgexplore.utilities.AtomliteDatabase,
+    database: cgx.utilities.AtomliteDatabase,
     name: str,
-    forcefield: cgexplore.forcefields.ForceField,
-    chromosome: cgexplore.systems_optimisation.Chromosome,
+    forcefield: cgx.forcefields.ForceField,
+    chromosome: cgx.systems_optimisation.Chromosome,
 ) -> None:
     entry = database.get_entry(key=name)
     molecule = database.get_molecule(key=name)
@@ -100,7 +100,7 @@ def analyse_cage(
 
     if "dihedral_data" not in properties:
         # Always want to extract target torions if present.
-        g_measure = cgexplore.analysis.GeomMeasure()
+        g_measure = cgx.analysis.GeomMeasure()
         bond_data = g_measure.calculate_bonds(molecule)
         bond_data = {"_".join(i): bond_data[i] for i in bond_data}
         angle_data = g_measure.calculate_angles(molecule)
@@ -183,11 +183,11 @@ def optimise_cage(
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path,
-    forcefield: cgexplore.forcefields.ForceField,
+    forcefield: cgx.forcefields.ForceField,
     platform: str | None,
-    database: cgexplore.utilities.AtomliteDatabase,
-    chromosome: cgexplore.systems_optimisation.Chromosome,
-) -> cgexplore.molecular.Conformer:
+    database: cgx.utilities.AtomliteDatabase,
+    chromosome: cgx.systems_optimisation.Chromosome,
+) -> cgx.molecular.Conformer:
     fina_mol_file = output_dir / f"{name}_final.mol"
 
     # Do not rerun if database entry exists.
@@ -195,7 +195,7 @@ def optimise_cage(
         final_molecule = database.get_molecule(key=name)
         final_molecule.write(fina_mol_file)
 
-        return cgexplore.molecular.Conformer(
+        return cgx.molecular.Conformer(
             molecule=final_molecule,
             energy_decomposition=database.get_property(
                 key=name,
@@ -206,7 +206,7 @@ def optimise_cage(
 
     # Do not rerun if final mol exists.
     if fina_mol_file.exists():
-        ensemble = cgexplore.molecular.Ensemble(
+        ensemble = cgx.molecular.Ensemble(
             base_molecule=molecule,
             base_mol_path=output_dir / f"{name}_base.mol",
             conformer_xyz=output_dir / f"{name}_ensemble.xyz",
@@ -227,14 +227,14 @@ def optimise_cage(
 
     logging.info("optimising %s", name)
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
-    ensemble = cgexplore.molecular.Ensemble(
+    ensemble = cgx.molecular.Ensemble(
         base_molecule=molecule,
         base_mol_path=output_dir / f"{name}_base.mol",
         conformer_xyz=output_dir / f"{name}_ensemble.xyz",
         data_json=output_dir / f"{name}_ensemble.json",
         overwrite=True,
     )
-    temp_molecule = cgexplore.utilities.run_constrained_optimisation(
+    temp_molecule = cgx.utilities.run_constrained_optimisation(
         assigned_system=assigned_system,
         name=name,
         output_dir=output_dir,
@@ -245,8 +245,8 @@ def optimise_cage(
     )
 
     try:
-        conformer = cgexplore.utilities.run_optimisation(
-            assigned_system=cgexplore.forcefields.AssignedSystem(
+        conformer = cgx.utilities.run_optimisation(
+            assigned_system=cgx.forcefields.AssignedSystem(
                 molecule=temp_molecule,
                 forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
@@ -266,14 +266,14 @@ def optimise_cage(
 
     # Run optimisations of series of conformers with shifted out
     # building blocks.
-    for test_molecule in cgexplore.utilities.yield_shifted_models(
+    for test_molecule in cgx.utilities.yield_shifted_models(
         temp_molecule,
         forcefield,
         kicks=(1, 2, 3, 4),
     ):
         try:
-            conformer = cgexplore.utilities.run_optimisation(
-                assigned_system=cgexplore.forcefields.AssignedSystem(
+            conformer = cgx.utilities.run_optimisation(
+                assigned_system=cgx.forcefields.AssignedSystem(
                     molecule=test_molecule,
                     forcefield_terms=assigned_system.forcefield_terms,
                     system_xml=assigned_system.system_xml,
@@ -292,19 +292,19 @@ def optimise_cage(
                 raise
 
     # Collect and optimise structures nearby in phase space.
-    neighbour_library = cgexplore.systems_optimisation.get_neighbour_library(
+    neighbour_library = cgx.systems_optimisation.get_neighbour_library(
         chromosome_name=chromosome.name,
         modifiable_gene_ids=(3, 4),
     )
-    for test_molecule in cgexplore.systems_optimisation.yield_near_models(
+    for test_molecule in cgx.systems_optimisation.yield_near_models(
         molecule=molecule,
         name=name,
         output_dir=output_dir,
         replace_name=chromosome.get_string(),
         neighbour_library=neighbour_library,
     ):
-        conformer = cgexplore.utilities.run_optimisation(
-            assigned_system=cgexplore.forcefields.AssignedSystem(
+        conformer = cgx.utilities.run_optimisation(
+            assigned_system=cgx.forcefields.AssignedSystem(
                 molecule=test_molecule,
                 forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
@@ -321,9 +321,9 @@ def optimise_cage(
 
     num_steps = 20000
     traj_freq = 500
-    soft_md_trajectory = cgexplore.utilities.run_soft_md_cycle(
+    soft_md_trajectory = cgx.utilities.run_soft_md_cycle(
         name=name,
-        assigned_system=cgexplore.forcefields.AssignedSystem(
+        assigned_system=cgx.forcefields.AssignedSystem(
             molecule=ensemble.get_lowest_e_conformer().molecule,
             forcefield_terms=assigned_system.forcefield_terms,
             system_xml=assigned_system.system_xml,
@@ -357,8 +357,8 @@ def optimise_cage(
     # Go through each conformer from soft MD.
     # Optimise them all.
     for md_conformer in soft_md_trajectory.yield_conformers():
-        conformer = cgexplore.utilities.run_optimisation(
-            assigned_system=cgexplore.forcefields.AssignedSystem(
+        conformer = cgx.utilities.run_optimisation(
+            assigned_system=cgx.forcefields.AssignedSystem(
                 molecule=md_conformer.molecule,
                 forcefield_terms=assigned_system.forcefield_terms,
                 system_xml=assigned_system.system_xml,
@@ -391,14 +391,14 @@ def optimise_cage(
 
 
 def fitness_function(
-    chromosome: cgexplore.systems_optimisation.Chromosome,
-    chromosome_generator: cgexplore.systems_optimisation.ChromosomeGenerator,
+    chromosome: cgx.systems_optimisation.Chromosome,
+    chromosome_generator: cgx.systems_optimisation.ChromosomeGenerator,
     database_path: pathlib.Path,
     calculation_output: pathlib.Path,
     structure_output: pathlib.Path,
     options: dict,  # noqa: ARG001
 ) -> float:
-    database = cgexplore.utilities.AtomliteDatabase(database_path)
+    database = cgx.utilities.AtomliteDatabase(database_path)
     target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
     entry = database.get_entry(name)
@@ -463,13 +463,13 @@ def fitness_function(
 
 
 def structure_function(
-    chromosome: cgexplore.systems_optimisation.Chromosome,
+    chromosome: cgx.systems_optimisation.Chromosome,
     database_path: pathlib.Path,
     calculation_output: pathlib.Path,
     structure_output: pathlib.Path,
     options: dict,  # noqa: ARG001
 ) -> None:
-    database = cgexplore.utilities.AtomliteDatabase(database_path)
+    database = cgx.utilities.AtomliteDatabase(database_path)
     # Build structure.
     topology_str, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
@@ -563,40 +563,40 @@ def main() -> None:
     # Define working directories.
     wd = pathlib.Path(__file__).resolve().parent / "optimisation_output"
     struct_output = wd / "structures"
-    cgexplore.utilities.check_directory(struct_output)
+    cgx.utilities.check_directory(struct_output)
     calc_dir = wd / "calculations"
-    cgexplore.utilities.check_directory(calc_dir)
+    cgx.utilities.check_directory(calc_dir)
     data_dir = wd / "data"
-    cgexplore.utilities.check_directory(data_dir)
+    cgx.utilities.check_directory(data_dir)
     figure_dir = wd / "figures"
-    cgexplore.utilities.check_directory(figure_dir)
+    cgx.utilities.check_directory(figure_dir)
 
     # Define a database, and a prefix for naming structure, forcefield and
     # output files.
     prefix = "opt"
     database_path = data_dir / "test.db"
-    database = cgexplore.utilities.AtomliteDatabase(database_path)
+    database = cgx.utilities.AtomliteDatabase(database_path)
 
     # Define the beads in the models used.
-    abead = cgexplore.molecular.CgBead(
+    abead = cgx.molecular.CgBead(
         element_string="Ag",
         bead_class="a",
         bead_type="a",
         coordination=3,
     )
-    bbead = cgexplore.molecular.CgBead(
+    bbead = cgx.molecular.CgBead(
         element_string="Ba",
         bead_class="b",
         bead_type="b",
         coordination=2,
     )
-    cbead = cgexplore.molecular.CgBead(
+    cbead = cgx.molecular.CgBead(
         element_string="C",
         bead_class="c",
         bead_type="c",
         coordination=2,
     )
-    dbead = cgexplore.molecular.CgBead(
+    dbead = cgx.molecular.CgBead(
         element_string="O",
         bead_class="o",
         bead_type="o",
@@ -604,7 +604,7 @@ def main() -> None:
     )
 
     # Define the chromosome generator, holding all the changeable genes.
-    chromo_it = cgexplore.systems_optimisation.ChromosomeGenerator(
+    chromo_it = cgx.systems_optimisation.ChromosomeGenerator(
         prefix=prefix,
         present_beads=(abead, bbead, cbead, dbead),
         vdw_bond_cutoff=2,
@@ -622,11 +622,11 @@ def main() -> None:
     # Set some basic building blocks up. This should be run by an algorithm
     # later.
     chromo_it.add_gene(
-        iteration=(cgexplore.molecular.TwoC1Arm(bead=bbead, abead1=cbead),),
+        iteration=(cgx.molecular.TwoC1Arm(bead=bbead, abead1=cbead),),
         gene_type="precursor",
     )
     chromo_it.add_gene(
-        iteration=(cgexplore.molecular.ThreeC1Arm(bead=abead, abead1=dbead),),
+        iteration=(cgx.molecular.ThreeC1Arm(bead=abead, abead1=dbead),),
         gene_type="precursor",
     )
 
@@ -659,7 +659,7 @@ def main() -> None:
     chromo_it.add_forcefield_dict(definer_dict=definer_dict)
 
     # Define fitness calculator.
-    fitness_calculator = cgexplore.systems_optimisation.FitnessCalculator(
+    fitness_calculator = cgx.systems_optimisation.FitnessCalculator(
         fitness_function=fitness_function,
         chromosome_generator=chromo_it,
         structure_output=struct_output,
@@ -669,7 +669,7 @@ def main() -> None:
     )
 
     # Define structure calculator.
-    structure_calculator = cgexplore.systems_optimisation.StructureCalculator(
+    structure_calculator = cgx.systems_optimisation.StructureCalculator(
         structure_function=structure_function,
         structure_output=struct_output,
         calculation_output=calc_dir,
@@ -692,7 +692,7 @@ def main() -> None:
 
         # Yield this.
         generations = []
-        generation = cgexplore.systems_optimisation.Generation(
+        generation = cgx.systems_optimisation.Generation(
             chromosomes=initial_population,
             fitness_calculator=fitness_calculator,
             structure_calculator=structure_calculator,
@@ -795,7 +795,7 @@ def main() -> None:
             # Add the best 5 to the new generation.
             merged_chromosomes.extend(generation.select_best(selection_size=5))
 
-            generation = cgexplore.systems_optimisation.Generation(
+            generation = cgx.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(merged_chromosomes),
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
@@ -818,7 +818,7 @@ def main() -> None:
 
             # Select the best of the generation for the next generation.
             best = generation.select_best(selection_size=selection_size)
-            generation = cgexplore.systems_optimisation.Generation(
+            generation = cgx.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(best),
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
@@ -905,7 +905,7 @@ def main() -> None:
 
         if len(cmaps) > 8:  # noqa: PLR2004
             cmaps = ["k"]
-        cgexplore.utilities.draw_pie(
+        cgx.utilities.draw_pie(
             colours=cmaps,
             xpos=x,
             ypos=y,
