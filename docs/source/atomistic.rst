@@ -1,7 +1,7 @@
 Atomistic
 =========
 
-A package of the classes for handling atomistic systems in :mod:`.CGExplore`.
+A package of the classes for handling atomistic systems in :mod:`cgexplore`.
 
 .. toctree::
   :maxdepth: 1

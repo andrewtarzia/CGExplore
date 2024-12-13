@@ -8,13 +8,24 @@ import stk
 import stko
 from rdkit.Chem import AllChem
 
+from cgexplore._internal.terms.torsions import TargetTorsion
 from cgexplore._internal.terms.utilities import find_torsions
 
 
 class GeomMeasure:
-    """Class to perform geometry calculations."""
+    """Class to perform geometry calculations.
 
-    def __init__(self, target_torsions: abc.Iterable | None = None) -> None:
+    Parameters:
+        target_torsions:
+            An iterable of `TargetTorsion` defining which torsions to
+            capture if you run `calculate_torsions`.
+
+    """
+
+    def __init__(
+        self,
+        target_torsions: abc.Iterable[TargetTorsion] | None = None,
+    ) -> None:
         """Initialize GeomMeasure."""
         self._stko_analyser = stko.molecule_analysis.GeometryAnalyser()
         if target_torsions is None:
@@ -26,7 +37,16 @@ class GeomMeasure:
         self,
         molecule: stk.Molecule,
     ) -> dict[str, float]:
-        """Calculate the minimum distance between beads and centroid."""
+        """Calculate the minimum distance between beads and centroid.
+
+        Parameters:
+            molecule:
+                The molecule to analyse.
+
+        Returns:
+            The minimum distance.
+
+        """
         return {
             "min_distance": (
                 self._stko_analyser.get_min_centroid_distance(molecule)
@@ -46,7 +66,16 @@ class GeomMeasure:
         )
 
     def calculate_minb2b(self, molecule: stk.Molecule) -> float:
-        """Calculate the minimum distance between beads and beads."""
+        """Calculate the minimum distance between beads and beads.
+
+        Parameters:
+            molecule:
+                The molecule to analyse.
+
+        Returns:
+            The minimum bead-to-bead distance.
+
+        """
         return self._stko_analyser.get_min_atom_atom_distance(molecule)
 
     def calculate_bonds(
@@ -55,7 +84,15 @@ class GeomMeasure:
     ) -> dict[tuple[str, str], list[float]]:
         """Calculate the bond lengths.
 
-        Uses `stko..molecule_analysis.GeometryAnalyser`
+        Uses `stko.molecule_analysis.GeometryAnalyser`
+
+        Parameters:
+            molecule:
+                The molecule to analyse.
+
+        Returns:
+            A dictionary of bond lengths organised by element strings.
+
         """
         return self._stko_analyser.calculate_bonds(molecule)
 
@@ -65,7 +102,15 @@ class GeomMeasure:
     ) -> dict[tuple[str, str, str], list[float]]:
         """Calculate the angle values.
 
-        Uses `stko..molecule_analysis.GeometryAnalyser`
+        Uses `stko.molecule_analysis.GeometryAnalyser`
+
+        Parameters:
+            molecule:
+                The molecule to analyse.
+
+        Returns:
+            A dictionary of angle values organised by element strings.
+
         """
         return self._stko_analyser.calculate_angles(molecule)
 
@@ -75,7 +120,24 @@ class GeomMeasure:
         absolute: bool,
         as_search_string: bool = False,
     ) -> dict[str, list[float]]:
-        """Calculate the value of target torsions."""
+        """Calculate the value of target torsions.
+
+        Parameters:
+            molecule:
+                The molecule to analyse.
+
+            absolute:
+                `True` to get the abs(torsion) from 0 degrees to 180 degrees.
+
+            as_search_string:
+                Changes the key of the returned dictionary to be defined by
+                the search string used in `target_torsions` or as the found
+                atom element strings.
+
+        Returns:
+            A dictionary of torsion values organised by element strings.
+
+        """
         if self._target_torsions is None:
             return {}
 
@@ -146,13 +208,23 @@ class GeomMeasure:
     def calculate_radius_gyration(self, molecule: stk.Molecule) -> float:
         """Calculate the radius of gyration.
 
-        Uses `stko..molecule_analysis.GeometryAnalyser`
+        Uses `stko.molecule_analysis.GeometryAnalyser`
+
+        Parameters:
+            molecule:
+                The molecule to analyse.
+
         """
         return self._stko_analyser.get_radius_gyration(molecule)
 
     def calculate_max_diameter(self, molecule: stk.Molecule) -> float:
         """Calculate the maximum diameter of the molecule.
 
-        Uses `stko..molecule_analysis.GeometryAnalyser`
+        Uses `stko.molecule_analysis.GeometryAnalyser`
+
+        Parameters:
+            molecule:
+                The molecule to analyse.
+
         """
         return self._stko_analyser.get_max_diameter(molecule)

@@ -2,7 +2,7 @@
 Systems Optimisation
 ====================
 
-A package of the classes for optimising CG models in :mod:`.CGExplore`.
+A package of the classes for optimising CG models in :mod:`cgexplore`.
 
 .. note::
 
@@ -10,17 +10,12 @@ A package of the classes for optimising CG models in :mod:`.CGExplore`.
   `optimisation_example <https://github.com/andrewtarzia/CGExplore/tree/main/optimisation_example>`_
   directory.
 
-.. toctree::
-  :maxdepth: 1
-
-  Systems optimisation module <_autosummary/cgexplore.systems_optimisation>
-
 Inputs
 ------
 
-A :class:`cgx.systems_optimisation.ChromosomeGenerator` is used to add
+A :class:`cgexplore.systems_optimisation.ChromosomeGenerator` is used to add
 `genes` to an optimisation problem and automatically provide a list of
-:class:`cgx.systems_optimisation.Chromosome` for modelling (plus helpful
+:class:`cgexplore.systems_optimisation.Chromosome` for modelling (plus helpful
 methods for exploring this library through optimisation algorithms, such as a
 genetic algorithm).
 
@@ -45,8 +40,8 @@ generations, which are handled here:
 Fitness and Structure Calculation
 ---------------------------------
 
-A :class:`cgx.systems_optimisation.Generation` requires the definition of
-how a :class:`cgx.systems_optimisation.Chromosome` is translated into a
+A :class:`cgexplore.systems_optimisation.Generation` requires the definition of
+how a :class:`cgexplore.systems_optimisation.Chromosome` is translated into a
 model and how to calculate that models fitness. These are provided as functions
 by the user (described below) to:
 
@@ -61,6 +56,8 @@ by the user (described below) to:
   functions in a dictionary.
 
 .. code-block:: python
+
+  import cgexplore as cgx
 
   def fitness_function(
     chromosome,

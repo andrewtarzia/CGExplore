@@ -25,7 +25,50 @@ def write_chemiscope_json(  # noqa: PLR0913
     color_dict: dict[str, str | int | float],
     bond_hex_colour: str = "#fc5500",
 ) -> None:
-    """Write the chemiscope json."""
+    """Write the chemiscope json.
+
+    Parameters:
+        json_file:
+            File to save to, this can be loaded into the `chemiscope`
+            interface.
+
+        structures:
+            Sequence of structures to include. If they do not have the same
+            number of properties, they may not all be added.
+
+        properties:
+            Properties with name as key and list of property values ordered by
+            structure as values.
+
+        bonds_as_shapes:
+            `True` if you want to show the bonds as shapes, rather than bonds.
+
+        meta_dict:
+            Dictionary of meta information. See chemiscope for details, can
+            include: `name`, `description`, `authors`, `references`.
+
+        x_axis_dict:
+            Dictionary of `{"property": "name-of-property"}`. Value can be `""`
+            to be unused.
+
+        y_axis_dict:
+            Dictionary of `{"property": "name-of-property"}`. Value can be `""`
+            to be unused.
+
+        z_axis_dict:
+            Dictionary of `{"property": "name-of-property"}`. Value can be `""`
+            to be unused.
+
+        color_dict:
+            Dictionary of
+            `{"property": "name-of-property", "min": float, "max": float}` to
+            set the colour of data plot.
+
+        bond_hex_colour:
+            Colour for bonds made from shapes. Does not work if
+            `bonds_as_shapes=False`.
+
+    """
     if bonds_as_shapes:
         shape_dict = chemiscope.convert_stk_bonds_as_shapes(
             frames=structures,

@@ -21,15 +21,28 @@ from cgexplore._internal.molecular.beads import BeadLibrary, CgBead
 from cgexplore._internal.terms.angles import (
     Angle,
     CosineAngle,
+    PyramidAngleRange,
     TargetAngle,
+    TargetAngleRange,
     TargetCosineAngle,
+    TargetCosineAngleRange,
     TargetMartiniAngle,
 )
-from cgexplore._internal.terms.bonds import Bond, TargetBond, TargetMartiniBond
-from cgexplore._internal.terms.nonbonded import Nonbonded, TargetNonbonded
+from cgexplore._internal.terms.bonds import (
+    Bond,
+    TargetBond,
+    TargetBondRange,
+    TargetMartiniBond,
+)
+from cgexplore._internal.terms.nonbonded import (
+    Nonbonded,
+    TargetNonbonded,
+    TargetNonbondedRange,
+)
 from cgexplore._internal.terms.torsions import (
     TargetMartiniTorsion,
     TargetTorsion,
+    TargetTorsionRange,
     Torsion,
 )
 from cgexplore._internal.terms.utilities import find_angles, find_torsions
@@ -45,19 +58,54 @@ logging.basicConfig(
 
 
 class ForceField:
-    """Define a CG ForceField."""
+    """Define a CG ForceField.
+
+    Parameters:
+        identifier:
+            String idenifier of the forcefield.
+
+        prefix:
+            Prefix for the forcefield for file saving.
+
+        present_beads:
+            The CgBeads that are present in the model.
+
+        bond_targets:
+            Target bond classes to find and assign. See
+            `systems_optimisation.utilities` for an example.
+
+        angle_targets:
+            Target angle classes to find and assign. See
+            `systems_optimisation.utilities` for an example.
+
+        torsion_targets:
+            Target torsion classes to find and assign. See
+            `systems_optimisation.utilities` for an example.
+
+        nonbonded_targets:
+            Target nonbonded term classes to find and assign. See
+            `systems_optimisation.utilities` for an example.
+
+        vdw_bond_cutoff:
+            How many bonds between excluded beads from nonbonded terms.
+
+        verbose:
+            `True` if cgexplore should inform the user about what it
+            assigns.
+
+    """
 
     def __init__(  # noqa: PLR0913:
         self,
         identifier: str,
         prefix: str,
-        present_beads: tuple[CgBead, ...],
-        bond_targets: tuple[TargetBond | TargetMartiniBond, ...],
-        angle_targets: tuple[
-            TargetAngle | TargetCosineAngle | TargetMartiniAngle, ...
+        present_beads: abc.Sequence[CgBead],
+        bond_targets: abc.Sequence[TargetBond | TargetMartiniBond],
+        angle_targets: abc.Sequence[
+            TargetAngle | TargetCosineAngle | TargetMartiniAngle
         ],
-        torsion_targets: tuple[TargetTorsion | TargetMartiniTorsion, ...],
-        nonbonded_targets: tuple[TargetNonbonded, ...],
+        torsion_targets: abc.Sequence[TargetTorsion | TargetMartiniTorsion],
+        nonbonded_targets: abc.Sequence[TargetNonbonded],
         vdw_bond_cutoff: int,
         verbose: bool = True,
     ) -> None:
@@ -763,19 +811,33 @@ class ForceFieldLibrary:
         self._torsion_ranges: tuple = ()
         self._nonbonded_ranges: tuple = ()
 
-    def add_bond_range(self, bond_range: tuple) -> None:
+    def add_bond_range(
+        self,
+        bond_range: abc.Sequence[TargetBondRange],
+    ) -> None:
         """Add a range of terms to library."""
         self._bond_ranges += (bond_range,)
 
-    def add_angle_range(self, angle_range: tuple) -> None:
+    def add_angle_range(
+        self,
+        angle_range: abc.Sequence[
+            TargetAngleRange | TargetCosineAngleRange | PyramidAngleRange
+        ],
+    ) -> None:
         """Add a range of terms to library."""
         self._angle_ranges += (angle_range,)
 
-    def add_torsion_range(self, torsion_range: tuple) -> None:
+    def add_torsion_range(
+        self,
+        torsion_range: abc.Sequence[TargetTorsionRange],
+    ) -> None:
         """Add a range of terms to library."""
         self._torsion_ranges += (torsion_range,)
 
-    def add_nonbonded_range(self, nonbonded_range: tuple) -> None:
+    def add_nonbonded_range(
+        self,
+        nonbonded_range: abc.Sequence[TargetNonbondedRange],
+    ) -> None:
         """Add a range of terms to library."""
         self._nonbonded_ranges += (nonbonded_range,)
 

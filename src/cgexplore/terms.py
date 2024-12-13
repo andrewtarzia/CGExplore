@@ -28,6 +28,7 @@ from cgexplore._internal.terms.nonbonded import (
 )
 from cgexplore._internal.terms.torsions import (
     FoundTorsion,
+    MartiniTorsionRange,
     TargetMartiniTorsion,
     TargetTorsion,
     TargetTorsionRange,
@@ -43,6 +44,7 @@ __all__ = [
     "FoundTorsion",
     "MartiniAngleRange",
     "MartiniBondRange",
+    "MartiniTorsionRange",
     "Nonbonded",
     "PyramidAngleRange",
     "TargetAngle",

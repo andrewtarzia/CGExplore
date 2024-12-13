@@ -1,10 +1,6 @@
 # Distributed under the terms of the MIT License.
 
-"""Utilities module.
-
-Author: Andrew Tarzia
-
-"""
+"""Utilities module."""
 
 import logging
 import pathlib

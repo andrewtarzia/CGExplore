@@ -2,7 +2,7 @@ Scrambler
 =========
 
 A package of the classes for scrambling and structure prediction in
-:mod:`.CGExplore`.
+:mod:`cgexplore`.
 
 .. toctree::
   :maxdepth: 1

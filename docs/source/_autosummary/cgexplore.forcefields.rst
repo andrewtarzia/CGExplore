@@ -38,6 +38,7 @@ cgexplore.forcefields
    
       cosine_periodic_angle_force
       custom_excluded_volume_force
+      custom_lennard_jones_force
       get_martini_mass_by_type
    
    

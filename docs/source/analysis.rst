@@ -2,12 +2,7 @@
 Analysis
 ========
 
-A package of the classes for analysing molecules in :mod:`.CGExplore`.
-
-.. toctree::
-  :maxdepth: 1
-
-  Analysis module <_autosummary/cgexplore.analysis>
+A package of the classes for analysing molecules in :mod:`cgexplore`.
 
 Geometry
 --------

@@ -1,17 +1,6 @@
 # Distributed under the terms of the MIT License.
 
-"""Module for containing exceptions.
-
-Author: Andrew Tarzia
-
-"""
-
-import logging
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
+"""Module for containing exceptions."""
 
 
 class ForceFieldUnitError(Exception):

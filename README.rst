@@ -8,7 +8,7 @@
 Overview
 ========
 
-:mod:`.CGExplore` or ``cgx`` is a general toolkit built on
+:mod:`cgexplore` or ``cgx`` is a general toolkit built on
 `stk <https://stk.readthedocs.io/en/stable/>`_ for constructing,
 optimising and exploring molecular coarse-grained models.
 
@@ -20,7 +20,7 @@ optimising and exploring molecular coarse-grained models.
 Installation
 ============
 
-:mod:`.CGExplore` can be installed with pip:
+:mod:`cgexplore` can be installed with pip:
 
 .. code-block:: bash
 
@@ -44,7 +44,7 @@ instructions to download and installed at
 Developer Setup
 ---------------
 
-To develop with :mod:`CGExplore`, you can clone the repo and use
+To develop with :mod:`cgexplore`, you can clone the repo and use
 `just <https://github.com/casey/just>`_ to setup the dev environment:
 
 .. code-block:: bash
