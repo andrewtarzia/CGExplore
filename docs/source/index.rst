@@ -40,6 +40,9 @@ Introduction
 `stk <https://stk.readthedocs.io/en/stable/>`_ for constructing,
 optimising and exploring molecular coarse-grained models.
 
+.. figure:: _static/logo.png
+
+
 .. important::
 
   **Warning**: This package is still very much underdevelopment and many changes
