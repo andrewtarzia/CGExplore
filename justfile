@@ -5,6 +5,7 @@ default:
 # Install development environment.
 dev:
   pip install -e '.[dev]'
+  mamba install -y openmm openmmtools
 
 # Run code checks.
 check:
