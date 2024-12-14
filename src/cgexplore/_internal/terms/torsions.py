@@ -22,10 +22,35 @@ logging.basicConfig(
 
 @dataclass(frozen=True, slots=True)
 class Torsion:
-    """Class containing torsion defintion."""
+    """Class containing torsion defintion.
 
-    atom_names: tuple[str, ...]
-    atom_ids: tuple[int, ...]
+    Parameters:
+        atom_names:
+            Element and ID+1 of atoms in bond.
+
+        atom_ids:
+            ID of atoms in bond.
+
+        phi0:
+            Phase offset of torsion force.
+
+        torsion_k:
+            `k` quantity of torsion force.
+
+        torsion_n:
+            `n` integer of torsion force.
+
+        force:
+            The force to apply to a torsion.
+
+        funct:
+            For some forcefields (e.g., Martini), this term can change the
+            force function.
+
+    """
+
+    atom_names: tuple[str, str, str, str]
+    atom_ids: tuple[int, int, int, int]
     phi0: openmm.unit.Quantity
     torsion_k: openmm.unit.Quantity
     torsion_n: int
@@ -35,7 +60,35 @@ class Torsion:
 
 @dataclass(frozen=True, slots=True)
 class TargetTorsion:
-    """Defines a target term to search for in a molecule."""
+    """Defines a target term to search for in a molecule.
+
+    Parameters:
+        search_string:
+            The string of bonded beads to use to find this torsion. This is
+            used by the forcefield to find the term.
+
+        search_estring:
+            The element names of the bonded beads, which should match the
+            search string. This is only used for conveniance in some reporting.
+
+        measured_atom_ids:
+            Which of the searched atoms are set to have the torsion assigned to
+            them. Must only be four beads. Ordering matches OpenMM definition.
+
+        phi0:
+            Phase offset to apply to torsion force.
+
+        torsion_k:
+            `k` quantity to apply to torsion force.
+
+        torsion_n:
+            `n` integer to apply to torsion force.
+
+        funct:
+            For some forcefields (e.g., Martini), this term can change the
+            force function.
+
+    """
 
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
@@ -73,7 +126,31 @@ class TargetTorsion:
 
 @dataclass(frozen=True, slots=True)
 class TargetTorsionRange:
-    """Defines a target term and ranges in parameters to search for."""
+    """Defines a target term and ranges in parameters to search for.
+
+    Parameters:
+        search_string:
+            The string of bonded beads to use to find this torsion. This is
+            used by the forcefield to find the term.
+
+        search_estring:
+            The element names of the bonded beads, which should match the
+            search string. This is only used for conveniance in some reporting.
+
+        measured_atom_ids:
+            Which of the searched atoms are set to have the torsion assigned to
+            them. Must only be four beads. Ordering matches OpenMM definition.
+
+        phi0s:
+            Range of phase offsets to apply to torsion forces in library.
+
+        torsion_ks:
+            Range of `k` quantitys to apply to torsion forces in library.
+
+        torsion_ns:
+            Range of `n` integers to apply to torsion forces in library.
+
+    """
 
     search_string: tuple[str, ...]
     search_estring: tuple[str, ...]
@@ -99,7 +176,16 @@ class TargetTorsionRange:
 
 @dataclass(frozen=True, slots=True)
 class FoundTorsion:
-    """Define a found forcefield term."""
+    """Define a found forcefield term.
+
+    Parameters:
+        atoms:
+            `stk.Atom` instances of atoms in torsion.
+
+        atom_ids:
+            ID of atoms in bond.
+
+    """
 
     atoms: tuple[stk.Atom, ...]
     atom_ids: tuple[int, ...]

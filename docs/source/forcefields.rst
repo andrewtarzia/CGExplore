@@ -59,17 +59,6 @@ Here, the user creates the object that interfaces between a forcefield and an
   MartiniSystem <_autosummary/cgexplore.forcefields.MartiniSystem>
 
 
-Custom forces
--------------
-
-.. toctree::
-  :maxdepth: 1
-
-  cosine_periodic_angle_force <_autosummary/cgexplore.forcefields.cosine_periodic_angle_force>
-  custom_excluded_volume_force <_autosummary/cgexplore.forcefields.custom_excluded_volume_force>
-  custom_lennard_jones_force <_autosummary/cgexplore.forcefields.custom_lennard_jones_force>
-
-
 Utilities
 ---------
 

@@ -19,7 +19,6 @@ from cgexplore._internal.terms.bonds import (
     TargetBond,
     TargetBondRange,
     TargetMartiniBond,
-    TargetPairedBondRange,
 )
 from cgexplore._internal.terms.nonbonded import (
     Nonbonded,
@@ -58,7 +57,6 @@ __all__ = [
     "TargetMartiniTorsion",
     "TargetNonbonded",
     "TargetNonbondedRange",
-    "TargetPairedBondRange",
     "TargetPyramidAngle",
     "TargetTorsion",
     "TargetTorsionRange",

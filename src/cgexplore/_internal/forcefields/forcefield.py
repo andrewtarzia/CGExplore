@@ -187,7 +187,7 @@ class ForceField:
                     Bond(
                         atoms=atoms,
                         atom_names=tuple(
-                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            f"{i.__class__.__name__}{i.get_id()+1}"
                             for i in atoms
                         ),
                         atom_ids=tuple(i.get_id() for i in atoms),

@@ -37,7 +37,6 @@ cgexplore.terms
       TargetMartiniTorsion
       TargetNonbonded
       TargetNonbondedRange
-      TargetPairedBondRange
       TargetPyramidAngle
       TargetTorsion
       TargetTorsionRange
