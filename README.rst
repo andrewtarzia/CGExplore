@@ -87,7 +87,7 @@ appropriate information for mapping angles to models.
 How To Cite
 ===========
 
-If you use ``stk`` please cite
+If you use ``cgexplore`` please cite
 
   https://github.com/andrewtarzia/CGExplore
 
