@@ -3,7 +3,7 @@ import pathlib
 import numpy as np
 import stk
 
-import cgexplore
+import cgexplore as cgx
 
 from .case_data import CaseData
 
@@ -25,7 +25,7 @@ def test_openmmoptimizer(molecule: CaseData) -> None:
         name=f"test_{molecule.name}",
         output_dir=output_dir,
     )
-    conformer = cgexplore.utilities.run_optimisation(
+    conformer = cgx.utilities.run_optimisation(
         assigned_system=assigned_system,
         name=f"test_{molecule.name}",
         file_suffix=f"test_{molecule.name}",

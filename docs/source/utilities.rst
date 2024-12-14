@@ -1,7 +1,7 @@
 Utilities
 =========
 
-A package of useful utilities for `CGExplore`.
+A package of useful utilities for `cgexplore`.
 
 
 Host-guest conformer generation using SpinDry

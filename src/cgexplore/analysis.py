@@ -7,7 +7,7 @@ from cgexplore._internal.analysis.shape import (
 )
 
 __all__ = [
+    "GeomMeasure",
     "ShapeMeasure",
     "known_shape_vectors",
-    "GeomMeasure",
 ]

@@ -1,10 +1,6 @@
 # Distributed under the terms of the MIT License.
 
-"""Utilities module.
-
-Author: Andrew Tarzia
-
-"""
+"""Utilities module."""
 
 import logging
 import pathlib
@@ -288,9 +284,7 @@ def get_forcefield_from_dict(  # noqa: PLR0913
     angle_terms: list[TargetAngle | TargetCosineAngle] = []
     torsion_terms: list = []
     nonbonded_terms: list = []
-    for key_ in definer_dict:
-        term = definer_dict[key_]  # type: ignore[assignment]
-
+    for key_, term in definer_dict.items():
         if term[0] == "bond":
             bond_terms.append(
                 define_bond(

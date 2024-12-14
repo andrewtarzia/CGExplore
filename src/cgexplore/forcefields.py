@@ -18,18 +18,20 @@ from cgexplore._internal.forcefields.martini import (
 from cgexplore._internal.forcefields.utilities import (
     cosine_periodic_angle_force,
     custom_excluded_volume_force,
+    custom_lennard_jones_force,
 )
 
 __all__ = [
-    "ForcedSystem",
     "AssignedSystem",
+    "ForceField",
+    "ForceFieldLibrary",
+    "ForcedSystem",
+    "MartiniForceField",
+    "MartiniForceFieldLibrary",
     "MartiniSystem",
     "MartiniTopology",
-    "get_martini_mass_by_type",
-    "ForceField",
-    "MartiniForceField",
-    "ForceFieldLibrary",
-    "MartiniForceFieldLibrary",
     "cosine_periodic_angle_force",
     "custom_excluded_volume_force",
+    "custom_lennard_jones_force",
+    "get_martini_mass_by_type",
 ]

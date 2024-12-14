@@ -1,4 +1,4 @@
-"""analysis package."""
+"""systems_optimisation package."""
 
 from cgexplore._internal.systems_optimisation.calculators import (
     FitnessCalculator,
@@ -24,14 +24,11 @@ from cgexplore._internal.systems_optimisation.utilities import (
 )
 
 __all__ = [
-    "ChromosomeGenerator",
     "Chromosome",
+    "ChromosomeGenerator",
+    "FitnessCalculator",
     "Generation",
     "StructureCalculator",
-    "FitnessCalculator",
-    "yield_near_models",
-    "get_neighbour_library",
-    "element_from_type",
     "define_angle",
     "define_bond",
     "define_cosine_angle",
@@ -39,5 +36,8 @@ __all__ = [
     "define_nonbonded",
     "define_pyramid_angle",
     "define_torsion",
+    "element_from_type",
     "get_forcefield_from_dict",
+    "get_neighbour_library",
+    "yield_near_models",
 ]

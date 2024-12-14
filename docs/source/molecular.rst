@@ -1,12 +1,7 @@
 Molecular
 =========
 
-A package of the classes for handling molecules in `CGExplore`.
-
-.. toctree::
-  :maxdepth: 1
-
-  Molecular module <_autosummary/cgexplore.molecular>
+A package of the classes for handling molecules in `cgexplore`.
 
 CG-Beads
 --------
@@ -33,7 +28,7 @@ Molecule containers
 Precursors
 ----------
 
-These classes provide interfaces between `stk` and :mod:`.CGExplore`. A
+These classes provide interfaces between :mod:`stk` and :mod:`cgexplore`. A
 :class:`cgexplore.molecular.Precursor` contains an :class:`stk.BuildingBlock`
 for molecule construction.
 

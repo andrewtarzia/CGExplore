@@ -142,8 +142,7 @@ def geom_distributions(
     tcpos = {tstr: i for i, tstr in enumerate(tcmap) if tstr not in ("6P8",)}
     vdw_frame = all_data[all_data["vdws"] == "von"]
 
-    for comp in comparisons:
-        cdict = comparisons[comp]
+    for comp, cdict in comparisons.items():
         column = cdict["column"]
 
         fig, axs = plt.subplots(
@@ -324,9 +323,8 @@ def single_value_distributions(
         count = 0
         toptions = {}
         for tstr in topologies:
-            for tor, vdw in color_map:
+            for (tor, vdw), color in color_map.items():
                 # for vdw in ("voff", "von"):
-                color = color_map[(tor, vdw)]
                 if tstr == "6P8":
                     continue
                 toptions[(tstr, tor, vdw)] = (count, color)
@@ -384,9 +382,8 @@ def single_value_distributions(
         )
 
         labels = []
-        for lblkey in color_map:
+        for lblkey, col in color_map.items():
             tor, vdw = lblkey
-            col = color_map[lblkey]
             labels.append(
                 (
                     mpatches.Patch(color=col),
@@ -899,8 +896,7 @@ def plot_topology_pore_flex(data, figure_output: pathlib.Path) -> None:
     )
 
     labels = []
-    for lblkey in color_map:
-        col = color_map[lblkey]
+    for lblkey, col in color_map.items():
         labels.append(
             (
                 mpatches.Patch(color=col),

@@ -25,7 +25,32 @@ _bond_k_unit = openmm.unit.kilojoules_per_mole / openmm.unit.nanometer**2
 
 @dataclass(frozen=True, slots=True)
 class Bond:
-    """Class containing bond defintion."""
+    """Class containing bond defintion used in Forcefield.
+
+    Parameters:
+        atom_names:
+            Element and ID+1 of atoms in bond.
+
+        atom_ids:
+            ID of atoms in bond.
+
+        bond_r:
+            `r` quantity of bond force.
+
+        bond_k:
+            `k` quantity of bond force.
+
+        atoms:
+            `stk.Atom` instances of the atoms in bond.
+
+        force:
+            The force to apply to a bond, usually "HarmonicBondForce".
+
+        funct:
+            For some forcefields (e.g., Martini), this term can change the
+            force function. For harmonic bonds, set to `0`.
+
+    """
 
     atom_names: tuple[str, ...]
     atom_ids: tuple[int, ...]
@@ -38,7 +63,32 @@ class Bond:
 
 @dataclass(frozen=True, slots=True)
 class TargetBond:
-    """Defines a target term to search for in a molecule."""
+    """Defines a target term to search for in a molecule.
+
+    Parameters:
+        type1:
+            Atom/bead type of atom.
+
+        type2:
+            Atom/bead type of atom.
+
+        element1:
+            Element string of atom.
+
+        element2:
+            Element string of atom.
+
+        bond_r:
+            `r` quantity of bond force.
+
+        bond_k:
+            `k` quantity of bond force.
+
+        funct:
+            For some forcefields (e.g., Martini), this term can change the
+            force function. For harmonic bonds, set to `0`.
+
+    """
 
     type1: str
     type2: str
@@ -73,7 +123,30 @@ class TargetBond:
 
 @dataclass(frozen=True, slots=True)
 class TargetBondRange:
-    """Defines a target term and ranges in parameters to search for."""
+    """Defines a target term and ranges in parameters to search for.
+
+    Parameters:
+        type1:
+            Atom/bead type of atom.
+
+        type2:
+            Atom/bead type of atom.
+
+        element1:
+            Element string of atom.
+
+        element2:
+            Element string of atom.
+
+        bond_rs:
+            Each `r` quantity of bond force to be implemented in a forcefield
+            library.
+
+        bond_ks:
+            Each `k` quantity of bond force to be implemented in a forcefield
+            library.
+
+    """
 
     type1: str
     type2: str
@@ -93,39 +166,6 @@ class TargetBondRange:
                 bond_k=k,
                 bond_r=r,
             )
-
-
-@dataclass(frozen=True, slots=True)
-class TargetPairedBondRange:
-    """Defines a target term and ranges in parameters to search for."""
-
-    type1s: tuple[str]
-    type2s: tuple[str]
-    element1s: tuple[str]
-    element2s: tuple[str]
-    bond_rs: tuple[openmm.unit.Quantity]
-    bond_ks: tuple[openmm.unit.Quantity]
-
-    def yield_bonds(self) -> abc.Iterable[TargetBond]:
-        """Find interactions matching target."""
-        raise NotImplementedError
-        for r, k in it.product(self.bond_rs, self.bond_ks):  # type: ignore[unreachable]
-            for type1, type2, element1, element2 in zip(
-                self.type1s,
-                self.type2s,
-                self.element1s,
-                self.element2s,
-                strict=True,
-            ):
-                print(type1, type2, element1, element2)  # noqa: T201
-                yield TargetBond(
-                    type1=type1,
-                    type2=type2,
-                    element1=element1,
-                    element2=element2,
-                    bond_k=k,
-                    bond_r=r,
-                )
 
 
 @dataclass(frozen=True, slots=True)

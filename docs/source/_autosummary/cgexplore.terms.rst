@@ -23,6 +23,7 @@ cgexplore.terms
       FoundTorsion
       MartiniAngleRange
       MartiniBondRange
+      MartiniTorsionRange
       Nonbonded
       PyramidAngleRange
       TargetAngle
@@ -36,7 +37,6 @@ cgexplore.terms
       TargetMartiniTorsion
       TargetNonbonded
       TargetNonbondedRange
-      TargetPairedBondRange
       TargetPyramidAngle
       TargetTorsion
       TargetTorsionRange

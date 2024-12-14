@@ -3,13 +3,6 @@ Forcefields
 
 A package of defining the forcefields used in `CGExplore`.
 All of these forcefields interface with `OpenMM`.
-
-.. toctree::
-  :maxdepth: 1
-
-  Forcefields module <_autosummary/cgexplore.forcefields>
-
-
 There is a lot of flexibility in how this code is used, however, `OpenMM`
 requires a :class:`cgexplore.forcefields.ForcedSystem`.
 
@@ -64,16 +57,6 @@ Here, the user creates the object that interfaces between a forcefield and an
   ForcedSystem <_autosummary/cgexplore.forcefields.ForcedSystem>
   AssignedSystem <_autosummary/cgexplore.forcefields.AssignedSystem>
   MartiniSystem <_autosummary/cgexplore.forcefields.MartiniSystem>
-
-
-Custom forces
--------------
-
-.. toctree::
-  :maxdepth: 1
-
-  cosine_periodic_angle_force <_autosummary/cgexplore.forcefields.cosine_periodic_angle_force>
-  custom_excluded_volume_force <_autosummary/cgexplore.forcefields.custom_excluded_volume_force>
 
 
 Utilities

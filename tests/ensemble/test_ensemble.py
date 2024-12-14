@@ -4,7 +4,7 @@ import pathlib
 import numpy as np
 from rdkit.Chem import AllChem
 
-import cgexplore
+import cgexplore as cgx
 
 from .case_data import CaseData
 from .utilities import is_equivalent_molecule
@@ -21,7 +21,7 @@ def test_ensemble(ensemble: CaseData) -> None:
     """
     output_dir = pathlib.Path(__file__).resolve().parent / "output"
     print(ensemble)
-    test = cgexplore.molecular.Ensemble(
+    test = cgx.molecular.Ensemble(
         base_molecule=ensemble.molecule,
         base_mol_path=output_dir / f"{ensemble.name}_base.mol",
         conformer_xyz=output_dir / f"{ensemble.name}_ensemble.xyz",
@@ -44,7 +44,7 @@ def test_ensemble(ensemble: CaseData) -> None:
     built_conformers = []
     for cid in cids:
         pos_mat = rdkit_molecule.GetConformer(id=cid).GetPositions()
-        conformer = cgexplore.molecular.Conformer(
+        conformer = cgx.molecular.Conformer(
             molecule=ensemble.molecule.with_position_matrix(pos_mat),
             energy_decomposition={"total energy": (generator.random(), "")},
             conformer_id=cid,
@@ -58,7 +58,7 @@ def test_ensemble(ensemble: CaseData) -> None:
     # Test I/O unchanged and compare to known.
     test.write_conformers_to_file()
 
-    known_ensemble = cgexplore.molecular.Ensemble(
+    known_ensemble = cgx.molecular.Ensemble(
         base_molecule=ensemble.molecule,
         base_mol_path=output_dir / f"known_{ensemble.name}_base.mol",
         conformer_xyz=output_dir / f"known_{ensemble.name}_ensemble.xyz",

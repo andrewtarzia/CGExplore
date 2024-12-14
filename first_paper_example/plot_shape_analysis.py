@@ -804,9 +804,9 @@ def flexshapeeffect_per_shape(
         for tor in color_map:
             tor_data = tdata[tdata["torsions"] == tor]
             topology_data[tstr][tor] = {}
-            for shape_type in columns:
+            for shape_type, cdict in columns.items():
                 topology_data[tstr][tor][shape_type] = {}
-                for column in columns[shape_type]:
+                for column in cdict:
                     col_values = [
                         i for i in tor_data[column] if not pd.isna(i)
                     ]

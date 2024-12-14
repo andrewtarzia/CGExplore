@@ -2,18 +2,13 @@
 Systems Optimisation
 ====================
 
-A package of the classes for optimising CG models in :mod:`.CGExplore`.
+A package of the classes for optimising CG models in :mod:`cgexplore`.
 
 .. note::
 
   Examples of these functions and the use of this package can be found in the
   `optimisation_example <https://github.com/andrewtarzia/CGExplore/tree/main/optimisation_example>`_
   directory.
-
-.. toctree::
-  :maxdepth: 1
-
-  Systems optimisation module <_autosummary/cgexplore.systems_optimisation>
 
 Inputs
 ------
@@ -62,6 +57,8 @@ by the user (described below) to:
 
 .. code-block:: python
 
+  import cgexplore as cgx
+
   def fitness_function(
     chromosome,
     chromosome_generator,
@@ -78,7 +75,7 @@ by the user (described below) to:
       float
 
     """
-    database = cgexplore.utilities.AtomliteDatabase(database_path)
+    database = cgx.utilities.AtomliteDatabase(database_path)
     target_pore = 2
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
 
@@ -114,7 +111,7 @@ by the user (described below) to:
     All arguments are needed, even if not used.
 
     """
-    database = cgexplore.utilities.AtomliteDatabase(database_path)
+    database = cgx.utilities.AtomliteDatabase(database_path)
     # Build structure.
     topology_str, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
@@ -162,7 +159,7 @@ features.
 .. code-block:: python
 
     # Define the chromosome generator, holding all the changeable genes.
-    chromo_it = cgexplore.systems_optimisation.ChromosomeGenerator(
+    chromo_it = cgx.systems_optimisation.ChromosomeGenerator(
         prefix=prefix,
         present_beads=(abead, bbead, cbead, dbead),
         vdw_bond_cutoff=2,
@@ -180,11 +177,11 @@ features.
     # Set some basic building blocks up. This should be run by an algorithm
     # later.
     chromo_it.add_gene(
-        iteration=(cgexplore.molecular.TwoC1Arm(bead=bbead, abead1=cbead),),
+        iteration=(cgx.molecular.TwoC1Arm(bead=bbead, abead1=cbead),),
         gene_type="precursor",
     )
     chromo_it.add_gene(
-        iteration=(cgexplore.molecular.ThreeC1Arm(bead=abead, abead1=dbead),),
+        iteration=(cgx.molecular.ThreeC1Arm(bead=abead, abead1=dbead),),
         gene_type="precursor",
     )
 
@@ -223,8 +220,8 @@ for brevity):
 .. code-block:: python
 
   # Define the structure and fitness calculators.
-  fitness_calculator = cgexplore.systems_optimisation.FitnessCalculator(...)
-  structure_calculator = cgexplore.systems_optimisation.StructureCalculator(...)
+  fitness_calculator = cgx.systems_optimisation.FitnessCalculator(...)
+  structure_calculator = cgx.systems_optimisation.StructureCalculator(...)
 
   # Set a random number generator for consistency. Normally, run over multiple
   # seeds.
@@ -238,7 +235,7 @@ for brevity):
   # This holds the generational information.
   generations = []
   # Define a generation!
-  generation = cgexplore.systems_optimisation.Generation(
+  generation = cgx.systems_optimisation.Generation(
       chromosomes=initial_population,
       fitness_calculator=fitness_calculator,
       structure_calculator=structure_calculator,
@@ -282,7 +279,7 @@ for brevity):
       merged_chromosomes.extend(generation.select_best(selection_size=5))
 
       # Define the new generation and run its structures and fitness.
-      generation = cgexplore.systems_optimisation.Generation(
+      generation = cgx.systems_optimisation.Generation(
           chromosomes=chromo_it.dedupe_population(merged_chromosomes),
           ...
       )
@@ -296,7 +293,7 @@ for brevity):
 
       # Select the best of the generation for the next generation.
       best = generation.select_best(selection_size=selection_size)
-      generation = cgexplore.systems_optimisation.Generation(
+      generation = cgx.systems_optimisation.Generation(
           chromosomes=chromo_it.dedupe_population(best),
           ...
       )

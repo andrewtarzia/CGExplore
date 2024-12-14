@@ -303,8 +303,7 @@ class ChromosomeGenerator:
 
         """
         self.definer_dict = definer_dict
-        for key in definer_dict:
-            definer = definer_dict[key]
+        for key, definer in definer_dict.items():
             for comp_id, comp in enumerate(definer[1:]):
                 if not isinstance(comp, float | int | str):
                     self.add_gene(

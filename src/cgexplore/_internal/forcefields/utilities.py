@@ -1,19 +1,8 @@
 # Distributed under the terms of the MIT License.
 
-"""Utilities module.
-
-Author: Andrew Tarzia
-
-"""
-
-import logging
+"""Utilities module."""
 
 from openmm import openmm
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
 
 
 def custom_excluded_volume_force() -> openmm.CustomNonbondedForce:

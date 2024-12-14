@@ -21,7 +21,28 @@ logging.basicConfig(
 
 @dataclass(frozen=True, slots=True)
 class Nonbonded:
-    """Class containing term defintion."""
+    """Class containing term defintion.
+
+    Parameters:
+        atom_id:
+            ID of bead.
+
+        bead_class:
+            Class of bead - usually the first letter of bead type.
+
+        bead_element:
+            Element of atom.
+
+        sigma:
+            `sigma` quantity to be implemented in a forcefield.
+
+        epsilons:
+            `epsilon` quantity to be implemented in a forcefield.
+
+        force:
+            Which nonbonded force to use in this term.
+
+    """
 
     atom_id: int
     bead_class: str
@@ -33,7 +54,25 @@ class Nonbonded:
 
 @dataclass(frozen=True, slots=True)
 class TargetNonbonded:
-    """Defines a target term to search for in a molecule."""
+    """Defines a target term to search for in a molecule.
+
+    Parameters:
+        bead_class:
+            Class of bead - usually the first letter of bead type.
+
+        bead_element:
+            Element of atom.
+
+        sigma:
+            `sigma` quantity to be implemented in a forcefield.
+
+        epsilons:
+            `epsilon` quantity to be implemented in a forcefield.
+
+        force:
+            Which nonbonded force to use in this term.
+
+    """
 
     bead_class: str
     bead_element: str
@@ -67,7 +106,27 @@ class TargetNonbonded:
 
 @dataclass(frozen=True, slots=True)
 class TargetNonbondedRange:
-    """Defines a target term and ranges in parameters to search for."""
+    """Defines a target term and ranges in parameters to search for.
+
+    Parameters:
+        bead_class:
+            Class of bead - usually the first letter of bead type.
+
+        bead_element:
+            Element of atom.
+
+        sigmas:
+            Each `sigma` quantity to be implemented in a forcefield
+            library.
+
+        epsilons:
+            Each `epsilon` quantity to be implemented in a forcefield
+            library.
+
+        force:
+            Which nonbonded force to use in this term.
+
+    """
 
     bead_class: str
     bead_element: str

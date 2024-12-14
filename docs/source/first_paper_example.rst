@@ -3,7 +3,8 @@ First Paper Example
 
 .. attention::
 
-    This page is very much underdevelopment.
+    This page is very much underdevelopment. The code may change, but the
+    results will be maintained as best as possible.
 
 .. important::
 
@@ -16,11 +17,11 @@ First Paper Example
   currently set to `None`, meaning `OpenMM` will decide for itself.
 
 
-:mod:`.CGExplore` is a library that can be used very broadly on many systems.
+:mod:`cgexplore` is a library that can be used very broadly on many systems.
 However, my first usage on the systematic modelling of cage molecules is
 described here and the code is available in the directory `first_paper_example`.
 This code should reproduce the data in `10.1039/D3SC03991A <https://doi.org/10.1039/D3SC03991A>`_.
-However, as :mod:`.CGExplore` is updated, some deviations may occur.
+However, as :mod:`cgexplore` is updated, some deviations may occur.
 With each pull request a test is run as a GitHub Action connected to this
 `repository <https://github.com/andrewtarzia/cg_model_test>`_. This ensures that
 the results obtained for a subset of the original data set do not change with
@@ -32,7 +33,7 @@ angles to models.
     The main change is the use of `Atomlite` databasing!
 
 
-I recommend installing the :mod:`.CGExplore` with the following instructions
+I recommend installing the :mod:`cgexplore` with the following instructions
 and then using the example directory in a separate repository or code base of
 your own.
 

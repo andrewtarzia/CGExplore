@@ -13,6 +13,8 @@
    Utilities <utilities>
    Executables <executables>
    Topologies <topologies>
+   Scrambler <scram>
+   Atomistic tools <atomistic>
    First paper example <first_paper_example>
 
 .. toctree::
@@ -23,17 +25,23 @@
   Modules <modules>
 
 
+.. tip::
+
+  ⭐ Star us on `GitHub <https://www.github.com/andrewtarzia/CGExplore>`_! ⭐
+
+============
 Introduction
-------------
+============
 
 | GitHub: https://www.github.com/andrewtarzia/CGExplore
 
 
-:mod:`.CGExplore` is a Python library for for working with
-coarse-grained models.
+:mod:`cgexplore` or ``cgx`` is a general toolkit built on
+`stk <https://stk.readthedocs.io/en/stable/>`_ for constructing,
+optimising and exploring molecular coarse-grained models.
 
-The library is built off of `stk <https://stk.readthedocs.io/en/stable/>`_,
-which comes with the pip install.
+.. figure:: _static/logo.png
+
 
 .. important::
 
@@ -41,41 +49,19 @@ which comes with the pip install.
   are expected.
 
 Installation
-------------
+============
 
-To install :mod:`.CGExplore`, you need to follow these steps:
+:mod:`cgexplore` can be installed with pip:
 
-Create a `conda` or `mamba` environment::
-
-  mamba create -n NAME python=3.11
-
-Activate the environment::
-
-  conda activate NAME
-
-
-Install :mod:`.CGExplore` with pip::
+.. code-block:: bash
 
   pip install cgexplore
 
+With dependancies `openmm <https://openmm.org/>`_ and `openmmtools <https://openmmtools.readthedocs.io/en/stable/gettingstarted.html>`_:
 
-Install `openmm <https://openmm.org/>`_::
+.. code-block:: bash
 
-  mamba install openmm
-
-or::
-
-  conda install -c conda-forge openmm
-
-
-Install `openmmtools <https://openmmtools.readthedocs.io/en/stable/gettingstarted.html>`_::
-
-  mamba install openmmtools
-
-or::
-
-  conda config --add channels omnia --add channels conda-forge
-  conda install openmmtools
+  mamba install openmm openmmtools
 
 
 Then, update directory structure in `env_set.py` if using example code.
@@ -89,20 +75,16 @@ instructions to download and installed at
 Developer Setup
 ---------------
 
-To develop with `CGExplore`, you should create a new environment as above, then:
+To develop with :mod:`cgexplore`, you can clone the repo and use
+`just <https://github.com/casey/just>`_ to setup the dev environment:
 
-Clone :mod:`.CGExplore` from `here <https://github.com/andrewtarzia/CGExplore>`_
-
-From :mod:`.CGExplore` directory use `just <https://github.com/casey/just>`_ to
-install a dev environment with::
+.. code-block:: bash
 
   just dev
 
-And then follow the previous steps.
-
 
 Examples
---------
+========
 
 
 The main series of examples are in `First Paper Example`_. In that page you
@@ -120,23 +102,15 @@ not change with changes to this library.
   example of usage too!
 
 
-New works done with :mod:`.CGExplore`:
+New works done with :mod:`cgexplore`:
 
 * TBC.
 
 
 Acknowledgements
-----------------
+================
 
-This work was completed during my time as a postdoc, and then research fellow
-in the Pavan group at PoliTO (https://www.gmpavanlab.com/).
-
-Indices and tables
-------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+Funded by the European Union - Next Generation EU, Mission 4 Component 1
+CUP E13C22002930006 and the ERC under projects DYNAPOL.
 
 .. _`First Paper Example`: first_paper_example.html
