@@ -2,9 +2,14 @@
 
 import itertools as it
 import logging
-from collections import Counter, abc
+from collections import Counter, abc, defaultdict
 from copy import deepcopy
-from typing import assert_never
+from dataclasses import dataclass
+from typing import Literal, assert_never
+
+import stk
+
+from cgexplore._internal.scram.enumeration import IHomolepticTopologyIterator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -153,6 +158,168 @@ def get_potential_bb_dicts(
     return tuple(possible_dicts)
 
 
+@dataclass
+class BuildingBlockConfiguration:
+    """Naming convention for building block configurations."""
+
+    idx: int
+    building_block_idx_map: dict[stk.BuildingBlock, int]
+    building_block_idx_dict: dict[int, abc.Sequence[int]]
+
+    def get_building_block_dictionary(
+        self,
+    ) -> dict[stk.BuildingBlock, abc.Sequence[int]]:
+        idx_map = {idx: bb for bb, idx in self.building_block_idx_map.items()}
+        return {
+            idx_map[idx]: tuple(vertices)
+            for idx, vertices in self.building_block_idx_dict.items()
+        }
+
+    def get_hashable_bbidx_dict(
+        self,
+    ) -> abc.Sequence[tuple[int, abc.Sequence[int]]]:
+        """Get a hashable representation of the building block dictionary."""
+        return tuple(sorted(self.building_block_idx_dict.items()))
+
+    def __str__(self) -> str:
+        """Return a string representation of the OMMTrajectory."""
+        return (
+            f"{self.__class__.__name__}(idx={self.idx}, "
+            f"building_block_idx_dict={self.building_block_idx_dict})"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the OMMTrajectory."""
+        return str(self)
+
+
+def get_custom_bb_configurations(  # noqa: C901
+    iterator: IHomolepticTopologyIterator,
+) -> abc.Sequence[dict[int, abc.Sequence[int]]]:
+    """Get potential building block dictionaries."""
+    # Get building blocks with the same functional group count - these are
+    # swappable.
+    building_blocks_by_fg = {
+        i: i.get_num_functional_groups() for i in iterator.building_blocks
+    }
+
+    count_of_fg_types = defaultdict(int)
+    fg_counts_by_building_block = defaultdict(int)
+
+    for bb, count in iterator.building_block_counts.items():
+        fg_counts_by_building_block[bb.get_num_functional_groups()] += count
+        count_of_fg_types[bb.get_num_functional_groups()] += 1
+
+    modifiable_types = tuple(
+        fg_count for fg_count, count in count_of_fg_types.items() if count > 1
+    )
+    if len(modifiable_types) != 1:
+        msg = (
+            f"modifiable_types is len {len(modifiable_types)}. If 0"
+            ", then you have no need to screen building block configurations."
+            " If greater than 2, then this code cannot handle this yet. Sorry!"
+        )
+        raise RuntimeError(msg)
+
+    # Get the associated vertex ids.
+    modifiable_vertices = {
+        fg_count: iterator.vertex_types_by_fg[fg_count]
+        for fg_count in iterator.vertex_types_by_fg
+        # ASSUMES 1 modifiable FG.
+        if fg_count == modifiable_types[0]
+    }
+
+    unmodifiable_vertices = {
+        fg_count: iterator.vertex_types_by_fg[fg_count]
+        for fg_count in iterator.vertex_types_by_fg
+        # ASSUMES 1 modifiable FG.
+        if fg_count != modifiable_types[0]
+    }
+
+    # Count of functional groups: number of vertices that need adding.
+    count_to_add = {
+        i: fg_counts_by_building_block[i] for i in modifiable_types
+    }
+
+    if len(count_to_add) != 1:
+        msg = (
+            f"count to add is len {len(count_to_add)}. If greater than 1, "
+            "then this code cannot handle this yet. Sorry!"
+        )
+        raise RuntimeError(msg)
+
+    bb_map = {bb: idx for idx, bb in enumerate(building_blocks_by_fg)}
+
+    empty_bb_dict = {}
+    for bb, fg_count in building_blocks_by_fg.items():
+        if fg_count in modifiable_types:
+            empty_bb_dict[bb_map[bb]] = []
+        else:
+            empty_bb_dict[bb_map[bb]] = tuple(
+                i for i in unmodifiable_vertices[fg_count]
+            )
+
+    saved = set()
+    saved_bb_dicts = set()
+    possible_dicts = []
+
+    # ASSUMES 1 modifiable FG.
+    modifiable = tuple(
+        bb_idx
+        for bb_idx, vertices in empty_bb_dict.items()
+        if len(vertices) == 0
+    )
+
+    # Get combinations of building blocks with the right count.
+    for combo in it.product(
+        modifiable,  # ASSUMES 1 modifiable FG.
+        repeat=count_to_add[modifiable_types[0]],
+    ):
+        subset_bb_counts = {
+            bb_map[bb]: count
+            for bb, count in iterator.building_block_counts.items()
+            if bb_map[bb] in modifiable
+        }
+
+        if Counter(combo) != subset_bb_counts:
+            continue
+
+        if combo in saved:
+            continue
+        saved.add(combo)
+
+        # Then assign to vertices with all permutations.
+        # ASSUMES 1 modifiable FG.
+        for vertex_id_permutation in it.permutations(
+            modifiable_vertices[modifiable_types[0]]
+        ):
+            new_possibility = deepcopy(empty_bb_dict)
+
+            for bb_idx, vertex_id in zip(
+                combo, vertex_id_permutation, strict=True
+            ):
+                new_possibility[bb_idx].append(vertex_id)
+
+            bbconfig = BuildingBlockConfiguration(
+                idx=len(possible_dicts),
+                building_block_idx_map=bb_map,
+                building_block_idx_dict={
+                    i: tuple(j) for i, j in new_possibility.items()
+                },
+            )
+
+            if bbconfig.get_hashable_bbidx_dict() in saved_bb_dicts:
+                continue
+            saved_bb_dicts.add(bbconfig.get_hashable_bbidx_dict())
+
+            # Check for deduplication.
+
+            possible_dicts.append(bbconfig)
+
+    msg = (
+        "bring rmsd checker in here: use symmetry corrected RMSD on "
+        "single-bead repr of tstr"
+    )
     logging.info(msg)
 
     return tuple(possible_dicts)
