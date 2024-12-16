@@ -29,7 +29,12 @@ logging.basicConfig(
 
 
 class TopologyIterator:
-    """Iterate over topology graphs."""
+    """Iterate over topology graphs.
+
+    This is an old version of this code, which I do not recommend using over
+    the `IHomolepticTopologyIterator`.
+
+    """
 
     def __init__(
         self,
@@ -609,134 +614,6 @@ class TopologyIterator:
                 return None
 
 
-class HomolepticTopologyIterator(TopologyIterator):
-    """Iterate over topology graphs."""
-
-    def __init__(  # noqa: PLR0915
-        self,
-        tetra_bb: stk.BuildingBlock,
-        ditopic_bb: stk.BuildingBlock,
-        multiplier: int,
-        stoichiometry: tuple[int, int],
-    ) -> None:
-        """Initialize."""
-        if stoichiometry == (2, 1):
-            if multiplier == 1:
-                self._building_blocks = {
-                    tetra_bb: (0,),
-                    ditopic_bb: (1, 2),
-                }
-                self._underlying_topology = UnalignedM1L2
-                self._scale_multiplier = 2
-                self._num_scrambles = 10
-                self._num_mashes = 2
-                self._beta = 10
-
-            if multiplier == 2:  # noqa: PLR2004
-                self._building_blocks = {
-                    tetra_bb: (0, 1),
-                    ditopic_bb: (2, 3, 4, 5),
-                }
-                self._underlying_topology = stk.cage.M2L4Lantern
-                self._scale_multiplier = 2
-                self._num_scrambles = 40
-                self._num_mashes = 1
-                self._beta = 10
-
-            if multiplier == 3:  # noqa: PLR2004
-                self._building_blocks = {
-                    tetra_bb: (0, 1, 2),
-                    ditopic_bb: (3, 4, 5, 6, 7, 8),
-                }
-                self._underlying_topology = stk.cage.M3L6
-                self._scale_multiplier = 2
-                self._num_scrambles = 100
-                self._num_mashes = 1
-                self._beta = 10
-
-            if multiplier == 4:  # noqa: PLR2004
-                self._building_blocks = {
-                    tetra_bb: (0, 1, 2, 3),
-                    ditopic_bb: (4, 5, 6, 7, 8, 9, 10, 11),
-                }
-                self._underlying_topology = CGM4L8
-                self._scale_multiplier = 2
-                self._num_scrambles = 100
-                self._num_mashes = 1
-                self._beta = 10
-
-            if multiplier == 6:  # noqa: PLR2004
-                self._building_blocks = {
-                    tetra_bb: range(6),
-                    ditopic_bb: range(6, 18),
-                }
-                self._underlying_topology = stk.cage.M6L12Cube
-                self._scale_multiplier = 5
-                self._num_scrambles = 500
-                self._num_mashes = 1
-                self._beta = 10
-
-            if multiplier == 8:  # noqa: PLR2004
-                self._building_blocks = {
-                    tetra_bb: range(8),
-                    ditopic_bb: range(8, 24),
-                }
-                self._underlying_topology = stk.cage.EightPlusSixteen
-                self._scale_multiplier = 5
-                self._num_scrambles = 500
-                self._num_mashes = 1
-                self._beta = 1
-
-            if multiplier == 10:  # noqa: PLR2004
-                self._building_blocks = {
-                    tetra_bb: range(10),
-                    ditopic_bb: range(10, 30),
-                }
-                self._underlying_topology = stk.cage.TenPlusTwenty
-                self._scale_multiplier = 5
-                self._num_scrambles = 500
-                self._num_mashes = 1
-                self._beta = 1
-
-            if multiplier == 12:  # noqa: PLR2004
-                self._building_blocks = {
-                    tetra_bb: range(12),
-                    ditopic_bb: range(12, 36),
-                }
-                self._underlying_topology = CGM12L24
-                self._scale_multiplier = 5
-                self._num_scrambles = 500
-                self._num_mashes = 1
-                self._beta = 1
-
-        self._init_vertex_prototypes = deepcopy(
-            self._underlying_topology._vertex_prototypes  # noqa: SLF001
-        )
-        self._init_edge_prototypes = deepcopy(
-            self._underlying_topology._edge_prototypes  # noqa: SLF001
-        )
-        self._vertices = tuple(
-            stk.cage.UnaligningVertex(
-                id=i.get_id(),
-                position=i.get_position(),
-                aligner_edge=i.get_aligner_edge(),
-                use_neighbor_placement=i.use_neighbor_placement,
-            )
-            for i in self._underlying_topology._vertex_prototypes  # noqa: SLF001
-        )
-        self._edges = tuple(
-            stk.Edge(
-                id=i.get_id(),
-                vertex1=self._vertices[i.get_vertex1_id()],
-                vertex2=self._vertices[i.get_vertex2_id()],
-            )
-            for i in self._underlying_topology._edge_prototypes  # noqa: SLF001
-        )
-
-        self._skip_initial = True
-        self._define_underlying()
-
-
 @dataclass
 class IHomolepticTopologyIterator:
     """Iterate over topology graphs."""
@@ -961,7 +838,32 @@ class IHomolepticTopologyIterator:
         with self.graphs_path.open("w") as f:
             json.dump(to_save, f)
 
-    def get_graphs(self) -> abc.Generator[TopologyCode]:
+    def count_graphs(self) -> int:
+        """Count completely connected graphs in iteration."""
+        if not self.graphs_path.exists():
+            self._define_all_graphs()
+
+        with self.graphs_path.open("r") as f:
+            all_graphs = json.load(f)
+
+        logging.info(
+            "there are %s graphs, %s", len(all_graphs), self.graph_type
+        )
+        count = 0
+        for combination in all_graphs:
+            topology_code = TopologyCode(
+                vertex_map=combination,
+                as_string=vmap_to_str(combination),
+            )
+
+            num_components = rx.number_connected_components(
+                topology_code.get_graph()
+            )
+            if num_components == 1:
+                count += 1
+        return count
+
+    def yield_graphs(self) -> abc.Generator[TopologyCode]:
         """Get constructed molecules from iteration.
 
         Yields only completely connected graphs.
