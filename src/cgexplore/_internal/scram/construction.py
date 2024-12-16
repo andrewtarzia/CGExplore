@@ -23,6 +23,7 @@ from cgexplore._internal.utilities.generation_utilities import (
     yield_shifted_models,
 )
 
+from .building_block_enum import BuildingBlockConfiguration
 from .enumeration import IHomolepticTopologyIterator, TopologyIterator
 
 logging.basicConfig(
@@ -454,14 +455,20 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
 def try_except_construction(
     iterator: TopologyIterator | IHomolepticTopologyIterator,
     topology_code: TopologyCode,
+    building_block_configuration: BuildingBlockConfiguration | None = None,
     vertex_positions: dict[int, np.ndarray] | None = None,
 ) -> stk.ConstructedMolecule:
     """Try construction with alignment, then without."""
+    if building_block_configuration is None:
+        bbs = iterator.building_blocks
+    else:
+        bbs = building_block_configuration.get_building_block_dictionary()
+
     try:
         # Try with aligning vertices.
         constructed_molecule = stk.ConstructedMolecule(
             CustomTopology(
-                building_blocks=iterator.building_blocks,
+                building_blocks=bbs,
                 vertex_prototypes=iterator.get_vertex_prototypes(
                     unaligning=False
                 ),
@@ -479,7 +486,7 @@ def try_except_construction(
         # Try with unaligning.
         constructed_molecule = stk.ConstructedMolecule(
             CustomTopology(
-                building_blocks=iterator.building_blocks,
+                building_blocks=bbs,
                 vertex_prototypes=iterator.get_vertex_prototypes(
                     unaligning=True
                 ),
