@@ -83,10 +83,22 @@ def length_4_heteroleptic_bb_dicts(tstr: str) -> dict[int, int]:
 def get_potential_bb_dicts(
     tstr: str,
     ratio: tuple[int, int],
-    bb_type: str,
+    study_type: Literal["ditopic", "tritopic", "tetratopic"],
 ) -> abc.Sequence[dict[int, abc.Sequence[int]]]:
-    """Get potential building block dictionaries."""
-    match bb_type:
+    """Get potential building block dictionaries from known topology graphs.
+
+    Parameters:
+        tstr:
+            A key to known topology graphs and their building dictionary.
+
+        study_type:
+            `ditopic`, `tetratopic`, `tritopic` explore 1:1:1 heteroleptic
+            systems with distinct 2-,4-,3-functional group building blocks,
+            respectively. If you are using this in conjuction with graph
+            screening, use `get_custom_bb_configurations`.
+
+    """
+    match study_type:
         case "ditopic":
             possibilities, count_to_add = length_2_heteroleptic_bb_dicts(tstr)
             current_counter = max(
@@ -132,9 +144,15 @@ def get_potential_bb_dicts(
 
         possible_dicts.append((len(possible_dicts), new_possibility))
 
-    msg = "bring rmsd checker in here"
+    msg = (
+        "bring rmsd checker in here: use symmetry corrected RMSD on "
+        "single-bead repr of tstr"
+    )
     logging.info(msg)
-    msg = "use symmetry corrected RMSD on single-bead repr of tstr"
+
+    return tuple(possible_dicts)
+
+
     logging.info(msg)
 
     return tuple(possible_dicts)
