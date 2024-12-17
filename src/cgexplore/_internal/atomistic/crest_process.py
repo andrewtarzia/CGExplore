@@ -8,6 +8,7 @@ import subprocess as sp
 import uuid
 from collections import abc
 
+import bbprep
 import stk
 import stko
 from rdkit import RDLogger
@@ -211,6 +212,13 @@ def run_conformer_analysis(  # noqa: PLR0913
         molecule=molecule,
         functional_groups=functional_group_factories,
     )
+
+    # Handle if not ditopic.
+    if molecule.get_num_functional_groups() != 2:  # noqa: PLR2004
+        molecule = bbprep.FurthestFGs().modify(
+            building_block=molecule,
+            desired_functional_groups=2,
+        )
 
     if not opt_file.exists():
         # Run calculation.
