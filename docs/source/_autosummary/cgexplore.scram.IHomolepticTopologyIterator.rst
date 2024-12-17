@@ -17,9 +17,10 @@ cgexplore.scram.IHomolepticTopologyIterator
    .. autosummary::
       :nosignatures:
    
-      ~IHomolepticTopologyIterator.get_graphs
+      ~IHomolepticTopologyIterator.count_graphs
       ~IHomolepticTopologyIterator.get_num_building_blocks
       ~IHomolepticTopologyIterator.get_vertex_prototypes
+      ~IHomolepticTopologyIterator.yield_graphs
    
    
 
