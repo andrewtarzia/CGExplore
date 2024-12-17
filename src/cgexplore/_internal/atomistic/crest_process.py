@@ -13,7 +13,7 @@ import stk
 import stko
 from rdkit import RDLogger
 
-from .utilities import extract_ensemble
+from .utilities import extract_ditopic_ensemble
 
 logging.basicConfig(
     level=logging.INFO,
@@ -248,4 +248,4 @@ def run_conformer_analysis(  # noqa: PLR0913
         opt_molecule = optimiser.optimize(molecule)
         opt_molecule.write(opt_file)
 
-    return extract_ensemble(molecule, crest_run)
+    return extract_ditopic_ensemble(molecule, crest_run)

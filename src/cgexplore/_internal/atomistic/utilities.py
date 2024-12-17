@@ -14,7 +14,10 @@ logging.basicConfig(
 )
 
 
-def extract_ensemble(molecule: stk.Molecule, crest_run: pathlib.Path) -> dict:
+def extract_ditopic_ensemble(
+    molecule: stk.Molecule,
+    crest_run: pathlib.Path,
+) -> dict:
     """Extract and save an ensemble from a crest run."""
     ensemble_dir = crest_run / "ensemble"
     num_atoms = molecule.get_num_atoms()
