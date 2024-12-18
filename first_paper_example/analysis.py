@@ -429,25 +429,6 @@ def xc_map(tstr: str) -> int:
     }[tstr]
 
 
-def stoich_map(tstr: str) -> int:
-    """Stoichiometry maps to the number of building blocks."""
-    return {
-        "2P3": 5,
-        "4P6": 10,
-        "4P62": 10,
-        "6P9": 15,
-        "8P12": 20,
-        "2P4": 6,
-        "3P6": 9,
-        "4P8": 12,
-        "4P82": 12,
-        "6P12": 18,
-        "8P16": 24,
-        "12P24": 36,
-        "6P8": 14,
-    }[tstr]
-
-
 def cltypetopo_to_colormap() -> dict[str, dict]:
     """Convert label."""
     return {
@@ -670,9 +651,9 @@ def data_to_array(json_files, output_dir: pathlib.Path) -> pd.DataFrame:
 
         if row["optimised"]:
             row["strain_energy"] = res_dict["fin_energy_kjmol"]
-            row["energy_per_bb"] = res_dict["fin_energy_kjmol"] / stoich_map(
-                t_str
-            )
+            row["energy_per_bb"] = res_dict[
+                "fin_energy_kjmol"
+            ] / cgx.topologies.stoich_map(t_str)
             for force_title in res_dict["fin_energy_decomp"]:
                 if force_title in (
                     "CMMotionRemover_kJ/mol",

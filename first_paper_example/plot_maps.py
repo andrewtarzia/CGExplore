@@ -22,13 +22,12 @@ from analysis import (
     data_to_array,
     eb_str,
     isomer_energy,
-    stoich_map,
     topology_labels,
     xc_map,
 )
 from env_set import calculations, figures, outputdata
 
-from cgexplore.utilities import draw_pie
+import cgexplore as cgx
 
 logging.basicConfig(
     level=logging.INFO,
@@ -413,7 +412,7 @@ def selfsort_map(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
                     ]
                 )
 
-            draw_pie(
+            cgx.utilities.draw_pie(
                 colours=colours,
                 xpos=xvalue,
                 ypos=yvalue,
@@ -481,7 +480,9 @@ def kinetic_selfsort_map(
             if len(mixed_energies) == 0:
                 colours = ["white"]
             else:
-                stoichiometries = {i: stoich_map(i) for i in mixed_energies}
+                stoichiometries = {
+                    i: cgx.topologies.stoich_map(i) for i in mixed_energies
+                }
                 min_stoichiometry = min(stoichiometries.values())
                 kinetic_energies = {
                     i: mixed_energies[i]
@@ -503,7 +504,7 @@ def kinetic_selfsort_map(
                         ]
                     ]
 
-            draw_pie(
+            cgx.utilities.draw_pie(
                 colours=colours,
                 xpos=xvalue,
                 ypos=yvalue,

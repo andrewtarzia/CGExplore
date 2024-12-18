@@ -17,17 +17,6 @@ def isomer_energy() -> float:
     return 0.3
 
 
-def stoich_map(tstr: str) -> int:
-    """Stoichiometry maps to the number of building blocks."""
-    return {
-        "2P3": 5,
-        "4P6": 10,
-        "4P62": 10,
-        "6P9": 15,
-        "8P12": 20,
-    }[tstr]
-
-
 def colours() -> dict[str, str]:
     """Colours map to topologies."""
     return {
@@ -94,7 +83,8 @@ def analyse_cage(
             raise
         res_dict = {
             "strain_energy": fin_energy,
-            "energy_per_bb": fin_energy / stoich_map(topology_str),
+            "energy_per_bb": fin_energy
+            / cgx.topologies.stoich_map(topology_str),
         }
         database.add_properties(key=name, property_dict=res_dict)
 
@@ -426,14 +416,14 @@ def fitness_function(
     )
 
     other_topologies = {}
-    current_stoich = stoich_map(tstr)
+    current_stoich = cgx.topologies.stoich_map(tstr)
     for other_chromosome in differ_by_topology:
         other_name = (
             f"{other_chromosome.prefix}_{other_chromosome.get_string()}"
         )
         other_tstr, _ = other_chromosome.get_topology_information()
         # Only recalculate smaller or equivalent cages.
-        if stoich_map(other_tstr) <= current_stoich:
+        if cgx.topologies.stoich_map(other_tstr) <= current_stoich:
             if not database.has_molecule(other_name):
                 # Run calculation.
                 structure_function(
