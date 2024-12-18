@@ -259,62 +259,59 @@ def get_custom_bb_configurations(  # noqa: C901
                 i for i in unmodifiable_vertices[fg_count]
             )
 
-    saved = set()
-    saved_bb_dicts = set()
-    possible_dicts = []
-
     # ASSUMES 1 modifiable FG.
-    modifiable = tuple(
+    modifiable_bb_idx = tuple(
         bb_idx
         for bb_idx, vertices in empty_bb_dict.items()
         if len(vertices) == 0
     )
+    modifiable_bb_idx_counted = []
+    for bb, count in iterator.building_block_counts.items():
+        idx = bb_map[bb]
+        if idx not in modifiable_bb_idx:
+            continue
+        modifiable_bb_idx_counted.extend([idx] * count)
 
-    # Get combinations of building blocks with the right count.
-    for combo in it.product(
-        modifiable,  # ASSUMES 1 modifiable FG.
-        repeat=count_to_add[modifiable_types[0]],
-    ):
-        subset_bb_counts = {
-            bb_map[bb]: count
-            for bb, count in iterator.building_block_counts.items()
-            if bb_map[bb] in modifiable
+    # Iterate over the placement of the bb indices.
+    vertex_map = {
+        v_idx: idx
+        for idx, v_idx in enumerate(modifiable_vertices[modifiable_types[0]])
+    }
+    iteration = it.product(
+        # ASSUMES 1 modifiable FG.
+        *(modifiable_bb_idx for i in modifiable_vertices[modifiable_types[0]])
+    )
+
+    saved_bb_dicts = set()
+    possible_dicts = []
+
+    for config in iteration:
+        if sorted(config) != modifiable_bb_idx_counted:
+            continue
+
+        bb_config_dict = {
+            vertex_id: config[vertex_map[vertex_id]]
+            for vertex_id in modifiable_vertices[modifiable_types[0]]
         }
 
-        if Counter(combo) != subset_bb_counts:
+        new_possibility = deepcopy(empty_bb_dict)
+        for vertex_id, bb_idx in bb_config_dict.items():
+            new_possibility[bb_idx].append(vertex_id)
+
+        bbconfig = BuildingBlockConfiguration(
+            idx=len(possible_dicts),
+            building_block_idx_map=bb_map,
+            building_block_idx_dict={
+                i: tuple(j) for i, j in new_possibility.items()
+            },
+        )
+
+        if bbconfig.get_hashable_bbidx_dict() in saved_bb_dicts:
             continue
+        # Check for deduplication.
+        saved_bb_dicts.add(bbconfig.get_hashable_bbidx_dict())
 
-        if combo in saved:
-            continue
-        saved.add(combo)
-
-        # Then assign to vertices with all permutations.
-        # ASSUMES 1 modifiable FG.
-        for vertex_id_permutation in it.permutations(
-            modifiable_vertices[modifiable_types[0]]
-        ):
-            new_possibility = deepcopy(empty_bb_dict)
-
-            for bb_idx, vertex_id in zip(
-                combo, vertex_id_permutation, strict=True
-            ):
-                new_possibility[bb_idx].append(vertex_id)
-
-            bbconfig = BuildingBlockConfiguration(
-                idx=len(possible_dicts),
-                building_block_idx_map=bb_map,
-                building_block_idx_dict={
-                    i: tuple(j) for i, j in new_possibility.items()
-                },
-            )
-
-            if bbconfig.get_hashable_bbidx_dict() in saved_bb_dicts:
-                continue
-            saved_bb_dicts.add(bbconfig.get_hashable_bbidx_dict())
-
-            # Check for deduplication.
-
-            possible_dicts.append(bbconfig)
+        possible_dicts.append(bbconfig)
 
     msg = (
         "bring rmsd checker in here: use symmetry corrected RMSD on "
