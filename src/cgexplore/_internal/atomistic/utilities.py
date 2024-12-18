@@ -3,6 +3,7 @@
 import logging
 import pathlib
 
+import bbprep
 import numpy as np
 import stk
 import stko
@@ -13,7 +14,10 @@ logging.basicConfig(
 )
 
 
-def extract_ensemble(molecule: stk.Molecule, crest_run: pathlib.Path) -> dict:
+def extract_ditopic_ensemble(
+    molecule: stk.Molecule,
+    crest_run: pathlib.Path,
+) -> dict:
     """Extract and save an ensemble from a crest run."""
     ensemble_dir = crest_run / "ensemble"
     num_atoms = molecule.get_num_atoms()
@@ -125,3 +129,44 @@ def cgx_optimisation_sequence(
         gulp2_mol = cage.with_structure_from_file(gulp2_output)
 
     return cage.with_structure_from_file(gulp2_output)
+
+
+def get_ditopic_aligned_bb(
+    path: pathlib.Path,
+    optl_path: pathlib.Path,
+) -> stk.BuildingBlock:
+    """Get building block for the target ligand and prepare for cage model."""
+    if not path.exists():
+        temp = stk.BuildingBlock.init_from_file(
+            path=optl_path,
+            functional_groups=(
+                stko.functional_groups.ThreeSiteFactory("[#6]~[#7X2]~[#6]"),
+            ),
+        )
+        # Handle if not ditopic.
+        if temp.get_num_functional_groups() != 2:  # noqa: PLR2004
+            temp = bbprep.FurthestFGs().modify(
+                building_block=temp,
+                desired_functional_groups=2,
+            )
+
+        generator = bbprep.generators.ETKDG(num_confs=100)
+        ensemble = generator.generate_conformers(temp)
+        process = bbprep.DitopicFitter(ensemble=ensemble)
+        min_molecule = process.get_minimum()
+        min_molecule.molecule.write(path)
+
+    molecule = stk.BuildingBlock.init_from_file(
+        path=path,
+        functional_groups=(
+            stko.functional_groups.ThreeSiteFactory("[#6]~[#7X2]~[#6]"),
+        ),
+    )
+    # Handle if not ditopic.
+    if molecule.get_num_functional_groups() != 2:  # noqa: PLR2004
+        molecule = bbprep.FurthestFGs().modify(
+            building_block=molecule,
+            desired_functional_groups=2,
+        )
+
+    return molecule

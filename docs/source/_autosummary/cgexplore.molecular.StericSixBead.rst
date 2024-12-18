@@ -1,9 +1,9 @@
-cgexplore.scram.HomolepticTopologyIterator
-==========================================
+cgexplore.molecular.StericSixBead
+=================================
 
-.. currentmodule:: cgexplore.scram
+.. currentmodule:: cgexplore.molecular
 
-.. autoclass:: HomolepticTopologyIterator
+.. autoclass:: StericSixBead
    :members:
    :inherited-members:
    :undoc-members:

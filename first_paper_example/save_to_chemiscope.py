@@ -6,7 +6,7 @@ import itertools as it
 import logging
 from collections import abc
 
-from analysis import stoich_map, topology_labels
+from analysis import topology_labels
 from env_set import outputdata
 
 import cgexplore as cgx
@@ -22,7 +22,7 @@ def divider(tstr: str) -> abc.Callable:
 
     def divide_by_stoich(value: float) -> float:
         """Divide energy by stoichiometry."""
-        return value / stoich_map(tstr)
+        return value / cgx.topologies.stoich_map(tstr)
 
     return divide_by_stoich
 

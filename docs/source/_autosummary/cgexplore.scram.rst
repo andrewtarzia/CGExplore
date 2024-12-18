@@ -16,8 +16,8 @@ cgexplore.scram
       :template: class.rst
       :nosignatures:
    
+      BuildingBlockConfiguration
       Constructed
-      HomolepticTopologyIterator
       IHomolepticTopologyIterator
       TopologyCode
       TopologyIterator
@@ -33,6 +33,7 @@ cgexplore.scram
       :toctree:
       :nosignatures:
    
+      get_custom_bb_configurations
       get_potential_bb_dicts
       graph_optimise_cage
       optimise_cage

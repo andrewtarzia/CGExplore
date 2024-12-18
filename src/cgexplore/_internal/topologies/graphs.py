@@ -7,7 +7,17 @@ import stk
 
 
 def stoich_map(tstr: str) -> int:
-    """Stoichiometry maps to the number of building blocks."""
+    """The total number of building blocks in a topology graph.
+
+    Available graphs:
+        `2P3`, `4P6`, `4P62`, `6P9`, `8P12`, `2P4`, `3P6`, `4P8`, `4P82`,
+        `6P12`, `8P16`, `6P122`, `8P162`, `12P24`, `6P8`
+
+    Parameters:
+        tstr:
+            The string for the topology.
+
+    """
     return {
         "2P3": 5,
         "4P6": 10,

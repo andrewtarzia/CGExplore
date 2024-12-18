@@ -16,11 +16,12 @@ from analysis import (
     isomer_energy,
     pore_str,
     rg_str,
-    stoich_map,
 )
 from env_set import calculations, figures, outputdata
 from matplotlib.lines import Line2D
 from scipy.spatial import ConvexHull
+
+import cgexplore as cgx
 
 logging.basicConfig(
     level=logging.INFO,
@@ -48,7 +49,9 @@ def phase_space_2(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
             }
             if len(stable_energies) == 0:
                 continue
-            stoichiometries = {i: stoich_map(i) for i in stable_energies}
+            stoichiometries = {
+                i: cgx.topologies.stoich_map(i) for i in stable_energies
+            }
             min_stoichiometry = min(stoichiometries.values())
             kinetic_energies = {
                 i: stable_energies[i]
@@ -118,7 +121,7 @@ def phase_space_2(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
             "ylbl": pore_str(),
             "x": "topology",
             "xlbl": "num. building blocks",
-            "xmapfun": stoich_map,
+            "xmapfun": cgx.topologies.stoich_map,
             "xlim": (None, None),
             "c": "cmap",
         },

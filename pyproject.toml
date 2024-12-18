@@ -17,10 +17,11 @@ dependencies = [
   "atomlite",
   "chemiscope>0.7.3",
   "rustworkx",
+  "bbprepared",
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]
-readme = "README.md"
+readme = "README.rst"
 
 [project.optional-dependencies]
 dev = [
@@ -150,5 +151,6 @@ module = [
   "spindry.*",
   "vabene.*",
   "chemiscope.*",
+  "bbprep.*",
 ]
 ignore_missing_imports = true
