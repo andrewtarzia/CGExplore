@@ -871,10 +871,6 @@ class IHomolepticTopologyIterator:
         with self.graphs_path.open("r") as f:
             all_graphs = json.load(f)
 
-        logging.info(
-            "there are %s graphs, %s", len(all_graphs), self.graph_type
-        )
-
         for combination in all_graphs:
             topology_code = TopologyCode(
                 vertex_map=combination,
