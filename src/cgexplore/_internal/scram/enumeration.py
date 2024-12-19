@@ -622,8 +622,9 @@ class IHomolepticTopologyIterator:
     graph_type: str
     graph_set: Literal["rx", "nx", "rx_nodoubles"] = "rx"
     scale_multiplier = 5
+    max_samples: int | None = None
 
-    def __post_init__(self) -> None:
+    def __post_init__(self) -> None:  # noqa: PLR0915, PLR0912, C901
         """Initialize."""
         match self.graph_set:
             case "rx":
@@ -632,7 +633,8 @@ class IHomolepticTopologyIterator:
                     / "known_graphs"
                     / f"rx_{self.graph_type}.json"
                 )
-                self.max_samples = int(1e4)
+                if self.max_samples is None:
+                    self.max_samples = int(1e4)
 
             case "rx_nodoubles":
                 self.graphs_path = (
@@ -640,7 +642,8 @@ class IHomolepticTopologyIterator:
                     / "known_graphs"
                     / f"rxnd_{self.graph_type}.json"
                 )
-                self.max_samples = int(1e5)
+                if self.max_samples is None:
+                    self.max_samples = int(1e5)
 
             case "nx":
                 self.graphs_path = (
@@ -704,7 +707,16 @@ class IHomolepticTopologyIterator:
                 )
                 building_block_dict[building_block].append(vertex_id)
                 vertex_counts[vertex_id] = num_functional_groups
-                if num_functional_groups == 2:  # noqa: PLR2004
+                if num_functional_groups == 1:
+                    vertex_prototypes.append(
+                        stk.cage.UnaligningVertex(
+                            id=vertex_id,
+                            position=position,
+                            use_neighbor_placement=False,
+                        )
+                    )
+
+                elif num_functional_groups == 2:  # noqa: PLR2004
                     vertex_prototypes.append(
                         stk.cage.AngledVertex(
                             id=vertex_id,
@@ -756,14 +768,9 @@ class IHomolepticTopologyIterator:
             return self.unaligned_vertex_prototypes
         return self.vertex_prototypes
 
-    def _define_all_graphs(self) -> None:
+    def _two_type_algorithm(self) -> None:
         combinations_tested = set()
         run_topology_codes = []
-
-        num_types = len(self.vertex_types_by_fg.keys())
-        if num_types != 2:  # noqa: PLR2004
-            msg = "not implemented for other types yet"
-            raise RuntimeError(msg)
 
         type1, type2 = sorted(self.vertex_types_by_fg.keys(), reverse=True)
 
@@ -838,6 +845,103 @@ class IHomolepticTopologyIterator:
         with self.graphs_path.open("w") as f:
             json.dump(to_save, f)
 
+    def _three_type_algorithm(self) -> None:
+        combinations_tested = set()
+        run_topology_codes = []
+
+        type1, type2, type3 = sorted(
+            self.vertex_types_by_fg.keys(), reverse=True
+        )
+
+        itera1 = [
+            i
+            for i in self.reactable_vertex_ids
+            if i in self.vertex_types_by_fg[type1]
+        ]
+
+        rng = np.random.default_rng(seed=100)
+        options1 = [
+            i
+            for i in self.reactable_vertex_ids
+            if i in self.vertex_types_by_fg[type2]
+        ]
+        options2 = [
+            i
+            for i in self.reactable_vertex_ids
+            if i in self.vertex_types_by_fg[type3]
+        ]
+
+        to_save = []
+        for _ in range(self.max_samples):
+            # Merging options1 and options2 because they both bind to itera.
+            mixed_options = options1 + options2
+            rng.shuffle(mixed_options)
+
+            # Build an edge selection.
+            combination = [
+                tuple(sorted((i, j)))
+                for i, j in zip(itera1, mixed_options, strict=True)
+            ]
+
+            # Need to check for nonsensical ones here.
+            # Check the number of egdes per vertex is correct.
+            counter = Counter([i for j in combination for i in j])
+            if counter != self.vertex_counts:
+                continue
+
+            # If are any self-reactions.
+            if any(abs(i - j) == 0 for i, j in combination):
+                continue
+
+            topology_code = TopologyCode(
+                vertex_map=combination,
+                as_string=vmap_to_str(combination),
+            )
+
+            if (
+                self.graph_set == "rx_nodoubles"
+                and topology_code.contains_doubles()
+            ):
+                continue
+
+            # Check for string done.
+            if topology_code.as_string in combinations_tested:
+                continue
+
+            combinations_tested.add(topology_code.as_string)
+
+            # Convert TopologyCode to a graph.
+            current_graph = topology_code.get_graph()
+
+            # Check that graph for isomorphism with others graphs.
+            passed_iso = True
+            for tc in run_topology_codes:
+                test_graph = tc.get_graph()
+
+                if rx.is_isomorphic(current_graph, test_graph):
+                    passed_iso = False
+                    break
+
+            if not passed_iso:
+                continue
+
+            run_topology_codes.append(topology_code)
+            to_save.append(combination)
+            logging.info("found one at %s", _)
+
+        with self.graphs_path.open("w") as f:
+            json.dump(to_save, f)
+
+    def _define_all_graphs(self) -> None:
+        num_types = len(self.vertex_types_by_fg.keys())
+        if num_types == 2:  # noqa: PLR2004
+            self._two_type_algorithm()
+        elif num_types == 3:  # noqa: PLR2004
+            self._three_type_algorithm()
+        else:
+            msg = "not implemented for other types yet"
+            raise RuntimeError(msg)
+
     def count_graphs(self) -> int:
         """Count completely connected graphs in iteration."""
         if not self.graphs_path.exists():
@@ -856,8 +960,10 @@ class IHomolepticTopologyIterator:
             num_components = rx.number_connected_components(
                 topology_code.get_graph()
             )
+
             if num_components == 1:
                 count += 1
+
         return count
 
     def yield_graphs(self) -> abc.Generator[TopologyCode]:
