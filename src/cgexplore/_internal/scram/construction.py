@@ -149,30 +149,31 @@ def graph_optimise_cage(  # noqa: PLR0913
             nx.kamada_kawai_layout(stko_graph.get_graph(), dim=3),
         )
     ):
-        try:
-            # We allow these to independantly failed because the nx graphs can
-            # be ridiculous.
-            pos_mat = np.array([nx_positions[i] for i in nx_positions])
-            if pos_mat.shape[1] != 3:  # noqa: PLR2004
-                msg = "built a non 3D graph"
-                raise RuntimeError(msg)
+        # We allow these to independantly failed because the nx graphs can
+        # be ridiculous.
+        for j, scaler in enumerate((5, 10, 15)):
+            try:
+                pos_mat = np.array([nx_positions[i] for i in nx_positions])
+                if pos_mat.shape[1] != 3:  # noqa: PLR2004
+                    msg = "built a non 3D graph"
+                    raise RuntimeError(msg)
 
-            test_molecule = conformer.molecule.with_position_matrix(
-                pos_mat * 10
-            )
-            conformer = run_optimisation(
-                assigned_system=forcefield.assign_terms(
-                    test_molecule, name, output_dir
-                ),
-                name=name,
-                file_suffix="nopt",
-                output_dir=output_dir,
-                platform=platform,
-            )
+                test_molecule = conformer.molecule.with_position_matrix(
+                    pos_mat * scaler
+                )
+                conformer = run_optimisation(
+                    assigned_system=forcefield.assign_terms(
+                        test_molecule, name, output_dir
+                    ),
+                    name=name,
+                    file_suffix="nopt",
+                    output_dir=output_dir,
+                    platform=platform,
+                )
 
-            ensemble.add_conformer(conformer=conformer, source=f"nx{i}")
-        except OpenMMException:
-            logging.info("failed graph opt of %s", name)
+                ensemble.add_conformer(conformer=conformer, source=f"nx{i}{j}")
+            except OpenMMException:
+                logging.info("failed graph opt of %s", name)
 
     # Try with graph positions.
     rng = np.random.default_rng(seed=100)
@@ -328,13 +329,24 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
 
     # Add neighbours to systematic scan.
     if "scan" in name:
-        si, sj = name.split("_")[1].split("-")
+        if "ufo" in name:
+            _, multiplier, sisj = name.split("_")
+            si, sj = sisj.split("-")
 
-        potential_names = [
-            f"scan_{int(si)-1}-{int(sj)-1}",
-            f"scan_{int(si)-1}-{int(sj)}",
-            f"scan_{int(si)}-{int(sj)-1}",
-        ]
+            potential_names = [
+                f"ufoscan_{multiplier}_{int(si)-1}-{int(sj)-1}",
+                f"ufoscan_{multiplier}_{int(si)-1}-{int(sj)}",
+                f"ufoscan_{multiplier}_{int(si)}-{int(sj)-1}",
+            ]
+
+        else:
+            si, sj = name.split("_")[1].split("-")
+
+            potential_names = [
+                f"scan_{int(si)-1}-{int(sj)-1}",
+                f"scan_{int(si)-1}-{int(sj)}",
+                f"scan_{int(si)}-{int(sj)-1}",
+            ]
     elif "ts_" in name:
         _, tstr, si, sj, _at = name.split("_")
 
