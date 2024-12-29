@@ -79,12 +79,12 @@ def graph_optimise_cage(  # noqa: PLR0913
         return ensemble.get_lowest_e_conformer()
 
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
-    if (output_dir / f"{name}_ensemblewip.xyz").exists():
-        (output_dir / f"{name}_ensemblewip.xyz").unlink()
+    if (output_dir / f"{name}_ensemble.xyz").exists():
+        (output_dir / f"{name}_ensemble.xyz").unlink()
     ensemble = Ensemble(
         base_molecule=molecule,
         base_mol_path=output_dir / f"{name}_base.mol",
-        conformer_xyz=output_dir / f"{name}_ensemblewip.xyz",
+        conformer_xyz=output_dir / f"{name}_ensemble.xyz",
         data_json=output_dir / f"{name}_ensemble.json",
         overwrite=True,
     )
