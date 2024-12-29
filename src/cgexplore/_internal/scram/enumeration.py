@@ -622,6 +622,7 @@ class IHomolepticTopologyIterator:
     graph_type: str
     graph_set: Literal["rx", "nx", "rx_nodoubles"] = "rx"
     scale_multiplier = 5
+    allowed_num_components: int = 1
     max_samples: int | None = None
 
     def __post_init__(self) -> None:  # noqa: PLR0915, PLR0912, C901
@@ -961,7 +962,7 @@ class IHomolepticTopologyIterator:
                 topology_code.get_graph()
             )
 
-            if num_components == 1:
+            if num_components == self.allowed_num_components:
                 count += 1
 
         return count
@@ -986,5 +987,5 @@ class IHomolepticTopologyIterator:
             num_components = rx.number_connected_components(
                 topology_code.get_graph()
             )
-            if num_components == 1:
+            if num_components == self.allowed_num_components:
                 yield topology_code
