@@ -357,6 +357,7 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
                     f"ts_{tstr}_{int(si)-1}_{int(sj)-1}_{i}",
                     f"ts_{tstr}_{int(si)-1}_{int(sj)}_{i}",
                     f"ts_{tstr}_{int(si)}_{int(sj)-1}_{i}",
+                    f"ts_{tstr}_{int(si)}_{int(sj)}_{i}",
                 ]
             )
     else:
@@ -366,6 +367,7 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         potential_file = output_dir / f"{potential_name}_final.mol"
         if not potential_file.exists():
             continue
+
         test_molecule = temp_molecule.with_structure_from_file(potential_file)
         conformer = run_optimisation(
             assigned_system=AssignedSystem(
