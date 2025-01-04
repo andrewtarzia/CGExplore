@@ -643,22 +643,25 @@ class StericSixBead(Precursor):
         bead: CgBead,
         abead1: CgBead,
         abead2: CgBead,
+        ibead: CgBead,
         sbead: CgBead,
     ) -> None:
         """Initialize a precursor."""
         self._bead = bead
         self._abead1 = abead1
         self._abead2 = abead2
+        self._ibead = ibead
         self._sbead = sbead
         self._name = (
             f"6S2{bead.bead_type}{abead1.bead_type}{abead2.bead_type}"
-            f"{sbead.bead_type}"
+            f"{ibead.bead_type}{sbead.bead_type}"
         )
         self._bead_set = {
             bead.bead_type: bead,
             abead1.bead_type: abead1,
             abead2.bead_type: abead2,
             sbead.bead_type: sbead,
+            ibead.bead_type: ibead,
         }
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
@@ -670,8 +673,8 @@ class StericSixBead(Precursor):
         self._building_block = stk.BuildingBlock(
             smiles=(
                 f"[{abead2.element_string}][{abead1.element_string}]"
-                f"[{bead.element_string}][{bead.element_string}]"
-                f"([{sbead.element_string}])[{bead.element_string}]"
+                f"[{bead.element_string}][{ibead.element_string}]"
+                f"[{bead.element_string}]"
                 f"[{abead1.element_string}][{abead2.element_string}]"
             ),
             functional_groups=new_fgs,
@@ -681,7 +684,6 @@ class StericSixBead(Precursor):
                     [-4, 2, 0],
                     [-2, 0.1, 0],
                     [0, 0.1, 0],
-                    [0, 1, 0],
                     [2, 0, 0],
                     [4, 2, 0],
                     [6, 3, 0.2],
