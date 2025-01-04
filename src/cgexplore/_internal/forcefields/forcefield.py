@@ -735,6 +735,65 @@ class ForceField:
         """Return a string representation of the Ensemble."""
         return str(self)
 
+    def get_forcefield_dictionary(self) -> dict[str, str | dict]:
+        """Get the underlying forcefield dict."""
+        # This is matched to the existing analysis code. I recommend
+        # generalising in the future.
+        ff_targets = self.get_targets()
+        k_dict = {}
+        v_dict = {}
+
+        for bt in ff_targets["bonds"]:
+            cp = (bt.type1, bt.type2)
+            k_dict["_".join(cp)] = bt.bond_k.value_in_unit(
+                openmm.unit.kilojoule
+                / openmm.unit.mole
+                / openmm.unit.nanometer**2
+            )
+            v_dict["_".join(cp)] = bt.bond_r.value_in_unit(
+                openmm.unit.angstrom
+            )
+
+        for at in ff_targets["angles"]:
+            cp = (at.type1, at.type2, at.type3)
+            try:
+                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
+                    openmm.unit.kilojoule
+                    / openmm.unit.mole
+                    / openmm.unit.radian**2
+                )
+                v_dict["_".join(cp)] = at.angle.value_in_unit(
+                    openmm.unit.degrees
+                )
+            except TypeError:
+                # Handle different angle types.
+                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
+                    openmm.unit.kilojoule / openmm.unit.mole
+                )
+                v_dict["_".join(cp)] = (at.n, at.b)
+
+        for at in ff_targets["torsions"]:
+            cp = at.search_string
+            k_dict["_".join(cp)] = at.torsion_k.value_in_unit(
+                openmm.unit.kilojoules_per_mole
+            )
+            v_dict["_".join(cp)] = at.phi0.value_in_unit(openmm.unit.degrees)
+
+        for at in ff_targets["nonbondeds"]:
+            v_dict[at.bead_class] = at.sigma.value_in_unit(
+                openmm.unit.angstrom
+            )
+            k_dict[at.bead_class] = at.epsilon.value_in_unit(
+                openmm.unit.kilojoules_per_mole
+            )
+
+        return {
+            "ff_id": self.get_identifier(),
+            "ff_prefix": self.get_prefix(),
+            "k_dict": k_dict,
+            "v_dict": v_dict,
+        }
+
 
 class MartiniForceField(ForceField):
     """Class defining a Martini Forcefield."""

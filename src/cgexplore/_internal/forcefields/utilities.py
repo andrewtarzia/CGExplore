@@ -1,5 +1,3 @@
-# Distributed under the terms of the MIT License.
-
 """Utilities module."""
 
 from openmm import openmm
