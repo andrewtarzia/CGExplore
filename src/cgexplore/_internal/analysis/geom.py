@@ -2,12 +2,14 @@
 
 """Module for geometry analysis."""
 
+import typing
 from collections import abc, defaultdict
 
 import stk
 import stko
 from rdkit.Chem import AllChem
 
+from cgexplore._internal.forcefields.forcefield import ForceField
 from cgexplore._internal.terms.torsions import TargetTorsion
 from cgexplore._internal.terms.utilities import find_torsions
 
@@ -228,3 +230,13 @@ class GeomMeasure:
 
         """
         return self._stko_analyser.get_max_diameter(molecule)
+
+    @classmethod
+    def from_forcefield(
+        cls,
+        forcefield: ForceField,
+    ) -> typing.Self:
+        """Get the values in terms of forcefield terms."""
+        ff_targets = forcefield.get_targets()
+
+        return cls(target_torsions=ff_targets["torsions"])
