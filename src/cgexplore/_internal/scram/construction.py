@@ -351,7 +351,7 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         _, tstr, si, sj, _at = name.split("_")
 
         potential_names = []
-        for i in range(6):
+        for i in range(20):
             potential_names.extend(
                 [
                     f"ts_{tstr}_{int(si)-1}_{int(sj)-1}_{i}",
@@ -368,21 +368,18 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         if not potential_file.exists():
             continue
 
-        test_molecule = temp_molecule.with_structure_from_file(potential_file)
+        test_molecule = stk.BuildingBlock.init_from_file(potential_file)
+
         conformer = run_optimisation(
-            assigned_system=AssignedSystem(
-                molecule=test_molecule,
-                forcefield_terms=assigned_system.forcefield_terms,
-                system_xml=assigned_system.system_xml,
-                topology_xml=assigned_system.topology_xml,
-                bead_set=assigned_system.bead_set,
-                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+            assigned_system=forcefield.assign_terms(
+                test_molecule, name, output_dir
             ),
             name=name,
             file_suffix="ns",
             output_dir=output_dir,
             platform=platform,
         )
+
         ensemble.add_conformer(conformer=conformer, source="ns")
 
     num_steps = 20000
