@@ -122,8 +122,10 @@ def analyse_cage(
             lig_shape_measures = liga_shape.calculate(l_shape_mol)
             l_shape_mol.write(shape_molfile2)
 
-        # Always want to extract target torions if present.
         g_measure = cgx.analysis.GeomMeasure(
+            # Always want to extract target torions if present, in toff, they
+            # are no in the forcefield, so cannot use
+            # `GeomMeasure.from_forcefield`.
             target_torsions=(
                 cgx.terms.TargetTorsion(
                     search_string=("b1", "a1", "c1", "a1", "b1"),
