@@ -397,8 +397,8 @@ class MartiniSystem(ForcedSystem):
                 / openmm.unit.nanometer**2
             )
             string += (
-                f"  {assigned_force.atom_ids[0]+1} "
-                f"{assigned_force.atom_ids[1]+1} "
+                f"  {assigned_force.atom_ids[0] + 1} "
+                f"{assigned_force.atom_ids[1] + 1} "
                 f"{assigned_force.funct} "
                 f"{length} "
                 f"{k}\n"
@@ -422,9 +422,9 @@ class MartiniSystem(ForcedSystem):
                 / openmm.unit.radian**2
             )
             string += (
-                f"  {assigned_force.atom_ids[0]+1} "
-                f"{assigned_force.atom_ids[1]+1} "
-                f"{assigned_force.atom_ids[2]+1} "
+                f"  {assigned_force.atom_ids[0] + 1} "
+                f"{assigned_force.atom_ids[1] + 1} "
+                f"{assigned_force.atom_ids[2] + 1} "
                 f"{assigned_force.funct} "
                 f"{angle} "
                 f"{k}\n"

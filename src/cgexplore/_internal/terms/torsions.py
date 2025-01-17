@@ -114,8 +114,8 @@ class TargetTorsion:
         """Return human-readable definition of this target term."""
         return (
             f"{self.__class__.__name__}("
-            f'{"".join(self.search_string)}, '
-            f'{"".join(self.search_estring)}, '
+            f"{''.join(self.search_string)}, "
+            f"{''.join(self.search_estring)}, "
             f"{self.measured_atom_ids!s}, "
             f"{self.phi0.in_units_of(openmm.unit.degrees)}, "
             f"{self.torsion_k.in_units_of(openmm.unit.kilojoules_per_mole)}, "
@@ -207,8 +207,8 @@ class TargetMartiniTorsion:
         """Return human-readable definition of this target term."""
         return (
             f"{self.__class__.__name__}("
-            f'{"".join(self.search_string)}, '
-            f'{"".join(self.search_estring)}, '
+            f"{''.join(self.search_string)}, "
+            f"{''.join(self.search_estring)}, "
             f"{self.measured_atom_ids!s}, "
             f"{self.funct},"
             f"{self.phi0.in_units_of(openmm.unit.degrees)}, "

@@ -222,8 +222,7 @@ class CGOMMOptimizer:
                 distance=current_distance / 10,
             )
             self._output_string += (
-                f"{constraint[0]} {constraint[1]} "
-                f"{current_distance / 10} nm\n"
+                f"{constraint[0]} {constraint[1]} {current_distance / 10} nm\n"
             )
 
         self._output_string += "\n"
@@ -594,7 +593,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         end = time.time()
         speed = self._num_steps / (end - start)
         self._output_string += (
-            f"done in {end-start} s ({round(speed, 2)} steps/s)\n\n"
+            f"done in {end - start} s ({round(speed, 2)} steps/s)\n\n"
         )
 
         return simulation

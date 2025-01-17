@@ -191,7 +191,7 @@ def bite_angle_relationship(
                     c=cmap[tors][0],
                     alpha=1.0,
                     linestyle="--",
-                    label=f"{convert_tors(tors,num=False)}",
+                    label=f"{convert_tors(tors, num=False)}",
                     marker=cmap[tors][1],
                 )
 

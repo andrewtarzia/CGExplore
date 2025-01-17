@@ -334,18 +334,18 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
             si, sj = sisj.split("-")
 
             potential_names = [
-                f"ufoscan_{multiplier}_{int(si)-1}-{int(sj)-1}",
-                f"ufoscan_{multiplier}_{int(si)-1}-{int(sj)}",
-                f"ufoscan_{multiplier}_{int(si)}-{int(sj)-1}",
+                f"ufoscan_{multiplier}_{int(si) - 1}-{int(sj) - 1}",
+                f"ufoscan_{multiplier}_{int(si) - 1}-{int(sj)}",
+                f"ufoscan_{multiplier}_{int(si)}-{int(sj) - 1}",
             ]
 
         else:
             si, sj = name.split("_")[1].split("-")
 
             potential_names = [
-                f"scan_{int(si)-1}-{int(sj)-1}",
-                f"scan_{int(si)-1}-{int(sj)}",
-                f"scan_{int(si)}-{int(sj)-1}",
+                f"scan_{int(si) - 1}-{int(sj) - 1}",
+                f"scan_{int(si) - 1}-{int(sj)}",
+                f"scan_{int(si)}-{int(sj) - 1}",
             ]
     elif "ts_" in name:
         _, tstr, si, sj, _at = name.split("_")
@@ -354,9 +354,9 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         for i in range(20):
             potential_names.extend(
                 [
-                    f"ts_{tstr}_{int(si)-1}_{int(sj)-1}_{i}",
-                    f"ts_{tstr}_{int(si)-1}_{int(sj)}_{i}",
-                    f"ts_{tstr}_{int(si)}_{int(sj)-1}_{i}",
+                    f"ts_{tstr}_{int(si) - 1}_{int(sj) - 1}_{i}",
+                    f"ts_{tstr}_{int(si) - 1}_{int(sj)}_{i}",
+                    f"ts_{tstr}_{int(si)}_{int(sj) - 1}_{i}",
                     f"ts_{tstr}_{int(si)}_{int(sj)}_{i}",
                 ]
             )

@@ -566,7 +566,7 @@ class ShapeMeasure:
                 "vertices": "9",
                 "label": "JTC-9",
                 "shape": (
-                    "Triangular cupola (J3) = trivacant cuboctahedron " "C3v"
+                    "Triangular cupola (J3) = trivacant cuboctahedron C3v"
                 ),
             },
             "JCCU-9": {
@@ -732,8 +732,7 @@ class ShapeMeasure:
                 "vertices": "11",
                 "label": "JCPPR-11",
                 "shape": (
-                    "Capped pent. Prism (Elongated pentagonal pyramid "
-                    "J9) C5v"
+                    "Capped pent. Prism (Elongated pentagonal pyramid J9) C5v"
                 ),
             },
             "JCPAPR-11": {
@@ -804,7 +803,7 @@ class ShapeMeasure:
                 "vertices": "12",
                 "label": "ACOC-12",
                 "shape": (
-                    "Anticuboctahedron (Triangular orthobicupola J27) " "D3h"
+                    "Anticuboctahedron (Triangular orthobicupola J27) D3h"
                 ),
             },
             "IC-12": {

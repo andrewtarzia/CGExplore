@@ -655,7 +655,7 @@ class ChromosomeGenerator:
         """Return a string representation of the ChromosomeGenerator."""
         _num_chromosomes = self.get_num_chromosomes()
         _num_genes = len(self.chromosome_map)
-        return f"{self.__class__.__name__}(" f"num_genes={_num_genes})"
+        return f"{self.__class__.__name__}(num_genes={_num_genes})"
 
     def __repr__(self) -> str:
         """Return a string representation of the Chromosome."""

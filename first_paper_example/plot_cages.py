@@ -829,8 +829,7 @@ def webapp_csv(
     logging.info("running webapp_csv")
 
     github_base_url = (
-        "https://github.com/andrewtarzia/cgmodels/blob/main/"
-        "cg_model_jul2023/"
+        "https://github.com/andrewtarzia/cgmodels/blob/main/cg_model_jul2023/"
     )
     github_selfsort_url = github_base_url + "self_sort_outcomes/"
 

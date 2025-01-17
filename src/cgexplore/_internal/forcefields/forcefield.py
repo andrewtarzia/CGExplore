@@ -187,7 +187,7 @@ class ForceField:
                     Bond(
                         atoms=atoms,
                         atom_names=tuple(
-                            f"{i.__class__.__name__}{i.get_id()+1}"
+                            f"{i.__class__.__name__}{i.get_id() + 1}"
                             for i in atoms
                         ),
                         atom_ids=tuple(i.get_id() for i in atoms),
@@ -267,12 +267,12 @@ class ForceField:
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
-                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                        f"{atom_estrings[1]}{central_atom.get_id() + 1}"
                     )
                     actual_angle = Angle(
                         atoms=found_angle.atoms,
                         atom_names=tuple(
-                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            f"{i.__class__.__name__}{i.get_id() + 1}"
                             for i in found_angle.atoms
                         ),
                         atom_ids=found_angle.atom_ids,
@@ -304,13 +304,13 @@ class ForceField:
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
-                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                        f"{atom_estrings[1]}{central_atom.get_id() + 1}"
                     )
                     angle_terms.append(
                         CosineAngle(
                             atoms=found_angle.atoms,
                             atom_names=tuple(
-                                f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                                f"{i.__class__.__name__}{i.get_id() + 1}"
                                 for i in found_angle.atoms
                             ),
                             atom_ids=found_angle.atom_ids,
@@ -342,12 +342,12 @@ class ForceField:
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
-                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                        f"{atom_estrings[1]}{central_atom.get_id() + 1}"
                     )
                     actual_angle = Angle(
                         atoms=found_angle.atoms,
                         atom_names=tuple(
-                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            f"{i.__class__.__name__}{i.get_id() + 1}"
                             for i in found_angle.atoms
                         ),
                         atom_ids=found_angle.atom_ids,
@@ -505,7 +505,7 @@ class ForceField:
                         Torsion(
                             atom_names=tuple(
                                 f"{found_torsion.atoms[i].__class__.__name__}"
-                                f"{found_torsion.atoms[i].get_id()+1}"
+                                f"{found_torsion.atoms[i].get_id() + 1}"
                                 for i in target_torsion.measured_atom_ids
                             ),
                             atom_ids=tuple(

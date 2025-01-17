@@ -218,20 +218,17 @@ def geom_distributions(
             ax.tick_params(axis="both", which="major", labelsize=16)
             if column is None:
                 ax.set_title(
-                    f"{convert_tors(tors,num=False)} ",
+                    f"{convert_tors(tors, num=False)} ",
                     fontsize=16,
                 )
                 ax.set_ylabel(cdict["xlabel"], fontsize=16)
             else:
                 ax.set_title(
-                    (
-                        f'{cdict["xlabel"]}: '
-                        f"{convert_tors(tors,num=False)} "
-                    ),
+                    (f"{cdict['xlabel']}: {convert_tors(tors, num=False)} "),
                     fontsize=16,
                 )
                 ax.set_ylabel(
-                    f'observed - target [{cdict["units"]}]',
+                    f"observed - target [{cdict['units']}]",
                     fontsize=16,
                 )
             ax.set_xticks([tcpos[i] for i in tcpos])
@@ -501,9 +498,7 @@ def plot_mixed_unstable(
             c=color_map[(tor, cltitle)],
             lw=3,
             linestyle="-",
-            label=(
-                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, unstable"
-            ),
+            label=(f"{cltitle[0]}C: {convert_tors(tor, num=False)}, unstable"),
         )
         ax.plot(
             xs,
@@ -511,9 +506,7 @@ def plot_mixed_unstable(
             c=color_map[(tor, cltitle)],
             lw=3,
             linestyle="--",
-            label=(
-                f"{cltitle[0]}C: " f"{convert_tors(tor, num=False)}, mixed"
-            ),
+            label=(f"{cltitle[0]}C: {convert_tors(tor, num=False)}, mixed"),
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
