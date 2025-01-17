@@ -33,7 +33,7 @@ class Crest(stko.Optimizer):
         crest_path: pathlib.Path,
         xtb_path: pathlib.Path,
         gfn_method: str = "2",
-        output_dir: str | None = None,
+        output_dir: pathlib.Path | str | None = None,
         num_cores: int = 4,
         charge: int = 0,
         electronic_temperature: float = 300,
@@ -85,7 +85,7 @@ class Crest(stko.Optimizer):
         path = pathlib.Path(path)
         if not path.exists():
             msg = f"XTB or CREST not found at {path}"
-            raise pathlib.PathError(msg)
+            raise RuntimeError(msg)
 
     def _write_detailed_control(self) -> None:
         string = f"$gbsa\n   gbsagrid={self._solvent_grid}"
@@ -146,7 +146,7 @@ class Crest(stko.Optimizer):
                 shell=True,
             )
 
-    def optimize(self, molecule: stk.Molecule) -> stk.Molecule:
+    def optimize(self, molecule: stko.MoleculeT) -> stko.MoleculeT:
         """Optimise a solute-solvent pair."""
         if self._output_dir is None:
             output_dir = pathlib.Path(str(uuid.uuid4().int)).resolve()
@@ -194,7 +194,7 @@ class Crest(stko.Optimizer):
 
 def run_conformer_analysis(  # noqa: PLR0913
     ligand_name: str,
-    molecule: stk.Molecule,
+    molecule: stk.BuildingBlock,
     ligand_dir: pathlib.Path,
     calculation_dir: pathlib.Path,
     functional_group_factories: tuple[stk.FunctionalGroupFactory, ...],

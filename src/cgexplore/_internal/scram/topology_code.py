@@ -32,7 +32,7 @@ class TopologyCode:
 
     def get_graph(self) -> rx.PyGraph:
         """Convert TopologyCode to a graph."""
-        graph = rx.PyGraph(multigraph=True)
+        graph: rx.PyGraph = rx.PyGraph(multigraph=True)
 
         vertices = {
             vi: graph.add_node(vi)
@@ -48,7 +48,7 @@ class TopologyCode:
 
     def get_weighted_graph(self) -> rx.PyGraph:
         """Convert TopologyCode to a graph."""
-        graph = rx.PyGraph(multigraph=False)
+        graph: rx.PyGraph = rx.PyGraph(multigraph=False)
 
         vertices = {
             vi: graph.add_node(vi)
@@ -97,8 +97,8 @@ class TopologyCode:
             paths = list(
                 rx.graph_all_simple_paths(
                     weighted_graph,
-                    origin=node,
-                    to=node,
+                    origin=node,  # type: ignore[call-arg]
+                    to=node,  # type: ignore[call-arg]
                     cutoff=12,
                     min_depth=4,
                 )

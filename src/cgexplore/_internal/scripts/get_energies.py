@@ -39,7 +39,7 @@ def main() -> None:
             if "energy_per_bb" not in properties:
                 continue
             name = entry.key
-            energy = properties["energy_per_bb"]
+            energy: float = properties["energy_per_bb"]  # type: ignore[assignment]
             if energy > min_energy and energy < max_energy:
                 logging.info(
                     "energy of %s is %s kJmol-1",
@@ -50,7 +50,7 @@ def main() -> None:
         logging.info("showed %s energies", count)
     else:
         entry = database.get_entry(key=args.name)
-        energy = entry.properties["energy_per_bb"]
+        energy = entry.properties["energy_per_bb"]  # type: ignore[assignment]
         logging.info("energy of %s is %s kJmol-1", args.name, round(energy, 3))  # type: ignore[arg-type]
 
 

@@ -503,12 +503,12 @@ class ForceField:
 
                     torsion_terms.append(
                         Torsion(
-                            atom_names=tuple(
+                            atom_names=tuple(  # type: ignore[arg-type]
                                 f"{found_torsion.atoms[i].__class__.__name__}"
                                 f"{found_torsion.atoms[i].get_id() + 1}"
                                 for i in target_torsion.measured_atom_ids
                             ),
-                            atom_ids=tuple(
+                            atom_ids=tuple(  # type: ignore[arg-type]
                                 found_torsion.atoms[i].get_id()
                                 for i in target_torsion.measured_atom_ids
                             ),
@@ -672,7 +672,7 @@ class ForceField:
         """Get forcefield prefix."""
         return self._prefix
 
-    def get_present_beads(self) -> tuple:
+    def get_present_beads(self) -> abc.Sequence[CgBead]:
         """Get beads present."""
         return self._present_beads
 
@@ -755,7 +755,7 @@ class ForceField:
             )
 
         for at in ff_targets["angles"]:
-            cp = (at.type1, at.type2, at.type3)
+            cp = (at.type1, at.type2, at.type3)  # type: ignore[assignment]
             try:
                 k_dict["_".join(cp)] = at.angle_k.value_in_unit(
                     openmm.unit.kilojoule

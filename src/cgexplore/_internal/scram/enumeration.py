@@ -45,6 +45,7 @@ class TopologyIterator:
         stoichiometry: tuple[int, int, int],
     ) -> None:
         """Initialize."""
+        self._building_blocks: dict[stk.BuildingBlock, abc.Sequence[int]]
         if stoichiometry == (1, 1, 1):
             if multiplier == 1:
                 self._building_blocks = {

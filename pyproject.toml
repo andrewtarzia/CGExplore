@@ -121,36 +121,3 @@ python_functions = [
   "test_*",
 ]
 
-[tool.mypy]
-show_error_codes = true
-implicit_optional = false
-warn_no_return = true
-strict_optional = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-warn_unreachable = true
-disallow_any_generics = false
-
-[[tool.mypy.overrides]]
-module = [
-  "rdkit.*",
-  "scipy.*",
-  "matplotlib.*",
-  "pandas.*",
-  "stk.*",
-  "stko.*",
-  "mchammer.*",
-  "openmmtools.*",
-  "openmm.*",
-  "atomlite.*",
-  "networkx.*",
-  "martini_openmm.*",
-  "pathos.*",
-  "spindry.*",
-  "vabene.*",
-  "chemiscope.*",
-  "bbprep.*",
-]
-ignore_missing_imports = true

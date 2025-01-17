@@ -17,7 +17,9 @@ logging.basicConfig(
 )
 
 
-def length_2_heteroleptic_bb_dicts(tstr: str) -> dict[int, int]:
+def length_2_heteroleptic_bb_dicts(
+    tstr: str,
+) -> tuple[dict[int, list[int]], int]:
     """Define bb dictionaries available to heteroleptic systems.
 
     Allows for two ditopic building blocks to be added as:
@@ -44,7 +46,9 @@ def length_2_heteroleptic_bb_dicts(tstr: str) -> dict[int, int]:
     }[tstr]
 
 
-def length_3_heteroleptic_bb_dicts(tstr: str) -> dict[int, int]:
+def length_3_heteroleptic_bb_dicts(
+    tstr: str,
+) -> tuple[dict[int, list[int]], int]:
     """Define bb dictionaries available to heteroleptic systems.
 
     Allows for two tritopic building blocks to be added as:
@@ -63,7 +67,9 @@ def length_3_heteroleptic_bb_dicts(tstr: str) -> dict[int, int]:
     }[tstr]
 
 
-def length_4_heteroleptic_bb_dicts(tstr: str) -> dict[int, int]:
+def length_4_heteroleptic_bb_dicts(
+    tstr: str,
+) -> tuple[dict[int, list[int]], int]:
     """Define bb dictionaries available to heteroleptic systems.
 
     Allows for two tetratopic building blocks to be added as:
@@ -89,7 +95,7 @@ def get_potential_bb_dicts(
     tstr: str,
     ratio: tuple[int, int],
     study_type: Literal["ditopic", "tritopic", "tetratopic"],
-) -> abc.Sequence[dict[int, abc.Sequence[int]]]:
+) -> list[tuple[int, dict[int, list[int]]]]:
     """Get potential building block dictionaries from known topology graphs.
 
     Parameters:
@@ -130,7 +136,7 @@ def get_potential_bb_dicts(
     modifiable = [i for i in possibilities if len(possibilities[i]) == 0]
 
     saved = set()
-    possible_dicts = []
+    possible_dicts: list[tuple[int, dict[int, list[int]]]] = []
     for combo in it.product(modifiable, repeat=count_to_add):
         counted = Counter(combo).values()
         current_ratio = [i / min(counted) for i in counted]
@@ -155,7 +161,7 @@ def get_potential_bb_dicts(
     )
     logging.info(msg)
 
-    return tuple(possible_dicts)
+    return possible_dicts
 
 
 @dataclass
@@ -195,7 +201,7 @@ class BuildingBlockConfiguration:
 
 def get_custom_bb_configurations(  # noqa: C901
     iterator: IHomolepticTopologyIterator,
-) -> abc.Sequence[dict[int, abc.Sequence[int]]]:
+) -> abc.Sequence[BuildingBlockConfiguration]:
     """Get potential building block dictionaries."""
     # Get building blocks with the same functional group count - these are
     # swappable.
@@ -203,8 +209,8 @@ def get_custom_bb_configurations(  # noqa: C901
         i: i.get_num_functional_groups() for i in iterator.building_blocks
     }
 
-    count_of_fg_types = defaultdict(int)
-    fg_counts_by_building_block = defaultdict(int)
+    count_of_fg_types: dict[int, int] = defaultdict(int)
+    fg_counts_by_building_block: dict[int, int] = defaultdict(int)
 
     for bb, count in iterator.building_block_counts.items():
         fg_counts_by_building_block[bb.get_num_functional_groups()] += count
@@ -250,14 +256,12 @@ def get_custom_bb_configurations(  # noqa: C901
 
     bb_map = {bb: idx for idx, bb in enumerate(building_blocks_by_fg)}
 
-    empty_bb_dict = {}
+    empty_bb_dict: dict[int, list[int]] = {}
     for bb, fg_count in building_blocks_by_fg.items():
         if fg_count in modifiable_types:
             empty_bb_dict[bb_map[bb]] = []
         else:
-            empty_bb_dict[bb_map[bb]] = tuple(
-                i for i in unmodifiable_vertices[fg_count]
-            )
+            empty_bb_dict[bb_map[bb]] = list(unmodifiable_vertices[fg_count])
 
     # ASSUMES 1 modifiable FG.
     modifiable_bb_idx = tuple(
@@ -283,7 +287,7 @@ def get_custom_bb_configurations(  # noqa: C901
     )
 
     saved_bb_dicts = set()
-    possible_dicts = []
+    possible_dicts: list[BuildingBlockConfiguration] = []
 
     for config in iteration:
         if sorted(config) != modifiable_bb_idx_counted:

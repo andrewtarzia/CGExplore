@@ -15,8 +15,8 @@ class CustomTopology:
             abc.Iterable[stk.BuildingBlock]
             | dict[stk.BuildingBlock, tuple[int, ...]]
         ),
-        vertex_prototypes: list[stk.Vertex],
-        edge_prototypes: list[stk.Edge],
+        vertex_prototypes: abc.Sequence[stk.Vertex],
+        edge_prototypes: abc.Sequence[stk.Edge],
         vertex_alignments: dict[int, int] | None = None,
         vertex_positions: dict[int, np.ndarray] | None = None,
         reaction_factory: stk.ReactionFactory = stk.GenericReactionFactory(),  # noqa: B008
@@ -27,8 +27,8 @@ class CustomTopology:
         """Initialize."""
 
         class InternalTopology(stk.cage.Cage):
-            _vertex_prototypes = vertex_prototypes
-            _edge_prototypes = edge_prototypes
+            _vertex_prototypes = vertex_prototypes  # type: ignore[assignment]
+            _edge_prototypes = edge_prototypes  # type: ignore[assignment]
 
         self._topology_graph = InternalTopology(
             building_blocks=building_blocks,
