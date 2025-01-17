@@ -64,7 +64,6 @@ jobs:
         run: pytest
 
   build-test:
-    # https://ericmjl.github.io/blog/2021/12/30/better-conda-environments-on-github-actions/
     runs-on: ubuntu-22.04
 
     defaults:
@@ -76,13 +75,9 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v3
 
         with:
-          mamba-version: "*"
-          miniforge-variant: Mambaforge
-          channels: conda-forge,defaults
-          channel-priority: true
+          miniforge-version: latest
           python-version: 3.11
           activate-environment: buildtest
-          use-mamba: true
 
       - name: Build environment
         run: |
