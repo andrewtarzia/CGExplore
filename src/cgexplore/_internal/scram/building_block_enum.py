@@ -9,7 +9,7 @@ from typing import Literal, assert_never
 
 import stk
 
-from cgexplore._internal.scram.enumeration import IHomolepticTopologyIterator
+from cgexplore._internal.scram.enumeration import TopologyIterator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -200,7 +200,7 @@ class BuildingBlockConfiguration:
 
 
 def get_custom_bb_configurations(  # noqa: C901
-    iterator: IHomolepticTopologyIterator,
+    iterator: TopologyIterator,
 ) -> abc.Sequence[BuildingBlockConfiguration]:
     """Get potential building block dictionaries."""
     # Get building blocks with the same functional group count - these are

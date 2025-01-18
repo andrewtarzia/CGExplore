@@ -28,11 +28,13 @@ logging.basicConfig(
 )
 
 
-class TopologyIterator:
+class Scrambler:
     """Iterate over topology graphs.
 
     This is an old version of this code, which I do not recommend using over
-    the `IHomolepticTopologyIterator`.
+    the `TopologyIterator`.
+
+    TODO: Clean-up and remove this class.
 
     """
 
@@ -46,6 +48,8 @@ class TopologyIterator:
     ) -> None:
         """Initialize."""
         self._building_blocks: dict[stk.BuildingBlock, abc.Sequence[int]]
+        self._underlying_topology: type[stk.cage.Cage]
+
         if stoichiometry == (1, 1, 1):
             if multiplier == 1:
                 self._building_blocks = {
@@ -129,7 +133,7 @@ class TopologyIterator:
                 id=i.get_id(),
                 position=i.get_position(),
                 aligner_edge=i.get_aligner_edge(),
-                use_neighbor_placement=i.use_neighbor_placement,
+                use_neighbor_placement=i.use_neighbor_placement(),
             )
             for i in self._underlying_topology._vertex_prototypes  # noqa: SLF001
         )
@@ -148,7 +152,7 @@ class TopologyIterator:
         self._beta = 10
 
     def _define_underlying(self) -> None:
-        self._vertex_connections = {}
+        self._vertex_connections: dict[int, int] = {}
         for edge in self._init_edge_prototypes:
             if edge.get_vertex1_id() not in self._vertex_connections:
                 self._vertex_connections[edge.get_vertex1_id()] = 0
@@ -181,10 +185,6 @@ class TopologyIterator:
     def get_num_building_blocks(self) -> int:
         """Get number of building blocks."""
         return len(self._init_vertex_prototypes)
-
-    def get_beta(self) -> float:
-        """Get beta for MC algorithm."""
-        return self._beta
 
     def get_num_scrambles(self) -> int:
         """Get num. scrambles algorithm."""
@@ -263,7 +263,7 @@ class TopologyIterator:
             available_type1s = deepcopy(self._type1)
             available_type2s = deepcopy(self._type2)
 
-            new_edges = []
+            new_edges: list[stk.Edge] = []
             combination = []
             for _ in range(len(self._init_edge_prototypes)):
                 try:
@@ -316,7 +316,7 @@ class TopologyIterator:
             try:
                 # Try with aligning vertices.
                 constructed = stk.ConstructedMolecule(
-                    CustomTopology(
+                    CustomTopology(  # type:ignore[arg-type]
                         building_blocks=self._building_blocks,
                         vertex_prototypes=self._init_vertex_prototypes,
                         edge_prototypes=new_edges,
@@ -334,7 +334,7 @@ class TopologyIterator:
                 # Try with unaligning.
                 try:
                     constructed = stk.ConstructedMolecule(
-                        CustomTopology(
+                        CustomTopology(  # type:ignore[arg-type]
                             building_blocks=self._building_blocks,
                             vertex_prototypes=self._vertices,
                             edge_prototypes=new_edges,
@@ -363,7 +363,7 @@ class TopologyIterator:
                 try:
                     # Try with aligning vertices.
                     constructed = stk.ConstructedMolecule(
-                        CustomTopology(
+                        CustomTopology(  # type:ignore[arg-type]
                             building_blocks=self._building_blocks,
                             vertex_prototypes=self._init_vertex_prototypes,
                             edge_prototypes=new_edges,
@@ -381,7 +381,7 @@ class TopologyIterator:
                     # Try with unaligning.
                     try:
                         constructed = stk.ConstructedMolecule(
-                            CustomTopology(
+                            CustomTopology(  # type:ignore[arg-type]
                                 building_blocks=self._building_blocks,
                                 vertex_prototypes=self._vertices,
                                 edge_prototypes=new_edges,
@@ -502,7 +502,7 @@ class TopologyIterator:
         try:
             # Try with aligning vertices.
             constructed = stk.ConstructedMolecule(
-                CustomTopology(
+                CustomTopology(  # type:ignore[arg-type]
                     building_blocks=self._building_blocks,
                     vertex_prototypes=self._init_vertex_prototypes,
                     edge_prototypes=tuple(
@@ -527,7 +527,7 @@ class TopologyIterator:
             # Try with unaligning.
             try:
                 constructed = stk.ConstructedMolecule(
-                    CustomTopology(
+                    CustomTopology(  # type:ignore[arg-type]
                         building_blocks=self._building_blocks,
                         vertex_prototypes=self._vertices,
                         edge_prototypes=tuple(
@@ -565,7 +565,7 @@ class TopologyIterator:
         try:
             # Try with aligning vertices.
             constructed = stk.ConstructedMolecule(
-                CustomTopology(
+                CustomTopology(  # type:ignore[arg-type]
                     building_blocks=self._building_blocks,
                     vertex_prototypes=self._init_vertex_prototypes,
                     edge_prototypes=tuple(
@@ -590,7 +590,7 @@ class TopologyIterator:
             # Try with unaligning.
             try:
                 constructed = stk.ConstructedMolecule(
-                    CustomTopology(
+                    CustomTopology(  # type:ignore[arg-type]
                         building_blocks=self._building_blocks,
                         vertex_prototypes=self._vertices,
                         edge_prototypes=tuple(
@@ -616,8 +616,13 @@ class TopologyIterator:
 
 
 @dataclass
-class IHomolepticTopologyIterator:
-    """Iterate over topology graphs."""
+class TopologyIterator:
+    """Iterate over topology graphs.
+
+    This is the latest version, but without good symmetry and graph checks,
+    this can over produce structures.
+
+    """
 
     building_block_counts: dict[stk.BuildingBlock, int]
     graph_type: str
@@ -636,7 +641,7 @@ class IHomolepticTopologyIterator:
                     / f"rx_{self.graph_type}.json"
                 )
                 if self.max_samples is None:
-                    self.max_samples = int(1e4)
+                    self.used_samples = int(1e4)
 
             case "rx_nodoubles":
                 self.graphs_path = (
@@ -645,7 +650,7 @@ class IHomolepticTopologyIterator:
                     / f"rxnd_{self.graph_type}.json"
                 )
                 if self.max_samples is None:
-                    self.max_samples = int(1e5)
+                    self.used_samples = int(1e5)
 
             case "nx":
                 self.graphs_path = (
@@ -670,13 +675,13 @@ class IHomolepticTopologyIterator:
         # Write vertex prototypes as a function of number of functional groups
         # and position them on spheres.
         vertex_map = {}
-        vertex_prototypes = []
+        vertex_prototypes: list[stk.Vertex] = []
         unaligned_vertex_prototypes = []
         reactable_vertex_ids = []
         num_edges = 0
         vertex_counts = {}
         vertex_types_by_fg = defaultdict(list)
-        building_block_dict = {}
+        building_block_dict: dict[stk.BuildingBlock, list[int]] = {}
         for building_block, angle_rotation in zip(
             self.building_block_counts,
             angle_rotations,
@@ -748,7 +753,7 @@ class IHomolepticTopologyIterator:
                     )
                 )
 
-        self.building_blocks = {
+        self.building_blocks: dict[stk.BuildingBlock, abc.Sequence[int]] = {
             i: tuple(building_block_dict[i]) for i in building_block_dict
         }
         self.vertex_map = vertex_map
@@ -764,7 +769,9 @@ class IHomolepticTopologyIterator:
         """Get number of building blocks."""
         return len(self.vertex_prototypes)
 
-    def get_vertex_prototypes(self, unaligning: bool) -> list[stk.Vertex]:
+    def get_vertex_prototypes(
+        self, unaligning: bool
+    ) -> abc.Sequence[stk.Vertex]:
         """Get vertex prototypes."""
         if unaligning:
             return self.unaligned_vertex_prototypes
@@ -772,7 +779,7 @@ class IHomolepticTopologyIterator:
 
     def _two_type_algorithm(self) -> None:
         combinations_tested = set()
-        run_topology_codes = []
+        run_topology_codes: list[TopologyCode] = []
 
         type1, type2 = sorted(self.vertex_types_by_fg.keys(), reverse=True)
 
@@ -790,11 +797,11 @@ class IHomolepticTopologyIterator:
         ]
 
         to_save = []
-        for _ in range(self.max_samples):
+        for _ in range(self.used_samples):
             rng.shuffle(options)
             # Build an edge selection.
-            combination = [
-                tuple(sorted((i, j)))
+            combination: abc.Sequence[tuple[int, int]] = [
+                tuple(sorted((i, j)))  # type:ignore[misc]
                 for i, j in zip(itera1, options, strict=True)
             ]
 
@@ -849,7 +856,7 @@ class IHomolepticTopologyIterator:
 
     def _three_type_algorithm(self) -> None:
         combinations_tested = set()
-        run_topology_codes = []
+        run_topology_codes: list[TopologyCode] = []
 
         type1, type2, type3 = sorted(
             self.vertex_types_by_fg.keys(), reverse=True
@@ -874,14 +881,14 @@ class IHomolepticTopologyIterator:
         ]
 
         to_save = []
-        for _ in range(self.max_samples):
+        for _ in range(self.used_samples):
             # Merging options1 and options2 because they both bind to itera.
             mixed_options = options1 + options2
             rng.shuffle(mixed_options)
 
             # Build an edge selection.
-            combination = [
-                tuple(sorted((i, j)))
+            combination: abc.Sequence[tuple[int, int]] = [
+                tuple(sorted((i, j)))  # type:ignore[misc]
                 for i, j in zip(itera1, mixed_options, strict=True)
             ]
 
