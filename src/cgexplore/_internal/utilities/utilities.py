@@ -107,3 +107,34 @@ def extract_property(
         msg = f"{path} is too deep ({len(path)})."
         raise RuntimeError(msg)
     return value
+
+
+def get_energy_per_bb(
+    energy_decomposition: dict[str, tuple[float, str]],
+    number_building_blocks: int,
+) -> float:
+    """Get the energy per building blocks used in most papers."""
+    energy_decomp = {}
+    for component, component_tup in energy_decomposition.items():
+        if component == "total energy":
+            energy_decomp[f"{component}_{component_tup[1]}"] = float(
+                component_tup[0]
+            )
+        else:
+            just_name = component.split("'")[1]
+            key = f"{just_name}_{component_tup[1]}"
+            value = float(component_tup[0])
+            if key in energy_decomp:
+                energy_decomp[key] += value
+            else:
+                energy_decomp[key] = value
+
+    fin_energy = energy_decomp["total energy_kJ/mol"]
+    if (
+        sum(energy_decomp[i] for i in energy_decomp if "total energy" not in i)
+        != fin_energy
+    ):
+        msg = "energy decompisition does not sum to total energy"
+        raise RuntimeError(msg)
+
+    return fin_energy / number_building_blocks

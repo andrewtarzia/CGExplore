@@ -3,7 +3,7 @@
 """Module for beads."""
 
 import logging
-from collections import Counter
+from collections import Counter, abc
 from dataclasses import dataclass
 
 logging.basicConfig(
@@ -23,7 +23,7 @@ class CgBead:
 class BeadLibrary:
     """Define a library of beads used in a model."""
 
-    def __init__(self, beads: tuple[CgBead, ...]) -> None:
+    def __init__(self, beads: abc.Sequence[CgBead]) -> None:
         """Initialize a BeadLibrary."""
         self._beads = beads
         # Run a check.

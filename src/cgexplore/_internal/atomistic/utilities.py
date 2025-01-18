@@ -3,6 +3,7 @@
 import logging
 import pathlib
 
+import bbprep
 import numpy as np
 import stk
 import stko
@@ -13,11 +14,21 @@ logging.basicConfig(
 )
 
 
-def extract_ensemble(molecule: stk.Molecule, crest_run: pathlib.Path) -> dict:
-    """Extract and save an ensemble from a crest run."""
+def extract_ditopic_ensemble(
+    molecule: stk.BuildingBlock,
+    crest_run: pathlib.Path,
+) -> dict:
+    """Extract and save an ensemble from a crest run.
+
+    TODO: Turn the ensemble into a dataclass so that typing makes sense, remove
+    all mypy ignore statements.
+
+    """
     ensemble_dir = crest_run / "ensemble"
     num_atoms = molecule.get_num_atoms()
-    ensemble = {}
+    ensemble: dict[
+        int, dict[str, float | int | str | stk.BuildingBlock | tuple]
+    ] = {}
     ensemble_dir.mkdir(exist_ok=True, parents=True)
 
     # Calculate geometrical properties.
@@ -39,9 +50,9 @@ def extract_ensemble(molecule: stk.Molecule, crest_run: pathlib.Path) -> dict:
             if len(splits) != 4:  # noqa: PLR2004
                 continue
             symb, x, y, z = splits
-            x = float(x)
-            y = float(y)
-            z = float(z)
+            x = float(x)  # type: ignore[assignment]
+            y = float(y)  # type: ignore[assignment]
+            z = float(z)  # type: ignore[assignment]
 
             position_matrix.append(np.array((x, y, z)))
 
@@ -52,13 +63,13 @@ def extract_ensemble(molecule: stk.Molecule, crest_run: pathlib.Path) -> dict:
         calc = stko.molecule_analysis.DitopicThreeSiteAnalyser()
 
         adjacent_centroids = calc.get_adjacent_centroids(conf_molecule)
-        adjacent_distance = np.linalg.norm(
-            adjacent_centroids[0] - adjacent_centroids[1]
+        adjacent_distance = float(
+            np.linalg.norm(adjacent_centroids[0] - adjacent_centroids[1])
         )
 
         ensemble[i] = {
             "energy": float(energy),
-            "molecule": conf_molecule,
+            "molecule": conf_molecule,  # type: ignore[dict-item]
             "binder_angles": calc.get_binder_angles(conf_molecule),
             "binder_binder_angle": calc.get_binder_binder_angle(conf_molecule),
             "binder_distance": calc.get_binder_distance(conf_molecule),
@@ -69,7 +80,9 @@ def extract_ensemble(molecule: stk.Molecule, crest_run: pathlib.Path) -> dict:
             "binder_com_angle": calc.get_binder_centroid_angle(conf_molecule),
         }
 
-        ensemble[i]["molecule"].write(ensemble_dir / f"conf_{i}.mol")
+        ensemble[i]["molecule"].write(  # type: ignore[union-attr]
+            ensemble_dir / f"conf_{i}.mol"
+        )
     return ensemble
 
 
@@ -125,3 +138,44 @@ def cgx_optimisation_sequence(
         gulp2_mol = cage.with_structure_from_file(gulp2_output)
 
     return cage.with_structure_from_file(gulp2_output)
+
+
+def get_ditopic_aligned_bb(
+    path: pathlib.Path,
+    optl_path: pathlib.Path,
+) -> stk.BuildingBlock:
+    """Get building block for the target ligand and prepare for cage model."""
+    if not path.exists():
+        temp = stk.BuildingBlock.init_from_file(
+            path=optl_path,
+            functional_groups=(
+                stko.functional_groups.ThreeSiteFactory("[#6]~[#7X2]~[#6]"),
+            ),
+        )
+        # Handle if not ditopic.
+        if temp.get_num_functional_groups() != 2:  # noqa: PLR2004
+            temp = bbprep.FurthestFGs().modify(
+                building_block=temp,
+                desired_functional_groups=2,
+            )
+
+        generator = bbprep.generators.ETKDG(num_confs=100)
+        ensemble = generator.generate_conformers(temp)
+        process = bbprep.DitopicFitter(ensemble=ensemble)
+        min_molecule = process.get_minimum()
+        min_molecule.molecule.write(path)
+
+    molecule = stk.BuildingBlock.init_from_file(
+        path=path,
+        functional_groups=(
+            stko.functional_groups.ThreeSiteFactory("[#6]~[#7X2]~[#6]"),
+        ),
+    )
+    # Handle if not ditopic.
+    if molecule.get_num_functional_groups() != 2:  # noqa: PLR2004
+        molecule = bbprep.FurthestFGs().modify(
+            building_block=molecule,
+            desired_functional_groups=2,
+        )
+
+    return molecule

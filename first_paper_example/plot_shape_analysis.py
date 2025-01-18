@@ -280,10 +280,7 @@ def shape_topology(
                     ),
                 )
                 ax.set_title(
-                    (
-                        f"{convert_topo(tstr)}: "
-                        f"{convert_tors(tor, num=False)}"
-                    ),
+                    (f"{convert_topo(tstr)}: {convert_tors(tor, num=False)}"),
                     fontsize=16,
                 )
                 ax.set_xlabel(target_shape, fontsize=16)
@@ -374,10 +371,7 @@ def shape_topology_main(
                     ),
                 )
                 ax.set_title(
-                    (
-                        f"{convert_topo(tstr)}: "
-                        f"{convert_tors(tor, num=False)}"
-                    ),
+                    (f"{convert_topo(tstr)}: {convert_tors(tor, num=False)}"),
                     fontsize=16,
                 )
                 ax.set_xlabel(target_shape, fontsize=16)
@@ -495,10 +489,7 @@ def shape_input_relationships(
                 )
 
                 ax.set_title(
-                    (
-                        f"{convert_topo(tstr)}: "
-                        f"{convert_tors(tor, num=False)}"
-                    ),
+                    (f"{convert_topo(tstr)}: {convert_tors(tor, num=False)}"),
                     fontsize=16,
                 )
                 ax.tick_params(axis="both", which="major", labelsize=16)

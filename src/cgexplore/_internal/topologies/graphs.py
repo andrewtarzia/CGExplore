@@ -7,7 +7,17 @@ import stk
 
 
 def stoich_map(tstr: str) -> int:
-    """Stoichiometry maps to the number of building blocks."""
+    """The total number of building blocks in a topology graph.
+
+    Available graphs:
+        `2P3`, `4P6`, `4P62`, `6P9`, `8P12`, `2P4`, `3P6`, `4P8`, `4P82`,
+        `6P12`, `8P16`, `6P122`, `8P162`, `12P24`, `6P8`
+
+    Parameters:
+        tstr:
+            The string for the topology.
+
+    """
     return {
         "2P3": 5,
         "4P6": 10,
@@ -52,10 +62,16 @@ class M4L82(stk.cage.Cage):
     """Cage topology."""
 
     _non_linears = (
-        stk.cage.NonLinearVertex(0, [0, 0, np.sqrt(6) / 2]),
-        stk.cage.NonLinearVertex(1, [-1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]),
-        stk.cage.NonLinearVertex(2, [1, -np.sqrt(3) / 3, -np.sqrt(6) / 6]),
-        stk.cage.NonLinearVertex(3, [0, 2 * np.sqrt(3) / 3, -np.sqrt(6) / 6]),
+        stk.cage.NonLinearVertex(0, np.array([0, 0, np.sqrt(6) / 2])),
+        stk.cage.NonLinearVertex(
+            1, np.array([-1, -np.sqrt(3) / 3, -np.sqrt(6) / 6])
+        ),
+        stk.cage.NonLinearVertex(
+            2, np.array([1, -np.sqrt(3) / 3, -np.sqrt(6) / 6])
+        ),
+        stk.cage.NonLinearVertex(
+            3, np.array([0, 2 * np.sqrt(3) / 3, -np.sqrt(6) / 6])
+        ),
     )
 
     paired_wall_1_coord = (
@@ -140,18 +156,34 @@ class CGM4L8(stk.cage.M4L8):
     """New topology definition."""
 
     _vertex_prototypes = (
-        stk.cage.NonLinearVertex(0, [2, 0, 0]),
-        stk.cage.NonLinearVertex(1, [0, 2, 0]),
-        stk.cage.NonLinearVertex(2, [-2, 0, 0]),
-        stk.cage.NonLinearVertex(3, [0, -2, 0]),
-        stk.cage.LinearVertex(4, [1, 1, 0.5], use_neighbor_placement=False),
-        stk.cage.LinearVertex(5, [1, 1, -0.5], use_neighbor_placement=False),
-        stk.cage.LinearVertex(6, [1, -1, 0.5], use_neighbor_placement=False),
-        stk.cage.LinearVertex(7, [1, -1, -0.5], use_neighbor_placement=False),
-        stk.cage.LinearVertex(8, [-1, -1, 0.5], use_neighbor_placement=False),
-        stk.cage.LinearVertex(9, [-1, -1, -0.5], use_neighbor_placement=False),
-        stk.cage.LinearVertex(10, [-1, 1, 0.5], use_neighbor_placement=False),
-        stk.cage.LinearVertex(11, [-1, 1, -0.5], use_neighbor_placement=False),
+        stk.cage.NonLinearVertex(0, np.array([2, 0, 0])),
+        stk.cage.NonLinearVertex(1, np.array([0, 2, 0])),
+        stk.cage.NonLinearVertex(2, np.array([-2, 0, 0])),
+        stk.cage.NonLinearVertex(3, np.array([0, -2, 0])),
+        stk.cage.LinearVertex(
+            4, np.array([1, 1, 0.5]), use_neighbor_placement=False
+        ),
+        stk.cage.LinearVertex(
+            5, np.array([1, 1, -0.5]), use_neighbor_placement=False
+        ),
+        stk.cage.LinearVertex(
+            6, np.array([1, -1, 0.5]), use_neighbor_placement=False
+        ),
+        stk.cage.LinearVertex(
+            7, np.array([1, -1, -0.5]), use_neighbor_placement=False
+        ),
+        stk.cage.LinearVertex(
+            8, np.array([-1, -1, 0.5]), use_neighbor_placement=False
+        ),
+        stk.cage.LinearVertex(
+            9, np.array([-1, -1, -0.5]), use_neighbor_placement=False
+        ),
+        stk.cage.LinearVertex(
+            10, np.array([-1, 1, 0.5]), use_neighbor_placement=False
+        ),
+        stk.cage.LinearVertex(
+            11, np.array([-1, 1, -0.5]), use_neighbor_placement=False
+        ),
     )
 
     _edge_prototypes = (
@@ -178,89 +210,89 @@ class CGM12L24(stk.cage.M12L24):
     """New topology definition."""
 
     _vertex_prototypes = (
-        stk.cage.NonLinearVertex(0, [1.25, 0, 0]),
-        stk.cage.NonLinearVertex(1, [-1.25, 0, 0]),
-        stk.cage.NonLinearVertex(2, [0, 1.25, 0]),
-        stk.cage.NonLinearVertex(3, [0, -1.25, 0]),
-        stk.cage.NonLinearVertex(4, [0.625, 0.625, 0.88]),
-        stk.cage.NonLinearVertex(5, [0.625, -0.625, 0.88]),
-        stk.cage.NonLinearVertex(6, [-0.625, 0.625, 0.88]),
-        stk.cage.NonLinearVertex(7, [-0.625, -0.625, 0.88]),
-        stk.cage.NonLinearVertex(8, [0.625, 0.625, -0.88]),
-        stk.cage.NonLinearVertex(9, [0.625, -0.625, -0.88]),
-        stk.cage.NonLinearVertex(10, [-0.625, 0.625, -0.88]),
-        stk.cage.NonLinearVertex(11, [-0.625, -0.625, -0.88]),
+        stk.cage.NonLinearVertex(0, np.array([1.25, 0, 0])),
+        stk.cage.NonLinearVertex(1, np.array([-1.25, 0, 0])),
+        stk.cage.NonLinearVertex(2, np.array([0, 1.25, 0])),
+        stk.cage.NonLinearVertex(3, np.array([0, -1.25, 0])),
+        stk.cage.NonLinearVertex(4, np.array([0.625, 0.625, 0.88])),
+        stk.cage.NonLinearVertex(5, np.array([0.625, -0.625, 0.88])),
+        stk.cage.NonLinearVertex(6, np.array([-0.625, 0.625, 0.88])),
+        stk.cage.NonLinearVertex(7, np.array([-0.625, -0.625, 0.88])),
+        stk.cage.NonLinearVertex(8, np.array([0.625, 0.625, -0.88])),
+        stk.cage.NonLinearVertex(9, np.array([0.625, -0.625, -0.88])),
+        stk.cage.NonLinearVertex(10, np.array([-0.625, 0.625, -0.88])),
+        stk.cage.NonLinearVertex(11, np.array([-0.625, -0.625, -0.88])),
         stk.cage.LinearVertex(
-            12, [0.9, 0.31, 0.31], use_neighbor_placement=False
+            12, np.array([0.9, 0.31, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            13, [0.9, 0.31, -0.31], use_neighbor_placement=False
+            13, np.array([0.9, 0.31, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            14, [0.9, -0.31, 0.31], use_neighbor_placement=False
+            14, np.array([0.9, -0.31, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            15, [0.9, -0.31, -0.31], use_neighbor_placement=False
+            15, np.array([0.9, -0.31, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            16, [-0.9, 0.31, 0.31], use_neighbor_placement=False
+            16, np.array([-0.9, 0.31, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            17, [-0.9, 0.31, -0.31], use_neighbor_placement=False
+            17, np.array([-0.9, 0.31, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            18, [-0.9, -0.31, 0.31], use_neighbor_placement=False
+            18, np.array([-0.9, -0.31, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            19, [-0.9, -0.31, -0.31], use_neighbor_placement=False
+            19, np.array([-0.9, -0.31, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            20, [0.31, 0.9, 0.31], use_neighbor_placement=False
+            20, np.array([0.31, 0.9, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            21, [0.31, 0.9, -0.31], use_neighbor_placement=False
+            21, np.array([0.31, 0.9, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            22, [-0.31, 0.9, 0.31], use_neighbor_placement=False
+            22, np.array([-0.31, 0.9, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            23, [-0.31, 0.9, -0.31], use_neighbor_placement=False
+            23, np.array([-0.31, 0.9, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            24, [0.31, -0.9, 0.31], use_neighbor_placement=False
+            24, np.array([0.31, -0.9, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            25, [0.31, -0.9, -0.31], use_neighbor_placement=False
+            25, np.array([0.31, -0.9, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            26, [-0.31, -0.9, 0.31], use_neighbor_placement=False
+            26, np.array([-0.31, -0.9, 0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            27, [-0.31, -0.9, -0.31], use_neighbor_placement=False
+            27, np.array([-0.31, -0.9, -0.31]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            28, [0.58, 0, 0.82], use_neighbor_placement=False
+            28, np.array([0.58, 0, 0.82]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            29, [-0.58, 0, 0.82], use_neighbor_placement=False
+            29, np.array([-0.58, 0, 0.82]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            30, [0, 0.58, 0.82], use_neighbor_placement=False
+            30, np.array([0, 0.58, 0.82]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            31, [0, -0.58, 0.82], use_neighbor_placement=False
+            31, np.array([0, -0.58, 0.82]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            32, [0.58, 0, -0.82], use_neighbor_placement=False
+            32, np.array([0.58, 0, -0.82]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            33, [-0.58, 0, -0.82], use_neighbor_placement=False
+            33, np.array([-0.58, 0, -0.82]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            34, [0, 0.58, -0.82], use_neighbor_placement=False
+            34, np.array([0, 0.58, -0.82]), use_neighbor_placement=False
         ),
         stk.cage.LinearVertex(
-            35, [0, -0.58, -0.82], use_neighbor_placement=False
+            35, np.array([0, -0.58, -0.82]), use_neighbor_placement=False
         ),
     )
 
@@ -335,12 +367,12 @@ class M6L122(stk.cage.Cage):
     _x = 2 * np.sqrt(3) / 4
     _y = 2
     _non_linears = (
-        stk.cage.NonLinearVertex(0, [0, _x, 1]),
-        stk.cage.NonLinearVertex(1, [_y / 2, -_x, 1]),
-        stk.cage.NonLinearVertex(2, [-_y / 2, -_x, 1]),
-        stk.cage.NonLinearVertex(3, [0, _x, -1]),
-        stk.cage.NonLinearVertex(4, [_y / 2, -_x, -1]),
-        stk.cage.NonLinearVertex(5, [-_y / 2, -_x, -1]),
+        stk.cage.NonLinearVertex(0, np.array([0, _x, 1])),
+        stk.cage.NonLinearVertex(1, np.array([_y / 2, -_x, 1])),
+        stk.cage.NonLinearVertex(2, np.array([-_y / 2, -_x, 1])),
+        stk.cage.NonLinearVertex(3, np.array([0, _x, -1])),
+        stk.cage.NonLinearVertex(4, np.array([_y / 2, -_x, -1])),
+        stk.cage.NonLinearVertex(5, np.array([-_y / 2, -_x, -1])),
     )
 
     paired_wall_1_coord = (
@@ -461,14 +493,14 @@ class M8L162(stk.cage.Cage):
     """Cage topology."""
 
     _non_linears = (
-        stk.cage.NonLinearVertex(0, [1, 1, 1]),
-        stk.cage.NonLinearVertex(1, [1, -1, 1]),
-        stk.cage.NonLinearVertex(2, [-1, -1, 1]),
-        stk.cage.NonLinearVertex(3, [-1, 1, 1]),
-        stk.cage.NonLinearVertex(4, [1, 1, -1]),
-        stk.cage.NonLinearVertex(5, [1, -1, -1]),
-        stk.cage.NonLinearVertex(6, [-1, -1, -1]),
-        stk.cage.NonLinearVertex(7, [-1, 1, -1]),
+        stk.cage.NonLinearVertex(0, np.array([1, 1, 1])),
+        stk.cage.NonLinearVertex(1, np.array([1, -1, 1])),
+        stk.cage.NonLinearVertex(2, np.array([-1, -1, 1])),
+        stk.cage.NonLinearVertex(3, np.array([-1, 1, 1])),
+        stk.cage.NonLinearVertex(4, np.array([1, 1, -1])),
+        stk.cage.NonLinearVertex(5, np.array([1, -1, -1])),
+        stk.cage.NonLinearVertex(6, np.array([-1, -1, -1])),
+        stk.cage.NonLinearVertex(7, np.array([-1, 1, -1])),
     )
 
     paired_wall_1_coord = (

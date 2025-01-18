@@ -37,7 +37,6 @@ jobs:
       - run: "pip install -e '.[dev]'"
       - run: ruff format --check .
   pytest:
-    # https://ericmjl.github.io/blog/2021/12/30/better-conda-environments-on-github-actions/
     runs-on: ubuntu-22.04
 
     defaults:
@@ -45,16 +44,13 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
 
         with:
-          auto-update-conda: true
-          miniforge-variant: Mambaforge
-          channels: conda-forge,defaults
+          miniforge-version: latest
           python-version: 3.11
           activate-environment: pytest
-          use-mamba: true
 
       - name: Build environment
         run: |
@@ -68,7 +64,6 @@ jobs:
         run: pytest
 
   build-test:
-    # https://ericmjl.github.io/blog/2021/12/30/better-conda-environments-on-github-actions/
     runs-on: ubuntu-22.04
 
     defaults:
@@ -76,16 +71,13 @@ jobs:
         shell: bash -l {0}
 
     steps:
-      - uses: actions/checkout@v2
-      - uses: conda-incubator/setup-miniconda@v2
+      - uses: actions/checkout@v4
+      - uses: conda-incubator/setup-miniconda@v3
 
         with:
-          auto-update-conda: true
-          miniforge-variant: Mambaforge
-          channels: conda-forge,defaults
+          miniforge-version: latest
           python-version: 3.11
           activate-environment: buildtest
-          use-mamba: true
 
       - name: Build environment
         run: |

@@ -13,7 +13,7 @@ from .utilities import spd_to_stk
 @dataclass(frozen=True, slots=True)
 class Conformer:
     molecule: stk.Molecule
-    energy_decomposition: dict
+    energy_decomposition: dict[str, tuple[float, str]]
     conformer_id: int | None = None
     source: str | None = None
 

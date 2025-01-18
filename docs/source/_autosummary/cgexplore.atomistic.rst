@@ -30,7 +30,8 @@ cgexplore.atomistic
       :nosignatures:
    
       cgx_optimisation_sequence
-      extract_ensemble
+      extract_ditopic_ensemble
+      get_ditopic_aligned_bb
       run_conformer_analysis
    
    

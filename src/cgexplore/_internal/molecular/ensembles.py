@@ -24,14 +24,18 @@ class Timestep:
 
 
 class Ensemble:
-    """Class to contain ensemble information."""
+    """Class to contain ensemble information.
+
+    TODO: Rewrite into a .db.
+
+    """
 
     def __init__(
         self,
         base_molecule: stk.Molecule,
-        base_mol_path: str,
-        conformer_xyz: str,
-        data_json: str,
+        base_mol_path: str | pathlib.Path,
+        conformer_xyz: str | pathlib.Path,
+        data_json: str | pathlib.Path,
         overwrite: bool,
     ) -> None:
         """Initialize Ensemble class."""
@@ -88,7 +92,7 @@ class Ensemble:
             i: conformer.energy_decomposition[i]
             for i in conformer.energy_decomposition
         }
-        conf_data["source"] = source
+        conf_data["source"] = source  # type:ignore[assignment]
         self._data[conf_id] = conf_data
 
     def load_trajectory(self) -> dict[int, list[str]]:
@@ -198,8 +202,7 @@ class Ensemble:
     def __str__(self) -> str:
         """Return a string representation of the Ensemble."""
         return (
-            f"{self.__class__.__name__}("
-            f"num_confs={self.get_num_conformers()})"
+            f"{self.__class__.__name__}(num_confs={self.get_num_conformers()})"
         )
 
     def __repr__(self) -> str:

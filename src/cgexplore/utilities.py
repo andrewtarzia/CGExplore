@@ -27,6 +27,7 @@ from cgexplore._internal.utilities.utilities import (
     convert_pyramid_angle,
     draw_pie,
     extract_property,
+    get_energy_per_bb,
 )
 from cgexplore._internal.utilities.visualisation import (
     Pymol,
@@ -45,6 +46,7 @@ __all__ = [
     "convert_pyramid_angle",
     "draw_pie",
     "extract_property",
+    "get_energy_per_bb",
     "get_supramolecule",
     "get_unforced_supramolecule",
     "optimise_ligand",

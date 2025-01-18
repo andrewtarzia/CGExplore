@@ -23,7 +23,8 @@ from cgexplore._internal.utilities.generation_utilities import (
     yield_shifted_models,
 )
 
-from .enumeration import IHomolepticTopologyIterator, TopologyIterator
+from .building_block_enum import BuildingBlockConfiguration
+from .enumeration import TopologyIterator
 
 logging.basicConfig(
     level=logging.INFO,
@@ -49,7 +50,7 @@ def graph_optimise_cage(  # noqa: PLR0913
         final_molecule.write(fina_mol_file)
         return Conformer(
             molecule=final_molecule,
-            energy_decomposition=database.get_property(
+            energy_decomposition=database.get_property(  # type:ignore[arg-type]
                 key=name,
                 property_key="energy_decomposition",
                 property_type=dict,
@@ -70,7 +71,7 @@ def graph_optimise_cage(  # noqa: PLR0913
         database.add_properties(
             key=name,
             property_dict={
-                "energy_decomposition": conformer.energy_decomposition,
+                "energy_decomposition": conformer.energy_decomposition,  # type:ignore[dict-item]
                 "source": conformer.source,
                 "optimised": True,
             },
@@ -78,12 +79,12 @@ def graph_optimise_cage(  # noqa: PLR0913
         return ensemble.get_lowest_e_conformer()
 
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
-    if (output_dir / f"{name}_ensemblewip.xyz").exists():
-        (output_dir / f"{name}_ensemblewip.xyz").unlink()
+    if (output_dir / f"{name}_ensemble.xyz").exists():
+        (output_dir / f"{name}_ensemble.xyz").unlink()
     ensemble = Ensemble(
         base_molecule=molecule,
         base_mol_path=output_dir / f"{name}_base.mol",
-        conformer_xyz=output_dir / f"{name}_ensemblewip.xyz",
+        conformer_xyz=output_dir / f"{name}_ensemble.xyz",
         data_json=output_dir / f"{name}_ensemble.json",
         overwrite=True,
     )
@@ -148,30 +149,31 @@ def graph_optimise_cage(  # noqa: PLR0913
             nx.kamada_kawai_layout(stko_graph.get_graph(), dim=3),
         )
     ):
-        try:
-            # We allow these to independantly failed because the nx graphs can
-            # be ridiculous.
-            pos_mat = np.array([nx_positions[i] for i in nx_positions])
-            if pos_mat.shape[1] != 3:  # noqa: PLR2004
-                msg = "built a non 3D graph"
-                raise RuntimeError(msg)
+        # We allow these to independantly failed because the nx graphs can
+        # be ridiculous.
+        for j, scaler in enumerate((5, 10, 15)):
+            try:
+                pos_mat = np.array([nx_positions[i] for i in nx_positions])
+                if pos_mat.shape[1] != 3:  # noqa: PLR2004
+                    msg = "built a non 3D graph"
+                    raise RuntimeError(msg)
 
-            test_molecule = conformer.molecule.with_position_matrix(
-                pos_mat * 10
-            )
-            conformer = run_optimisation(
-                assigned_system=forcefield.assign_terms(
-                    test_molecule, name, output_dir
-                ),
-                name=name,
-                file_suffix="nopt",
-                output_dir=output_dir,
-                platform=platform,
-            )
+                test_molecule = conformer.molecule.with_position_matrix(
+                    pos_mat * scaler
+                )
+                conformer = run_optimisation(
+                    assigned_system=forcefield.assign_terms(
+                        test_molecule, name, output_dir
+                    ),
+                    name=name,
+                    file_suffix="nopt",
+                    output_dir=output_dir,
+                    platform=platform,
+                )
 
-            ensemble.add_conformer(conformer=conformer, source=f"nx{i}")
-        except OpenMMException:
-            logging.info("failed graph opt of %s", name)
+                ensemble.add_conformer(conformer=conformer, source=f"nx{i}{j}")
+            except OpenMMException:
+                logging.info("failed graph opt of %s", name)
 
     # Try with graph positions.
     rng = np.random.default_rng(seed=100)
@@ -212,7 +214,7 @@ def graph_optimise_cage(  # noqa: PLR0913
     database.add_properties(
         key=name,
         property_dict={
-            "energy_decomposition": min_energy_conformer.energy_decomposition,
+            "energy_decomposition": min_energy_conformer.energy_decomposition,  # type:ignore[dict-item]
             "source": min_energy_conformer.source,
             "optimised": True,
         },
@@ -239,7 +241,7 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         final_molecule.write(fina_mol_file)
         return Conformer(
             molecule=final_molecule,
-            energy_decomposition=database.get_property(
+            energy_decomposition=database.get_property(  # type:ignore[arg-type]
                 key=name,
                 property_key="energy_decomposition",
                 property_type=dict,
@@ -260,7 +262,7 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         database.add_properties(
             key=name,
             property_dict={
-                "energy_decomposition": conformer.energy_decomposition,
+                "energy_decomposition": conformer.energy_decomposition,  # type:ignore[dict-item]
                 "source": conformer.source,
                 "optimised": True,
             },
@@ -306,7 +308,9 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
     # Run optimisations of series of conformers with shifted out
     # building blocks.
     for test_molecule in yield_shifted_models(
-        temp_molecule, forcefield, kicks=(1, 2, 3, 4)
+        temp_molecule,
+        forcefield,
+        kicks=(1, 2, 3, 4),
     ):
         conformer = run_optimisation(
             assigned_system=AssignedSystem(
@@ -327,23 +331,35 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
 
     # Add neighbours to systematic scan.
     if "scan" in name:
-        si, sj = name.split("_")[1].split("-")
+        if "ufo" in name:
+            _, multiplier, sisj = name.split("_")
+            si, sj = sisj.split("-")
 
-        potential_names = [
-            f"scan_{int(si)-1}-{int(sj)-1}",
-            f"scan_{int(si)-1}-{int(sj)}",
-            f"scan_{int(si)}-{int(sj)-1}",
-        ]
+            potential_names = [
+                f"ufoscan_{multiplier}_{int(si) - 1}-{int(sj) - 1}",
+                f"ufoscan_{multiplier}_{int(si) - 1}-{int(sj)}",
+                f"ufoscan_{multiplier}_{int(si)}-{int(sj) - 1}",
+            ]
+
+        else:
+            si, sj = name.split("_")[1].split("-")
+
+            potential_names = [
+                f"scan_{int(si) - 1}-{int(sj) - 1}",
+                f"scan_{int(si) - 1}-{int(sj)}",
+                f"scan_{int(si)}-{int(sj) - 1}",
+            ]
     elif "ts_" in name:
         _, tstr, si, sj, _at = name.split("_")
 
         potential_names = []
-        for i in range(6):
+        for i in range(20):
             potential_names.extend(
                 [
-                    f"ts_{tstr}_{int(si)-1}_{int(sj)-1}_{i}",
-                    f"ts_{tstr}_{int(si)-1}_{int(sj)}_{i}",
-                    f"ts_{tstr}_{int(si)}_{int(sj)-1}_{i}",
+                    f"ts_{tstr}_{int(si) - 1}_{int(sj) - 1}_{i}",
+                    f"ts_{tstr}_{int(si) - 1}_{int(sj)}_{i}",
+                    f"ts_{tstr}_{int(si)}_{int(sj) - 1}_{i}",
+                    f"ts_{tstr}_{int(si)}_{int(sj)}_{i}",
                 ]
             )
     else:
@@ -353,21 +369,19 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         potential_file = output_dir / f"{potential_name}_final.mol"
         if not potential_file.exists():
             continue
-        test_molecule = temp_molecule.with_structure_from_file(potential_file)
+
+        test_molecule = stk.BuildingBlock.init_from_file(potential_file)
+
         conformer = run_optimisation(
-            assigned_system=AssignedSystem(
-                molecule=test_molecule,
-                forcefield_terms=assigned_system.forcefield_terms,
-                system_xml=assigned_system.system_xml,
-                topology_xml=assigned_system.topology_xml,
-                bead_set=assigned_system.bead_set,
-                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
+            assigned_system=forcefield.assign_terms(
+                test_molecule, name, output_dir
             ),
             name=name,
             file_suffix="ns",
             output_dir=output_dir,
             platform=platform,
         )
+
         ensemble.add_conformer(conformer=conformer, source="ns")
 
     num_steps = 20000
@@ -399,14 +413,14 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         failed_md = True
 
     if not failed_md:
-        soft_md_data = soft_md_trajectory.get_data()
+        soft_md_data = soft_md_trajectory.get_data()  # type:ignore[union-attr]
         # Check that the trajectory is as long as it should be.
         if len(soft_md_data) != num_steps / traj_freq:
             failed_md = True
 
         # Go through each conformer from soft MD.
         # Optimise them all.
-        for md_conformer in soft_md_trajectory.yield_conformers():
+        for md_conformer in soft_md_trajectory.yield_conformers():  # type:ignore[union-attr]
             if failed_md:
                 continue
             conformer = run_optimisation(
@@ -429,7 +443,9 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
 
     min_energy_conformer = ensemble.get_lowest_e_conformer()
     min_energy_conformerid = min_energy_conformer.conformer_id
-    min_energy = min_energy_conformer.energy_decomposition["total energy"][0]
+    min_energy: float = min_energy_conformer.energy_decomposition[
+        "total energy"
+    ][0]
     logging.info(
         "%s from %s with energy: %s kJ.mol-1",
         min_energy_conformerid,
@@ -442,7 +458,7 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
     database.add_properties(
         key=name,
         property_dict={
-            "energy_decomposition": min_energy_conformer.energy_decomposition,
+            "energy_decomposition": min_energy_conformer.energy_decomposition,  # type:ignore[dict-item]
             "source": min_energy_conformer.source,
             "optimised": True,
         },
@@ -452,16 +468,23 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
 
 
 def try_except_construction(
-    iterator: TopologyIterator | IHomolepticTopologyIterator,
+    iterator: TopologyIterator,
     topology_code: TopologyCode,
+    scale_multiplier: float | None = None,
+    building_block_configuration: BuildingBlockConfiguration | None = None,
     vertex_positions: dict[int, np.ndarray] | None = None,
 ) -> stk.ConstructedMolecule:
     """Try construction with alignment, then without."""
+    if building_block_configuration is None:
+        bbs = iterator.building_blocks
+    else:
+        bbs = building_block_configuration.get_building_block_dictionary()
+
     try:
         # Try with aligning vertices.
         constructed_molecule = stk.ConstructedMolecule(
-            CustomTopology(
-                building_blocks=iterator.building_blocks,
+            CustomTopology(  # type: ignore[arg-type]
+                building_blocks=bbs,
                 vertex_prototypes=iterator.get_vertex_prototypes(
                     unaligning=False
                 ),
@@ -471,15 +494,17 @@ def try_except_construction(
                 ),
                 vertex_alignments=None,
                 vertex_positions=vertex_positions,
-                scale_multiplier=iterator.scale_multiplier,
+                scale_multiplier=iterator.scale_multiplier
+                if scale_multiplier is None
+                else scale_multiplier,
             )
         )
 
     except ValueError:
         # Try with unaligning.
         constructed_molecule = stk.ConstructedMolecule(
-            CustomTopology(
-                building_blocks=iterator.building_blocks,
+            CustomTopology(  # type: ignore[arg-type]
+                building_blocks=bbs,
                 vertex_prototypes=iterator.get_vertex_prototypes(
                     unaligning=True
                 ),
@@ -489,7 +514,9 @@ def try_except_construction(
                 ),
                 vertex_alignments=None,
                 vertex_positions=vertex_positions,
-                scale_multiplier=iterator.scale_multiplier,
+                scale_multiplier=iterator.scale_multiplier
+                if scale_multiplier is None
+                else scale_multiplier,
             )
         )
     return constructed_molecule

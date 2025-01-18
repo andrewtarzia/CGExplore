@@ -49,7 +49,7 @@ from cgexplore._internal.terms.utilities import find_angles, find_torsions
 from cgexplore._internal.utilities.errors import ForceFieldUnitError
 from cgexplore._internal.utilities.utilities import convert_pyramid_angle
 
-from .assigned_system import AssignedSystem, ForcedSystem, MartiniSystem
+from .assigned_system import AssignedSystem, MartiniSystem
 
 logging.basicConfig(
     level=logging.INFO,
@@ -187,7 +187,7 @@ class ForceField:
                     Bond(
                         atoms=atoms,
                         atom_names=tuple(
-                            f"{i.__class__.__name__}{i.get_id()+1}"
+                            f"{i.__class__.__name__}{i.get_id() + 1}"
                             for i in atoms
                         ),
                         atom_ids=tuple(i.get_id() for i in atoms),
@@ -267,12 +267,12 @@ class ForceField:
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
-                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                        f"{atom_estrings[1]}{central_atom.get_id() + 1}"
                     )
                     actual_angle = Angle(
                         atoms=found_angle.atoms,
                         atom_names=tuple(
-                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            f"{i.__class__.__name__}{i.get_id() + 1}"
                             for i in found_angle.atoms
                         ),
                         atom_ids=found_angle.atom_ids,
@@ -304,13 +304,13 @@ class ForceField:
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
-                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                        f"{atom_estrings[1]}{central_atom.get_id() + 1}"
                     )
                     angle_terms.append(
                         CosineAngle(
                             atoms=found_angle.atoms,
                             atom_names=tuple(
-                                f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                                f"{i.__class__.__name__}{i.get_id() + 1}"
                                 for i in found_angle.atoms
                             ),
                             atom_ids=found_angle.atom_ids,
@@ -342,12 +342,12 @@ class ForceField:
                     central_bead = cgbeads[1]
                     central_atom = list(found_angle.atoms)[1]
                     central_name = (
-                        f"{atom_estrings[1]}{central_atom.get_id()+1}"
+                        f"{atom_estrings[1]}{central_atom.get_id() + 1}"
                     )
                     actual_angle = Angle(
                         atoms=found_angle.atoms,
                         atom_names=tuple(
-                            f"{i.__class__.__name__}" f"{i.get_id()+1}"
+                            f"{i.__class__.__name__}{i.get_id() + 1}"
                             for i in found_angle.atoms
                         ),
                         atom_ids=found_angle.atom_ids,
@@ -503,12 +503,12 @@ class ForceField:
 
                     torsion_terms.append(
                         Torsion(
-                            atom_names=tuple(
+                            atom_names=tuple(  # type: ignore[arg-type]
                                 f"{found_torsion.atoms[i].__class__.__name__}"
-                                f"{found_torsion.atoms[i].get_id()+1}"
+                                f"{found_torsion.atoms[i].get_id() + 1}"
                                 for i in target_torsion.measured_atom_ids
                             ),
-                            atom_ids=tuple(
+                            atom_ids=tuple(  # type: ignore[arg-type]
                                 found_torsion.atoms[i].get_id()
                                 for i in target_torsion.measured_atom_ids
                             ),
@@ -571,7 +571,7 @@ class ForceField:
         molecule: stk.Molecule,
         name: str,
         output_dir: pathlib.Path,
-    ) -> ForcedSystem:
+    ) -> AssignedSystem:
         """Assign forcefield terms to molecule."""
         assigned_terms = {
             "bond": self._assign_bond_terms(molecule),
@@ -672,7 +672,7 @@ class ForceField:
         """Get forcefield prefix."""
         return self._prefix
 
-    def get_present_beads(self) -> tuple:
+    def get_present_beads(self) -> abc.Sequence[CgBead]:
         """Get beads present."""
         return self._present_beads
 
@@ -735,6 +735,65 @@ class ForceField:
         """Return a string representation of the Ensemble."""
         return str(self)
 
+    def get_forcefield_dictionary(self) -> dict[str, str | dict]:
+        """Get the underlying forcefield dict."""
+        # This is matched to the existing analysis code. I recommend
+        # generalising in the future.
+        ff_targets = self.get_targets()
+        k_dict = {}
+        v_dict = {}
+
+        for bt in ff_targets["bonds"]:
+            cp = (bt.type1, bt.type2)
+            k_dict["_".join(cp)] = bt.bond_k.value_in_unit(
+                openmm.unit.kilojoule
+                / openmm.unit.mole
+                / openmm.unit.nanometer**2
+            )
+            v_dict["_".join(cp)] = bt.bond_r.value_in_unit(
+                openmm.unit.angstrom
+            )
+
+        for at in ff_targets["angles"]:
+            cp = (at.type1, at.type2, at.type3)  # type: ignore[assignment]
+            try:
+                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
+                    openmm.unit.kilojoule
+                    / openmm.unit.mole
+                    / openmm.unit.radian**2
+                )
+                v_dict["_".join(cp)] = at.angle.value_in_unit(
+                    openmm.unit.degrees
+                )
+            except TypeError:
+                # Handle different angle types.
+                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
+                    openmm.unit.kilojoule / openmm.unit.mole
+                )
+                v_dict["_".join(cp)] = (at.n, at.b)
+
+        for at in ff_targets["torsions"]:
+            cp = at.search_string
+            k_dict["_".join(cp)] = at.torsion_k.value_in_unit(
+                openmm.unit.kilojoules_per_mole
+            )
+            v_dict["_".join(cp)] = at.phi0.value_in_unit(openmm.unit.degrees)
+
+        for at in ff_targets["nonbondeds"]:
+            v_dict[at.bead_class] = at.sigma.value_in_unit(
+                openmm.unit.angstrom
+            )
+            k_dict[at.bead_class] = at.epsilon.value_in_unit(
+                openmm.unit.kilojoules_per_mole
+            )
+
+        return {
+            "ff_id": self.get_identifier(),
+            "ff_prefix": self.get_prefix(),
+            "k_dict": k_dict,
+            "v_dict": v_dict,
+        }
+
 
 class MartiniForceField(ForceField):
     """Class defining a Martini Forcefield."""
@@ -762,12 +821,12 @@ class MartiniForceField(ForceField):
         self._constraints = constraints
         self._hrprefix = "mffhr"
 
-    def assign_terms(
+    def assign_terms(  # type:ignore[override]
         self,
         molecule: stk.Molecule,
         name: str,
         output_dir: pathlib.Path,
-    ) -> ForcedSystem:
+    ) -> MartiniSystem:
         """Assign forcefield terms to molecule."""
         assigned_terms = {
             "bond": self._assign_bond_terms(molecule),

@@ -56,7 +56,7 @@ class Pymol:
                 path=str(fi),
             ).get_maximum_diameter()
             max_max_diam = max((max_diam, max_max_diam))
-        return f"zoom center, {max_max_diam/zoom_scale}"
+        return f"zoom center, {max_max_diam / zoom_scale}"
 
     def _write_pymol_script(
         self,

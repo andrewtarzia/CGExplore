@@ -17,17 +17,6 @@ def isomer_energy() -> float:
     return 0.3
 
 
-def stoich_map(tstr: str) -> int:
-    """Stoichiometry maps to the number of building blocks."""
-    return {
-        "2P3": 5,
-        "4P6": 10,
-        "4P62": 10,
-        "6P9": 15,
-        "8P12": 20,
-    }[tstr]
-
-
 def colours() -> dict[str, str]:
     """Colours map to topologies."""
     return {
@@ -61,40 +50,11 @@ def analyse_cage(
     )
 
     if "energy_per_bb" not in properties:
-        energy_decomp = {}
-        for component in properties["energy_decomposition"]:
-            component_tup = properties["energy_decomposition"][component]
-            if component == "total energy":
-                energy_decomp[f"{component}_{component_tup[1]}"] = float(
-                    component_tup[0]
-                )
-            else:
-                just_name = component.split("'")[1]
-                key = f"{just_name}_{component_tup[1]}"
-                value = float(component_tup[0])
-                if key in energy_decomp:
-                    energy_decomp[key] += value
-                else:
-                    energy_decomp[key] = value
-        fin_energy = energy_decomp["total energy_kJ/mol"]
-        try:
-            assert (  # noqa: S101
-                sum(
-                    energy_decomp[i]
-                    for i in energy_decomp
-                    if "total energy" not in i
-                )
-                == fin_energy
-            )
-        except AssertionError as ex:
-            ex.add_note(
-                "energy decompisition does not sum to total energy for"
-                f" {name}: {energy_decomp}"
-            )
-            raise
         res_dict = {
-            "strain_energy": fin_energy,
-            "energy_per_bb": fin_energy / stoich_map(topology_str),
+            "energy_per_bb": cgx.utilities.get_energy_per_bb(
+                energy_decomposition=properties["energy_decomposition"],
+                number_building_blocks=cgx.topologies.stoich_map(topology_str),
+            ),
         }
         database.add_properties(key=name, property_dict=res_dict)
 
@@ -122,60 +82,11 @@ def analyse_cage(
         )
 
     if "forcefield_dict" not in properties:
-        # This is matched to the existing analysis code. I recommend
-        # generalising in the future.
-        ff_targets = forcefield.get_targets()
-        k_dict = {}
-        v_dict = {}
-
-        for bt in ff_targets["bonds"]:
-            cp = (bt.type1, bt.type2)
-            k_dict["_".join(cp)] = bt.bond_k.value_in_unit(
-                openmm.unit.kilojoule
-                / openmm.unit.mole
-                / openmm.unit.nanometer**2
-            )
-            v_dict["_".join(cp)] = bt.bond_r.value_in_unit(
-                openmm.unit.angstrom
-            )
-
-        for at in ff_targets["angles"]:
-            cp = (at.type1, at.type2, at.type3)
-            try:
-                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
-                    openmm.unit.kilojoule
-                    / openmm.unit.mole
-                    / openmm.unit.radian**2
-                )
-                v_dict["_".join(cp)] = at.angle.value_in_unit(
-                    openmm.unit.degrees
-                )
-            except TypeError:
-                # Handle different angle types.
-                k_dict["_".join(cp)] = at.angle_k.value_in_unit(
-                    openmm.unit.kilojoule / openmm.unit.mole
-                )
-                v_dict["_".join(cp)] = at.angle.value_in_unit(
-                    openmm.unit.degrees
-                )
-
-        for at in ff_targets["torsions"]:
-            cp = at.search_string
-            k_dict["_".join(cp)] = at.torsion_k.value_in_unit(
-                openmm.unit.kilojoules_per_mole
-            )
-            v_dict["_".join(cp)] = at.phi0.value_in_unit(openmm.unit.degrees)
-
-        forcefield_dict = {
-            "ff_id": forcefield.get_identifier(),
-            "ff_prefix": forcefield.get_prefix(),
-            "v_dict": v_dict,
-            "k_dict": k_dict,
-        }
-
         database.add_properties(
             key=name,
-            property_dict={"forcefield_dict": forcefield_dict},
+            property_dict={
+                "forcefield_dict": forcefield.get_forcefield_dictionary()
+            },
         )
 
 
@@ -426,14 +337,14 @@ def fitness_function(
     )
 
     other_topologies = {}
-    current_stoich = stoich_map(tstr)
+    current_stoich = cgx.topologies.stoich_map(tstr)
     for other_chromosome in differ_by_topology:
         other_name = (
             f"{other_chromosome.prefix}_{other_chromosome.get_string()}"
         )
         other_tstr, _ = other_chromosome.get_topology_information()
         # Only recalculate smaller or equivalent cages.
-        if stoich_map(other_tstr) <= current_stoich:
+        if cgx.topologies.stoich_map(other_tstr) <= current_stoich:
             if not database.has_molecule(other_name):
                 # Run calculation.
                 structure_function(
