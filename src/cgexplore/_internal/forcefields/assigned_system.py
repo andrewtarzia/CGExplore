@@ -26,12 +26,17 @@ from .utilities import (
 )
 
 
-class ForcedSystem:
+@dataclass(frozen=True, slots=True)
+class AssignedSystem:
     """A system with forces assigned."""
 
     molecule: stk.Molecule
     forcefield_terms: dict[str, tuple]
+    system_xml: pathlib.Path
+    topology_xml: pathlib.Path
+    bead_set: BeadLibrary
     vdw_bond_cutoff: int
+    mass: float = 10
 
     def _available_forces(self, force_type: str) -> openmm.Force:
         available = {
@@ -216,35 +221,11 @@ class ForcedSystem:
 
         return system
 
-    def _add_atoms(self, system: openmm.System) -> openmm.System:
-        raise NotImplementedError
-
     def _add_forces(self, system: openmm.System) -> openmm.System:
         system = self._add_bonds(system)
         system = self._add_angles(system)
         system = self._add_torsions(system)
         return self._add_nonbondeds(system)
-
-    def get_openmm_topology(self) -> app.topology.Topology:
-        """Return OpenMM.Topology object."""
-        raise NotImplementedError
-
-    def get_openmm_system(self) -> openmm.System:
-        """Return OpenMM.System object."""
-        raise NotImplementedError
-
-
-@dataclass(frozen=True, slots=True)
-class AssignedSystem(ForcedSystem):
-    """A system with forces assigned."""
-
-    molecule: stk.Molecule
-    forcefield_terms: dict[str, tuple]
-    system_xml: pathlib.Path
-    topology_xml: pathlib.Path
-    bead_set: BeadLibrary
-    vdw_bond_cutoff: int
-    mass: float = 10
 
     def _add_atoms(self, system: openmm.System) -> openmm.System:
         for _atom in self.molecule.get_atoms():
@@ -344,7 +325,7 @@ class AssignedSystem(ForcedSystem):
 
 
 @dataclass(frozen=True, slots=True)
-class MartiniSystem(ForcedSystem):
+class MartiniSystem:
     """Assign a system using martini_openmm."""
 
     molecule: stk.Molecule
@@ -489,6 +470,9 @@ class MartiniSystem(ForcedSystem):
 
         with self.topology_itp.open("w") as f:
             f.write(string)
+
+    def _add_forces(self, system: openmm.System) -> openmm.System:
+        raise NotImplementedError
 
     def get_openmm_topology(self) -> app.topology.Topology:
         """Return OpenMM.Topology object."""

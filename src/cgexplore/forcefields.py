@@ -2,7 +2,6 @@
 
 from cgexplore._internal.forcefields.assigned_system import (
     AssignedSystem,
-    ForcedSystem,
     MartiniSystem,
 )
 from cgexplore._internal.forcefields.forcefield import (
@@ -25,7 +24,6 @@ __all__ = [
     "AssignedSystem",
     "ForceField",
     "ForceFieldLibrary",
-    "ForcedSystem",
     "MartiniForceField",
     "MartiniForceFieldLibrary",
     "MartiniSystem",
