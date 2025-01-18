@@ -69,7 +69,7 @@ class TopologyCode:
 
     def edges_from_connection(
         self,
-        vertex_prototypes: list[stk.Vertex],
+        vertex_prototypes: abc.Sequence[stk.Vertex],
     ) -> list[stk.Edge]:
         """Get stk Edges from topology code."""
         return [
