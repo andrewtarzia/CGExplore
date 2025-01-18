@@ -10,17 +10,14 @@ from cgexplore._internal.scram.construction import (
     optimise_cage,
     try_except_construction,
 )
-from cgexplore._internal.scram.enumeration import (
-    IHomolepticTopologyIterator,
-    TopologyIterator,
-)
+from cgexplore._internal.scram.enumeration import Scrambler, TopologyIterator
 from cgexplore._internal.scram.topology_code import Constructed, TopologyCode
 from cgexplore._internal.scram.utilities import points_on_sphere, vmap_to_str
 
 __all__ = [
     "BuildingBlockConfiguration",
     "Constructed",
-    "IHomolepticTopologyIterator",
+    "Scrambler",
     "TopologyCode",
     "TopologyIterator",
     "get_custom_bb_configurations",
