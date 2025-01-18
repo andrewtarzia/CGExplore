@@ -49,7 +49,7 @@ from cgexplore._internal.terms.utilities import find_angles, find_torsions
 from cgexplore._internal.utilities.errors import ForceFieldUnitError
 from cgexplore._internal.utilities.utilities import convert_pyramid_angle
 
-from .assigned_system import AssignedSystem, ForcedSystem, MartiniSystem
+from .assigned_system import AssignedSystem, MartiniSystem
 
 logging.basicConfig(
     level=logging.INFO,
@@ -571,7 +571,7 @@ class ForceField:
         molecule: stk.Molecule,
         name: str,
         output_dir: pathlib.Path,
-    ) -> ForcedSystem:
+    ) -> AssignedSystem:
         """Assign forcefield terms to molecule."""
         assigned_terms = {
             "bond": self._assign_bond_terms(molecule),
@@ -821,12 +821,12 @@ class MartiniForceField(ForceField):
         self._constraints = constraints
         self._hrprefix = "mffhr"
 
-    def assign_terms(
+    def assign_terms(  # type:ignore[override]
         self,
         molecule: stk.Molecule,
         name: str,
         output_dir: pathlib.Path,
-    ) -> ForcedSystem:
+    ) -> MartiniSystem:
         """Assign forcefield terms to molecule."""
         assigned_terms = {
             "bond": self._assign_bond_terms(molecule),
