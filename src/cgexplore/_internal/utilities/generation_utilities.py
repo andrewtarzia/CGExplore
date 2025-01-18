@@ -8,7 +8,7 @@ Author: Andrew Tarzia
 
 import logging
 import pathlib
-from collections.abc import Iterator
+from collections import abc
 
 import numpy as np
 import stk
@@ -202,7 +202,7 @@ def run_soft_md_cycle(  # noqa: PLR0913
     friction: openmm.unit.Quantity,
     reporting_freq: float,
     traj_freq: float,
-    platform: str,
+    platform: str | None,
 ) -> OMMTrajectory | None:
     """Run MD exploration with soft potentials.
 
@@ -296,7 +296,7 @@ def run_constrained_optimisation(  # noqa: PLR0913
     bond_ff_scale: float,
     angle_ff_scale: float,
     max_iterations: int,
-    platform: str,
+    platform: str | None,
 ) -> stk.Molecule:
     """Run optimisation with constraints and softened potentials.
 
@@ -362,7 +362,7 @@ def run_optimisation(  # noqa: PLR0913
     name: str,
     file_suffix: str,
     output_dir: pathlib.Path,
-    platform: str,
+    platform: str | None,
     max_iterations: int | None = None,
     ensemble: Ensemble | None = None,
 ) -> Conformer:
@@ -423,7 +423,7 @@ def yield_near_models(
     name: str,
     output_dir: pathlib.Path | str,
     neighbour_library: list,
-) -> Iterator[stk.Molecule]:
+) -> abc.Iterator[stk.Molecule]:
     """Yield structures of models with neighbouring force field parameters.
 
     Keywords:
@@ -497,8 +497,8 @@ def shift_beads(
 def yield_shifted_models(
     molecule: stk.Molecule,
     forcefield: ForceField,
-    kicks: tuple[int],
-) -> Iterator[stk.Molecule]:
+    kicks: abc.Sequence[int],
+) -> abc.Iterator[stk.Molecule]:
     """Yield conformers with atom positions of particular beads shifted.
 
     Keywords:
