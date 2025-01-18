@@ -17,7 +17,10 @@ import stk
 import stko
 from openmm import app, openmm
 
-from cgexplore._internal.forcefields.assigned_system import ForcedSystem
+from cgexplore._internal.forcefields.assigned_system import (
+    AssignedSystem,
+    MartiniSystem,
+)
 from cgexplore._internal.molecular.ensembles import Timestep
 
 logging.basicConfig(
@@ -230,7 +233,7 @@ class CGOMMOptimizer:
 
     def _setup_simulation(
         self,
-        assigned_system: ForcedSystem,
+        assigned_system: AssignedSystem | MartiniSystem,
     ) -> tuple[app.Simulation, openmm.System]:
         system = assigned_system.get_openmm_system()
         topology = assigned_system.get_openmm_topology()
@@ -331,20 +334,22 @@ class CGOMMOptimizer:
         positions = state.getPositions(asNumpy=True)
         return molecule.with_position_matrix(positions * 10)
 
-    def calculate_energy(self, assigned_system: ForcedSystem) -> float:
+    def calculate_energy(
+        self, assigned_system: AssignedSystem | MartiniSystem
+    ) -> float:
         """Calculate energy of a system."""
         simulation, _ = self._setup_simulation(assigned_system)
         return self._get_energy(simulation)
 
     def calculate_energy_decomposition(
         self,
-        assigned_system: ForcedSystem,
+        assigned_system: AssignedSystem | MartiniSystem,
     ) -> dict[str, float]:
         """Calculate energy of a system."""
         simulation, system = self._setup_simulation(assigned_system)
         return self._run_energy_decomp(simulation, system)
 
-    def read_final_energy_decomposition(self) -> dict:
+    def read_final_energy_decomposition(self) -> dict[str, tuple[float, str]]:
         """Read the final energy decomposition in an output file."""
         decomp_data = (
             self._output_string.split("energy decomposition:")[-1]
@@ -357,11 +362,12 @@ class CGOMMOptimizer:
                 continue
             force, value_unit = i.split(":")
             value, unit = value_unit.split()
-            value = float(value)  # type: ignore[assignment]
-            decomposition[force] = (value, unit)
+            decomposition[force] = (float(value), unit)
         return decomposition
 
-    def optimize(self, assigned_system: ForcedSystem) -> stk.Molecule:
+    def optimize(
+        self, assigned_system: AssignedSystem | MartiniSystem
+    ) -> stk.Molecule:
         """Optimize a molecule."""
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
@@ -391,7 +397,7 @@ class CGOMMSinglePoint(CGOMMOptimizer):
         self,
         fileprefix: str,
         output_dir: pathlib.Path,
-        assigned_system: ForcedSystem,
+        assigned_system: AssignedSystem | MartiniSystem,
         platform: str | None = None,
     ) -> None:
         """Initialize CGOMMSinglePoint."""
@@ -420,7 +426,7 @@ class CGOMMSinglePoint(CGOMMOptimizer):
 
     def _setup_simulation(
         self,
-        assigned_system: ForcedSystem,
+        assigned_system: AssignedSystem | MartiniSystem,
     ) -> tuple[app.Simulation, openmm.System]:
         system = assigned_system.get_openmm_system()
         topology = assigned_system.get_openmm_topology()
@@ -613,7 +619,9 @@ class CGOMMDynamics(CGOMMOptimizer):
             traj_freq=self._traj_freq,
         )
 
-    def run_dynamics(self, assigned_system: ForcedSystem) -> OMMTrajectory:
+    def run_dynamics(
+        self, assigned_system: AssignedSystem | MartiniSystem
+    ) -> OMMTrajectory:
         """Run dynamics on an assigned system."""
         start_time = time.time()
         self._output_string += f"start time: {start_time}\n"
