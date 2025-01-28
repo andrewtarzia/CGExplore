@@ -70,6 +70,7 @@ appropriate information for mapping angles to models.
 
 * The directory ``cgexplore`` contains the actual source code for the package.
 * The directory ``first_paper_example`` contains the code for `10.1039/D3SC03991A <https://doi.org/10.1039/D3SC03991A>`_.
+
   * ``generate_XX.py`` generates cage structures for different topology sets
   * ``env_set.py`` sets a specific environment for file outputs
   * ``plot_XX.py`` produces images and figures, and performs analysis

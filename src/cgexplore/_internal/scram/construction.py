@@ -223,10 +223,11 @@ def graph_optimise_cage(  # noqa: PLR0913
     return min_energy_conformer
 
 
-def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
+def optimise_cage(  # noqa: PLR0913, C901
     molecule: stk.Molecule,
     name: str,
     output_dir: pathlib.Path,
+    potential_names: list[str],
     forcefield: ForceField,
     platform: str | None,
     database_path: pathlib.Path,
@@ -329,44 +330,10 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
 
         ensemble.add_conformer(conformer=conformer, source="shifted")
 
-    # Add neighbours to systematic scan.
-    if "scan" in name:
-        if "ufo" in name:
-            _, multiplier, sisj = name.split("_")
-            si, sj = sisj.split("-")
-
-            potential_names = [
-                f"ufoscan_{multiplier}_{int(si) - 1}-{int(sj) - 1}",
-                f"ufoscan_{multiplier}_{int(si) - 1}-{int(sj)}",
-                f"ufoscan_{multiplier}_{int(si)}-{int(sj) - 1}",
-            ]
-
-        else:
-            si, sj = name.split("_")[1].split("-")
-
-            potential_names = [
-                f"scan_{int(si) - 1}-{int(sj) - 1}",
-                f"scan_{int(si) - 1}-{int(sj)}",
-                f"scan_{int(si)}-{int(sj) - 1}",
-            ]
-    elif "ts_" in name:
-        _, tstr, si, sj, _at = name.split("_")
-
-        potential_names = []
-        for i in range(20):
-            potential_names.extend(
-                [
-                    f"ts_{tstr}_{int(si) - 1}_{int(sj) - 1}_{i}",
-                    f"ts_{tstr}_{int(si) - 1}_{int(sj)}_{i}",
-                    f"ts_{tstr}_{int(si)}_{int(sj) - 1}_{i}",
-                    f"ts_{tstr}_{int(si)}_{int(sj)}_{i}",
-                ]
-            )
-    else:
-        potential_names = []
-
+    # Scan potential name files.
     for potential_name in potential_names:
         potential_file = output_dir / f"{potential_name}_final.mol"
+
         if not potential_file.exists():
             continue
 
@@ -452,6 +419,107 @@ def optimise_cage(  # noqa: PLR0913, C901, PLR0915, PLR0912
         min_energy_conformer.source,
         round(min_energy, 2),
     )
+
+    # Add to atomlite database.
+    database.add_molecule(molecule=min_energy_conformer.molecule, key=name)
+    database.add_properties(
+        key=name,
+        property_dict={
+            "energy_decomposition": min_energy_conformer.energy_decomposition,  # type:ignore[dict-item]
+            "source": min_energy_conformer.source,
+            "optimised": True,
+        },
+    )
+    min_energy_conformer.molecule.write(fina_mol_file)
+    return min_energy_conformer
+
+
+def optimise_from_files(  # noqa: PLR0913
+    molecule: stk.Molecule,
+    name: str,
+    output_dir: pathlib.Path,
+    potential_names: list[str],
+    forcefield: ForceField,
+    platform: str | None,
+    database_path: pathlib.Path,
+) -> Conformer:
+    """Optimise a toy model cage."""
+    fina_mol_file = output_dir / f"{name}_rescan.mol"
+
+    database = AtomliteDatabase(database_path)
+
+    # Do not rerun if final mol exists.
+    if fina_mol_file.exists():
+        ensemble = Ensemble(
+            base_molecule=molecule,
+            base_mol_path=output_dir / f"{name}_res_base.mol",
+            conformer_xyz=output_dir / f"{name}_res_ensemble.xyz",
+            data_json=output_dir / f"{name}_res_ensemble.json",
+            overwrite=False,
+        )
+        conformer = ensemble.get_lowest_e_conformer()
+        database.add_molecule(molecule=conformer.molecule, key=name)
+        database.add_properties(
+            key=name,
+            property_dict={
+                "energy_decomposition": conformer.energy_decomposition,  # type:ignore[dict-item]
+                "source": conformer.source,
+                "optimised": True,
+            },
+        )
+        return ensemble.get_lowest_e_conformer()
+
+    initial = database.get_entry(name).properties["energy_decomposition"][
+        "total energy"
+    ][0]
+    ensemble = Ensemble(
+        base_molecule=molecule,
+        base_mol_path=output_dir / f"{name}_res_base.mol",
+        conformer_xyz=output_dir / f"{name}_res_ensemble.xyz",
+        data_json=output_dir / f"{name}_res_ensemble.json",
+        overwrite=True,
+    )
+
+    one_exists = False
+    for potential_name in potential_names:
+        for suffix in ("final", "rescan"):
+            potential_file = output_dir / f"{potential_name}_{suffix}.mol"
+            if not potential_file.exists():
+                continue
+
+            test_molecule = stk.BuildingBlock.init_from_file(potential_file)
+
+            conformer = run_optimisation(
+                assigned_system=forcefield.assign_terms(
+                    test_molecule, name, output_dir
+                ),
+                name=name,
+                file_suffix="ns",
+                output_dir=output_dir,
+                platform=platform,
+            )
+
+            ensemble.add_conformer(conformer=conformer, source=f"ns-{suffix}")
+            one_exists = True
+
+    ensemble.write_conformers_to_file()
+
+    if not one_exists:
+        msg = f"no files found for {name}"
+        raise RuntimeError(msg)
+
+    min_energy_conformer = ensemble.get_lowest_e_conformer()
+
+    min_energy: float = min_energy_conformer.energy_decomposition[
+        "total energy"
+    ][0]
+    if min_energy < initial:
+        logging.info(
+            "updating %s with energy: %s kJ.mol-1 vs. %s kJ.mol-1",
+            name,
+            round(min_energy, 2),
+            round(initial, 2),
+        )
 
     # Add to atomlite database.
     database.add_molecule(molecule=min_energy_conformer.molecule, key=name)

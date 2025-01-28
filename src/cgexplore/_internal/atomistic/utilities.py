@@ -144,7 +144,10 @@ def get_ditopic_aligned_bb(
     path: pathlib.Path,
     optl_path: pathlib.Path,
 ) -> stk.BuildingBlock:
-    """Get building block for the target ligand and prepare for cage model."""
+    """Get building block for the target ligand and prepare for cage model.
+
+    TODO: move into bbprepared.recipes.
+    """
     if not path.exists():
         temp = stk.BuildingBlock.init_from_file(
             path=optl_path,
