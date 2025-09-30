@@ -7,7 +7,7 @@ on:
     workflow_dispatch:
 jobs:
     ruff:
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
             - uses: actions/setup-python@v4
@@ -17,7 +17,7 @@ jobs:
             - run: "pip install -e '.[dev]'"
             - run: ruff check .
     mypy:
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
             - uses: actions/setup-python@v4
@@ -27,7 +27,7 @@ jobs:
             - run: "pip install -e '.[dev]'"
             - run: mypy src
     ruff-format:
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
             - uses: actions/setup-python@v4
@@ -37,7 +37,7 @@ jobs:
             - run: "pip install -e '.[dev]'"
             - run: ruff format --check .
     pytest:
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-latest
 
         defaults:
             run:
@@ -64,7 +64,7 @@ jobs:
               run: pytest
 
     build-test:
-        runs-on: ubuntu-22.04
+        runs-on: ubuntu-latest
 
         defaults:
             run:
