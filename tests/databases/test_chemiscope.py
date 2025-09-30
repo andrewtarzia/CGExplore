@@ -28,7 +28,7 @@ def test_chemiscope(molecule: CaseData) -> None:
     with pytest.raises(
         ValueError,
         match=(
-            "The length of property values is different from the number of "
+            "The length of property values is different from the number of "  # noqa: RUF043, RUF100
             "structures and the number of atoms, we can not guess the target. "
             "Got n_atoms = 40, n_structures = 4, the length of property values"
             " is 1, for the '2' property"

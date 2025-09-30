@@ -50,7 +50,7 @@ def extract_ditopic_ensemble(
             splits = line.rstrip().split()
             if len(splits) != 4:  # noqa: PLR2004
                 continue
-            symb, x, y, z = splits
+            _, x, y, z = splits
             x = float(x)  # type: ignore[assignment]
             y = float(y)  # type: ignore[assignment]
             z = float(z)  # type: ignore[assignment]

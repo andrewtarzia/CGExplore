@@ -188,7 +188,7 @@ class Crest(stko.Optimizer):
 
         if not opt_complete:
             msg = f"CREST run is incomplete for {molecule}."
-            logging.warning(msg)
+            logger.warning(msg)
 
         return molecule
 

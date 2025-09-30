@@ -384,7 +384,7 @@ def structure_function(
 ) -> None:
     database = cgx.utilities.AtomliteDatabase(database_path)
     # Build structure.
-    topology_str, topology_fun = chromosome.get_topology_information()
+    _, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
     cage = stk.ConstructedMolecule(topology_fun(building_blocks))
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
