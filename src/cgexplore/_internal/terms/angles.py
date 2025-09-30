@@ -17,7 +17,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
-
+logger = logging.getLogger(__name__)
 
 _angle_k_unit = openmm.unit.kilojoules_per_mole / openmm.unit.radian**2
 

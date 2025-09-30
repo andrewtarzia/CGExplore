@@ -15,6 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def divider(tstr: str) -> abc.Callable:
@@ -98,7 +99,7 @@ def main() -> None:
                     properties[prop] = []
                 properties[prop].append(value)
 
-        logging.info(
+        logger.info(
             "for %s|%s|%s, structures: %s, properties: %s",
             study,
             tstr,

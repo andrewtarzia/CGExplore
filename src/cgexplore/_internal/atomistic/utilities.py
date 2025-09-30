@@ -12,6 +12,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def extract_ditopic_ensemble(
@@ -103,7 +104,7 @@ def cgx_optimisation_sequence(
     if not gulp1_output.exists():
         output_dir = calculation_dir / f"{name}_gulp1"
 
-        logging.info("    UFF4MOF optimisation 1 of %s", name)
+        logger.info("    UFF4MOF optimisation 1 of %s", name)
         gulp_opt = stko.GulpUFFOptimizer(
             gulp_path=gulp_path,
             maxcyc=1000,
@@ -116,12 +117,12 @@ def cgx_optimisation_sequence(
         gulp1_mol = gulp_opt.optimize(mol=cage)
         gulp1_mol.write(gulp1_output)
     else:
-        logging.info("    loading %s", gulp1_output)
+        logger.info("    loading %s", gulp1_output)
         gulp1_mol = cage.with_structure_from_file(gulp1_output)
 
     if not gulp2_output.exists():
         output_dir = calculation_dir / f"{name}_gulp2"
-        logging.info("    UFF4MOF optimisation 2 of %s", name)
+        logger.info("    UFF4MOF optimisation 2 of %s", name)
         gulp_opt = stko.GulpUFFOptimizer(
             gulp_path=gulp_path,
             maxcyc=1000,
@@ -134,7 +135,7 @@ def cgx_optimisation_sequence(
         gulp2_mol = gulp_opt.optimize(mol=gulp1_mol)
         gulp2_mol.write(gulp2_output)
     else:
-        logging.info("    loading %s", gulp2_output)
+        logger.info("    loading %s", gulp2_output)
         gulp2_mol = cage.with_structure_from_file(gulp2_output)
 
     return cage.with_structure_from_file(gulp2_output)

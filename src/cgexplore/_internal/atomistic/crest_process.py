@@ -20,6 +20,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 RDLogger.DisableLog("rdApp.*")
+logger = logging.getLogger(__name__)
 
 
 class Crest(stko.Optimizer):

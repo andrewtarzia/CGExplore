@@ -22,11 +22,12 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def parity_1(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
     """Make a plot."""
-    logging.info("running parity_1")
+    logger.info("running parity_1")
 
     tcmap = topology_labels(short="P")
     tcpos = {tstr: i for i, tstr in enumerate(tcmap) if tstr != "6P8"}
@@ -98,7 +99,7 @@ def parity_2(
     all_data: pd.DataFrame, geom_data: dict, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running parity_2")
+    logger.info("running parity_2")
 
     c2labels = ("Pb_Ba_Ag",)
     cmap = {"ton": "#086788", "toff": "#F9A03F"}
@@ -197,7 +198,7 @@ def pore_b2b_distance(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running pore_b2b parity")
+    logger.info("running pore_b2b parity")
     fig, ax = plt.subplots(figsize=(8, 5))
 
     ax.scatter(

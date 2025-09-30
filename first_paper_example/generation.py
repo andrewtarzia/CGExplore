@@ -21,6 +21,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def failed_cage(
@@ -96,7 +97,7 @@ def optimise_cage(
     )
 
     try:
-        logging.info("optimisation of %s", name)
+        logger.info("optimisation of %s", name)
         conformer = cgx.utilities.run_optimisation(
             assigned_system=cgx.forcefields.AssignedSystem(
                 molecule=temp_molecule,
@@ -118,7 +119,7 @@ def optimise_cage(
 
     # Run optimisations of series of conformers with shifted out
     # building blocks.
-    logging.info("optimisation of shifted structures of %s", name)
+    logger.info("optimisation of shifted structures of %s", name)
     for test_molecule in cgx.utilities.yield_shifted_models(
         temp_molecule, forcefield, kicks=(1, 2, 3, 4)
     ):
@@ -143,7 +144,7 @@ def optimise_cage(
                 raise
 
     # Collect and optimise structures nearby in phase space.
-    logging.info("optimisation of nearby structures of %s", name)
+    logger.info("optimisation of nearby structures of %s", name)
     neighbour_library = get_neighbour_library(
         ffnum=int(forcefield.get_identifier()),
         fftype=forcefield.get_prefix(),
@@ -170,7 +171,7 @@ def optimise_cage(
         )
         ensemble.add_conformer(conformer=conformer, source="nearby_opt")
 
-    logging.info("soft MD run of %s", name)
+    logger.info("soft MD run of %s", name)
     num_steps = 20000
     traj_freq = 500
     soft_md_trajectory = cgx.utilities.run_soft_md_cycle(
@@ -230,7 +231,7 @@ def optimise_cage(
     min_energy_conformer = ensemble.get_lowest_e_conformer()
     min_energy_conformerid = min_energy_conformer.conformer_id
     min_energy = min_energy_conformer.energy_decomposition["total energy"][0]
-    logging.info(
+    logger.info(
         "Min. energy conformer: %s from %s with energy: %s kJ.mol-1",
         min_energy_conformerid,
         min_energy_conformer.source,
@@ -264,12 +265,12 @@ def build_populations(
     """Build a population."""
     count = 0
     for population, popn_dict in populations.items():
-        logging.info("running population %s", population)
+        logger.info("running population %s", population)
         topologies = popn_dict["topologies"]
         forcefields = tuple(popn_dict["fflibrary"].yield_forcefields())
-        logging.info("there are %s topologies", len(topologies))
-        logging.info("there are %s ffs", len(forcefields))
-        logging.info("building %s cages", len(forcefields) * len(topologies))
+        logger.info("there are %s topologies", len(topologies))
+        logger.info("there are %s ffs", len(forcefields))
+        logger.info("building %s cages", len(forcefields) * len(topologies))
         popn_iterator = it.product(topologies, forcefields)
         for cage_topo_str, forcefield in popn_iterator:
             c2_precursor = popn_dict["c2"]
@@ -308,7 +309,7 @@ def build_populations(
             )
             cl_building_block.write(str(ligand_output / f"{cl_name}_optl.mol"))
 
-            logging.info("building %s", name)
+            logger.info("building %s", name)
             cage = stk.ConstructedMolecule(
                 topology_graph=popn_dict["topologies"][cage_topo_str](
                     building_blocks=(c2_building_block, cl_building_block),
@@ -345,4 +346,4 @@ def build_populations(
                     database=database,
                 )
 
-        logging.info("%s %s cages built.", count, population)
+        logger.info("%s %s cages built.", count, population)

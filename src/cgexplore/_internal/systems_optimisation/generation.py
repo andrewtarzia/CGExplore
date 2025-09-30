@@ -15,6 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +34,7 @@ class Generation:
     def calculate_fitness_values(self) -> list[float]:
         """Calculate the fitness of all chromosomes."""
         length = len(self.chromosomes)
-        logging.info("calculating fitness values of %s systems...", length)
+        logger.info("calculating fitness values of %s systems...", length)
         if self.num_processes > 1:
             with pathos.pools.ProcessPool(self.num_processes) as pool:
                 return pool.map(
@@ -48,7 +49,7 @@ class Generation:
     def run_structures(self) -> None:
         """Run the production and analyse of all chromosomes."""
         length = len(self.chromosomes)
-        logging.info("generating structures of %s systems...", length)
+        logger.info("generating structures of %s systems...", length)
         if self.num_processes > 1:
             with pathos.pools.ProcessPool(self.num_processes) as pool:
                 pool.map(self.structure_calculator.calculate, self.chromosomes)

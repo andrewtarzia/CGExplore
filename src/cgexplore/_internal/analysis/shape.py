@@ -22,6 +22,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 class ShapeMeasure:
@@ -129,7 +130,7 @@ class ShapeMeasure:
             float_values = [i.strip() for i in line.rstrip().split(",")]
 
         if values is None:
-            logging.info("no shapes found due to overlapping atoms")
+            logger.info("no shapes found due to overlapping atoms")
             shapes = {}
         else:
             shapes = {
@@ -205,8 +206,7 @@ class ShapeMeasure:
 
         with pathlib.Path("cents.xyz").open("w") as f:
             f.write(f"{len(centroids)}\n\n")
-            for c in centroids:
-                f.write(f"Zn {c[0]} {c[1]} {c[2]}\n")
+            f.writelines(f"Zn {c[0]} {c[1]} {c[2]}\n" for c in centroids)
 
         return centroids
 

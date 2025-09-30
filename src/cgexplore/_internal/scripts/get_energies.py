@@ -4,6 +4,8 @@ import pathlib
 
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 
+logger = logging.getLogger(__name__)
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -33,7 +35,7 @@ def main() -> None:
 
     if args.name == "all":
         count = 0
-        logging.info("showing all energies in (%s, %s)", args.min, args.max)
+        logger.info("showing all energies in (%s, %s)", args.min, args.max)
         for entry in database.get_entries():
             properties = entry.properties
             if "energy_per_bb" not in properties:
@@ -41,17 +43,17 @@ def main() -> None:
             name = entry.key
             energy: float = properties["energy_per_bb"]  # type: ignore[assignment]
             if energy > min_energy and energy < max_energy:
-                logging.info(
+                logger.info(
                     "energy of %s is %s kJmol-1",
                     name,
                     round(energy, 3),  # type: ignore[arg-type]
                 )
                 count += 1
-        logging.info("showed %s energies", count)
+        logger.info("showed %s energies", count)
     else:
         entry = database.get_entry(key=args.name)
         energy = entry.properties["energy_per_bb"]  # type: ignore[assignment]
-        logging.info("energy of %s is %s kJmol-1", args.name, round(energy, 3))  # type: ignore[arg-type]
+        logger.info("energy of %s is %s kJmol-1", args.name, round(energy, 3))  # type: ignore[arg-type]
 
 
 if __name__ == "__main__":

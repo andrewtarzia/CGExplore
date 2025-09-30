@@ -30,6 +30,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def graph_optimise_cage(  # noqa: PLR0913
@@ -173,7 +174,7 @@ def graph_optimise_cage(  # noqa: PLR0913
 
                 ensemble.add_conformer(conformer=conformer, source=f"nx{i}{j}")
             except OpenMMException:
-                logging.info("failed graph opt of %s", name)
+                logger.info("failed graph opt of %s", name)
 
     # Try with graph positions.
     rng = np.random.default_rng(seed=100)
@@ -202,7 +203,7 @@ def graph_optimise_cage(  # noqa: PLR0913
     min_energy_conformer = ensemble.get_lowest_e_conformer()
     min_energy_conformerid = min_energy_conformer.conformer_id
     min_energy = min_energy_conformer.energy_decomposition["total energy"][0]
-    logging.info(
+    logger.info(
         "%s from %s with energy: %s kJ.mol-1",
         min_energy_conformerid,
         min_energy_conformer.source,
@@ -413,7 +414,7 @@ def optimise_cage(  # noqa: PLR0913, C901
     min_energy: float = min_energy_conformer.energy_decomposition[
         "total energy"
     ][0]
-    logging.info(
+    logger.info(
         "%s from %s with energy: %s kJ.mol-1",
         min_energy_conformerid,
         min_energy_conformer.source,
@@ -514,7 +515,7 @@ def optimise_from_files(  # noqa: PLR0913
         "total energy"
     ][0]
     if min_energy < initial:
-        logging.info(
+        logger.info(
             "updating %s with energy: %s kJ.mol-1 vs. %s kJ.mol-1",
             name,
             round(min_energy, 2),

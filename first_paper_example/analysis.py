@@ -18,6 +18,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def get_paired_cage_name(cage_name: str) -> str:
@@ -46,7 +47,7 @@ def analyse_cage(
     shape_molfile2 = output_dir / f"{name}_shape2.mol"
 
     if not output_file.exists():
-        logging.info("analysing %s", name)
+        logger.info("analysing %s", name)
 
         energy_decomp = {}
         for component in conformer.energy_decomposition:
@@ -611,7 +612,7 @@ def data_to_array(json_files, output_dir: pathlib.Path) -> pd.DataFrame:
     len_jsons = len(json_files)
     count = 0
     for j_file in json_files:
-        logging.info("arraying %s (%s/%s)", j_file.name, count, len_jsons)
+        logger.info("arraying %s (%s/%s)", j_file.name, count, len_jsons)
         with j_file.open("r") as f:
             res_dict = json.load(f)
 

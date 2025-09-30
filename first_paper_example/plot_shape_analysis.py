@@ -33,13 +33,14 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def shape_vector_distributions(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running shape_vector_distributions")
+    logger.info("running shape_vector_distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
 
@@ -122,7 +123,7 @@ def shape_similarities(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running shape_similarities")
+    logger.info("running shape_similarities")
     tstrs = topology_labels(short="P")
 
     xmin = 0
@@ -203,7 +204,7 @@ def shape_topology(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running shape_topology")
+    logger.info("running shape_topology")
 
     color_map = topology_labels(short="P")
     trim = all_data[all_data["vdws"] == "von"]
@@ -303,7 +304,7 @@ def shape_topology_main(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running shape_topology_main")
+    logger.info("running shape_topology_main")
 
     color_map = topology_labels(short="P")
     trim = all_data[all_data["vdws"] == "von"]
@@ -394,7 +395,7 @@ def shape_input_relationships(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running shape_input_relationships")
+    logger.info("running shape_input_relationships")
 
     color_map = topology_labels(short="P")
     trim = all_data[all_data["vdws"] == "von"]
@@ -643,7 +644,7 @@ def flexshapeeffect_per_property(
         "there is a bug here in handling no stable cases and I do not use this"
     )
     raise NotImplementedError(msg)
-    logging.info("running effect of flexibility distributions")
+    logger.info("running effect of flexibility distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
     color_map = {
@@ -771,7 +772,7 @@ def flexshapeeffect_per_shape(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running shaped percent per topologies")
+    logger.info("running shaped percent per topologies")
 
     trim = all_data[all_data["vdws"] == "von"]
     color_map = {
@@ -818,7 +819,7 @@ def shape_persistence_map(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running shape_input_relationships")
+    logger.info("running shape_input_relationships")
 
     trim = all_data[all_data["vdws"] == "von"]
 
@@ -890,7 +891,7 @@ def shape_persistence_map(
 
 def shape_summary(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
     """Make a plot."""
-    logging.info("running shape_summary")
+    logger.info("running shape_summary")
     color_map = topology_labels(short="P")
     trim = all_data[all_data["vdws"] == "von"]
 

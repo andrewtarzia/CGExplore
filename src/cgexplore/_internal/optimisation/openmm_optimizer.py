@@ -27,6 +27,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 class OMMTrajectory:
@@ -501,7 +502,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         self._temperature = temperature
 
         if random_seed is None:
-            logging.info("a random random seed is used")
+            logger.info("a random random seed is used")
             rng = np.random.default_rng()
             self._random_seed = rng.integers(low=1, high=4000)
         else:

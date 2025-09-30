@@ -36,17 +36,18 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def identity_distributions(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running identity_distributions")
+    logger.info("running identity_distributions")
 
     fig, ax = plt.subplots(figsize=(16, 5))
 
-    categories = {i: 0 for i in topology_labels(short="P")}
+    categories = dict.fromkeys(topology_labels(short="P"), 0)
     count1 = all_data["topology"].value_counts()
 
     categories = dict(count1.items())
@@ -79,7 +80,7 @@ def geom_distributions(
     all_data: pd.DataFrame, geom_data: dict, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running geom_distributions")
+    logger.info("running geom_distributions")
 
     comparisons = {
         "torsions": {
@@ -251,7 +252,7 @@ def single_value_distributions(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running single_value_distributions")
+    logger.info("running single_value_distributions")
 
     to_plot = {
         "energy_per_bb": {
@@ -650,7 +651,7 @@ def mixed_distributions(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running mixed distributions")
+    logger.info("running mixed distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
     color_map = {
@@ -912,7 +913,7 @@ def flexeffect_per_property(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running effect of flexibility distributions")
+    logger.info("running effect of flexibility distributions")
 
     trim = all_data[all_data["vdws"] == "von"]
     color_map = {
@@ -1111,7 +1112,7 @@ def opt_outcome_distributions(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running opt_outcome_distributions")
+    logger.info("running opt_outcome_distributions")
 
     fig, ax = plt.subplots(figsize=(16, 5))
 
