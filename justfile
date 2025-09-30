@@ -14,10 +14,10 @@ check:
   trap error=1 ERR
 
   echo
-  (set -x; uv run ruff check . )
+  ( set -x; uv run ruff check . )
 
   echo
-    set -x; uv run ruff format --check . )
+  ( set -x; uv run ruff format --check . )
 
   echo
   ( set -x; uv run mypy src )

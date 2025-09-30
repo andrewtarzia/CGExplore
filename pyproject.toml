@@ -111,6 +111,9 @@ convention = "google"
 ]
 "docs/source/conf.py" = ["D100", "INP001"]
 
+[tool.ruff.format]
+exclude = ["src/cgexplore/_version.py"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py", "*_test.py"]
