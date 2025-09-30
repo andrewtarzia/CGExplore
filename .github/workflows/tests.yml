@@ -1,137 +1,137 @@
 name: Tests
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-  workflow_dispatch:
+    push:
+        branches:
+            - main
+    pull_request:
+    workflow_dispatch:
 jobs:
-  ruff:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - run: "pip install -e '.[dev]'"
-      - run: ruff check .
-  mypy:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - run: "pip install -e '.[dev]'"
-      - run: mypy src
-  ruff-format:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-          cache: "pip"
-      - run: "pip install -e '.[dev]'"
-      - run: ruff format --check .
-  pytest:
-    runs-on: ubuntu-22.04
+    ruff:
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-python@v4
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+            - run: "pip install -e '.[dev]'"
+            - run: ruff check .
+    mypy:
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-python@v4
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+            - run: "pip install -e '.[dev]'"
+            - run: mypy src
+    ruff-format:
+        runs-on: ubuntu-22.04
+        steps:
+            - uses: actions/checkout@v3
+            - uses: actions/setup-python@v4
+              with:
+                  python-version: "3.11"
+                  cache: "pip"
+            - run: "pip install -e '.[dev]'"
+            - run: ruff format --check .
+    pytest:
+        runs-on: ubuntu-22.04
 
-    defaults:
-      run:
-        shell: bash -l {0}
+        defaults:
+            run:
+                shell: bash -l {0}
 
-    steps:
-      - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+        steps:
+            - uses: actions/checkout@v4
+            - uses: conda-incubator/setup-miniconda@v3
 
-        with:
-          miniforge-version: latest
-          python-version: 3.11
-          activate-environment: pytest
+              with:
+                  miniforge-version: latest
+                  python-version: 3.11
+                  activate-environment: pytest
 
-      - name: Build environment
-        run: |
-          conda activate pytest
-          conda install -c conda-forge openmm openmmtools
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools
-          python -m pip install -e '.[dev]'
+            - name: Build environment
+              run: |
+                  conda activate pytest
+                  conda install -c conda-forge openmm openmmtools
+                  python -m pip install --upgrade pip
+                  python -m pip install --upgrade setuptools
+                  python -m pip install -e '.[dev]'
 
-      - name: pytest
-        run: pytest
+            - name: pytest
+              run: pytest
 
-  build-test:
-    runs-on: ubuntu-22.04
+    build-test:
+        runs-on: ubuntu-22.04
 
-    defaults:
-      run:
-        shell: bash -l {0}
+        defaults:
+            run:
+                shell: bash -l {0}
 
-    steps:
-      - uses: actions/checkout@v4
-      - uses: conda-incubator/setup-miniconda@v3
+        steps:
+            - uses: actions/checkout@v4
+            - uses: conda-incubator/setup-miniconda@v3
 
-        with:
-          miniforge-version: latest
-          python-version: 3.11
-          activate-environment: buildtest
+              with:
+                  miniforge-version: latest
+                  python-version: 3.11
+                  activate-environment: buildtest
 
-      - name: Build environment
-        run: |
-          conda activate buildtest
-          conda install -c conda-forge openmm openmmtools
-          python -m pip install --upgrade pip
-          python -m pip install --upgrade setuptools
-          python -m pip install -e '.[dev]'
+            - name: Build environment
+              run: |
+                  conda activate buildtest
+                  conda install -c conda-forge openmm openmmtools
+                  python -m pip install --upgrade pip
+                  python -m pip install --upgrade setuptools
+                  python -m pip install -e '.[dev]'
 
-      - name: Clone repo
-        run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
+            - name: Clone repo
+              run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
 
-      - name: Run script
-        run: python cg_model_test/cg_model_test.py cg_model_test
+            - name: Run script
+              run: python cg_model_test/cg_model_test.py cg_model_test
 
-      - name: Run parameteriser script
-        run: python cg_model_test/openmm_parametizer.py cg_model_test
+            - name: Run parameteriser script
+              run: python cg_model_test/openmm_parametizer.py cg_model_test
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: parity-plot
-          path: parity.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: parity-plot
+                  path: parity.png
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: l1-plot
-          path: l1.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: l1-plot
+                  path: l1.png
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: l3-plot
-          path: l3.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: l3-plot
+                  path: l3.png
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: l4-plot
-          path: l4.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: l4-plot
+                  path: l4.png
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: l5-plot
-          path: l5.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: l5-plot
+                  path: l5.png
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: uff-plot
-          path: uff_angle_test.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: uff-plot
+                  path: uff_angle_test.png
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: uff2-plot
-          path: uff_angle_test2.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: uff2-plot
+                  path: uff_angle_test2.png
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: rt-plot
-          path: random_test.png
+            - uses: actions/upload-artifact@v4
+              with:
+                  name: rt-plot
+                  path: random_test.png
