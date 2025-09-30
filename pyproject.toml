@@ -10,12 +10,17 @@ dependencies = [
     "matplotlib",
     "pandas",
     "scikit-learn",
+    # Added a new restriction (<2025.3.1 for rdkit because of changes in
+    # rdkit's handling of metal-bonded/dative smiles) - done through manual testing.
+    # This can change if updates to stk occur.
+    "rdkit != 2024.3.5, <= 2024.9.1",
     "stk",
     "stko",
     "atomlite",
     "chemiscope>0.7.3",
     "rustworkx",
     "bbprepared",
+    "openmm[cuda12]"
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]
