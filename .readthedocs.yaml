@@ -3,13 +3,10 @@ version: 2
 build:
     os: ubuntu-lts-latest
     tools:
-        python: "mambaforge-22.9"
+        python: "3.13"
 
 sphinx:
     configuration: docs/source/conf.py
-
-conda:
-    environment: rtd311.yml
 
 python:
     install:
