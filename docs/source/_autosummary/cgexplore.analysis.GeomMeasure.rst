@@ -24,6 +24,7 @@ cgexplore.analysis.GeomMeasure
       ~GeomMeasure.calculate_minb2b
       ~GeomMeasure.calculate_radius_gyration
       ~GeomMeasure.calculate_torsions
+      ~GeomMeasure.from_forcefield
    
    
 

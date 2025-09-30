@@ -17,16 +17,24 @@ cgexplore.scram.TopologyIterator
    .. autosummary::
       :nosignatures:
    
-      ~TopologyIterator.get_beta
-      ~TopologyIterator.get_constructed_molecules
-      ~TopologyIterator.get_mashed_topology
+      ~TopologyIterator.count_graphs
       ~TopologyIterator.get_num_building_blocks
-      ~TopologyIterator.get_num_mashes
-      ~TopologyIterator.get_num_scrambles
-      ~TopologyIterator.get_topology
+      ~TopologyIterator.get_vertex_prototypes
+      ~TopologyIterator.yield_graphs
    
    
 
    
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~TopologyIterator.allowed_num_components
+      ~TopologyIterator.graph_set
+      ~TopologyIterator.max_samples
+      ~TopologyIterator.scale_multiplier
+      ~TopologyIterator.building_block_counts
+      ~TopologyIterator.graph_type
    
    

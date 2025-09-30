@@ -29,6 +29,7 @@ cgexplore.molecular
       SixBead
       SpindryConformer
       SquarePrecursor
+      StericSevenBead
       StericSixBead
       ThreeC0Arm
       ThreeC1Arm
