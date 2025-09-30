@@ -72,6 +72,7 @@ line-length = 79
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = ["ANN401", "COM812", "ISC001", "FBT001", "FBT002"]
+exclude = ["src/cgexplore/_version.py"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
