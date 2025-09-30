@@ -20,7 +20,12 @@ dependencies = [
     "chemiscope>0.7.3",
     "rustworkx",
     "bbprepared",
-    "openmm[cuda12]"
+    "openmm[cuda12]",
+    # Added to handle uv issue with metadata.
+    # From https://github.com/astral-sh/uv/issues/15876
+    "OpenMM-CUDA-12",
+    # Requirements to ensure installation with Python 3.13.
+    "dgl==0.1.3"
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]
