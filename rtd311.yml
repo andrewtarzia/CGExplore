@@ -1,6 +1,0 @@
-name: rtd311
-channels:
-    - conda-forge
-dependencies:
-    - openmm=8.1.1
-    - python=3.11
