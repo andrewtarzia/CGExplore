@@ -504,7 +504,7 @@ class CGOMMDynamics(CGOMMOptimizer):
         if random_seed is None:
             logger.info("a random random seed is used")
             rng = np.random.default_rng()
-            self._random_seed = rng.integers(low=1, high=4000)
+            self._random_seed = int(rng.integers(low=1, high=4000))
         else:
             self._random_seed = random_seed
 

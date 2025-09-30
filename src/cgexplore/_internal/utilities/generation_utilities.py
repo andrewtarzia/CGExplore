@@ -99,7 +99,7 @@ def optimise_ligand(
 
 
 def soften_forcefield(
-    assigned_system: AssignedSystem,
+    assigned_system: AssignedSystem | MartiniSystem,
     bond_ff_scale: float,
     angle_ff_scale: float,
     new_name: str,

@@ -470,9 +470,10 @@ def optimise_from_files(  # noqa: PLR0913
         )
         return ensemble.get_lowest_e_conformer()
 
-    initial = database.get_entry(name).properties["energy_decomposition"][
-        "total energy"
-    ][0]
+    initial: float = database.get_entry(name).properties[  # type:ignore[index,assignment,call-overload]
+        "energy_decomposition"
+    ]["total energy"][0]  # type:ignore[index]
+
     ensemble = Ensemble(
         base_molecule=molecule,
         base_mol_path=output_dir / f"{name}_res_base.mol",
