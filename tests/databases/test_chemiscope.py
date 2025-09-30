@@ -28,7 +28,7 @@ def test_chemiscope(molecule: CaseData) -> None:
     with pytest.raises(
         ValueError,
         match=(
-            "The length of property values is different from the number of "
+            "The length of property values is different from the number of "  # noqa: RUF043, RUF100
             "structures and the number of atoms, we can not guess the target. "
             "Got n_atoms = 40, n_structures = 4, the length of property values"
             " is 1, for the '2' property"
@@ -117,26 +117,26 @@ def test_chemiscope(molecule: CaseData) -> None:
             "structure": [
                 {
                     "vector": [
-                        0.21965005986273756,
-                        0.053109715994766646,
-                        -1.097856276168836,
+                        0.22304293537021347,
+                        0.054461393723354276,
+                        -1.0952980247208781,
                     ],
                     "position": [
-                        0.7597449018275233,
-                        -0.01803664139520529,
-                        -0.0343380685713224,
+                        0.7563930326851623,
+                        -0.01926391540105227,
+                        -0.036668302736346435,
                     ],
                 },
                 {
                     "vector": [
-                        -0.5233967307595824,
-                        0.8111426230221287,
-                        0.5661924393326146,
+                        -0.5223374946083974,
+                        0.8112914209329797,
+                        0.5661687958436197,
                     ],
                     "position": [
-                        -1.1964536175356193,
-                        -0.07971778664788749,
-                        -0.056452517830615785,
+                        -1.1975128536868043,
+                        -0.07986658455873856,
+                        -0.0564288743416208,
                     ],
                 },
                 {
@@ -153,14 +153,14 @@ def test_chemiscope(molecule: CaseData) -> None:
                 },
                 {
                     "vector": [
-                        -0.5233967307595824,
-                        0.8111426230221287,
-                        0.5661924393326146,
+                        -0.5223374946083974,
+                        0.8112914209329797,
+                        0.5661687958436197,
                     ],
                     "position": [
-                        -1.1964536175356193,
-                        -0.07971778664788749,
-                        -0.056452517830615785,
+                        -1.1975128536868043,
+                        -0.07986658455873856,
+                        -0.0564288743416208,
                     ],
                 },
             ],

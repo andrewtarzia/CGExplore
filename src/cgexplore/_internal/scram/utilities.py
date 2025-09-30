@@ -10,6 +10,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def vmap_to_str(vertex_map: abc.Sequence[tuple[int, int]]) -> str:

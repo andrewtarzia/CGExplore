@@ -27,11 +27,12 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def phase_space_2(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
     """Make a plot."""
-    logging.info("doing phase space 2")
+    logger.info("doing phase space 2")
 
     vdata = all_data[all_data["vdws"] == "von"]
 
@@ -285,7 +286,7 @@ def phase_space_6p8(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("doing 6p8 phase space")
+    logger.info("doing 6p8 phase space")
 
     vdata = all_data[all_data["vdws"] == "von"]
     fig, ax = plt.subplots(figsize=(8, 2))

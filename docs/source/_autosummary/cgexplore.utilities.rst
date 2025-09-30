@@ -36,6 +36,7 @@ cgexplore.utilities
       convert_pyramid_angle
       draw_pie
       extract_property
+      get_energy_per_bb
       get_supramolecule
       get_unforced_supramolecule
       optimise_ligand

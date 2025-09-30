@@ -19,6 +19,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 _martini_dir = pathlib.Path(__file__).resolve().parent / "data"
 

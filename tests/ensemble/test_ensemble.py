@@ -20,7 +20,6 @@ def test_ensemble(ensemble: CaseData) -> None:
 
     """
     output_dir = pathlib.Path(__file__).resolve().parent / "output"
-    print(ensemble)
     test = cgx.molecular.Ensemble(
         base_molecule=ensemble.molecule,
         base_mol_path=output_dir / f"{ensemble.name}_base.mol",
@@ -53,7 +52,6 @@ def test_ensemble(ensemble: CaseData) -> None:
         built_conformers.append(conformer)
         test.add_conformer(conformer, source="etkdg")
 
-    print(test)
     assert test.get_num_conformers() == num_confs
     # Test I/O unchanged and compare to known.
     test.write_conformers_to_file()
@@ -65,14 +63,20 @@ def test_ensemble(ensemble: CaseData) -> None:
         data_json=output_dir / f"known_{ensemble.name}_ensemble.json",
         overwrite=False,
     )
+    assert (output_dir / f"{ensemble.name}_base.mol").exists()
+    assert (output_dir / f"known_{ensemble.name}_base.mol").exists()
     assert filecmp.cmp(
         output_dir / f"known_{ensemble.name}_base.mol",
         output_dir / f"{ensemble.name}_base.mol",
     )
+    assert (output_dir / f"{ensemble.name}_ensemble.xyz").exists()
+    assert (output_dir / f"known_{ensemble.name}_ensemble.xyz").exists()
     assert filecmp.cmp(
         output_dir / f"known_{ensemble.name}_ensemble.xyz",
         output_dir / f"{ensemble.name}_ensemble.xyz",
     )
+    assert (output_dir / f"{ensemble.name}_ensemble.json").exists()
+    assert (output_dir / f"known_{ensemble.name}_ensemble.json").exists()
     assert filecmp.cmp(
         output_dir / f"known_{ensemble.name}_ensemble.json",
         output_dir / f"{ensemble.name}_ensemble.json",

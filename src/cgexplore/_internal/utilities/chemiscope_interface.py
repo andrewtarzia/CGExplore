@@ -11,6 +11,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def write_chemiscope_json(  # noqa: PLR0913
@@ -105,4 +106,4 @@ def write_chemiscope_json(  # noqa: PLR0913
         ),
         shapes=shape_dict,
     )
-    logging.info("saved to %s", json_file)
+    logger.info("saved to %s", json_file)

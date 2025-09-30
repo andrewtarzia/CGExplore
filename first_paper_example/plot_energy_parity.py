@@ -26,6 +26,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def energy_parity(
@@ -34,7 +35,7 @@ def energy_parity(
     figure_output: pathlib.Path,
 ) -> None:
     """Plot energy parity."""
-    logging.info("running energy_parity")
+    logger.info("running energy_parity")
     print(len(all_data), len(dupl_data))  # noqa: T201
 
     e_threshold = 0.01

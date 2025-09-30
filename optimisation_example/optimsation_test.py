@@ -12,6 +12,8 @@ import stk
 
 import cgexplore as cgx
 
+logger = logging.getLogger(__name__)
+
 
 def isomer_energy() -> float:
     return 0.3
@@ -136,7 +138,7 @@ def optimise_cage(
         )
         return ensemble.get_lowest_e_conformer()
 
-    logging.info("optimising %s", name)
+    logger.info("optimising %s", name)
     assigned_system = forcefield.assign_terms(molecule, name, output_dir)
     ensemble = cgx.molecular.Ensemble(
         base_molecule=molecule,
@@ -382,7 +384,7 @@ def structure_function(
 ) -> None:
     database = cgx.utilities.AtomliteDatabase(database_path)
     # Build structure.
-    topology_str, topology_fun = chromosome.get_topology_information()
+    _, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
     cage = stk.ConstructedMolecule(topology_fun(building_blocks))
     name = f"{chromosome.prefix}_{chromosome.get_string()}"
@@ -615,11 +617,11 @@ def main() -> None:
         generations.append(generation)
 
         for generation_id in range(1, num_generations + 1):
-            logging.info("doing generation %s of seed %s", generation_id, seed)
-            logging.info(
+            logger.info("doing generation %s of seed %s", generation_id, seed)
+            logger.info(
                 "initial size is %s.", generation.get_generation_size()
             )
-            logging.info("doing mutations.")
+            logger.info("doing mutations.")
             merged_chromosomes = []
             merged_chromosomes.extend(
                 chromo_it.mutate_population(
@@ -682,7 +684,7 @@ def main() -> None:
                 )
             )
 
-            # logging.info("Doing crossovers.")
+            # logger.info("Doing crossovers.")
             merged_chromosomes.extend(
                 chromo_it.crossover_population(
                     list_of_chromosomes=generation.chromosomes,
@@ -712,7 +714,7 @@ def main() -> None:
                 structure_calculator=structure_calculator,
                 num_processes=num_processes,
             )
-            logging.info("new size is %s.", generation.get_generation_size())
+            logger.info("new size is %s.", generation.get_generation_size())
 
             # Build, optimise and analyse each structure.
             st = time.time()
@@ -735,7 +737,7 @@ def main() -> None:
                 structure_calculator=structure_calculator,
                 num_processes=num_processes,
             )
-            logging.info("final size is %s.", generation.get_generation_size())
+            logger.info("final size is %s.", generation.get_generation_size())
 
             progress_plot(
                 generations=generations,
@@ -749,14 +751,14 @@ def main() -> None:
                 f"{best_chromosome.prefix}_{best_chromosome.get_string()}"
             )
 
-        logging.info("top scorer is %s (seed: %s)", best_name, seed)
+        logger.info("top scorer is %s (seed: %s)", best_name, seed)
 
     # Report.
     found = set()
     for generation in generations:
         for chromo in generation.chromosomes:
             found.add(chromo.name)
-    logging.info(
+    logger.info(
         "%s chromosomes found in EA (of %s)",
         len(found),
         chromo_it.get_num_chromosomes(),

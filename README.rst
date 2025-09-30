@@ -45,11 +45,12 @@ Developer Setup
 ---------------
 
 To develop with ``cgexplore``, you can clone the repo and use
-`just <https://github.com/casey/just>`_ to setup the dev environment:
+`just <https://github.com/casey/just>`_ and `uv <https://docs.astral.sh>`_
+to setup the dev environment:
 
 .. code-block:: bash
 
-  just dev
+  just setup
 
 
 Usage
@@ -100,6 +101,7 @@ Publications using CGExplore
 ============================
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
+* Starships: TBD (`models <https://cgmodels.readthedocs.io/en/latest/starships_mar2025.html>`_)
 
 
 Acknowledgements
@@ -107,3 +109,6 @@ Acknowledgements
 
 Funded by the European Union - Next Generation EU, Mission 4 Component 1
 CUP E13C22002930006 and the ERC under projects DYNAPOL.
+
+This work is now developed as part of the `Tarzia Research Group at the
+University of Birmingham <https://tarziaresearchgroup.github.io>`_.

@@ -6,6 +6,8 @@ import pprint
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 from cgexplore._internal.utilities.utilities import extract_property
 
+logger = logging.getLogger(__name__)
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -43,12 +45,12 @@ def main() -> None:
                     pdict = properties[key]
                     for new_key in pdict:  # type: ignore[union-attr]
                         keys.add(f"{key}.{new_key}")
-        logging.info("showing all keys in database:")
+        logger.info("showing all keys in database:")
         pprint.pprint(keys)  # noqa: T203
 
     elif args.name == "all":
         count = 0
-        logging.info("showing all values for path: %s", args.path)
+        logger.info("showing all values for path: %s", args.path)
 
         for entry in database.get_entries():
             properties = entry.properties
@@ -58,9 +60,9 @@ def main() -> None:
             except KeyError:
                 continue
 
-            logging.info("energy of %s is %s", name, value)
+            logger.info("energy of %s is %s", name, value)
             count += 1
-        logging.info("showed %s values", count)
+        logger.info("showed %s values", count)
     else:
         entry = database.get_entry(key=args.name)
         try:
@@ -74,7 +76,7 @@ def main() -> None:
                 f"path {args.path} not in database for entry {args.name}"
             )
             raise
-        logging.info("%s of %s is %s", args.path, args.name, value)
+        logger.info("%s of %s is %s", args.path, args.name, value)
 
 
 if __name__ == "__main__":

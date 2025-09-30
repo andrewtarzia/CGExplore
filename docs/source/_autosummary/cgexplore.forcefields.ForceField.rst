@@ -20,6 +20,7 @@ cgexplore.forcefields.ForceField
       ~ForceField.assign_terms
       ~ForceField.get_all_possible_terms
       ~ForceField.get_bead_library
+      ~ForceField.get_forcefield_dictionary
       ~ForceField.get_hr_file_name
       ~ForceField.get_identifier
       ~ForceField.get_prefix

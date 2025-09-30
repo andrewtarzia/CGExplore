@@ -37,6 +37,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def generate_images_of_all(
@@ -115,10 +116,10 @@ def visualise_low_and_high(
         low_e = tdata[tdata["energy_per_bb"] == min_e].iloc[0]
         high_e = tdata[tdata["energy_per_bb"] == max_e].iloc[0]
 
-        logging.info(
+        logger.info(
             "low E: %s; E=%s", low_e.cage_name, round(low_e.energy_per_bb, 2)
         )
-        logging.info(
+        logger.info(
             "high E: %s; E=%s",
             high_e.cage_name,
             round(high_e.energy_per_bb, 2),
@@ -721,7 +722,7 @@ def si_shape_fig(
 
             c_column = f"{shape_type}_{shape}"
             svalue = tdata.iloc[0][c_column]
-            logging.info("%s: %s: %s, %s", sindex, shape_type, shape, svalue)
+            logger.info("%s: %s: %s, %s", sindex, shape_type, shape, svalue)
 
         add_structure_to_ax(
             ax=ax,
@@ -826,7 +827,7 @@ def webapp_csv(
     struct_figure_output: pathlib.Path,
 ) -> None:
     """Make CSV of cages."""
-    logging.info("running webapp_csv")
+    logger.info("running webapp_csv")
 
     github_base_url = (
         "https://github.com/andrewtarzia/cgmodels/blob/main/cg_model_jul2023/"
@@ -849,7 +850,7 @@ def webapp_csv(
     total = len(bbpairs)
 
     for bbpair in bbpairs:
-        logging.info("viz self sort of %s (%s of %s)", bbpair, count, total)
+        logger.info("viz self sort of %s (%s of %s)", bbpair, count, total)
         bbdata = all_data[all_data["bbpair"] == bbpair]
 
         bbdict = {}
@@ -1010,7 +1011,7 @@ def check_odd_outcomes(
                 clangle = int(next(iter(cdata["clangle"])))
                 tonlbl = f"{convert_topo(tstr)}:{ba}:{clangle}:rest."
                 tofflbl = f"{convert_topo(tstr)}:{ba}:{clangle}:not rest."
-                logging.info(
+                logger.info(
                     "for %s: ton: %s, toff: %s",
                     cage_name,
                     ton_energy,
@@ -1019,7 +1020,7 @@ def check_odd_outcomes(
                 outcomes.append((cage_name, "ton", tonlbl))
                 outcomes.append((pair_name, "toff", tofflbl))
 
-        logging.info("%s: %s odd outcomes", tstr, len(outcomes))
+        logger.info("%s: %s odd outcomes", tstr, len(outcomes))
         if len(outcomes) == 0:
             continue
         si_ar_fig(
@@ -1038,7 +1039,7 @@ def check_odd_outcomes(
 
 def generate_movies(figure_output: pathlib.Path) -> None:
     """Generate a series of movies."""
-    logging.info("running generate_movies")
+    logger.info("running generate_movies")
     vss_output = figure_output / "vss_figures"
     astr = [f"a0{i}00" for i in range(19)]
 
@@ -1127,7 +1128,7 @@ def naming_convention_map(old_name: str, tors: str = "toff") -> str:
             ffid += 1
 
     new_name = f"{tstr}_{bb1name}_{bb2name}_f{ffid}"
-    logging.info("analysing  %s as %s", old_name, new_name)
+    logger.info("analysing  %s as %s", old_name, new_name)
     return new_name
 
 

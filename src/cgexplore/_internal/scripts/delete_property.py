@@ -4,6 +4,8 @@ import pathlib
 
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 
+logger = logging.getLogger(__name__)
+
 
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
@@ -37,16 +39,16 @@ def main() -> None:
 
     if args.name == "all":
         count = 0
-        logging.info("deleting all values for path: %s", args.path)
+        logger.info("deleting all values for path: %s", args.path)
 
         for entry in database.get_entries():
             name = entry.key
             database.remove_property(key=name, property_path=args.path)
             count += 1
-        logging.info("removed %s properties", count)
+        logger.info("removed %s properties", count)
     else:
         database.remove_property(key=args.name, property_path=args.path)
-        logging.info("removed %s of %s", args.path, args.name)
+        logger.info("removed %s of %s", args.path, args.name)
 
 
 if __name__ == "__main__":

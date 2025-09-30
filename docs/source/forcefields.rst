@@ -4,7 +4,7 @@ Forcefields
 A package of defining the forcefields used in `CGExplore`.
 All of these forcefields interface with `OpenMM`.
 There is a lot of flexibility in how this code is used, however, `OpenMM`
-requires a :class:`cgexplore.forcefields.ForcedSystem`.
+requires a :class:`cgexplore.forcefields.AssignedSystem`.
 
 .. note::
 
@@ -54,7 +54,6 @@ Here, the user creates the object that interfaces between a forcefield and an
 .. toctree::
   :maxdepth: 1
 
-  ForcedSystem <_autosummary/cgexplore.forcefields.ForcedSystem>
   AssignedSystem <_autosummary/cgexplore.forcefields.AssignedSystem>
   MartiniSystem <_autosummary/cgexplore.forcefields.MartiniSystem>
 
@@ -71,4 +70,3 @@ Utilities
 
 .. toctree::
   :maxdepth: 1
-

@@ -23,6 +23,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 RDLogger.DisableLog("rdApp.*")
+logger = logging.getLogger(__name__)
 
 
 def main() -> None:
@@ -40,13 +41,13 @@ def main() -> None:
         tetragonal_bead(),
     )
 
-    logging.info("defining force field")
+    logger.info("defining force field")
     forcefieldlibrary = define_forcefield_library(
         present_beads=present_beads,
         prefix="2p4",
     )
 
-    logging.info("defining building blocks")
+    logger.info("defining building blocks")
     ditopic = TwoC1Arm(bead=core_bead(), abead1=arm_bead())
     tetratopic = FourC1Arm(bead=tetragonal_bead(), abead1=binder_bead())
 

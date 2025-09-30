@@ -33,13 +33,14 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def nobiteangle_relationship(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running clangle_relationship")
+    logger.info("running clangle_relationship")
     trim = all_data[all_data["vdws"] == "von"]
 
     for tstr in topology_labels(short="P"):
@@ -122,7 +123,7 @@ def bite_angle_relationship(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running bite_angle_relationship")
+    logger.info("running bite_angle_relationship")
 
     trim = all_data[all_data["vdws"] == "von"]
 
@@ -223,7 +224,7 @@ def selectivity_map(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running selectivity_map")
+    logger.info("running selectivity_map")
 
     bite_angles = sorted(
         [
@@ -327,7 +328,7 @@ def selectivity_map(
 
 def selfsort_legend(figure_output: pathlib.Path) -> None:
     """Make a plot."""
-    logging.info("running selfsort_legend")
+    logger.info("running selfsort_legend")
 
     for cltitle in ("3C1", "4C1"):
         fig, ax = plt.subplots(figsize=(8, 5))
@@ -361,7 +362,7 @@ def selfsort_legend(figure_output: pathlib.Path) -> None:
 
 def selfsort_map(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
     """Make a plot."""
-    logging.info("running selfsort_map")
+    logger.info("running selfsort_map")
 
     cols_to_map = ["clangle", "c2angle"]
     cols_to_iter = ["torsions", "vdws", "cltitle"]
@@ -440,7 +441,7 @@ def kinetic_selfsort_map(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running kinetic_selfsort_map")
+    logger.info("running kinetic_selfsort_map")
 
     cols_to_map = ["clangle", "c2angle"]
     cols_to_iter = ["torsions", "vdws", "cltitle"]
@@ -530,7 +531,7 @@ def kinetic_selfsort_map(
 
 def angle_map(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
     """Make a plot."""
-    logging.info("running angle_map")
+    logger.info("running angle_map")
 
     color_map = topology_labels(short="P")
 
@@ -610,7 +611,7 @@ def angle_map(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
 
 def angle_map_4p6(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
     """Make a plot."""
-    logging.info("running angle_map")
+    logger.info("running angle_map")
 
     color_map = topology_labels(short="P")
 
@@ -672,7 +673,7 @@ def pd_4p82_figure(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running angle_map")
+    logger.info("running angle_map")
 
     tstr = "4P82"
 
@@ -743,7 +744,7 @@ def pdII_figure_bite_angle(  # noqa: N802
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running pdII_figure_bite_angle")
+    logger.info("running pdII_figure_bite_angle")
 
     color_map = ("2P4", "3P6", "4P8", "6P12", "12P24")
 
@@ -813,7 +814,7 @@ def pd_3p64p8_figure_bite_angle(
     all_data: pd.DataFrame, figure_output: pathlib.Path
 ) -> None:
     """Make a plot."""
-    logging.info("running pd_3p64p8_figure_bite_angle")
+    logger.info("running pd_3p64p8_figure_bite_angle")
 
     color_map = {"3P6": "tab:orange", "4P8": "tab:green"}
 

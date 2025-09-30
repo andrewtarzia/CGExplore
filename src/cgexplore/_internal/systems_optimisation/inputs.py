@@ -35,6 +35,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -357,7 +358,7 @@ class ChromosomeGenerator:
         for chromosome in self.yield_chromosomes():
             all_chromosomes[chromosome.name] = chromosome
         self.chromosomes = all_chromosomes
-        logging.info("there are %s chromosomes", len(self.chromosomes))
+        logger.info("there are %s chromosomes", len(self.chromosomes))
 
     def get_term_ids(self) -> tuple[int, ...]:
         """Get chromosome indices associated with terms."""

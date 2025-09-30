@@ -19,7 +19,6 @@ cgexplore.forcefields
       AssignedSystem
       ForceField
       ForceFieldLibrary
-      ForcedSystem
       MartiniForceField
       MartiniForceFieldLibrary
       MartiniSystem

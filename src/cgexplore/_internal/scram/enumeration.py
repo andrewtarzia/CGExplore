@@ -18,6 +18,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -254,7 +255,7 @@ class TopologyIterator:
 
             run_topology_codes.append(topology_code)
             to_save.append(combination)
-            logging.info("found one at %s", _)
+            logger.info("found one at %s", _)
 
         with self.graphs_path.open("w") as f:
             json.dump(to_save, f)
@@ -341,7 +342,7 @@ class TopologyIterator:
 
             run_topology_codes.append(topology_code)
             to_save.append(combination)
-            logging.info("found one at %s", _)
+            logger.info("found one at %s", _)
 
         with self.graphs_path.open("w") as f:
             json.dump(to_save, f)

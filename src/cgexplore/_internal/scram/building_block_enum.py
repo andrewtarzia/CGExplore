@@ -15,6 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
+logger = logging.getLogger(__name__)
 
 
 def length_2_heteroleptic_bb_dicts(
@@ -159,7 +160,7 @@ def get_potential_bb_dicts(
         "bring rmsd checker in here: use symmetry corrected RMSD on "
         "single-bead repr of tstr"
     )
-    logging.info(msg)
+    logger.info(msg)
 
     return possible_dicts
 
@@ -321,6 +322,6 @@ def get_custom_bb_configurations(  # noqa: C901
         "bring rmsd checker in here: use symmetry corrected RMSD on "
         "single-bead repr of tstr"
     )
-    logging.info(msg)
+    logger.info(msg)
 
     return tuple(possible_dicts)
