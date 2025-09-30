@@ -47,63 +47,51 @@ jobs:
 
     pytest:
         runs-on: ubuntu-latest
-
-        defaults:
-            run:
-                shell: bash -l {0}
-
         steps:
             - uses: actions/checkout@v4
-            - uses: conda-incubator/setup-miniconda@v3
-
+            - uses: astral-sh/setup-uv@v3
               with:
-                  miniforge-version: latest
-                  python-version: 3.11
-                  activate-environment: pytest
+                  enable-cache: true
+            - uses: actions/setup-python@v5
+              with:
+                  python-version-file: "pyproject.toml"
+            - run: uv sync --all-extras --dev
+            - run: uv run pytest
 
-            - name: Build environment
-              run: |
-                  conda activate pytest
-                  conda install -c conda-forge openmm openmmtools
-                  python -m pip install --upgrade pip
-                  python -m pip install --upgrade setuptools
-                  python -m pip install -e '.[dev]'
-
-            - name: pytest
-              run: pytest
+    doctest:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: astral-sh/setup-uv@v3
+              with:
+                  enable-cache: true
+            - uses: actions/setup-python@v5
+              with:
+                  python-version-file: "pyproject.toml"
+            - run: uv sync --all-extras --dev
+            - run: uv run make -C docs doctest
 
     build-test:
         runs-on: ubuntu-latest
 
-        defaults:
-            run:
-                shell: bash -l {0}
-
         steps:
             - uses: actions/checkout@v4
-            - uses: conda-incubator/setup-miniconda@v3
-
+            - uses: astral-sh/setup-uv@v3
               with:
-                  miniforge-version: latest
-                  python-version: 3.11
-                  activate-environment: buildtest
-
-            - name: Build environment
-              run: |
-                  conda activate buildtest
-                  conda install -c conda-forge openmm openmmtools
-                  python -m pip install --upgrade pip
-                  python -m pip install --upgrade setuptools
-                  python -m pip install -e '.[dev]'
+                  enable-cache: true
+            - uses: actions/setup-python@v5
+              with:
+                  python-version-file: "pyproject.toml"
+            - run: uv sync --all-extras --dev
 
             - name: Clone repo
               run: git clone https://github.com/andrewtarzia/cg_model_test --depth 1
 
             - name: Run script
-              run: python cg_model_test/cg_model_test.py cg_model_test
+              run: uv run python cg_model_test/cg_model_test.py cg_model_test
 
             - name: Run parameteriser script
-              run: python cg_model_test/openmm_parametizer.py cg_model_test
+              run: uv run python cg_model_test/openmm_parametizer.py cg_model_test
 
             - uses: actions/upload-artifact@v4
               with:
