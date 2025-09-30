@@ -76,11 +76,12 @@ Developer Setup
 ---------------
 
 To develop with :mod:`cgexplore`, you can clone the repo and use
-`just <https://github.com/casey/just>`_ to setup the dev environment:
+`just <https://github.com/casey/just>`_ and `uv <https://docs.astral.sh>`_
+to setup the dev environment:
 
 .. code-block:: bash
 
-  just dev
+  just setup
 
 
 Examples
