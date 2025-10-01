@@ -5,6 +5,7 @@
 import json
 import logging
 import pathlib
+from collections import abc
 
 import numpy as np
 import openmm
@@ -314,7 +315,7 @@ def min_b2b_distance() -> float:
     return 0.5
 
 
-def topology_labels(short: str) -> tuple[str, ...]:
+def topology_labels(short: str) -> abc.Sequence[str]:
     """Get topology labels."""
     if short == "+":
         return (
@@ -464,7 +465,7 @@ def cltypetopo_to_colormap() -> dict[str, dict]:
     }
 
 
-def target_shapes() -> tuple[str, ...]:
+def target_shapes() -> abc.Sequence[str]:
     """Tagrte shapes."""
     return (
         "CU-8",
@@ -482,7 +483,7 @@ def target_shapes() -> tuple[str, ...]:
     )
 
 
-def map_cltype_to_topology() -> dict[str, tuple[str, ...]]:
+def map_cltype_to_topology() -> dict[str, abc.Sequence[str]]:
     """Get topologies by Xc type."""
     return {
         "3C1": ("2P3", "4P6", "4P62", "6P9", "8P12"),
@@ -492,7 +493,7 @@ def map_cltype_to_topology() -> dict[str, tuple[str, ...]]:
 
 def mapshape_to_topology(
     mode: str, from_shape: bool = False
-) -> dict[str, str | tuple[str, ...]]:
+) -> dict[str, str | abc.Sequence[str]]:
     """Mape shape to and from topology."""
     if from_shape:
         if mode == "n":
