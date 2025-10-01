@@ -30,8 +30,8 @@ class Angle:
     atom_ids: abc.Sequence[int]
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
-    atoms: tuple[stk.Atom, ...] | None
-    force: str | None
+    atoms: abc.Sequence[stk.Atom] | None
+    force: str
     funct: int = 0
 
 
@@ -44,8 +44,8 @@ class CosineAngle:
     n: int
     b: int
     angle_k: openmm.unit.Quantity
-    atoms: tuple[stk.Atom, ...] | None
-    force: str | None
+    atoms: abc.Sequence[stk.Atom] | None
+    force: str
 
 
 @dataclass(frozen=True, slots=True)

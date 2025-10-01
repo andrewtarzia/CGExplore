@@ -56,8 +56,8 @@ class Bond:
     atom_ids: abc.Sequence[int]
     bond_r: openmm.unit.Quantity
     bond_k: openmm.unit.Quantity
-    atoms: tuple[stk.Atom, ...] | None
-    force: str | None
+    atoms: abc.Sequence[stk.Atom] | None
+    force: str
     funct: int = 0
 
 
