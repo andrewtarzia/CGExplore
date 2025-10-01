@@ -146,7 +146,7 @@ class ForceField:
         self._hrprefix = "ffhr"
         self._verbose = verbose
 
-    def _assign_bond_terms(self, molecule: stk.Molecule) -> tuple:
+    def _assign_bond_terms(self, molecule: stk.Molecule) -> abc.Sequence[Bond]:
         found = set()
         assigned = set()
 
@@ -207,7 +207,7 @@ class ForceField:
     def _assign_angle_terms(  # noqa: C901, PLR0912, PLR0915
         self,
         molecule: stk.Molecule,
-    ) -> tuple[Angle | CosineAngle, ...]:
+    ) -> abc.Sequence[Angle | CosineAngle]:
         angle_terms: list[Angle | CosineAngle] = []
         pos_mat = molecule.get_position_matrix()
 
@@ -454,7 +454,7 @@ class ForceField:
     def _assign_torsion_terms(
         self,
         molecule: stk.Molecule,
-    ) -> tuple:
+    ) -> abc.Sequence[Torsion]:
         torsion_terms = []
         assigned = set()
 
@@ -532,7 +532,7 @@ class ForceField:
     def _assign_nonbonded_terms(
         self,
         molecule: stk.Molecule,
-    ) -> tuple:
+    ) -> abc.Sequence[Nonbonded]:
         nonbonded_terms = []
         found = set()
         assigned = set()
@@ -803,11 +803,11 @@ class MartiniForceField(ForceField):
         self,
         identifier: str,
         prefix: str,
-        present_beads: tuple[CgBead, ...],
-        bond_targets: tuple[TargetBond | TargetMartiniBond, ...],
-        angle_targets: tuple[TargetAngle | TargetMartiniAngle, ...],
-        torsion_targets: tuple[TargetTorsion | TargetMartiniTorsion, ...],
-        constraints: tuple[tuple],
+        present_beads: abc.Sequence[CgBead],
+        bond_targets: abc.Sequence[TargetBond | TargetMartiniBond],
+        angle_targets: abc.Sequence[TargetAngle | TargetMartiniAngle],
+        torsion_targets: abc.Sequence[TargetTorsion | TargetMartiniTorsion],
+        constraints: abc.Sequence[tuple[int, int]],
         vdw_bond_cutoff: int,
     ) -> None:
         """Initialize MartiniForceField."""
@@ -858,7 +858,7 @@ class ForceFieldLibrary:
 
     def __init__(
         self,
-        present_beads: tuple[CgBead],
+        present_beads: abc.Sequence[CgBead],
         vdw_bond_cutoff: int,
         prefix: str,
     ) -> None:
@@ -979,7 +979,7 @@ class MartiniForceFieldLibrary(ForceFieldLibrary):
 
     def __init__(
         self,
-        present_beads: tuple[CgBead],
+        present_beads: abc.Sequence[CgBead],
         vdw_bond_cutoff: int,
         prefix: str,
     ) -> None:

@@ -42,8 +42,8 @@ logger = logging.getLogger(__name__)
 class Chromosome:
     """Define the genes and properties of a chromosome."""
 
-    name: tuple[int, ...]
-    present_beads: tuple[CgBead, ...]
+    name: abc.Sequence[int]
+    present_beads: abc.Sequence[CgBead]
     vdw_bond_cutoff: int
     prefix: str
     gene_dict: dict[int, tuple]
@@ -225,7 +225,7 @@ class Chromosome:
 class ChromosomeGenerator:
     """Hold all information for chromosome iteration."""
 
-    present_beads: tuple[CgBead, ...]
+    present_beads: abc.Sequence[CgBead]
     vdw_bond_cutoff: int
     prefix: str
     chromosome_map: dict[int, dict] = field(default_factory=dict)
@@ -360,7 +360,7 @@ class ChromosomeGenerator:
         self.chromosomes = all_chromosomes
         logger.info("there are %s chromosomes", len(self.chromosomes))
 
-    def get_term_ids(self) -> tuple[int, ...]:
+    def get_term_ids(self) -> abc.Sequence[int]:
         """Get chromosome indices associated with terms."""
         return tuple(
             i
@@ -368,7 +368,7 @@ class ChromosomeGenerator:
             if self.chromosome_types[i] == "term"
         )
 
-    def get_topo_ids(self) -> tuple[int, ...]:
+    def get_topo_ids(self) -> abc.Sequence[int]:
         """Get chromosome indices associated with topology."""
         return tuple(
             i
@@ -376,7 +376,7 @@ class ChromosomeGenerator:
             if self.chromosome_types[i] == "topology"
         )
 
-    def get_va_ids(self) -> tuple[int, ...]:
+    def get_va_ids(self) -> abc.Sequence[int]:
         """Get chromosome indices associated with vertex alignments."""
         return tuple(
             i
@@ -384,7 +384,7 @@ class ChromosomeGenerator:
             if self.chromosome_types[i] == "vertex_alignment"
         )
 
-    def get_prec_ids(self) -> tuple[int, ...]:
+    def get_prec_ids(self) -> abc.Sequence[int]:
         """Get chromosome indices associated with precursors."""
         return tuple(
             i
@@ -392,7 +392,7 @@ class ChromosomeGenerator:
             if self.chromosome_types[i] == "precursor"
         )
 
-    def select_chromosome(self, chromosome: tuple[int, ...]) -> Chromosome:
+    def select_chromosome(self, chromosome: abc.Sequence[int]) -> Chromosome:
         """Get chromosome."""
         known_types = set(self.chromosome_types.values())
         gene_dict = {}
@@ -500,14 +500,14 @@ class ChromosomeGenerator:
 
     def mutate_population(  # noqa: PLR0913
         self,
-        list_of_chromosomes: list[Chromosome],
+        chromosomes: dict[str, Chromosome],
         generator: np.random.Generator,
-        gene_range: tuple[int, ...],
+        gene_range: abc.Sequence[int],
         selection: str,
         num_to_select: int,
         database: AtomliteDatabase,
     ) -> list[Chromosome]:
-        """Mutate a list of chromosomes in the gene range only.
+        """Mutate chromosomes in the gene range only.
 
         Available selections for which chromosomes to mutate:
 
@@ -709,7 +709,7 @@ class ChromosomeGenerator:
     def get_population_neighbours(
         self,
         chromosomes: dict[str, Chromosome],
-        gene_range: tuple[int, ...],
+        gene_range: abc.Sequence[int],
         selection: str,
     ) -> list[Chromosome]:
         """Get all nearest neighbours of provided chromosomes.

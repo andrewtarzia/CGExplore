@@ -131,8 +131,8 @@ class TargetNonbondedRange:
 
     bead_class: str
     bead_element: str
-    sigmas: tuple[openmm.unit.Quantity]
-    epsilons: tuple[openmm.unit.Quantity]
+    sigmas: abc.Sequence[openmm.unit.Quantity]
+    epsilons: abc.Sequence[openmm.unit.Quantity]
     force: str
 
     def yield_nonbondeds(self) -> abc.Iterable[TargetNonbonded]:

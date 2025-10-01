@@ -13,7 +13,7 @@ class CustomTopology:
         self,
         building_blocks: (
             abc.Iterable[stk.BuildingBlock]
-            | dict[stk.BuildingBlock, tuple[int, ...]]
+            | dict[stk.BuildingBlock, abc.Sequence[int]]
         ),
         vertex_prototypes: abc.Sequence[stk.Vertex],
         edge_prototypes: abc.Sequence[stk.Edge],

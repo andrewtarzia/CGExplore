@@ -195,7 +195,7 @@ def target_optimisation(  # noqa: C901, PLR0913, PLR0915
     """
     target_entry = AtomliteDatabase(database_path).get_entry(target_key)
 
-    num_building_blocks = target_entry.properties["num_bbs"]
+    num_building_blocks = int(target_entry.properties["num_bbs"])  # type: ignore[arg-type]
     input_cage = stk.BuildingBlock.init_from_rdkit_mol(
         atomlite.json_to_rdkit(target_entry.molecule)
     )
@@ -339,7 +339,7 @@ def target_optimisation(  # noqa: C901, PLR0913, PLR0915
             "optimisation_success": result.success,
             "optimisation_energy_per_bb": float(result.fun),
             "optimisation_x": [float(i) for i in result.x],
-            "optimisation_map": ff_map,
+            "optimisation_map": ff_map,  # type:ignore[dict-item]
             "optimisation_rmsd": stko.KabschRmsdCalculator(
                 input_cage
             ).calculate(min_conformer.molecule),

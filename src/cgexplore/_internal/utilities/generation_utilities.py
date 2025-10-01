@@ -9,6 +9,7 @@ Author: Andrew Tarzia
 import logging
 import pathlib
 from collections import abc
+from typing import TYPE_CHECKING
 
 import numpy as np
 import stk
@@ -29,6 +30,10 @@ from cgexplore._internal.optimisation.openmm_optimizer import (
 )
 from cgexplore._internal.terms.angles import Angle, CosineAngle
 from cgexplore._internal.terms.bonds import Bond
+
+if TYPE_CHECKING:
+    from cgexplore._internal.terms.nonbonded import Nonbonded
+    from cgexplore._internal.terms.torsions import Torsion
 
 logging.basicConfig(
     level=logging.INFO,
@@ -157,14 +162,16 @@ def soften_forcefield(
             msg = f"soften not available for {i} angle type."
             raise TypeError(msg)
 
-    new_forcefield_terms = {
+    new_forcefield_terms: dict[
+        str, abc.Sequence[Bond | Angle | CosineAngle | Torsion | Nonbonded]
+    ] = {
         "bond": tuple(
             Bond(
-                atom_names=i.atom_names,
-                atom_ids=i.atom_ids,
-                bond_r=i.bond_r,
-                bond_k=i.bond_k / bond_ff_scale,
-                atoms=i.atoms,
+                atom_names=i.atom_names,  # type:ignore[union-attr]
+                atom_ids=i.atom_ids,  # type:ignore[union-attr]
+                bond_r=i.bond_r,  # type:ignore[union-attr]
+                bond_k=i.bond_k / bond_ff_scale,  # type:ignore[union-attr]
+                atoms=i.atoms,  # type:ignore[union-attr]
                 force=i.force,
             )
             for i in assigned_system.forcefield_terms["bond"]

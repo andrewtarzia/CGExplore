@@ -6,6 +6,7 @@ Author: Andrew Tarzia
 
 """
 
+from collections import abc
 from dataclasses import dataclass
 
 import numpy as np
@@ -16,10 +17,10 @@ from .beads import CgBead, string_to_atom_number
 
 @dataclass
 class LinearPrecursor:
-    composition: tuple[int, ...]
-    present_beads: tuple[CgBead, ...]
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    composition: abc.Sequence[int]
+    present_beads: abc.Sequence[CgBead]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
 
     def __post_init__(self) -> None:
         atoms = [
@@ -94,9 +95,9 @@ class LinearPrecursor:
 
 @dataclass
 class TrianglePrecursor:
-    present_beads: tuple[CgBead, ...]
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    present_beads: abc.Sequence[CgBead]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
 
     def __post_init__(self) -> None:
         _x = 2 * np.sqrt(3) / 4
@@ -150,9 +151,9 @@ class TrianglePrecursor:
 
 @dataclass
 class SquarePrecursor:
-    present_beads: tuple[CgBead, ...]
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    present_beads: abc.Sequence[CgBead]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
 
     def __post_init__(self) -> None:
         coordinates = np.array(

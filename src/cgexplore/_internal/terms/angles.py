@@ -26,8 +26,8 @@ _angle_k_unit = openmm.unit.kilojoules_per_mole / openmm.unit.radian**2
 class Angle:
     """Class containing angle defintion."""
 
-    atom_names: tuple[str, ...]
-    atom_ids: tuple[int, ...]
+    atom_names: abc.Sequence[str]
+    atom_ids: abc.Sequence[int]
     angle: openmm.unit.Quantity
     angle_k: openmm.unit.Quantity
     atoms: tuple[stk.Atom, ...] | None
@@ -39,8 +39,8 @@ class Angle:
 class CosineAngle:
     """Class containing cosine-angle defintion."""
 
-    atom_names: tuple[str, ...]
-    atom_ids: tuple[int, ...]
+    atom_names: abc.Sequence[str]
+    atom_ids: abc.Sequence[int]
     n: int
     b: int
     angle_k: openmm.unit.Quantity
@@ -94,8 +94,8 @@ class TargetAngleRange:
     element1: str
     element2: str
     element3: str
-    angles: tuple[openmm.unit.Quantity]
-    angle_ks: tuple[openmm.unit.Quantity]
+    angles: abc.Sequence[openmm.unit.Quantity]
+    angle_ks: abc.Sequence[openmm.unit.Quantity]
 
     def yield_angles(self) -> abc.Iterable[TargetAngle]:
         """Find angles matching target."""
@@ -160,9 +160,9 @@ class TargetCosineAngleRange:
     element1: str
     element2: str
     element3: str
-    ns: tuple[int]
-    bs: tuple[int]
-    angle_ks: tuple[openmm.unit.Quantity]
+    ns: abc.Sequence[int]
+    bs: abc.Sequence[int]
+    angle_ks: abc.Sequence[openmm.unit.Quantity]
 
     def yield_angles(self) -> abc.Iterable[TargetCosineAngle]:
         """Find angles matching target."""
@@ -209,8 +209,8 @@ class PyramidAngleRange:
     element1: str
     element2: str
     element3: str
-    angles: tuple[openmm.unit.Quantity]
-    angle_ks: tuple[openmm.unit.Quantity]
+    angles: abc.Sequence[openmm.unit.Quantity]
+    angle_ks: abc.Sequence[openmm.unit.Quantity]
 
     def yield_angles(self) -> abc.Iterable[TargetPyramidAngle]:
         """Find angles matching target."""
@@ -243,8 +243,8 @@ class PyramidAngleRange:
 class FoundAngle:
     """Define a found forcefield term."""
 
-    atoms: tuple[stk.Atom, ...]
-    atom_ids: tuple[int, ...]
+    atoms: abc.Sequence[stk.Atom]
+    atom_ids: abc.Sequence[int]
 
 
 @dataclass(frozen=True, slots=True)
@@ -285,8 +285,8 @@ class MartiniAngleRange:
     element2: str
     element3: str
     funct: int
-    angles: tuple[openmm.unit.Quantity]
-    angle_ks: tuple[openmm.unit.Quantity]
+    angles: abc.Sequence[openmm.unit.Quantity]
+    angle_ks: abc.Sequence[openmm.unit.Quantity]
 
     def yield_angles(self) -> abc.Iterable[TargetMartiniAngle]:
         """Find angles matching target."""
