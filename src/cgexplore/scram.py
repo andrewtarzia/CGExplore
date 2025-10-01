@@ -12,7 +12,11 @@ from cgexplore._internal.scram.construction import (
     try_except_construction,
 )
 from cgexplore._internal.scram.enumeration import TopologyIterator
-from cgexplore._internal.scram.optimisation import target_optimisation
+from cgexplore._internal.scram.optimisation import (
+    get_regraphed_molecule,
+    get_vertexset_molecule,
+    target_optimisation,
+)
 from cgexplore._internal.scram.topology_code import Constructed, TopologyCode
 from cgexplore._internal.scram.utilities import points_on_sphere, vmap_to_str
 
@@ -23,6 +27,8 @@ __all__ = [
     "TopologyIterator",
     "get_custom_bb_configurations",
     "get_potential_bb_dicts",
+    "get_regraphed_molecule",
+    "get_vertexset_molecule",
     "graph_optimise_cage",
     "optimise_cage",
     "optimise_from_files",
