@@ -528,3 +528,36 @@ def yield_shifted_models(
         atom_number = string_to_atom_number(bead.element_string)
         for kick in kicks:
             yield shift_beads(molecule, atom_number, kick)
+
+
+def rattle(
+    molecule: stk.Molecule,
+    stdev: float = 0.001,
+    seed: int | None = None,
+) -> stk.Molecule:
+    """Randomly displace atoms.
+
+    This code is mimicking what is done in ase.Atoms.rattle().
+    Thank you to them!
+
+    Parameters:
+        molecule:
+            The molecule to manipulate.
+
+        stdev:
+            The standard deviation of the displacement.
+
+        seed:
+            The seed for the random number generator.
+
+    Returns:
+        An stk molecule.
+
+    """
+    if seed is None:
+        seed = 42
+    rng = np.random.RandomState(seed)
+    positions = molecule.get_position_matrix()
+    return molecule.with_position_matrix(
+        positions + rng.normal(scale=stdev, size=positions.shape)
+    )
