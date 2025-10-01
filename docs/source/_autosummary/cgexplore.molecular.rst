@@ -26,6 +26,7 @@ cgexplore.molecular
       LinearPrecursor
       Precursor
       PrecursorGenerator
+      Single
       SixBead
       SpindryConformer
       SquarePrecursor

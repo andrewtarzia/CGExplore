@@ -12,7 +12,7 @@ from dataclasses import dataclass
 import numpy as np
 import stk
 
-from .beads import CgBead, string_to_atom_number
+from .beads import CgBead, periodic_table, string_to_atom_number
 
 
 @dataclass
@@ -226,6 +226,30 @@ class Precursor:
     def get_name(self) -> str:
         """Get name of precursor."""
         return self._name
+
+
+class Single(Precursor):
+    """A single bead Precursor."""
+
+    def __init__(self, bead: CgBead) -> None:
+        """Initialize a precursor."""
+        self._bead = bead
+        self._name = f"S1{bead.bead_type}"
+        self._bead_set = {bead.bead_type: bead}
+
+        self._building_block = stk.BuildingBlock(
+            smiles=f"[{bead.element_string}]",
+            functional_groups=(
+                stk.SingleAtom(
+                    stk.Atom(
+                        0,
+                        charge=0,
+                        atomic_number=periodic_table()[bead.element_string],
+                    )
+                ),
+            ),
+            position_matrix=np.array((0, 0, 0)),
+        )
 
 
 class FourC0Arm(Precursor):

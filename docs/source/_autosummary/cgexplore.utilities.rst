@@ -1,4 +1,4 @@
-﻿cgexplore.utilities
+cgexplore.utilities
 ===================
 
 .. automodule:: cgexplore.utilities
