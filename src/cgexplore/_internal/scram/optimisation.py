@@ -6,6 +6,7 @@ from collections import abc
 from copy import deepcopy
 
 import atomlite
+import networkx as nx
 import numpy as np
 import stk
 import stko
@@ -20,11 +21,134 @@ from cgexplore._internal.utilities.databases import AtomliteDatabase
 from cgexplore._internal.utilities.generation_utilities import run_optimisation
 from cgexplore._internal.utilities.utilities import get_energy_per_bb
 
+from .building_block_enum import BuildingBlockConfiguration
+from .construction import try_except_construction
+from .enumeration import TopologyIterator
+from .topology_code import TopologyCode
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+def get_regraphed_molecule(
+    graph_type: str,
+    scale: float,
+    topology_code: TopologyCode,
+    iterator: TopologyIterator,
+    bb_config: BuildingBlockConfiguration | None,
+) -> stk.ConstructedMolecule:
+    """Take a graph that considers all atoms, and get atom positions.
+
+    The initial graph is generated with `stko.Network.init_from_molecule`.
+
+    Parameters:
+        graph_type:
+            Which networkx layout to use (of `spring_layout`,
+            `karama_kawai_layout`).
+
+        scale:
+            Scale factor to apply to eventual constructed molecule.
+
+        topology_code:
+            The code defining the topology graph.
+
+        iterator:
+            The `scram` algorithm used to generate the graph and configuration.
+
+        bb_config:
+            The configuration of building blocks on the graph.
+
+    Returns:
+        A constructed molecule at (0, 0, 0).
+
+    """
+    logger.warning(
+        "Caution with this because it currently can change the cis/trans in "
+        "m2l4"
+    )
+
+    constructed_molecule = try_except_construction(
+        iterator=iterator,
+        topology_code=topology_code,
+        building_block_configuration=bb_config,
+        vertex_positions=None,
+    )
+
+    stko_graph = stko.Network.init_from_molecule(constructed_molecule)
+    if graph_type == "spring":
+        nx_positions = nx.spring_layout(stko_graph.get_graph(), dim=3)
+    elif graph_type == "kamada":
+        nx_positions = nx.kamada_kawai_layout(stko_graph.get_graph(), dim=3)
+    else:
+        raise NotImplementedError
+    pos_mat = np.array([nx_positions[i] for i in nx_positions])
+    return constructed_molecule.with_position_matrix(
+        pos_mat * float(scale)
+    ).with_centroid(np.array((0.0, 0.0, 0.0)))
+
+
+def get_vertexset_molecule(
+    graph_type: str | None,
+    scale: float,
+    topology_code: TopologyCode,
+    iterator: TopologyIterator,
+    bb_config: BuildingBlockConfiguration,
+) -> stk.ConstructedMolecule:
+    """Take a graph and genereate from graph vertex positions.
+
+    Parameters:
+        graph_type:
+            Which networkx layout to use (of `spring_layout`,
+            `kamada_kawai_layout`, `spectral_layout`).
+
+        scale:
+            Scale factor to apply to eventual constructed molecule.
+
+        topology_code:
+            The code defining the topology graph.
+
+        iterator:
+            The `scram` algorithm used to generate the graph and configuration.
+
+        bb_config:
+            The configuration of building blocks on the graph.
+
+    Returns:
+        A constructed molecule at (0, 0, 0).
+
+    """
+    if graph_type is None:
+        return try_except_construction(
+            iterator=iterator,
+            topology_code=topology_code,
+            building_block_configuration=bb_config,
+            vertex_positions=None,
+        )
+
+    nx_graph = topology_code.get_nx_graph()
+
+    if graph_type == "kamada":
+        nxpos = nx.kamada_kawai_layout(nx_graph, dim=3)
+    elif graph_type == "spring":
+        nxpos = nx.spring_layout(nx_graph, dim=3)
+    elif graph_type == "spectral":
+        nxpos = nx.spectral_layout(nx_graph, dim=3)
+    else:
+        raise NotImplementedError
+
+    vertex_positions = {
+        nidx: np.array(nxpos[nidx]) * float(scale)
+        for nidx in topology_code.get_nx_graph().nodes
+    }
+    return try_except_construction(
+        iterator=iterator,
+        topology_code=topology_code,
+        building_block_configuration=bb_config,
+        vertex_positions=vertex_positions,
+    )
 
 
 def target_optimisation(  # noqa: C901, PLR0913, PLR0915
