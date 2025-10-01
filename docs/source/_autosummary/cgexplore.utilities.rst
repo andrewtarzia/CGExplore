@@ -1,4 +1,4 @@
-cgexplore.utilities
+﻿cgexplore.utilities
 ===================
 
 .. automodule:: cgexplore.utilities
@@ -40,6 +40,7 @@ cgexplore.utilities
       get_supramolecule
       get_unforced_supramolecule
       optimise_ligand
+      rmsd_checker
       run_constrained_optimisation
       run_optimisation
       run_soft_md_cycle
