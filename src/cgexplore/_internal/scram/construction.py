@@ -544,12 +544,14 @@ def optimise_from_files(  # noqa: PLR0913
     return min_energy_conformer
 
 
-def try_except_construction(
+def try_except_construction(  # noqa: PLR0913
     iterator: TopologyIterator,
     topology_code: TopologyCode,
     scale_multiplier: float | None = None,
     building_block_configuration: BuildingBlockConfiguration | None = None,
     vertex_positions: dict[int, np.ndarray] | None = None,
+    reaction_factory: stk.ReactionFactory = stk.GenericReactionFactory(),  # noqa: B008
+    optimizer: stk.Optimizer = stk.NullOptimizer(),  # noqa: B008
 ) -> stk.ConstructedMolecule:
     """Try construction with alignment, then without."""
     if building_block_configuration is None:
@@ -574,10 +576,12 @@ def try_except_construction(
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None
                 else scale_multiplier,
+                reaction_factory=reaction_factory,
+                optimizer=optimizer,
             )
         )
 
-    except ValueError:
+    except (ValueError, IndexError):
         # Try with unaligning.
         constructed_molecule = stk.ConstructedMolecule(
             CustomTopology(  # type: ignore[arg-type]
@@ -594,6 +598,8 @@ def try_except_construction(
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None
                 else scale_multiplier,
+                reaction_factory=reaction_factory,
+                optimizer=optimizer,
             )
         )
     return constructed_molecule
