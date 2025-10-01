@@ -117,6 +117,19 @@ class TopologyCode:
 
         return num_parallel_edges != 0 or counter[4] != 0
 
+    def contains_parallels(self) -> bool:
+        """True if the graph contains "1-loops"."""
+        weighted_graph = self.get_weighted_graph()
+        num_parallel_edges = len(
+            [
+                i
+                for i in weighted_graph.edges()
+                if i == 2  # noqa: PLR2004
+            ]
+        )
+
+        return num_parallel_edges != 0
+
 
 @dataclass
 class Constructed:
