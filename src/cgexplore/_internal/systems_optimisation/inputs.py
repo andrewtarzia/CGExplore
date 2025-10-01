@@ -518,20 +518,42 @@ class ChromosomeGenerator:
                 adds weight to generator.choice() based on
                 fitness/sum(fitness)
 
+        Parameters:
+            chromosomes:
+                Dictionary of chromosomes with keys corresponding to their keys
+                in the provided database.
+
+            generator:
+                Random number generator.
+
+            gene_range:
+                Range of genes, by their indices in the chromosome, to mutate.
+
+            selection:
+                How to select chromosomes to mutate (random or roulette).
+
+            num_to_select:
+                    Number of chromosomes to mutate.
+
+            database:
+                atomlite database containing the chromosome data.
+
+        Returns:
+            List of chromosomes to add to population.
+
         """
         # Select chromosomes to mutate.
         if selection == "random":
             selected = generator.choice(
-                np.asarray(list_of_chromosomes),
+                np.asarray(list(chromosomes.values())),
                 size=num_to_select,
             )
         elif selection == "roulette":
             fitness_values: list[float | int] = [
-                database.get_property_entry(
-                    f"{i.prefix}_{i.get_string()}"
-                ).properties["fitness"]  # type: ignore[misc]
-                for i in list_of_chromosomes
+                database.get_property_entry(key).properties["fitness"]  # type: ignore[misc]
+                for key in chromosomes
             ]
+
             # Handle if all fitness values are 0.
             try:
                 weights = [i / sum(fitness_values) for i in fitness_values]
@@ -539,7 +561,7 @@ class ChromosomeGenerator:
                 weights = [1 / len(fitness_values) for i in fitness_values]
 
             selected = generator.choice(
-                np.asarray(list_of_chromosomes),
+                np.asarray(list(chromosomes.values())),
                 size=num_to_select,
                 p=weights,
             )
@@ -577,6 +599,7 @@ class ChromosomeGenerator:
                 definer_dict = gene_dict[ff_id][1]
             else:
                 definer_dict = self.definer_dict
+
             mutated.append(
                 Chromosome(
                     name=tuple(chromosome_name),
@@ -593,25 +616,56 @@ class ChromosomeGenerator:
 
     def crossover_population(
         self,
-        list_of_chromosomes: list[Chromosome],
+        chromosomes: dict[str, Chromosome],
         generator: np.random.Generator,
         selection: str,
         num_to_select: int,
         database: AtomliteDatabase,
     ) -> list[Chromosome]:
+        """Crossover chromosomes.
+
+        Available selections for which chromosomes to mutate:
+
+            random:
+                uses generator.choice()
+
+            roulette:
+                adds weight to generator.choice() based on
+                fitness/sum(fitness)
+
+        Parameters:
+            chromosomes:
+                Dictionary of chromosomes with keys corresponding to their keys
+                in the provided database.
+
+            generator:
+                Random number generator.
+
+            selection:
+                How to select chromosomes to mutate (random or roulette).
+
+            num_to_select:
+                    Number of chromosomes to mutate.
+
+            database:
+                atomlite database containing the chromosome data.
+
+        Returns:
+            List of chromosomes to add to population.
+
+        """
         # Select chromosomes to cross.
         if selection == "random":
             selected = generator.choice(
-                np.asarray(list_of_chromosomes),
+                np.asarray(list(chromosomes.values())),
                 size=(num_to_select, 2),
             )
         elif selection == "roulette":
             fitness_values: list[float | int] = [
-                database.get_property_entry(
-                    f"{i.prefix}_{i.get_string()}"
-                ).properties["fitness"]  # type: ignore[misc]
-                for i in list_of_chromosomes
+                database.get_property_entry(key).properties["fitness"]  # type: ignore[misc]
+                for key in chromosomes
             ]
+
             # Handle if all fitness values are 0.
             try:
                 weights = [i / sum(fitness_values) for i in fitness_values]
@@ -619,7 +673,7 @@ class ChromosomeGenerator:
                 weights = [1 / len(fitness_values) for i in fitness_values]
 
             selected = generator.choice(
-                np.asarray(list_of_chromosomes),
+                np.asarray(list(chromosomes.values())),
                 size=(num_to_select, 2),
                 p=weights,
             )
