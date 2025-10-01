@@ -42,7 +42,7 @@ def graph_optimise_cage(  # noqa: PLR0913
     database_path: pathlib.Path,
 ) -> Conformer:
     """Optimise a toy model cage."""
-    fina_mol_file = output_dir / f"{name}_wipfinal.mol"
+    fina_mol_file = output_dir / f"{name}_final.mol"
 
     database = AtomliteDatabase(database_path)
     # Do not rerun if database entry exists.
@@ -232,6 +232,7 @@ def optimise_cage(  # noqa: PLR0913, C901
     forcefield: ForceField,
     platform: str | None,
     database_path: pathlib.Path,
+    potential_file_suffix: str = "final",
 ) -> Conformer:
     """Optimise a toy model cage."""
     fina_mol_file = output_dir / f"{name}_final.mol"
@@ -333,7 +334,9 @@ def optimise_cage(  # noqa: PLR0913, C901
 
     # Scan potential name files.
     for potential_name in potential_names:
-        potential_file = output_dir / f"{potential_name}_final.mol"
+        potential_file = (
+            output_dir / f"{potential_name}_{potential_file_suffix}.mol"
+        )
 
         if not potential_file.exists():
             continue
@@ -443,6 +446,7 @@ def optimise_from_files(  # noqa: PLR0913
     forcefield: ForceField,
     platform: str | None,
     database_path: pathlib.Path,
+    potential_file_suffix: str = "final",
 ) -> Conformer:
     """Optimise a toy model cage."""
     fina_mol_file = output_dir / f"{name}_rescan.mol"
@@ -484,25 +488,28 @@ def optimise_from_files(  # noqa: PLR0913
 
     one_exists = False
     for potential_name in potential_names:
-        for suffix in ("final", "rescan"):
-            potential_file = output_dir / f"{potential_name}_{suffix}.mol"
-            if not potential_file.exists():
-                continue
+        potential_file = (
+            output_dir / f"{potential_name}_{potential_file_suffix}.mol"
+        )
+        if not potential_file.exists():
+            continue
 
-            test_molecule = stk.BuildingBlock.init_from_file(potential_file)
+        test_molecule = stk.BuildingBlock.init_from_file(potential_file)
 
-            conformer = run_optimisation(
-                assigned_system=forcefield.assign_terms(
-                    test_molecule, name, output_dir
-                ),
-                name=name,
-                file_suffix="ns",
-                output_dir=output_dir,
-                platform=platform,
-            )
+        conformer = run_optimisation(
+            assigned_system=forcefield.assign_terms(
+                test_molecule, name, output_dir
+            ),
+            name=name,
+            file_suffix="ns",
+            output_dir=output_dir,
+            platform=platform,
+        )
 
-            ensemble.add_conformer(conformer=conformer, source=f"ns-{suffix}")
-            one_exists = True
+        ensemble.add_conformer(
+            conformer=conformer, source=f"ns-{potential_file_suffix}"
+        )
+        one_exists = True
 
     ensemble.write_conformers_to_file()
 
