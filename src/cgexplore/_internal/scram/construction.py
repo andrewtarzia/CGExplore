@@ -344,8 +344,15 @@ def optimise_cage(  # noqa: PLR0913, C901
         test_molecule = stk.BuildingBlock.init_from_file(potential_file)
 
         conformer = run_optimisation(
-            assigned_system=forcefield.assign_terms(
-                test_molecule, name, output_dir
+            # Move to avoid reassignment - if the bonding changes, this should
+            # not work.
+            assigned_system=AssignedSystem(
+                molecule=test_molecule,
+                forcefield_terms=assigned_system.forcefield_terms,
+                system_xml=assigned_system.system_xml,
+                topology_xml=assigned_system.topology_xml,
+                bead_set=assigned_system.bead_set,
+                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
             ),
             name=name,
             file_suffix="ns",
