@@ -57,11 +57,11 @@ Installation
 
   pip install cgexplore
 
-With dependancies `openmm <https://openmm.org/>`_ and `openmmtools <https://openmmtools.readthedocs.io/en/stable/gettingstarted.html>`_:
+With dependancies `openmm <https://openmm.org/>`_:
 
 .. code-block:: bash
 
-  mamba install openmm openmmtools
+  mamba install openmm
 
 
 Then, update directory structure in `env_set.py` if using example code.
