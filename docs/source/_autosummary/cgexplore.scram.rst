@@ -38,6 +38,7 @@ cgexplore.scram
       optimise_cage
       optimise_from_files
       points_on_sphere
+      target_optimisation
       try_except_construction
       vmap_to_str
    
