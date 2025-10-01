@@ -1,4 +1,4 @@
-cgexplore.systems\_optimisation.ChromosomeGenerator
+﻿cgexplore.systems\_optimisation.ChromosomeGenerator
 ===================================================
 
 .. currentmodule:: cgexplore.systems_optimisation
@@ -23,6 +23,7 @@ cgexplore.systems\_optimisation.ChromosomeGenerator
       ~ChromosomeGenerator.dedupe_population
       ~ChromosomeGenerator.define_chromosomes
       ~ChromosomeGenerator.get_num_chromosomes
+      ~ChromosomeGenerator.get_population_neighbours
       ~ChromosomeGenerator.get_prec_ids
       ~ChromosomeGenerator.get_term_ids
       ~ChromosomeGenerator.get_topo_ids

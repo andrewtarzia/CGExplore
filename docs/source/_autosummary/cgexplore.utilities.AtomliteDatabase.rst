@@ -1,4 +1,4 @@
-cgexplore.utilities.AtomliteDatabase
+﻿cgexplore.utilities.AtomliteDatabase
 ====================================
 
 .. currentmodule:: cgexplore.utilities
@@ -23,6 +23,7 @@ cgexplore.utilities.AtomliteDatabase
       ~AtomliteDatabase.get_database
       ~AtomliteDatabase.get_entries
       ~AtomliteDatabase.get_entry
+      ~AtomliteDatabase.get_entry_list
       ~AtomliteDatabase.get_molecule
       ~AtomliteDatabase.get_num_entries
       ~AtomliteDatabase.get_num_property_entries

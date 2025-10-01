@@ -34,6 +34,8 @@ cgexplore.scram
    
       get_custom_bb_configurations
       get_potential_bb_dicts
+      get_regraphed_molecule
+      get_vertexset_molecule
       graph_optimise_cage
       optimise_cage
       optimise_from_files
