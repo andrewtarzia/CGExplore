@@ -196,7 +196,7 @@ def graph_optimise_cage(  # noqa: PLR0913
             platform=platform,
         )
 
-        ensemble.add_conformer(conformer=conformer, source="shifted")
+        ensemble.add_conformer(conformer=conformer, source="random")
 
     ensemble.write_conformers_to_file()
 
