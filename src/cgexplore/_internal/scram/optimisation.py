@@ -345,9 +345,12 @@ def target_optimisation(  # noqa: C901, PLR0913, PLR0915
             ).calculate(min_conformer.molecule),
         }
         AtomliteDatabase(ff_database_path).add_molecule(
-            molecule=min_conformer.molecule,
             key=target_key,
-            properties=properties,
+            molecule=min_conformer.molecule,
+        )
+        AtomliteDatabase(ff_database_path).add_properties(
+            key=target_key,
+            property_dict=properties,
         )
 
     # Add properties to the entry.
