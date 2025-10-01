@@ -1,4 +1,4 @@
-﻿cgexplore.utilities.AtomliteDatabase
+cgexplore.utilities.AtomliteDatabase
 ====================================
 
 .. currentmodule:: cgexplore.utilities

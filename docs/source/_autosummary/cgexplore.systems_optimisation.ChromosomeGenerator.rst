@@ -1,4 +1,4 @@
-﻿cgexplore.systems\_optimisation.ChromosomeGenerator
+cgexplore.systems\_optimisation.ChromosomeGenerator
 ===================================================
 
 .. currentmodule:: cgexplore.systems_optimisation
