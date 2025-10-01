@@ -652,6 +652,103 @@ class ChromosomeGenerator:
 
         return crossed
 
+    def get_population_neighbours(
+        self,
+        chromosomes: dict[str, Chromosome],
+        gene_range: tuple[int, ...],
+        selection: str,
+    ) -> list[Chromosome]:
+        """Get all nearest neighbours of provided chromosomes.
+
+        Available selections for which chromosomes to mutate:
+
+            all:
+                selects all chromosomes.
+
+        Parameters:
+            chromosomes:
+                Dictionary of chromosomes with keys corresponding to their keys
+                in the provided database.
+
+            gene_range:
+                Range of genes, by their indices in the chromosome, to mutate.
+
+            selection:
+                How to select chromosomes to mutate (all).
+
+        Returns:
+            List of chromosomes to add to population.
+
+        """
+        # Select chromosomes to mutate.
+        if selection == "all":
+            selected = np.asarray(list(chromosomes.values()))
+
+        else:
+            msg = f"{selection} is not defined."
+            raise RuntimeError(msg)
+
+        neighbours = []
+        known_types = set(self.chromosome_types.values())
+        for chromosome in selected:
+            if "forcefield" in known_types:
+                msg = (
+                    "Forcefield chromosomes are not supported for neighbour"
+                    " collation."
+                )
+                raise NotImplementedError(msg)
+            definer_dict = self.definer_dict
+
+            gene_dict = {}
+            chromosome_name = [0 for i in range(len(self.chromosome_map))]
+            # Add known ones to chromosome name.
+            to_modify = []
+            for gene_id in self.chromosome_map:
+                if gene_id not in gene_range:
+                    gene = chromosome.name[gene_id]
+                else:
+                    to_modify.append(gene_id)
+                    continue
+                gene_value = self.chromosome_map[gene_id][gene]
+                gene_type = self.chromosome_types[gene_id]
+                gene_dict[gene_id] = (gene, gene_value, gene_type)
+                chromosome_name[gene_id] = gene
+
+            for gene_id in to_modify:
+                current_gene = chromosome.name[gene_id]
+
+                for option in (
+                    current_gene + 1,
+                    current_gene - 1,
+                    current_gene + 2,
+                    current_gene - 2,
+                    current_gene + 3,
+                    current_gene - 3,
+                    current_gene + 4,
+                    current_gene - 4,
+                ):
+                    try:
+                        gene_value = self.chromosome_map[gene_id][option]
+                    except KeyError:
+                        continue
+                    gene_type = self.chromosome_types[gene_id]
+                    gene_dict[gene_id] = (option, gene_value, gene_type)
+                    chromosome_name[gene_id] = option
+
+                    neighbours.append(
+                        Chromosome(
+                            name=tuple(chromosome_name),
+                            prefix=self.prefix,
+                            present_beads=self.present_beads,
+                            vdw_bond_cutoff=self.vdw_bond_cutoff,
+                            gene_dict=gene_dict,
+                            definer_dict=definer_dict,
+                            chromosomed_terms=self.chromosomed_terms,
+                        )
+                    )
+
+        return neighbours
+
     def __str__(self) -> str:
         """Return a string representation of the ChromosomeGenerator."""
         _num_chromosomes = self.get_num_chromosomes()
