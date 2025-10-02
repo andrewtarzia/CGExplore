@@ -133,9 +133,11 @@ def get_energy_per_bb(
                 energy_decomp[key] = value
 
     fin_energy = energy_decomp["total energy_kJ/mol"]
-    if (
-        sum(energy_decomp[i] for i in energy_decomp if "total energy" not in i)
-        != fin_energy
+    if not np.isclose(
+        sum(
+            energy_decomp[i] for i in energy_decomp if "total energy" not in i
+        ),
+        fin_energy,
     ):
         msg = "energy decompisition does not sum to total energy"
         raise RuntimeError(msg)
