@@ -771,3 +771,40 @@ class StericSevenBead(Precursor):
                 ]
             ),
         )
+
+
+class StericTwoC1Arm(Precursor):
+    """A `TwoC1Arm` Precursor with a steric bead."""
+
+    def __init__(
+        self,
+        bead: CgBead,
+        abead1: CgBead,
+        steric_bead: CgBead,
+    ) -> None:
+        """Initialize a precursor."""
+        self._bead = bead
+        self._abead1 = abead1
+        self._name = (
+            f"s2C1{bead.bead_type}{abead1.bead_type}{steric_bead.bead_type}"
+        )
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+            steric_bead.bead_type: steric_bead,
+        }
+
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=f"[{abead1.element_string}][{bead.element_string}]",
+            bonders=(0,),
+            deleters=(),
+            placers=(0, 1),
+        )
+        self._building_block = stk.BuildingBlock(
+            smiles=f"[{abead1.element_string}][{bead.element_string}]"
+            f"([{steric_bead.element_string}])[{abead1.element_string}]",
+            functional_groups=new_fgs,
+            position_matrix=np.array(
+                [[-3, 0, 0], [0, 0, 0], [0, 1, 0], [3, 0, 0]]
+            ),
+        )

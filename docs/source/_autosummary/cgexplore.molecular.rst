@@ -32,6 +32,7 @@ cgexplore.molecular
       SquarePrecursor
       StericSevenBead
       StericSixBead
+      StericTwoC1Arm
       ThreeC0Arm
       ThreeC1Arm
       ThreeC2Arm
