@@ -20,6 +20,7 @@ from cgexplore._internal.systems_optimisation.utilities import (
     element_from_type,
     get_forcefield_from_dict,
     get_neighbour_library,
+    merge_definer_dicts,
     yield_near_models,
 )
 
@@ -39,5 +40,6 @@ __all__ = [
     "element_from_type",
     "get_forcefield_from_dict",
     "get_neighbour_library",
+    "merge_definer_dicts",
     "yield_near_models",
 ]
