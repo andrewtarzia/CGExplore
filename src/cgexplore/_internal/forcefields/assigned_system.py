@@ -253,7 +253,7 @@ class AssignedSystem:
         for atom in molecule.get_atoms():
             aestring = atom.__class__.__name__
             aid = atom.get_id()
-            acgbead = self.bead_set.get_cgbead_from_element(estring=aestring)
+            acgbead = self.bead_set.get_from_element(estring=aestring)
             atype = acgbead.bead_type
             aclass = acgbead.bead_class
 
@@ -301,7 +301,7 @@ class AssignedSystem:
             a_element = app.element.Element.getByAtomicNumber(
                 atom.get_atomic_number()
             )
-            a_cgbead = self.bead_set.get_cgbead_from_element(estring=a_estring)
+            a_cgbead = self.bead_set.get_from_element(estring=a_estring)
 
             omm_atom = topology.addAtom(
                 name=a_cgbead.bead_type,
@@ -360,7 +360,7 @@ class MartiniSystem:
         for atom in molecule.get_atoms():
             a_estring = atom.__class__.__name__
 
-            a_cgbead = self.bead_set.get_cgbead_from_element(estring=a_estring)
+            a_cgbead = self.bead_set.get_from_element(estring=a_estring)
             nr = atom.get_id() + 1
             type_ = a_cgbead.bead_type
             resnr = 1
