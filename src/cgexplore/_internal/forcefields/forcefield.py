@@ -156,8 +156,7 @@ class ForceField:
             atoms = (bond.get_atom1(), bond.get_atom2())
             atom_estrings = [i.__class__.__name__ for i in atoms]
             cgbeads = [
-                self._bead_library.get_cgbead_from_element(i)
-                for i in atom_estrings
+                self._bead_library.get_from_element(i) for i in atom_estrings
             ]
             cgbead_string = tuple(i.bead_type for i in cgbeads)
             found.add(cgbead_string)
@@ -219,7 +218,7 @@ class ForceField:
             atom_estrings = [i.__class__.__name__ for i in found_angle.atoms]
             try:
                 cgbeads = [
-                    self._bead_library.get_cgbead_from_element(i)
+                    self._bead_library.get_from_element(i)
                     for i in atom_estrings
                 ]
             except KeyError:
@@ -467,7 +466,7 @@ class ForceField:
                     i.__class__.__name__ for i in found_torsion.atoms
                 ]
                 cgbeads = [
-                    self._bead_library.get_cgbead_from_element(i)
+                    self._bead_library.get_from_element(i)
                     for i in atom_estrings
                 ]
                 cgbead_string = tuple(i.bead_type for i in cgbeads)
@@ -539,7 +538,7 @@ class ForceField:
 
         for atom in molecule.get_atoms():
             atom_estring = atom.__class__.__name__
-            cgbead = self._bead_library.get_cgbead_from_element(atom_estring)
+            cgbead = self._bead_library.get_from_element(atom_estring)
             found.add(cgbead.bead_class)
             for target_term in self._nonbonded_targets:
                 if target_term.bead_class != cgbead.bead_class:
@@ -609,8 +608,7 @@ class ForceField:
             atoms = (bond.get_atom1(), bond.get_atom2())
             atom_estrings = [i.__class__.__name__ for i in atoms]
             cgbeads = [
-                self._bead_library.get_cgbead_from_element(i)
-                for i in atom_estrings
+                self._bead_library.get_from_element(i) for i in atom_estrings
             ]
             cgbead_string = tuple(i.bead_type for i in cgbeads)
             rev_cgbead_string = tuple(reversed(cgbead_string))
@@ -625,8 +623,7 @@ class ForceField:
         for found_angle in find_angles(molecule):
             atom_estrings = [i.__class__.__name__ for i in found_angle.atoms]
             cgbeads = [
-                self._bead_library.get_cgbead_from_element(i)
-                for i in atom_estrings
+                self._bead_library.get_from_element(i) for i in atom_estrings
             ]
             cgbead_string = tuple(i.bead_type for i in cgbeads)
             rev_cgbead_string = tuple(reversed(cgbead_string))
@@ -641,8 +638,7 @@ class ForceField:
         for found_torsion in find_torsions(molecule, 4):
             atom_estrings = [i.__class__.__name__ for i in found_torsion.atoms]
             cgbeads = [
-                self._bead_library.get_cgbead_from_element(i)
-                for i in atom_estrings
+                self._bead_library.get_from_element(i) for i in atom_estrings
             ]
             cgbead_string = tuple(i.bead_type for i in cgbeads)
             rev_cgbead_string = tuple(reversed(cgbead_string))
@@ -656,7 +652,7 @@ class ForceField:
         found = set()
         for atom in molecule.get_atoms():
             atom_estring = atom.__class__.__name__
-            cgbead = self._bead_library.get_cgbead_from_element(atom_estring)
+            cgbead = self._bead_library.get_from_element(atom_estring)
             found.add(cgbead.bead_class)  # type: ignore[arg-type]
         if self._verbose:
             logger.info("found nonbonded terms (%s): %s", len(found), found)
