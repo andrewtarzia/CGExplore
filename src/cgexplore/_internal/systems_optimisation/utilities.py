@@ -5,6 +5,7 @@
 import logging
 import pathlib
 from collections import abc
+from copy import deepcopy
 
 import openmm
 import stk
@@ -270,6 +271,17 @@ def yield_near_models(
         new_fina_mol_file = pathlib.Path(output_dir) / f"{new_name}_final.mol"
         if new_fina_mol_file.exists():
             yield molecule.with_structure_from_file(str(new_fina_mol_file))
+
+
+def merge_definer_dicts(
+    original_definer_dict: dict,
+    new_definer_dicts: dict,
+) -> dict:
+    """Merge multiple definer dicts, overring the original."""
+    temp_definer_dict = deepcopy(original_definer_dict)
+    for new_definer_dict in new_definer_dicts:
+        temp_definer_dict.update(new_definer_dict)
+    return temp_definer_dict
 
 
 def get_forcefield_from_dict(  # noqa: PLR0913
