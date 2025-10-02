@@ -46,6 +46,22 @@ for molecule construction.
   TwoC2Arm <_autosummary/cgexplore.molecular.TwoC2Arm>
   TwoC3Arm <_autosummary/cgexplore.molecular.TwoC3Arm>
 
+For rotatable precursors:
+
+.. toctree::
+  :maxdepth: 1
+
+  SixBead <_autosummary/cgexplore.molecular.SixBead>
+
+For precursors with steric bulk:
+
+.. toctree::
+  :maxdepth: 1
+
+  StericTwoC1Arm <_autosummary/cgexplore.molecular.StericTwoC1Arm>
+  StericSixBead <_autosummary/cgexplore.molecular.StericSixBead>
+  StericSevenBead <_autosummary/cgexplore.molecular.StericSevenBead>
+
 For precursors useful in random/algorithmic structure generation:
 
 .. toctree::
