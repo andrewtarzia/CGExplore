@@ -42,7 +42,7 @@ def graph_optimise_cage(  # noqa: PLR0913
     database_path: pathlib.Path,
 ) -> Conformer:
     """Optimise a toy model cage."""
-    fina_mol_file = output_dir / f"{name}_wipfinal.mol"
+    fina_mol_file = output_dir / f"{name}_final.mol"
 
     database = AtomliteDatabase(database_path)
     # Do not rerun if database entry exists.
@@ -196,7 +196,7 @@ def graph_optimise_cage(  # noqa: PLR0913
             platform=platform,
         )
 
-        ensemble.add_conformer(conformer=conformer, source="shifted")
+        ensemble.add_conformer(conformer=conformer, source="ropt")
 
     ensemble.write_conformers_to_file()
 
@@ -232,6 +232,7 @@ def optimise_cage(  # noqa: PLR0913, C901
     forcefield: ForceField,
     platform: str | None,
     database_path: pathlib.Path,
+    potential_file_suffix: str = "final",
 ) -> Conformer:
     """Optimise a toy model cage."""
     fina_mol_file = output_dir / f"{name}_final.mol"
@@ -333,7 +334,9 @@ def optimise_cage(  # noqa: PLR0913, C901
 
     # Scan potential name files.
     for potential_name in potential_names:
-        potential_file = output_dir / f"{potential_name}_final.mol"
+        potential_file = (
+            output_dir / f"{potential_name}_{potential_file_suffix}.mol"
+        )
 
         if not potential_file.exists():
             continue
@@ -341,8 +344,15 @@ def optimise_cage(  # noqa: PLR0913, C901
         test_molecule = stk.BuildingBlock.init_from_file(potential_file)
 
         conformer = run_optimisation(
-            assigned_system=forcefield.assign_terms(
-                test_molecule, name, output_dir
+            # Move to avoid reassignment - if the bonding changes, this should
+            # not work.
+            assigned_system=AssignedSystem(
+                molecule=test_molecule,
+                forcefield_terms=assigned_system.forcefield_terms,
+                system_xml=assigned_system.system_xml,
+                topology_xml=assigned_system.topology_xml,
+                bead_set=assigned_system.bead_set,
+                vdw_bond_cutoff=assigned_system.vdw_bond_cutoff,
             ),
             name=name,
             file_suffix="ns",
@@ -443,6 +453,7 @@ def optimise_from_files(  # noqa: PLR0913
     forcefield: ForceField,
     platform: str | None,
     database_path: pathlib.Path,
+    potential_file_suffix: str = "final",
 ) -> Conformer:
     """Optimise a toy model cage."""
     fina_mol_file = output_dir / f"{name}_rescan.mol"
@@ -484,25 +495,28 @@ def optimise_from_files(  # noqa: PLR0913
 
     one_exists = False
     for potential_name in potential_names:
-        for suffix in ("final", "rescan"):
-            potential_file = output_dir / f"{potential_name}_{suffix}.mol"
-            if not potential_file.exists():
-                continue
+        potential_file = (
+            output_dir / f"{potential_name}_{potential_file_suffix}.mol"
+        )
+        if not potential_file.exists():
+            continue
 
-            test_molecule = stk.BuildingBlock.init_from_file(potential_file)
+        test_molecule = stk.BuildingBlock.init_from_file(potential_file)
 
-            conformer = run_optimisation(
-                assigned_system=forcefield.assign_terms(
-                    test_molecule, name, output_dir
-                ),
-                name=name,
-                file_suffix="ns",
-                output_dir=output_dir,
-                platform=platform,
-            )
+        conformer = run_optimisation(
+            assigned_system=forcefield.assign_terms(
+                test_molecule, name, output_dir
+            ),
+            name=name,
+            file_suffix="ns",
+            output_dir=output_dir,
+            platform=platform,
+        )
 
-            ensemble.add_conformer(conformer=conformer, source=f"ns-{suffix}")
-            one_exists = True
+        ensemble.add_conformer(
+            conformer=conformer, source=f"ns-{potential_file_suffix}"
+        )
+        one_exists = True
 
     ensemble.write_conformers_to_file()
 
@@ -537,12 +551,14 @@ def optimise_from_files(  # noqa: PLR0913
     return min_energy_conformer
 
 
-def try_except_construction(
+def try_except_construction(  # noqa: PLR0913
     iterator: TopologyIterator,
     topology_code: TopologyCode,
     scale_multiplier: float | None = None,
     building_block_configuration: BuildingBlockConfiguration | None = None,
     vertex_positions: dict[int, np.ndarray] | None = None,
+    reaction_factory: stk.ReactionFactory = stk.GenericReactionFactory(),  # noqa: B008
+    optimizer: stk.Optimizer = stk.NullOptimizer(),  # noqa: B008
 ) -> stk.ConstructedMolecule:
     """Try construction with alignment, then without."""
     if building_block_configuration is None:
@@ -567,10 +583,12 @@ def try_except_construction(
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None
                 else scale_multiplier,
+                reaction_factory=reaction_factory,
+                optimizer=optimizer,
             )
         )
 
-    except ValueError:
+    except (ValueError, IndexError):
         # Try with unaligning.
         constructed_molecule = stk.ConstructedMolecule(
             CustomTopology(  # type: ignore[arg-type]
@@ -587,6 +605,8 @@ def try_except_construction(
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None
                 else scale_multiplier,
+                reaction_factory=reaction_factory,
+                optimizer=optimizer,
             )
         )
     return constructed_molecule

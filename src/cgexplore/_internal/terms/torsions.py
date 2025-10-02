@@ -55,7 +55,7 @@ class Torsion:
     phi0: openmm.unit.Quantity
     torsion_k: openmm.unit.Quantity
     torsion_n: int
-    force: str | None
+    force: str
     funct: int = 0
 
 
@@ -91,8 +91,8 @@ class TargetTorsion:
 
     """
 
-    search_string: tuple[str, ...]
-    search_estring: tuple[str, ...]
+    search_string: abc.Sequence[str]
+    search_estring: abc.Sequence[str]
     measured_atom_ids: tuple[int, int, int, int]
     phi0: openmm.unit.Quantity
     torsion_k: openmm.unit.Quantity
@@ -153,8 +153,8 @@ class TargetTorsionRange:
 
     """
 
-    search_string: tuple[str, ...]
-    search_estring: tuple[str, ...]
+    search_string: abc.Sequence[str]
+    search_estring: abc.Sequence[str]
     measured_atom_ids: tuple[int, int, int, int]
     phi0s: tuple[openmm.unit.Quantity]
     torsion_ks: tuple[openmm.unit.Quantity]
@@ -188,16 +188,16 @@ class FoundTorsion:
 
     """
 
-    atoms: tuple[stk.Atom, ...]
-    atom_ids: tuple[int, ...]
+    atoms: abc.Sequence[stk.Atom]
+    atom_ids: abc.Sequence[int]
 
 
 @dataclass(frozen=True, slots=True)
 class TargetMartiniTorsion:
     """Defines a target angle to search for in a molecule."""
 
-    search_string: tuple[str, ...]
-    search_estring: tuple[str, ...]
+    search_string: tuple[str]
+    search_estring: tuple[str]
     measured_atom_ids: tuple[int, int, int, int]
     phi0: openmm.unit.Quantity
     torsion_k: openmm.unit.Quantity
@@ -223,8 +223,8 @@ class TargetMartiniTorsion:
 class MartiniTorsionRange:
     """Defines a target torsion and ranges in parameters to search for."""
 
-    search_string: tuple[str, ...]
-    search_estring: tuple[str, ...]
+    search_string: tuple[str]
+    search_estring: tuple[str]
     measured_atom_ids: tuple[int, int, int, int]
     phi0s: tuple[openmm.unit.Quantity]
     torsion_ks: tuple[openmm.unit.Quantity]

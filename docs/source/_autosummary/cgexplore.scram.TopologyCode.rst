@@ -18,6 +18,7 @@ cgexplore.scram.TopologyCode
       :nosignatures:
    
       ~TopologyCode.contains_doubles
+      ~TopologyCode.contains_parallels
       ~TopologyCode.edges_from_connection
       ~TopologyCode.get_graph
       ~TopologyCode.get_nx_graph

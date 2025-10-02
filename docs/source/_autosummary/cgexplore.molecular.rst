@@ -26,11 +26,13 @@ cgexplore.molecular
       LinearPrecursor
       Precursor
       PrecursorGenerator
+      Single
       SixBead
       SpindryConformer
       SquarePrecursor
       StericSevenBead
       StericSixBead
+      StericTwoC1Arm
       ThreeC0Arm
       ThreeC1Arm
       ThreeC2Arm

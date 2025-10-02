@@ -5,8 +5,17 @@ from collections import Counter, abc
 from dataclasses import dataclass
 
 import networkx as nx
+import numpy as np
 import rustworkx as rx
 import stk
+
+from cgexplore._internal.topologies.graphs import (
+    CGM4L8,
+    CGM12L24,
+    UnalignedM1L2,
+)
+
+from .utilities import vmap_to_str
 
 logging.basicConfig(
     level=logging.INFO,
@@ -117,6 +126,19 @@ class TopologyCode:
 
         return num_parallel_edges != 0 or counter[4] != 0
 
+    def contains_parallels(self) -> bool:
+        """True if the graph contains "1-loops"."""
+        weighted_graph = self.get_weighted_graph()
+        num_parallel_edges = len(
+            [
+                i
+                for i in weighted_graph.edges()
+                if i == 2  # noqa: PLR2004
+            ]
+        )
+
+        return num_parallel_edges != 0
+
 
 @dataclass
 class Constructed:
@@ -126,3 +148,35 @@ class Constructed:
     idx: int | None
     topology_code: TopologyCode
     mash_idx: int | None = None
+
+
+def get_stk_topology_code(
+    graph_type: str,
+) -> tuple[TopologyCode, list[np.ndarray]]:
+    """Get the default stk graph."""
+    knowns = {
+        "1P2": UnalignedM1L2,
+        "2P4": stk.cage.M2L4Lantern,
+        "3P6": stk.cage.M3L6,
+        "4P8": CGM4L8,
+        "6P12": stk.cage.M6L12Cube,
+        "12P24": CGM12L24,
+    }
+
+    if graph_type not in knowns:
+        msg = f"{graph_type} not known"
+        raise RuntimeError(msg)
+
+    target = knowns[graph_type]
+    vps = target._vertex_prototypes  # noqa: SLF001
+    eps = target._edge_prototypes  # noqa: SLF001
+
+    combination = [(i.get_vertex1_id(), i.get_vertex2_id()) for i in eps]
+    tc = TopologyCode(
+        vertex_map=combination,
+        as_string=vmap_to_str(combination),
+    )
+
+    positions = [i.get_position() for i in vps]
+
+    return tc, positions

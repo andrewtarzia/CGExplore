@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def element_from_type(
     bead_type: str,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> str:
     """Get element of cgbead from type of cgbead."""
     return next(
@@ -41,7 +41,7 @@ def element_from_type(
 def define_bond(
     interaction_key: str,
     interaction_list: list,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> TargetBond:
     """Define target from a known structured list."""
     return TargetBond(
@@ -64,7 +64,7 @@ def define_bond(
 def define_angle(
     interaction_key: str,
     interaction_list: list,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> TargetAngle:
     """Define target from a known structured list."""
     return TargetAngle(
@@ -89,7 +89,7 @@ def define_angle(
 def define_pyramid_angle(
     interaction_key: str,
     interaction_list: list,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> TargetAngle:
     """Define target from a known structured list."""
     angle = openmm.unit.Quantity(
@@ -121,7 +121,7 @@ def define_pyramid_angle(
 def define_cosine_angle(
     interaction_key: str,
     interaction_list: list,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> TargetCosineAngle:
     """Define target from a known structured list."""
     return TargetCosineAngle(
@@ -143,7 +143,7 @@ def define_cosine_angle(
 def define_torsion(
     interaction_key: str,
     interaction_list: list,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> TargetTorsion:
     """Define target from a known structured list."""
     measured_atom_ids = tuple(int(i) for i in interaction_list[1])
@@ -174,7 +174,7 @@ def define_torsion(
 def define_nonbonded(
     interaction_key: str,
     interaction_list: list,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> TargetNonbonded:
     """Define target from a known structured list."""
     return TargetNonbonded(
@@ -195,7 +195,7 @@ def define_nonbonded(
 def define_lennardjones(
     interaction_key: str,
     interaction_list: list,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
 ) -> TargetNonbonded:
     """Define target from a known structured list."""
     return TargetNonbonded(
@@ -214,8 +214,8 @@ def define_lennardjones(
 
 
 def get_neighbour_library(
-    chromosome_name: tuple[int, ...],
-    modifiable_gene_ids: tuple[int, ...],
+    chromosome_name: abc.Sequence[int],
+    modifiable_gene_ids: abc.Sequence[int],
 ) -> list[str]:
     new_chromosomes = []
 
@@ -276,7 +276,7 @@ def get_forcefield_from_dict(  # noqa: PLR0913
     identifier: str,
     prefix: str,
     vdw_bond_cutoff: int,
-    present_beads: tuple[CgBead, ...],
+    present_beads: abc.Sequence[CgBead],
     definer_dict: dict,
     verbose: bool = True,
 ) -> ForceField:

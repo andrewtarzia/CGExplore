@@ -192,7 +192,7 @@ class ShapeMeasure:
     def _get_centroids(
         self,
         molecule: stk.ConstructedMolecule,
-        target_atmnums: tuple[int],
+        target_atmnums: Sequence[int],
     ) -> list[np.ndarray]:
         bb_ids: dict[int | None, list] = {}
         for ai in molecule.get_atom_infos():
@@ -256,7 +256,7 @@ class ShapeMeasure:
     def calculate_from_centroids(
         self,
         constructed_molecule: stk.ConstructedMolecule,
-        target_atmnums: tuple[int],
+        target_atmnums: Sequence[int],
     ) -> dict:
         """Calculate shape from the centroids of building blocks.
 

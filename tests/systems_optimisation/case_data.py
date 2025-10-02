@@ -1,3 +1,4 @@
+from collections import abc
 from dataclasses import dataclass
 
 import cgexplore as cgx
@@ -11,10 +12,10 @@ class CaseData:
     known_map: dict[int, dict]
     known_types: dict[int, dict]
     num: int
-    term_ids: tuple[int, ...]
-    topo_ids: tuple[int, ...]
-    va_ids: tuple[int, ...]
-    prec_ids: tuple[int, ...]
+    term_ids: abc.Sequence[int]
+    topo_ids: abc.Sequence[int]
+    va_ids: abc.Sequence[int]
+    prec_ids: abc.Sequence[int]
     merged_size: int
     pop1_fitness: list[int]
     pop1_best: tuple

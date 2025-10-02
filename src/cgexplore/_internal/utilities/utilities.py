@@ -12,6 +12,8 @@ import pathlib
 import atomlite
 import matplotlib.pyplot as plt
 import numpy as np
+import stk
+from rmsd import check_reflections, int_atom, kabsch_rmsd, reorder_hungarian
 
 logging.basicConfig(
     level=logging.INFO,
@@ -139,3 +141,49 @@ def get_energy_per_bb(
         raise RuntimeError(msg)
 
     return fin_energy / number_building_blocks
+
+
+def rmsd_checker(
+    unopt_mol: stk.ConstructedMolecule,
+    unopt_name: str,
+    unopt_glob: list[pathlib.Path],
+) -> bool:
+    """Check if an un-optimised molecule has a low RMSD to another one."""
+    if len(unopt_glob) == 0:
+        return False
+
+    p_coord = unopt_mol.with_centroid(
+        np.array((0, 0, 0))
+    ).get_position_matrix()
+
+    rmsd_threshold = 1
+
+    for other_mol in unopt_glob:
+        if other_mol.name.replace(".mol", "") == unopt_name:
+            continue
+
+        p_atoms = np.array(
+            [int_atom(i.__class__.__name__) for i in unopt_mol.get_atoms()]
+        )
+
+        q_mol = stk.BuildingBlock.init_from_file(str(other_mol))
+        q_atoms = np.array(
+            [int_atom(i.__class__.__name__) for i in q_mol.get_atoms()]
+        )
+        q_coord = q_mol.with_centroid(
+            np.array((0, 0, 0))
+        ).get_position_matrix()
+
+        # Apply reorder and reflections.
+        result_rmsd, _, _, _ = check_reflections(
+            p_atoms,
+            q_atoms,
+            p_coord,
+            q_coord,
+            reorder_method=reorder_hungarian,
+            rmsd_method=kabsch_rmsd,
+        )
+
+        if result_rmsd < rmsd_threshold:
+            return True
+    return False

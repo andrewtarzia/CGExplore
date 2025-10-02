@@ -43,7 +43,7 @@ class Crest(stko.Optimizer):
         solvent_grid: str = "normal",
         num_unpaired_electrons: int = 0,
         unlimited_memory: bool = False,
-        additional_commands: tuple[str, ...] = (),
+        additional_commands: abc.Sequence[str] = (),
     ) -> None:
         """Initialise calculator."""
         if solvent is not None:
@@ -198,7 +198,7 @@ def run_conformer_analysis(  # noqa: PLR0913
     molecule: stk.BuildingBlock,
     ligand_dir: pathlib.Path,
     calculation_dir: pathlib.Path,
-    functional_group_factories: tuple[stk.FunctionalGroupFactory, ...],
+    functional_group_factories: abc.Sequence[stk.FunctionalGroupFactory],
     crest_path: pathlib.Path,
     xtb_path: pathlib.Path,
 ) -> dict:

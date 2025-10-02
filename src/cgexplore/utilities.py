@@ -10,6 +10,7 @@ from cgexplore._internal.utilities.errors import (
 )
 from cgexplore._internal.utilities.generation_utilities import (
     optimise_ligand,
+    rattle,
     run_constrained_optimisation,
     run_optimisation,
     run_soft_md_cycle,
@@ -28,6 +29,7 @@ from cgexplore._internal.utilities.utilities import (
     draw_pie,
     extract_property,
     get_energy_per_bb,
+    rmsd_checker,
 )
 from cgexplore._internal.utilities.visualisation import (
     Pymol,
@@ -50,6 +52,8 @@ __all__ = [
     "get_supramolecule",
     "get_unforced_supramolecule",
     "optimise_ligand",
+    "rattle",
+    "rmsd_checker",
     "run_constrained_optimisation",
     "run_optimisation",
     "run_soft_md_cycle",

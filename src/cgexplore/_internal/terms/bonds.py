@@ -52,12 +52,12 @@ class Bond:
 
     """
 
-    atom_names: tuple[str, ...]
-    atom_ids: tuple[int, ...]
+    atom_names: abc.Sequence[str]
+    atom_ids: abc.Sequence[int]
     bond_r: openmm.unit.Quantity
     bond_k: openmm.unit.Quantity
-    atoms: tuple[stk.Atom, ...] | None
-    force: str | None
+    atoms: abc.Sequence[stk.Atom] | None
+    force: str
     funct: int = 0
 
 
@@ -152,8 +152,8 @@ class TargetBondRange:
     type2: str
     element1: str
     element2: str
-    bond_rs: tuple[openmm.unit.Quantity]
-    bond_ks: tuple[openmm.unit.Quantity]
+    bond_rs: abc.Sequence[openmm.unit.Quantity]
+    bond_ks: abc.Sequence[openmm.unit.Quantity]
 
     def yield_bonds(self) -> abc.Iterable[TargetBond]:
         """Find interactions matching target."""
@@ -202,8 +202,8 @@ class MartiniBondRange:
     element1: str
     element2: str
     funct: int
-    bond_rs: tuple[openmm.unit.Quantity]
-    bond_ks: tuple[openmm.unit.Quantity]
+    bond_rs: abc.Sequence[openmm.unit.Quantity]
+    bond_ks: abc.Sequence[openmm.unit.Quantity]
 
     def yield_bonds(self) -> abc.Iterable[TargetMartiniBond]:
         """Find bonds matching target."""

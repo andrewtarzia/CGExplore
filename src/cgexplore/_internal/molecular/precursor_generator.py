@@ -20,8 +20,8 @@ RDLogger.DisableLog("rdApp.*")
 
 @dataclass
 class GeneratedPrecursor:
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
     molecule: stk.BuildingBlock
     db_key: str
     composition: str
@@ -54,7 +54,7 @@ class GeneratedPrecursor:
 
 
 def check_fit(
-    chromosome: tuple[int, ...],
+    chromosome: abc.Sequence[int],
     num_beads: int,
     max_shell: int,
 ) -> bool:
@@ -93,10 +93,10 @@ class PrecursorGenerator:
     Define the link from composition to structure:
     """
 
-    composition: tuple[int, ...]
-    present_beads: tuple[CgBead, ...]
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    composition: abc.Sequence[int]
+    present_beads: abc.Sequence[CgBead]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
     bead_distance: float = 4.7
 
     def _define_graph(self) -> list[tuple]:
@@ -253,7 +253,7 @@ class PrecursorGenerator:
 
 @dataclass(frozen=True, slots=True)
 class VaBene:
-    present_beads: tuple[CgBead, ...]
+    present_beads: abc.Sequence[CgBead]
     building_block: stk.BuildingBlock
 
     def get_smiles(self) -> str:
@@ -267,11 +267,11 @@ class VaBene:
 class VaBeneGenerator:
     """Generate custom Precursor based on vabene algorithm."""
 
-    present_beads: tuple[CgBead, ...]
+    present_beads: abc.Sequence[CgBead]
     num_beads: int
     seed: int
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
     scale: float
 
     def _remove_hydrogens(

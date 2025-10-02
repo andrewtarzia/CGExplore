@@ -59,7 +59,7 @@ class GeomMeasure:
         self,
         molecule: stk.Molecule,
         path_length: int,
-    ) -> tuple[tuple[int]]:
+    ) -> tuple[abc.Sequence[int]]:
         return AllChem.FindAllPathsOfLengthN(
             mol=molecule.to_rdkit_mol(),
             length=path_length,

@@ -6,20 +6,21 @@ Author: Andrew Tarzia
 
 """
 
+from collections import abc
 from dataclasses import dataclass
 
 import numpy as np
 import stk
 
-from .beads import CgBead, string_to_atom_number
+from .beads import CgBead, periodic_table, string_to_atom_number
 
 
 @dataclass
 class LinearPrecursor:
-    composition: tuple[int, ...]
-    present_beads: tuple[CgBead, ...]
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    composition: abc.Sequence[int]
+    present_beads: abc.Sequence[CgBead]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
 
     def __post_init__(self) -> None:
         atoms = [
@@ -94,9 +95,9 @@ class LinearPrecursor:
 
 @dataclass
 class TrianglePrecursor:
-    present_beads: tuple[CgBead, ...]
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    present_beads: abc.Sequence[CgBead]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
 
     def __post_init__(self) -> None:
         _x = 2 * np.sqrt(3) / 4
@@ -150,9 +151,9 @@ class TrianglePrecursor:
 
 @dataclass
 class SquarePrecursor:
-    present_beads: tuple[CgBead, ...]
-    binder_beads: tuple[CgBead, ...]
-    placer_beads: tuple[CgBead, ...]
+    present_beads: abc.Sequence[CgBead]
+    binder_beads: abc.Sequence[CgBead]
+    placer_beads: abc.Sequence[CgBead]
 
     def __post_init__(self) -> None:
         coordinates = np.array(
@@ -225,6 +226,30 @@ class Precursor:
     def get_name(self) -> str:
         """Get name of precursor."""
         return self._name
+
+
+class Single(Precursor):
+    """A single bead Precursor."""
+
+    def __init__(self, bead: CgBead) -> None:
+        """Initialize a precursor."""
+        self._bead = bead
+        self._name = f"S1{bead.bead_type}"
+        self._bead_set = {bead.bead_type: bead}
+
+        self._building_block = stk.BuildingBlock(
+            smiles=f"[{bead.element_string}]",
+            functional_groups=(
+                stk.SingleAtom(
+                    stk.Atom(
+                        0,
+                        charge=0,
+                        atomic_number=periodic_table()[bead.element_string],
+                    )
+                ),
+            ),
+            position_matrix=np.array((0, 0, 0)),
+        )
 
 
 class FourC0Arm(Precursor):
@@ -744,5 +769,42 @@ class StericSevenBead(Precursor):
                     [4, 2, 0],
                     [6, 3, 0.2],
                 ]
+            ),
+        )
+
+
+class StericTwoC1Arm(Precursor):
+    """A `TwoC1Arm` Precursor with a steric bead."""
+
+    def __init__(
+        self,
+        bead: CgBead,
+        abead1: CgBead,
+        steric_bead: CgBead,
+    ) -> None:
+        """Initialize a precursor."""
+        self._bead = bead
+        self._abead1 = abead1
+        self._name = (
+            f"s2C1{bead.bead_type}{abead1.bead_type}{steric_bead.bead_type}"
+        )
+        self._bead_set = {
+            bead.bead_type: bead,
+            abead1.bead_type: abead1,
+            steric_bead.bead_type: steric_bead,
+        }
+
+        new_fgs = stk.SmartsFunctionalGroupFactory(
+            smarts=f"[{abead1.element_string}][{bead.element_string}]",
+            bonders=(0,),
+            deleters=(),
+            placers=(0, 1),
+        )
+        self._building_block = stk.BuildingBlock(
+            smiles=f"[{abead1.element_string}][{bead.element_string}]"
+            f"([{steric_bead.element_string}])[{abead1.element_string}]",
+            functional_groups=new_fgs,
+            position_matrix=np.array(
+                [[-3, 0, 0], [0, 0, 0], [0, 1, 0], [3, 0, 0]]
             ),
         )

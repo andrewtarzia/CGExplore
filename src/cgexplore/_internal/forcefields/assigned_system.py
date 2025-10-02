@@ -7,12 +7,17 @@ Author: Andrew Tarzia
 """
 
 import pathlib
+from collections import abc
 from dataclasses import dataclass
 
 import stk
 from openmm import OpenMMException, app, openmm
 
 from cgexplore._internal.molecular.beads import BeadLibrary
+from cgexplore._internal.terms.angles import Angle, CosineAngle
+from cgexplore._internal.terms.bonds import Bond
+from cgexplore._internal.terms.nonbonded import Nonbonded
+from cgexplore._internal.terms.torsions import Torsion
 from cgexplore._internal.utilities.errors import (
     ForceFieldUnavailableError,
     ForceFieldUnitError,
@@ -31,7 +36,10 @@ class AssignedSystem:
     """A system with forces assigned."""
 
     molecule: stk.Molecule
-    forcefield_terms: dict[str, tuple]
+    forcefield_terms: dict[
+        str,
+        abc.Sequence[Bond | Angle | CosineAngle | Torsion | Nonbonded],
+    ]
     system_xml: pathlib.Path
     topology_xml: pathlib.Path
     bead_set: BeadLibrary
@@ -54,10 +62,10 @@ class AssignedSystem:
         return available[force_type]
 
     def _add_bonds(self, system: openmm.System) -> openmm.System:
-        forces = self.forcefield_terms["bond"]
+        forces: abc.Sequence[Bond] = self.forcefield_terms["bond"]  # type: ignore[assignment]
         force_types = {i.force for i in forces}
         for force_type in force_types:
-            if "Martini" in force_type:
+            if "Martini" in force_type:  # type: ignore[operator]
                 continue
             force_function = self._available_forces(force_type)
             system.addForce(force_function)
@@ -84,7 +92,9 @@ class AssignedSystem:
         return system
 
     def _add_angles(self, system: openmm.System) -> openmm.System:
-        forces = self.forcefield_terms["angle"]
+        forces: abc.Sequence[Angle | CosineAngle] = self.forcefield_terms[  # type: ignore[assignment]
+            "angle"
+        ]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -105,9 +115,9 @@ class AssignedSystem:
                                 assigned_force.angle_k.value_in_unit(
                                     openmm.unit.kilojoule / openmm.unit.mole
                                 ),
-                                assigned_force.n,
-                                assigned_force.b,
-                                (-1) ** assigned_force.n,
+                                assigned_force.n,  # type: ignore[union-attr]
+                                assigned_force.b,  # type: ignore[union-attr]
+                                (-1) ** assigned_force.n,  # type: ignore[union-attr]
                             ],
                         )
                     elif force_type == "HarmonicAngleForce":
@@ -115,7 +125,7 @@ class AssignedSystem:
                             particle1=assigned_force.atom_ids[0],
                             particle2=assigned_force.atom_ids[1],
                             particle3=assigned_force.atom_ids[2],
-                            angle=assigned_force.angle.value_in_unit(
+                            angle=assigned_force.angle.value_in_unit(  # type: ignore[union-attr]
                                 openmm.unit.radian
                             ),
                             k=assigned_force.angle_k.value_in_unit(
@@ -131,7 +141,7 @@ class AssignedSystem:
         return system
 
     def _add_torsions(self, system: openmm.System) -> openmm.System:
-        forces = self.forcefield_terms["torsion"]
+        forces: abc.Sequence[Torsion] = self.forcefield_terms["torsion"]  # type: ignore[assignment]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             if "Martini" in force_type:
@@ -166,7 +176,7 @@ class AssignedSystem:
             (i.get_atom1().get_id(), i.get_atom2().get_id())
             for i in self.molecule.get_bonds()
         ]
-        forces = self.forcefield_terms["nonbonded"]
+        forces: abc.Sequence[Nonbonded] = self.forcefield_terms["nonbonded"]  # type: ignore[assignment]
         force_types = {i.force for i in forces}
         for force_type in force_types:
             force_function = self._available_forces(force_type)
@@ -329,7 +339,10 @@ class MartiniSystem:
     """Assign a system using martini_openmm."""
 
     molecule: stk.Molecule
-    forcefield_terms: dict[str, tuple]
+    forcefield_terms: dict[
+        str,
+        abc.Sequence[Bond | Angle | CosineAngle | Torsion | tuple[int, int]],
+    ]
     system_xml: pathlib.Path
     topology_itp: pathlib.Path
     vdw_bond_cutoff: int
@@ -366,7 +379,7 @@ class MartiniSystem:
 
     def _get_bonds_string(self) -> str:
         string = "[bonds]\n; i j   funct   length\n"
-        forces = self.forcefield_terms["bond"]
+        forces: abc.Sequence[Bond] = self.forcefield_terms["bond"]  # type: ignore[assignment]
         for assigned_force in forces:
             force_type = assigned_force.force
             if force_type != "MartiniDefinedBond":
@@ -389,14 +402,16 @@ class MartiniSystem:
 
     def _get_angles_string(self) -> str:
         string = "[angles]\n; i j k    funct  ref.angle   force_k\n"
-        forces = self.forcefield_terms["angle"]
+        forces: abc.Sequence[Angle | CosineAngle] = self.forcefield_terms[  # type: ignore[assignment]
+            "angle"
+        ]
 
         for assigned_force in forces:
             force_type = assigned_force.force
             if force_type != "MartiniDefinedAngle":
                 continue
 
-            angle = assigned_force.angle.value_in_unit(openmm.unit.degrees)
+            angle = assigned_force.angle.value_in_unit(openmm.unit.degrees)  # type: ignore[union-attr]
             k = assigned_force.angle_k.value_in_unit(
                 openmm.unit.kilojoule
                 / openmm.unit.mole
@@ -406,7 +421,7 @@ class MartiniSystem:
                 f"  {assigned_force.atom_ids[0] + 1} "
                 f"{assigned_force.atom_ids[1] + 1} "
                 f"{assigned_force.atom_ids[2] + 1} "
-                f"{assigned_force.funct} "
+                f"{assigned_force.funct} "  # type: ignore[union-attr]
                 f"{angle} "
                 f"{k}\n"
             )
@@ -416,7 +431,7 @@ class MartiniSystem:
 
     def _get_torsions_string(self) -> str:
         string = "[dihedrals]\n; i j k l  funct  ref.angle   force_k\n"
-        forces = self.forcefield_terms["torsion"]
+        forces: abc.Sequence[Torsion] = self.forcefield_terms["torsion"]  # type: ignore[assignment]
         force_types = {i.force for i in forces}
 
         for force_type in force_types:
@@ -431,8 +446,8 @@ class MartiniSystem:
         string = "[constraints]\n; i j   funct   length\n"
         for constraint in self.forcefield_terms["constraints"]:
             string += (
-                f"  {constraint[0]} {constraint[1]} {constraint[2]} "
-                f"{constraint[3]} {constraint[4]}"
+                f"  {constraint[0]} {constraint[1]} {constraint[2]} "  # type: ignore[index,misc]
+                f"{constraint[3]} {constraint[4]}"  # type: ignore[index,misc]
             )
         string += "\n"
         return string
@@ -441,8 +456,8 @@ class MartiniSystem:
         string = "[exclusions]\n; i j   funct   length\n"
         for constraint in self.forcefield_terms["constraints"]:
             string += (
-                f"  {constraint[0]} {constraint[1]} {constraint[2]} "
-                f"{constraint[3]} {constraint[4]}"
+                f"  {constraint[0]} {constraint[1]} {constraint[2]} "  # type: ignore[index,misc]
+                f"{constraint[3]} {constraint[4]}"  # type: ignore[index,misc]
             )
         string += "\n"
         return string

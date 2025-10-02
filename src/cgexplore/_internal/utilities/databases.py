@@ -61,6 +61,10 @@ class AtomliteDatabase:
         """Get all entries."""
         return self._db.get_entries()
 
+    def get_entry_list(self) -> list[atomlite.Entry]:
+        """Get all entries."""
+        return list(self._db.get_entries())
+
     def get_property_entries(self) -> abc.Iterator[atomlite.PropertyEntry]:
         """Get all property entries."""
         return self._db.get_property_entries()
