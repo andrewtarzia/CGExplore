@@ -1,15 +1,10 @@
-# Distributed under the terms of the MIT License.
-
 """Module for beads."""
 
 import logging
+import typing
 from collections import Counter, abc
 from dataclasses import dataclass
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
 logger = logging.getLogger(__name__)
 
 
@@ -33,6 +28,34 @@ class BeadLibrary:
         self._from_class_map = {i.bead_class: i for i in self._beads}
         self._from_element_map = {i.element_string: i for i in self._beads}
 
+    @classmethod
+    def from_bead_types(cls, bead_types: dict[str, int]) -> typing.Self:
+        """Create a BeadLibrary from a dictionary of bead types.
+
+        Parameters:
+            bead_types:
+                Dictionary mapping between bead types (user nomenclature) and
+                their expected coordination.
+
+        """
+        possible_enames = {}
+        beads = []
+        for bt, coord in bead_types.items():
+            element_strings = _get_estrings(coord)
+            for element_string in element_strings:
+                if element_string not in set(possible_enames.values()):
+                    possible_enames[bt] = element_string
+                    beads.append(
+                        CgBead(
+                            element_string=element_string,
+                            bead_type=bt,
+                            bead_class=bt,
+                            coordination=coord,
+                        )
+                    )
+                    break
+        return cls(beads)
+
     def _bead_library_check(self) -> None:
         """Check bead library for bad definitions."""
         used_names = tuple(i.bead_class for i in self._beads)
@@ -53,30 +76,53 @@ class BeadLibrary:
                     )
                     raise ValueError(msg)
 
-    def get_cgbead_from_type(self, bead_type: str) -> CgBead:
+    def get_from_type(self, bead_type: str) -> CgBead:
         """Get CgBead from matching to bead type."""
         return self._from_type_map[bead_type]
 
-    def get_cgbead_from_element(self, estring: str) -> CgBead:
+    def get_from_element(self, estring: str) -> CgBead:
         """Get CgBead from matching to element string."""
         return self._from_element_map[estring]
 
-    def get_cgbead_from_class(self, bead_class: str) -> CgBead:
+    def get_from_class(self, bead_class: str) -> CgBead:
         """Get CgBead from matching to bead class."""
         return self._from_class_map[bead_class]
+
+    def get_present_beads(self) -> list[CgBead]:
+        """Get a list of present beads."""
+        return list(self._beads)
+
+    def __str__(self) -> str:
+        """Return a string representation of the Ensemble."""
+        bead_string = tuple(
+            [i.bead_type + "=" + i.element_string for i in self._beads]
+        )
+        return f"{self.__class__.__name__}(\n  beads={bead_string}, \n)"
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Ensemble."""
+        return str(self)
 
 
 def periodic_table() -> dict[str, int]:
     """Periodic table of elements."""
     return {
+        # Reordered to put safe elements at the top.
+        "Pd": 46,
+        "Ag": 47,
+        "Ba": 56,
+        "Pb": 82,
+        "Fe": 26,
+        "Ga": 31,
+        "Ni": 28,
+        "C": 6,
+        "N": 7,
+        "O": 8,
         "H": 1,
         "He": 2,
         "Li": 3,
         "Be": 4,
         "B": 5,
-        "C": 6,
-        "N": 7,
-        "O": 8,
         "F": 9,
         "Ne": 10,
         "Na": 11,
@@ -94,12 +140,9 @@ def periodic_table() -> dict[str, int]:
         "V": 23,
         "Cr": 24,
         "Mn": 25,
-        "Fe": 26,
         "Co": 27,
-        "Ni": 28,
         "Cu": 29,
         "Zn": 30,
-        "Ga": 31,
         "Ge": 32,
         "As": 33,
         "Se": 34,
@@ -114,8 +157,6 @@ def periodic_table() -> dict[str, int]:
         "Tc": 43,
         "Ru": 44,
         "Rh": 45,
-        "Pd": 46,
-        "Ag": 47,
         "Cd": 48,
         "In": 49,
         "Sn": 50,
@@ -124,7 +165,6 @@ def periodic_table() -> dict[str, int]:
         "I": 53,
         "Xe": 54,
         "Cs": 55,
-        "Ba": 56,
         "La": 57,
         "Ce": 58,
         "Pr": 59,
@@ -148,7 +188,6 @@ def periodic_table() -> dict[str, int]:
         "Au": 79,
         "Hg": 80,
         "Tl": 81,
-        "Pb": 82,
         "Bi": 83,
         "Po": 84,
         "At": 85,
@@ -172,3 +211,21 @@ def periodic_table() -> dict[str, int]:
 def string_to_atom_number(string: str) -> int:
     """Convert atom string to atom number."""
     return periodic_table()[string]
+
+
+def _get_estrings(coordination: int) -> list[str]:
+    """Get element strings for a given coordination."""
+    periodic_table_exclusions = {
+        0: ("Pd",),
+        1: ("Pd",),
+        2: ("Pd", "H"),
+        3: ("Pd", "H"),
+        4: ("H",),
+        5: ("Pd", "H"),
+        6: ("Pd", "H"),
+    }
+    return [
+        element
+        for element in periodic_table()
+        if element not in periodic_table_exclusions[coordination]
+    ]

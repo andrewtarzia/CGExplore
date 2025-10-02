@@ -6,6 +6,14 @@ A package of the classes for handling molecules in `cgexplore`.
 CG-Beads
 --------
 
+.. note::
+
+    It is recommended to use the method
+    :meth:`from_bead_types` in :class:`cgexplore.molecular.BeadLibrary` to
+    create a :class:`cgexplore.molecular.CgBead` instance.
+    This will automatically assign element strings based on coordination
+    numbers, avoiding double ups and simplifying the selection process.
+
 .. toctree::
   :maxdepth: 1
 
