@@ -53,9 +53,7 @@ def get_supramolecule(
     sigmas = []
     for atom in hgcomplex.get_atoms():
         atom_estring = atom.__class__.__name__
-        cgbead = forcefield.get_bead_library().get_cgbead_from_element(
-            atom_estring
-        )
+        cgbead = forcefield.get_bead_library().get_from_element(atom_estring)
         for target_term in nonbonded_targets:
             if target_term.bead_class != cgbead.bead_class:
                 continue
