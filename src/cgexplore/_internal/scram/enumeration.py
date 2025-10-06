@@ -235,6 +235,76 @@ class TopologyIterator:
             return self.unaligned_vertex_prototypes
         return self.vertex_prototypes
 
+    def _one_type_algorithm(self) -> None:
+        combinations_tested = set()
+        run_topology_codes: list[TopologyCode] = []
+
+        type1 = next(iter(set(self.vertex_types_by_fg.keys())))
+
+        rng = np.random.default_rng(seed=100)
+        options = [
+            i
+            for i in self.reactable_vertex_ids
+            if i in self.vertex_types_by_fg[type1]
+        ]
+
+        to_save = []
+        for _ in range(self.used_samples):
+            # Shuffle.
+            rng.shuffle(options)
+            # Split in half.
+            half1 = options[: len(options) // 2]
+            half2 = options[len(options) // 2 :]
+            # Build an edge selection.
+            try:
+                combination: abc.Sequence[tuple[int, int]] = [
+                    tuple(sorted((i, j)))  # type:ignore[misc]
+                    for i, j in zip(half1, half2, strict=True)
+                ]
+            except ValueError as exc:
+                msg = "could not split edge into two equal sets"
+                raise ValueError(msg) from exc
+
+            # Need to check for nonsensical ones here.
+            # Check the number of egdes per vertex is correct.
+            counter = Counter([i for j in combination for i in j])
+            if counter != self.vertex_counts:
+                continue
+
+            # If are any self-reactions.
+            if any(abs(i - j) == 0 for i, j in combination):
+                continue
+
+            topology_code = TopologyCode(combination)
+
+            # Check for string done.
+            if topology_code.get_as_string() in combinations_tested:
+                continue
+
+            combinations_tested.add(topology_code.get_as_string())
+
+            # Convert TopologyCode to a graph.
+            current_graph = topology_code.get_graph()
+
+            # Check that graph for isomorphism with others graphs.
+            passed_iso = True
+            for tc in run_topology_codes:
+                test_graph = tc.get_graph()
+
+                if rx.is_isomorphic(current_graph, test_graph):
+                    passed_iso = False
+                    break
+
+            if not passed_iso:
+                continue
+
+            run_topology_codes.append(topology_code)
+            to_save.append(combination)
+            logger.info("found one at %s", _)
+
+        with self.graph_path.open("w") as f:
+            json.dump(to_save, f)
+
     def _two_type_algorithm(self) -> None:
         combinations_tested = set()
         run_topology_codes: list[TopologyCode] = []
