@@ -200,7 +200,7 @@ class TopologyIterator:
                     )
 
                 else:
-                    msg = "wrong number of functional groups"
+                    msg = "Building blocks need at least 1 FG."
                     raise RuntimeError(msg)
 
                 unaligned_vertex_prototypes.append(
