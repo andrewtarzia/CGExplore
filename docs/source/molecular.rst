@@ -81,8 +81,8 @@ For precursors useful in random/algorithmic structure generation:
   VaBeneGenerator <_autosummary/cgexplore.molecular.VaBeneGenerator>
   check_fit <_autosummary/cgexplore.molecular.check_fit>
 
-.. For rigid, shape-based precursors:
 
+For rigid, shape-based precursors:
 
 ..   :maxdepth: 1
 

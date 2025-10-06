@@ -8,7 +8,7 @@
    Systems optimisation <systems_optimisation>
    Sharing with collaborators <databasing>
    Molecular <molecular>
-   Optimisation <optimisation>
+   OpenMM Interface <optimisation>
    Forcefields <forcefields>
    Terms <terms>
    Analysis <analysis>

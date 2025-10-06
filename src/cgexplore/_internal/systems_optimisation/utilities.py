@@ -244,7 +244,7 @@ def yield_near_models(
 ) -> abc.Iterator[stk.Molecule]:
     """Yield structures of models with neighbouring force field parameters.
 
-    Keywords:
+    Parameters:
 
         molecule:
             The molecule to modify the position matrix of.
