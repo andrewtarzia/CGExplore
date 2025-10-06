@@ -141,6 +141,10 @@ class TopologyCode:
 
         return num_parallel_edges != 0
 
+    def get_number_connected_components(self) -> int:
+        """Get the number of connected components."""
+        return rx.number_connected_components(self.get_graph())
+
 
 @dataclass
 class Constructed:

@@ -12,7 +12,7 @@ import rustworkx as rx
 import stk
 
 from .topology_code import TopologyCode
-from .utilities import points_on_sphere, vmap_to_str
+from .utilities import points_on_sphere
 
 logging.basicConfig(
     level=logging.INFO,
@@ -233,10 +233,10 @@ class TopologyIterator:
                 continue
 
             # Check for string done.
-            if topology_code.as_string in combinations_tested:
+            if topology_code.get_as_string() in combinations_tested:
                 continue
 
-            combinations_tested.add(topology_code.as_string)
+            combinations_tested.add(topology_code.get_as_string())
 
             # Convert TopologyCode to a graph.
             current_graph = topology_code.get_graph()
@@ -320,10 +320,10 @@ class TopologyIterator:
                 continue
 
             # Check for string done.
-            if topology_code.as_string in combinations_tested:
+            if topology_code.get_as_string() in combinations_tested:
                 continue
 
-            combinations_tested.add(topology_code.as_string)
+            combinations_tested.add(topology_code.get_as_string())
 
             # Convert TopologyCode to a graph.
             current_graph = topology_code.get_graph()
@@ -367,15 +367,9 @@ class TopologyIterator:
 
         count = 0
         for combination in all_graphs:
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
+            topology_code = TopologyCode(combination)
 
-            num_components = rx.number_connected_components(
-                topology_code.get_graph()
-            )
-
+            num_components = topology_code.get_number_connected_components()
             if num_components == self.allowed_num_components:
                 count += 1
 
@@ -393,13 +387,8 @@ class TopologyIterator:
             all_graphs = json.load(f)
 
         for combination in all_graphs:
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
+            topology_code = TopologyCode(combination)
 
-            num_components = rx.number_connected_components(
-                topology_code.get_graph()
-            )
+            num_components = topology_code.get_number_connected_components()
             if num_components == self.allowed_num_components:
                 yield topology_code
