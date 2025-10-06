@@ -38,9 +38,12 @@ class BeadLibrary:
                 their expected coordination.
 
         """
-        possible_enames = {}
+        possible_enames: dict[str, str] = {}
         beads = []
         for bt, coord in bead_types.items():
+            if coord not in periodic_table_exclusions:
+                msg = f"Unknown coordination {coord} for bead type {bt}"
+                raise ValueError(msg)
             element_strings = _get_estrings(coord)
             for element_string in element_strings:
                 if element_string not in set(possible_enames.values()):
@@ -213,17 +216,19 @@ def string_to_atom_number(string: str) -> int:
     return periodic_table()[string]
 
 
+periodic_table_exclusions = {
+    0: ("Pd",),
+    1: ("Pd",),
+    2: ("Pd", "H"),
+    3: ("Pd", "H"),
+    4: ("H",),
+    5: ("Pd", "H"),
+    6: ("Pd", "H"),
+}
+
+
 def _get_estrings(coordination: int) -> list[str]:
     """Get element strings for a given coordination."""
-    periodic_table_exclusions = {
-        0: ("Pd",),
-        1: ("Pd",),
-        2: ("Pd", "H"),
-        3: ("Pd", "H"),
-        4: ("H",),
-        5: ("Pd", "H"),
-        6: ("Pd", "H"),
-    }
     return [
         element
         for element in periodic_table()
