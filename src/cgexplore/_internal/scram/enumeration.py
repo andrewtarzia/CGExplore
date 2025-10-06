@@ -335,7 +335,6 @@ class TopologyIterator:
             if i in self.vertex_types_by_fg[type2]
         ]
 
-        to_save = []
         for _ in range(self.used_samples):
             rng.shuffle(options)
             # Build an edge selection.
