@@ -1,22 +1,7 @@
 """Utilities module."""
 
-import logging
-from collections import abc
-
 import numpy as np
 import stk
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s | %(levelname)s | %(message)s",
-)
-logger = logging.getLogger(__name__)
-
-
-def vmap_to_str(vertex_map: abc.Sequence[tuple[int, int]]) -> str:
-    """Convert vertex map to str."""
-    strs = sorted([f"{i[0]}-{i[1]}" for i in vertex_map])
-    return "_".join(strs)
 
 
 def points_on_sphere(

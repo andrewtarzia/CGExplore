@@ -26,7 +26,7 @@ from cgexplore._internal.scram.topology_code import (
     TopologyCode,
     get_stk_topology_code,
 )
-from cgexplore._internal.scram.utilities import points_on_sphere, vmap_to_str
+from cgexplore._internal.scram.utilities import points_on_sphere
 
 __all__ = [
     "BuildingBlockConfiguration",
@@ -46,5 +46,4 @@ __all__ = [
     "points_on_sphere",
     "target_optimisation",
     "try_except_construction",
-    "vmap_to_str",
 ]

@@ -15,8 +15,6 @@ from cgexplore._internal.topologies.graphs import (
     UnalignedM1L2,
 )
 
-from .utilities import vmap_to_str
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
@@ -29,7 +27,11 @@ class TopologyCode:
     """Naming convention for topology graphs."""
 
     vertex_map: abc.Sequence[tuple[int, int]]
-    as_string: str
+
+    def get_as_string(self) -> str:
+        """Convert TopologyCode to string of the vertex map."""
+        strs = sorted([f"{i[0]}-{i[1]}" for i in self.vertex_map])
+        return "_".join(strs)
 
     def get_nx_graph(self) -> nx.Graph:
         """Convert TopologyCode to a networkx graph."""

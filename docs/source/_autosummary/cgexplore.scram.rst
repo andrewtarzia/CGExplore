@@ -45,7 +45,6 @@ cgexplore.scram
       points_on_sphere
       target_optimisation
       try_except_construction
-      vmap_to_str
    
    
 
