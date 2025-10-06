@@ -3,19 +3,19 @@
    :caption: CGExplore
    :maxdepth: 2
 
-   Analysis <analysis>
+   First paper example <first_paper_example>
+   Structure prediction <scram>
+   Systems optimisation <systems_optimisation>
    Sharing with collaborators <databasing>
-   Forcefields <forcefields>
    Molecular <molecular>
    Optimisation <optimisation>
-   Systems optimisation <systems_optimisation>
+   Forcefields <forcefields>
    Terms <terms>
+   Analysis <analysis>
    Utilities <utilities>
    Executables <executables>
    Topologies <topologies>
-   Scrambler <scram>
    Atomistic tools <atomistic>
-   First paper example <first_paper_example>
 
 .. toctree::
   :hidden:
