@@ -36,12 +36,21 @@ double wells or parallel edges.
 Additionally, one might want to build graphs that are not only
 ``one connected graph``. To do so, you must change ``allowed_num_components``.
 
+
+.. important::
+
+  While we have one, two and three type graphs below, within each, any
+  stoichiometry or configuration of same-numbered functional groups can be used.
+  For example, a heteroleptic cage of form Pd_n L_n L'_n is a two type graph
+  with ``n`` 4-FG Pd, ``n`` 2-FG L and ``n`` 2-FG L' building blocks.
+
+
 One-type graphs
 ^^^^^^^^^^^^^^^
 
 Produced graphs for ``m`` in (1 - 12) with FGs in (1 - 4).
 In these cases, the building block configuration will govern the placement of
-building blocks.
+building blocks. Generated with code:
 
 .. code-block:: python
 
