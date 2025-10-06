@@ -31,6 +31,7 @@ cgexplore.scram.TopologyIterator
    .. autosummary::
    
       ~TopologyIterator.allowed_num_components
+      ~TopologyIterator.graph_directory
       ~TopologyIterator.graph_set
       ~TopologyIterator.max_samples
       ~TopologyIterator.scale_multiplier
