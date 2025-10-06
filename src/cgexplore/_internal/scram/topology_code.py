@@ -178,10 +178,7 @@ def get_stk_topology_code(
     eps = target._edge_prototypes  # noqa: SLF001
 
     combination = [(i.get_vertex1_id(), i.get_vertex2_id()) for i in eps]
-    tc = TopologyCode(
-        vertex_map=combination,
-        as_string=vmap_to_str(combination),
-    )
+    tc = TopologyCode(combination)
 
     positions = [i.get_position() for i in vps]
 
