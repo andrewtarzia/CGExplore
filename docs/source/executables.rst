@@ -51,3 +51,11 @@ Deleting a property from all entries in a database
 In this case you must use the JSON path of format: ``"\$key1.key2"``. This is
 explained further in the ``atomlite``
 `documentation <https://atomlite.readthedocs.io/en/latest/index.html#examples-valid-property-paths>`_
+
+
+Deleting an entry from a database
+..................................................
+
+.. code-block:: bash
+
+  delete-entry path/to/database.db --name name
