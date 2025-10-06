@@ -102,12 +102,28 @@ not change with changes to this library.
   `cg_model_test <https://github.com/andrewtarzia/cg_model_test>`_ is a good
   example of usage too!
 
+How To Cite
+===========
+
+If you use ``cgexplore``, please cite this paper
+
+  TBD
+
+and reference this URL
+
+  https://github.com/andrewtarzia/CGExplore
+
+If you use our minimial model, please cite this paper
+
+  https://pubs.rsc.org/en/content/articlelanding/2023/sc/d3sc03991a
+
 
 Publications using CGExplore
 ============================
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
 * Starships: TBD (`models <https://cgmodels.readthedocs.io/en/latest/starships_mar2025.html>`_)
+* Blind structure prediction: TBD (`models <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
 
 Acknowledgements
 ================

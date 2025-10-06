@@ -76,7 +76,9 @@ appropriate information for mapping angles to models.
   * ``env_set.py`` sets a specific environment for file outputs
   * ``plot_XX.py`` produces images and figures, and performs analysis
 
-.. important::
+
+Important:
+
   **Warning**: If you have a CUDA-capable GPU and attempt to use CUDA in the
   first example, you may get ``NaN`` errors due to the torsion restriction for
   angles at 180 degrees, which cause problematic forces. This will be handled
@@ -89,20 +91,25 @@ appropriate information for mapping angles to models.
 How To Cite
 ===========
 
-If you use ``cgexplore`` please cite
+If you use ``cgexplore``, please cite this paper
+
+  TBD
+
+and reference this URL
 
   https://github.com/andrewtarzia/CGExplore
 
-and
+If you use our minimial model, please cite this paper
 
   https://pubs.rsc.org/en/content/articlelanding/2023/sc/d3sc03991a
+
 
 Publications using CGExplore
 ============================
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
 * Starships: TBD (`models <https://cgmodels.readthedocs.io/en/latest/starships_mar2025.html>`_)
-
+* Blind structure prediction: TBD (`models <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
 
 Acknowledgements
 ================
