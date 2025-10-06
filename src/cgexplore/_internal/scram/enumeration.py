@@ -235,9 +235,45 @@ class TopologyIterator:
             return self.unaligned_vertex_prototypes
         return self.vertex_prototypes
 
+    def _passes_tests(
+        self,
+        topology_code: TopologyCode,
+        combinations_tested: set,
+        combinations_passed: list[tuple[int, int]],
+    ) -> bool:
+        # Need to check for nonsensical ones here.
+        # Check the number of egdes per vertex is correct.
+        counter = Counter([i for j in topology_code.vertex_map for i in j])
+        if counter != self.vertex_counts:
+            return False
+
+        # If there are any self-reactions.
+        if any(abs(i - j) == 0 for i, j in topology_code.vertex_map):
+            return False
+
+        # Check for string done.
+        if topology_code.get_as_string() in combinations_tested:
+            return False
+
+        # Convert TopologyCode to a graph.
+        current_graph = topology_code.get_graph()
+
+        # Check that graph for isomorphism with other graphs.
+        passed_iso = True
+        for tcc in combinations_passed:
+            test_graph = TopologyCode(tcc).get_graph()
+
+            if rx.is_isomorphic(current_graph, test_graph):
+                passed_iso = False
+                break
+
+        return passed_iso
+
     def _one_type_algorithm(self) -> None:
+        # All combinations tested.
         combinations_tested = set()
-        run_topology_codes: list[TopologyCode] = []
+        # All passed combinations.
+        combinations_passed: list[tuple[int, int]] = []
 
         type1 = next(iter(set(self.vertex_types_by_fg.keys())))
 
@@ -248,7 +284,6 @@ class TopologyIterator:
             if i in self.vertex_types_by_fg[type1]
         ]
 
-        to_save = []
         for _ in range(self.used_samples):
             # Shuffle.
             rng.shuffle(options)
@@ -265,49 +300,25 @@ class TopologyIterator:
                 msg = "could not split edge into two equal sets"
                 raise ValueError(msg) from exc
 
-            # Need to check for nonsensical ones here.
-            # Check the number of egdes per vertex is correct.
-            counter = Counter([i for j in combination for i in j])
-            if counter != self.vertex_counts:
-                continue
-
-            # If are any self-reactions.
-            if any(abs(i - j) == 0 for i, j in combination):
-                continue
-
             topology_code = TopologyCode(combination)
-
-            # Check for string done.
-            if topology_code.get_as_string() in combinations_tested:
-                continue
-
+            if self._passes_tests(
+                topology_code=topology_code,
+                combinations_tested=combinations_tested,
+                combinations_passed=combinations_passed,
+            ):
+                combinations_passed.append(combination)
+                logger.info("found one at %s", _)
+            # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
 
-            # Convert TopologyCode to a graph.
-            current_graph = topology_code.get_graph()
-
-            # Check that graph for isomorphism with others graphs.
-            passed_iso = True
-            for tc in run_topology_codes:
-                test_graph = tc.get_graph()
-
-                if rx.is_isomorphic(current_graph, test_graph):
-                    passed_iso = False
-                    break
-
-            if not passed_iso:
-                continue
-
-            run_topology_codes.append(topology_code)
-            to_save.append(combination)
-            logger.info("found one at %s", _)
-
         with self.graph_path.open("w") as f:
-            json.dump(to_save, f)
+            json.dump(combinations_passed, f)
 
     def _two_type_algorithm(self) -> None:
+        # All combinations tested.
         combinations_tested = set()
-        run_topology_codes: list[TopologyCode] = []
+        # All passed combinations.
+        combinations_passed: list[tuple[int, int]] = []
 
         type1, type2 = sorted(self.vertex_types_by_fg.keys(), reverse=True)
 
@@ -333,49 +344,25 @@ class TopologyIterator:
                 for i, j in zip(itera1, options, strict=True)
             ]
 
-            # Need to check for nonsensical ones here.
-            # Check the number of egdes per vertex is correct.
-            counter = Counter([i for j in combination for i in j])
-            if counter != self.vertex_counts:
-                continue
-
-            # If are any self-reactions.
-            if any(abs(i - j) == 0 for i, j in combination):
-                continue
-
             topology_code = TopologyCode(combination)
-
-            # Check for string done.
-            if topology_code.get_as_string() in combinations_tested:
-                continue
-
+            if self._passes_tests(
+                topology_code=topology_code,
+                combinations_tested=combinations_tested,
+                combinations_passed=combinations_passed,
+            ):
+                combinations_passed.append(combination)
+                logger.info("found one at %s", _)
+            # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
 
-            # Convert TopologyCode to a graph.
-            current_graph = topology_code.get_graph()
-
-            # Check that graph for isomorphism with others graphs.
-            passed_iso = True
-            for tc in run_topology_codes:
-                test_graph = tc.get_graph()
-
-                if rx.is_isomorphic(current_graph, test_graph):
-                    passed_iso = False
-                    break
-
-            if not passed_iso:
-                continue
-
-            run_topology_codes.append(topology_code)
-            to_save.append(combination)
-            logger.info("found one at %s", _)
-
         with self.graph_path.open("w") as f:
-            json.dump(to_save, f)
+            json.dump(combinations_passed, f)
 
     def _three_type_algorithm(self) -> None:
+        # All combinations tested.
         combinations_tested = set()
-        run_topology_codes: list[TopologyCode] = []
+        # All passed combinations.
+        combinations_passed: list[tuple[int, int]] = []
 
         type1, type2, type3 = sorted(
             self.vertex_types_by_fg.keys(), reverse=True
@@ -399,7 +386,6 @@ class TopologyIterator:
             if i in self.vertex_types_by_fg[type3]
         ]
 
-        to_save = []
         for _ in range(self.used_samples):
             # Merging options1 and options2 because they both bind to itera.
             mixed_options = options1 + options2
@@ -411,45 +397,19 @@ class TopologyIterator:
                 for i, j in zip(itera1, mixed_options, strict=True)
             ]
 
-            # Need to check for nonsensical ones here.
-            # Check the number of egdes per vertex is correct.
-            counter = Counter([i for j in combination for i in j])
-            if counter != self.vertex_counts:
-                continue
-
-            # If are any self-reactions.
-            if any(abs(i - j) == 0 for i, j in combination):
-                continue
-
             topology_code = TopologyCode(combination)
-
-            # Check for string done.
-            if topology_code.get_as_string() in combinations_tested:
-                continue
-
+            if self._passes_tests(
+                topology_code=topology_code,
+                combinations_tested=combinations_tested,
+                combinations_passed=combinations_passed,
+            ):
+                combinations_passed.append(combination)
+                logger.info("found one at %s", _)
+            # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
 
-            # Convert TopologyCode to a graph.
-            current_graph = topology_code.get_graph()
-
-            # Check that graph for isomorphism with others graphs.
-            passed_iso = True
-            for tc in run_topology_codes:
-                test_graph = tc.get_graph()
-
-                if rx.is_isomorphic(current_graph, test_graph):
-                    passed_iso = False
-                    break
-
-            if not passed_iso:
-                continue
-
-            run_topology_codes.append(topology_code)
-            to_save.append(combination)
-            logger.info("found one at %s", _)
-
         with self.graph_path.open("w") as f:
-            json.dump(to_save, f)
+            json.dump(combinations_passed, f)
 
     def _define_graphs(self) -> None:
         if self.graph_set in ("nx", "rx", "rx_nodoubles"):
