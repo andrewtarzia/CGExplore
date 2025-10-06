@@ -28,48 +28,100 @@ class TopologyIterator:
     This is the latest version, but without good symmetry and graph checks,
     this can over produce structures.
 
+    .. important::
+
+      **Warning**: Currently, the order of ``building_block_counts`` has to
+      have the building block with the most FGs first!
+
+    .. important::
+
+      To reproduce the ``no_doubles'' dataset, you must use
+      ``graph_set=rx_nodoubles``, or filter the topology codes after
+      generation (this is now the recommended approach).
+
+    Parameters:
+        building_block_counts:
+            Dictionary of :class:`stk.BuildingBlock` and their count in the
+            proposed structures. Always put the building blocks with more
+            functional groups first (this is a current bug).
+
+        graph_type:
+            Name of the graph. Current name convention is long, but complete,
+            capturing the count of each building block with certain functional
+            group count included. Following this name convention will allow you
+            to use saved graphs, if not, you can make your own. Although it can
+            be time consuming.
+
+        graph_set:
+            Set of graphs to use based on different algorithms or papers.
+            Can be custom, as above. Note that the code to generation ``nx``
+            graphs is no longer present in ``cgexplore`` because the
+            :mod:`networkx` algorithms were slow.
+
+        scale_multiplier:
+            Scale multiplier to use in construction.
+
+        allowed_num_components:
+            Allowed number of disconnected graph components. Usually ``1`` to
+            generate complete graphs only.
+
+        max_samples:
+            When constructing graphs, there is some randomness in their order,
+            although that order should be consistent, and only up-to
+            ``max_samples`` are sampled. For very large numbers of building
+            blocks there is not guarantee all possible graphs will be explored.
+
+        graph_directory:
+            Directory to check for and save graph jsons.
+
     """
 
     building_block_counts: dict[stk.BuildingBlock, int]
     graph_type: str
-    graph_set: Literal["rx", "nx", "rx_nodoubles"] = "rx"
+    graph_set: Literal["rxx", "rx", "nx", "rx_nodoubles"] = "rxx"
     scale_multiplier = 5
     allowed_num_components: int = 1
     max_samples: int | None = None
+    graph_directory: pathlib.Path | None = None
 
     def __post_init__(self) -> None:  # noqa: PLR0915, PLR0912, C901
         """Initialize."""
+        if self.graph_directory is None:
+            self.graph_directory = (
+                pathlib.Path(__file__).resolve().parent / "known_graphs"
+            )
+
+        if not self.graph_directory.exists():
+            msg = f"graph directory does not exist ({self.graph_directory})"
+            raise RuntimeError(msg)
+
         match self.graph_set:
+            case "rxx":
+                self.graph_path = (
+                    self.graph_directory / f"rxx_{self.graph_type}.json"
+                )
+                if self.max_samples is None:
+                    self.used_samples = int(1e7)
+
             case "rx":
-                self.graphs_path = (
-                    pathlib.Path(__file__).resolve().parent
-                    / "known_graphs"
-                    / f"rx_{self.graph_type}.json"
+                self.graph_path = (
+                    self.graph_directory / f"rx_{self.graph_type}.json"
                 )
                 if self.max_samples is None:
                     self.used_samples = int(1e4)
 
             case "rx_nodoubles":
-                self.graphs_path = (
-                    pathlib.Path(__file__).resolve().parent
-                    / "known_graphs"
-                    / f"rxnd_{self.graph_type}.json"
+                self.graph_path = (
+                    self.graph_directory / f"rxnd_{self.graph_type}.json"
                 )
                 if self.max_samples is None:
                     self.used_samples = int(1e5)
 
             case "nx":
-                self.graphs_path = (
-                    pathlib.Path(__file__).resolve().parent
-                    / "known_graphs"
-                    / f"g_{self.graph_type}.json"
+                self.graph_path = (
+                    self.graph_directory / f"g_{self.graph_type}.json"
                 )
-                if not self.graphs_path.exists():
-                    msg = "building graphs with nx no longer available"
-                    raise RuntimeError(msg)
-
-            case _:
-                raise RuntimeError
+                self.used_samples = 0
 
         # Use an angle rotation of points on a sphere for each building block
         # type to avoid overlap of distinct building block spheres with the
