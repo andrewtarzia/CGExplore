@@ -343,16 +343,7 @@ class TopologyIterator:
             if any(abs(i - j) == 0 for i, j in combination):
                 continue
 
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
-
-            if (
-                self.graph_set == "rx_nodoubles"
-                and topology_code.contains_doubles()
-            ):
-                continue
+            topology_code = TopologyCode(combination)
 
             # Check for string done.
             if topology_code.get_as_string() in combinations_tested:
@@ -379,7 +370,7 @@ class TopologyIterator:
             to_save.append(combination)
             logger.info("found one at %s", _)
 
-        with self.graphs_path.open("w") as f:
+        with self.graph_path.open("w") as f:
             json.dump(to_save, f)
 
     def _three_type_algorithm(self) -> None:
@@ -430,16 +421,7 @@ class TopologyIterator:
             if any(abs(i - j) == 0 for i, j in combination):
                 continue
 
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
-
-            if (
-                self.graph_set == "rx_nodoubles"
-                and topology_code.contains_doubles()
-            ):
-                continue
+            topology_code = TopologyCode(combination)
 
             # Check for string done.
             if topology_code.get_as_string() in combinations_tested:
@@ -466,25 +448,37 @@ class TopologyIterator:
             to_save.append(combination)
             logger.info("found one at %s", _)
 
-        with self.graphs_path.open("w") as f:
+        with self.graph_path.open("w") as f:
             json.dump(to_save, f)
 
-    def _define_all_graphs(self) -> None:
+    def _define_graphs(self) -> None:
+        if self.graph_set in ("nx", "rx", "rx_nodoubles"):
+            msg = (
+                "Graph definitions are no longer implemented for graph sets"
+                "other than ``rxx``. Please use that graph set."
+            )
+            raise RuntimeError(msg)
+
         num_types = len(self.vertex_types_by_fg.keys())
-        if num_types == 2:  # noqa: PLR2004
+        if num_types == 1:
+            self._one_type_algorithm()
+        elif num_types == 2:  # noqa: PLR2004
             self._two_type_algorithm()
         elif num_types == 3:  # noqa: PLR2004
             self._three_type_algorithm()
         else:
-            msg = "not implemented for other types yet"
+            msg = (
+                "Not implemented for mixtures of more than 3 distinct "
+                "FG numbers"
+            )
             raise RuntimeError(msg)
 
     def count_graphs(self) -> int:
         """Count completely connected graphs in iteration."""
-        if not self.graphs_path.exists():
-            self._define_all_graphs()
+        if not self.graph_path.exists():
+            self._define_graphs()
 
-        with self.graphs_path.open("r") as f:
+        with self.graph_path.open("r") as f:
             all_graphs = json.load(f)
 
         count = 0
@@ -502,10 +496,10 @@ class TopologyIterator:
 
         Yields only completely connected graphs.
         """
-        if not self.graphs_path.exists():
-            self._define_all_graphs()
+        if not self.graph_path.exists():
+            self._define_graphs()
 
-        with self.graphs_path.open("r") as f:
+        with self.graph_path.open("r") as f:
             all_graphs = json.load(f)
 
         for combination in all_graphs:
