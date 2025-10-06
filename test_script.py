@@ -156,7 +156,6 @@ def analyse_cage(
         conformer_db_path
     ).get_molecule(min_energy_key)
 
-    database.add_molecule(molecule=final_molecule, key=name)
     database.add_properties(key=name, property_dict=initial_properties)
     database.add_properties(key=name, property_dict={"lowest_e_of_mash": True})
     properties = database.get_entry(name).properties
@@ -190,8 +189,9 @@ def make_summary_plot(
     for entry in cgx.utilities.AtomliteDatabase(database_path).get_entries():
         if "lowest_e_of_mash" not in entry.properties:
             continue
-        print(entry.properties)
-
+        if "multiplier" not in entry.properties:
+            print(entry.key)
+            continue
         multi = str(entry.properties["multiplier"])
         if multi not in xs:
             xs.append(multi)
@@ -223,7 +223,7 @@ def make_summary_plot(
     )
 
     # define the bins and normalize
-    bounds = [0, 0.1, 0.5, 1.0, 5.0, 10.0]
+    bounds = [0, 0.1, 0.2, 0.3, 0.5, 1.0]
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     for (pair, multi), evalues in energies.items():
         sorted_energies = sorted(evalues, key=lambda p: p[0])
@@ -526,6 +526,10 @@ def main() -> None:  # noqa: PLR0915
                         str(structure_dir / f"{config_name}_optc.mol")
                     )
 
+                    # To database.
+                    cgx.utilities.AtomliteDatabase(database_path).add_molecule(
+                        molecule=min_energy_structure, key=config_name
+                    )
                     properties = {
                         "multiplier": multiplier,
                         "topology_idx": idx,
@@ -534,7 +538,6 @@ def main() -> None:  # noqa: PLR0915
                         database_path
                     ).add_properties(key=config_name, property_dict=properties)
 
-                    # To database.
                     analyse_cage(
                         database_path=database_path,
                         name=config_name,
