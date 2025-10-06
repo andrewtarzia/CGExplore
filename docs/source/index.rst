@@ -122,8 +122,8 @@ Publications using CGExplore
 ============================
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
-* Starships: TBD (`models <https://cgmodels.readthedocs.io/en/latest/starships_mar2025.html>`_)
-* Blind structure prediction: TBD (`models <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
+* Starships: TBD (`starship Mar 2025 <https://cgmodels.readthedocs.io/en/latest/starships_mar2025.html>`_)
+* Blind structure prediction: TBD (`blind Oct 2025 <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
 
 Acknowledgements
 ================
