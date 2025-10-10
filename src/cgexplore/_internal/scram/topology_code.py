@@ -96,13 +96,6 @@ class TopologyCode:
     def contains_doubles(self) -> bool:
         """True if the graph contains "double-walls"."""
         weighted_graph = self.get_weighted_graph()
-        num_parallel_edges = len(
-            [
-                i
-                for i in weighted_graph.edges()
-                if i == 2  # noqa: PLR2004
-            ]
-        )
 
         filtered_paths = set()
         for node in weighted_graph.nodes():
@@ -126,18 +119,12 @@ class TopologyCode:
         path_lengths = [len(i) - 1 for i in filtered_paths]
         counter = Counter(path_lengths)
 
-        return num_parallel_edges != 0 or counter[4] != 0
+        return counter[4] != 0
 
     def contains_parallels(self) -> bool:
         """True if the graph contains "1-loops"."""
         weighted_graph = self.get_weighted_graph()
-        num_parallel_edges = len(
-            [
-                i
-                for i in weighted_graph.edges()
-                if i == 2  # noqa: PLR2004
-            ]
-        )
+        num_parallel_edges = len([i for i in weighted_graph.edges() if i > 1])
 
         return num_parallel_edges != 0
 
