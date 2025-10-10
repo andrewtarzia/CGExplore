@@ -33,6 +33,133 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def get_regraphed_molecule(
+    graph_type: str,
+    scale: float,
+    topology_code: TopologyCode,
+    iterator: TopologyIterator,
+    bb_config: BuildingBlockConfiguration | None,
+) -> stk.ConstructedMolecule:
+    """Take a graph that considers all atoms, and get atom positions.
+
+    The initial graph is generated with `stko.Network.init_from_molecule`.
+
+    .. important::
+
+      **Warning**: There is no guarantee the graph layout will give identical
+      coordinates in multiple runs.
+
+    Parameters:
+        graph_type:
+            Which networkx layout to use (of `spring`, `kamada`).
+
+        scale:
+            Scale factor to apply to eventual constructed molecule.
+
+        topology_code:
+            The code defining the topology graph.
+
+        iterator:
+            The `scram` algorithm used to generate the graph and configuration.
+
+        bb_config:
+            The configuration of building blocks on the graph.
+
+    Returns:
+        A constructed molecule at (0, 0, 0).
+
+    """
+    logger.warning(
+        "Caution with this because it currently can change the cis/trans in "
+        "m2l4"
+    )
+
+    constructed_molecule = try_except_construction(
+        iterator=iterator,
+        topology_code=topology_code,
+        building_block_configuration=bb_config,
+        vertex_positions=None,
+    )
+
+    stko_graph = stko.Network.init_from_molecule(constructed_molecule)
+    if graph_type == "spring":
+        nx_positions = nx.spring_layout(stko_graph.get_graph(), dim=3)
+    elif graph_type == "kamada":
+        nx_positions = nx.kamada_kawai_layout(stko_graph.get_graph(), dim=3)
+    else:
+        raise NotImplementedError
+    pos_mat = np.array([nx_positions[i] for i in nx_positions])
+    return constructed_molecule.with_position_matrix(
+        pos_mat * float(scale)
+    ).with_centroid(np.array((0.0, 0.0, 0.0)))
+
+
+def get_vertexset_molecule(
+    graph_type: str | None,
+    scale: float,
+    topology_code: TopologyCode,
+    iterator: TopologyIterator,
+    bb_config: BuildingBlockConfiguration,
+) -> stk.ConstructedMolecule:
+    """Take a graph and genereate from graph vertex positions.
+
+    .. important::
+
+      **Warning**: There is no guarantee the graph layout will give identical
+      coordinates in multiple runs.
+
+    Parameters:
+        graph_type:
+            Which networkx layout to use (of `spring`,
+            `kamada`, `spectral`).
+
+        scale:
+            Scale factor to apply to eventual constructed molecule.
+
+        topology_code:
+            The code defining the topology graph.
+
+        iterator:
+            The `scram` algorithm used to generate the graph and configuration.
+
+        bb_config:
+            The configuration of building blocks on the graph.
+
+    Returns:
+        A constructed molecule at (0, 0, 0).
+
+    """
+    if graph_type is None:
+        return try_except_construction(
+            iterator=iterator,
+            topology_code=topology_code,
+            building_block_configuration=bb_config,
+            vertex_positions=None,
+        ).with_centroid(np.array((0.0, 0.0, 0.0)))
+
+    nx_graph = topology_code.get_nx_graph()
+
+    if graph_type == "kamada":
+        nxpos = nx.kamada_kawai_layout(nx_graph, dim=3)
+    elif graph_type == "spring":
+        nxpos = nx.spring_layout(nx_graph, dim=3)
+    elif graph_type == "spectral":
+        nxpos = nx.spectral_layout(nx_graph, dim=3)
+    else:
+        raise NotImplementedError
+
+    vertex_positions = {
+        nidx: np.array(nxpos[nidx]) * float(scale)
+        for nidx in topology_code.get_nx_graph().nodes
+    }
+    return try_except_construction(
+        iterator=iterator,
+        topology_code=topology_code,
+        building_block_configuration=bb_config,
+        vertex_positions=vertex_positions,
+    ).with_centroid(np.array((0.0, 0.0, 0.0)))
+
+
 def graph_optimise_cage(  # noqa: PLR0913
     molecule: stk.Molecule,
     name: str,
