@@ -48,9 +48,8 @@ Additionally, one might want to build graphs that are not only
 One-type graphs
 ^^^^^^^^^^^^^^^
 
-Produced graphs for ``m`` in (1 - 12) with FGs in (1 - 4).
-In these cases, the building block configuration will govern the placement of
-building blocks. Generated with code:
+Produced graphs for ``m`` in (1 - 10) with FGs in (1 - 4).
+Generated with code:
 
 .. code-block:: python
 
@@ -60,7 +59,7 @@ building blocks. Generated with code:
         3: stk.BuildingBlock("BrCC(Br)CCBr", (stk.BromoFactory(),)),
         4: stk.BuildingBlock("BrCC(Br)CCC(Br)CCBr", (stk.BromoFactory(),)),
     }
-    multipliers = range(1, 13)
+    multipliers = range(1, 11)
 
     for midx, fgnum in it.product(multipliers, bbs):
         try:
@@ -80,6 +79,45 @@ building blocks. Generated with code:
 
 Two-type graphs
 ^^^^^^^^^^^^^^^
+
+Produced graphs for ``m`` in (1 - 12) with FGs in (1 - 4) and
+stoichiometries of ``bigger``:``smaller`` (in terms of FGs): 1:2, 2:3, 3:4.
+Generated with code:
+
+.. code-block:: python
+
+    bbs = {
+        1: stk.BuildingBlock("BrC", (stk.BromoFactory(),)),
+        2: stk.BuildingBlock("BrCCCCBr", (stk.BromoFactory(),)),
+        3: stk.BuildingBlock("BrCC(Br)CCBr", (stk.BromoFactory(),)),
+        4: stk.BuildingBlock("BrCC(Br)CCC(Br)CCBr", (stk.BromoFactory(),)),
+    }
+    multipliers = range(1, 13)
+
+    two_type_stoichiometries = ((1, 2), (2, 3), (3, 4))
+    for midx, fgnum1, fgnum2, stoich in it.product(
+        multipliers, bbs, bbs, two_type_stoichiometries
+    ):
+        if fgnum1 == fgnum2:
+            continue
+        fgnum1_, fgnum2_ = sorted((fgnum1, fgnum2), reverse=True)
+
+        try:
+            iterator = cgx.scram.TopologyIterator(
+                building_block_counts={
+                    bbs[fgnum1_]: midx * stoich[0],
+                    bbs[fgnum2_]: midx * stoich[1],
+                },
+                graph_type=f"{midx * stoich[0]}-{fgnum1_}FG_"
+                f"{midx * stoich[1]}-{fgnum2_}FG",
+                graph_set="rxx",
+            )
+            logging.info(
+                "graph iteration has %s graphs", iterator.count_graphs()
+            )
+        except (ZeroDivisionError, ValueError):
+            pass
+
 
 Three-type graphs
 ^^^^^^^^^^^^^^^^^
