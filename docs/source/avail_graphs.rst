@@ -121,3 +121,47 @@ Generated with code:
 
 Three-type graphs
 ^^^^^^^^^^^^^^^^^
+
+Produced graphs for ``m`` in (1 - 5) with FGs in (1 - 4) and
+a combinatorial check of stoichiometries. Note that current versions will
+always focus on smaller FG BBs binding only to the BB with the most FGs.
+Generated with code:
+
+.. code-block:: python
+
+    bbs = {
+        1: stk.BuildingBlock("BrC", (stk.BromoFactory(),)),
+        2: stk.BuildingBlock("BrCCCCBr", (stk.BromoFactory(),)),
+        3: stk.BuildingBlock("BrCC(Br)CCBr", (stk.BromoFactory(),)),
+        4: stk.BuildingBlock("BrCC(Br)CCC(Br)CCBr", (stk.BromoFactory(),)),
+    }
+
+    # Three typers.
+    multipliers = range(1, 5)
+    three_type_stoichiometries = tuple(
+        (i, j, k) for i, j, k in it.product((1, 2, 3, 4), repeat=3)
+    )
+    for midx, fgnum1, fgnum2, fgnum3, stoich in it.product(
+        multipliers, bbs, bbs, bbs, three_type_stoichiometries
+    ):
+        if fgnum1 in (fgnum2, fgnum3) or fgnum2 == fgnum3:
+            continue
+        fgnum1_, fgnum2_, fgnum3_ = sorted(
+            (fgnum1, fgnum2, fgnum3), reverse=True
+        )
+
+        try:
+            iterator = cgx.scram.TopologyIterator(
+                building_block_counts={
+                    bbs[fgnum1_]: midx * stoich[0],
+                    bbs[fgnum2_]: midx * stoich[1],
+                    bbs[fgnum3_]: midx * stoich[2],
+                },
+                graph_type=f"{midx * stoich[0]}-{fgnum1_}FG_"
+                f"{midx * stoich[1]}-{fgnum2_}FG_"
+                f"{midx * stoich[2]}-{fgnum3_}FG",
+                graph_set="rxx",
+            )
+
+        except (ZeroDivisionError, ValueError):
+            pass
