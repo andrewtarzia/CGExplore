@@ -18,38 +18,6 @@ def main() -> None:
     }
     multipliers = range(1, 11)
 
-    # Two typers test .
-    multipliers = (3,)
-    two_type_stoichiometries = ((1, 2),)
-    for midx, fgnum1, fgnum2, stoich in it.product(
-        multipliers, bbs, bbs, two_type_stoichiometries
-    ):
-        if fgnum1 == fgnum2:
-            continue
-        fgnum1_, fgnum2_ = sorted((fgnum1, fgnum2), reverse=True)
-        print(
-            f"doing m={midx}, bbs={(fgnum1_, fgnum2_)}, s={stoich} "
-            f"-> m*s={(stoich[0] * midx, stoich[1] * midx)}"
-        )
-
-        try:
-            iterator = cgx.scram.TopologyIterator(
-                building_block_counts={
-                    bbs[fgnum2_]: midx * stoich[1],
-                    bbs[fgnum1_]: midx * stoich[0],
-                },
-                graph_type=f"{midx * stoich[0]}-{fgnum1_}FG_"
-                f"{midx * stoich[1]}-{fgnum2_}FG",
-                graph_set="test",
-            )
-            logger.info(
-                "graph iteration has %s graphs", iterator.count_graphs()
-            )
-        except (ZeroDivisionError, ValueError):
-            print(
-                f"      m={midx}, bbs={(fgnum1_, fgnum2_)}, s={stoich} failed"
-            )
-
     # One typers.
     for midx, fgnum in it.product(multipliers, bbs):
         print(f"doing m={midx}, bb={fgnum}")

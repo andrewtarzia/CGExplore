@@ -31,7 +31,11 @@ class TopologyIterator:
     .. important::
 
       **Warning**: Currently, the order of ``building_block_counts`` has to
-      have the building block with the most FGs first!
+      have the building block with the most FGs first! This ordering is defined
+      by the order used when defining the graphs. If you are defining your own
+      graph library (i.e., setting ``graph_directory`` or using a new
+      ``graph_type``), then the order is defined by the order in
+      ``building_block_counts`` when generating the json.
 
     .. important::
 
