@@ -284,7 +284,7 @@ class TopologyIterator:
             if i in self.vertex_types_by_fg[type1]
         ]
 
-        for _ in range(self.used_samples):
+        for i in range(self.used_samples):
             # Shuffle.
             rng.shuffle(options)
             # Split in half.
@@ -307,9 +307,17 @@ class TopologyIterator:
                 combinations_passed=combinations_passed,
             ):
                 combinations_passed.append(combination)
-                logger.info("found one at %s", _)
+
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
+            # Progress.
+            if i % 100000 == 0:
+                logger.info(
+                    "done %s of %s (%s/100.0)",
+                    i,
+                    self.used_samples,
+                    round((i / self.used_samples) * 100, 1),
+                )
 
         with self.graph_path.open("w") as f:
             json.dump(combinations_passed, f)
@@ -335,7 +343,7 @@ class TopologyIterator:
             if i in self.vertex_types_by_fg[type2]
         ]
 
-        for _ in range(self.used_samples):
+        for i in range(self.used_samples):
             rng.shuffle(options)
             # Build an edge selection.
             combination: abc.Sequence[tuple[int, int]] = [
@@ -350,9 +358,17 @@ class TopologyIterator:
                 combinations_passed=combinations_passed,
             ):
                 combinations_passed.append(combination)
-                logger.info("found one at %s", _)
+
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
+            # Progress.
+            if i % 100000 == 0:
+                logger.info(
+                    "done %s of %s (%s/100.0)",
+                    i,
+                    self.used_samples,
+                    round((i / self.used_samples) * 100, 1),
+                )
 
         with self.graph_path.open("w") as f:
             json.dump(combinations_passed, f)
@@ -385,7 +401,7 @@ class TopologyIterator:
             if i in self.vertex_types_by_fg[type3]
         ]
 
-        for _ in range(self.used_samples):
+        for i in range(self.used_samples):
             # Merging options1 and options2 because they both bind to itera.
             mixed_options = options1 + options2
             rng.shuffle(mixed_options)
@@ -403,9 +419,17 @@ class TopologyIterator:
                 combinations_passed=combinations_passed,
             ):
                 combinations_passed.append(combination)
-                logger.info("found one at %s", _)
+
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
+            # Progress.
+            if i % 100000 == 0:
+                logger.info(
+                    "done %s of %s (%s/100.0)",
+                    i,
+                    self.used_samples,
+                    round((i / self.used_samples) * 100, 1),
+                )
 
         with self.graph_path.open("w") as f:
             json.dump(combinations_passed, f)
@@ -435,6 +459,7 @@ class TopologyIterator:
     def count_graphs(self) -> int:
         """Count completely connected graphs in iteration."""
         if not self.graph_path.exists():
+            logger.info("%s not found, constructing!", self.graph_path)
             self._define_graphs()
 
         with self.graph_path.open("r") as f:
@@ -456,6 +481,7 @@ class TopologyIterator:
         Yields only completely connected graphs.
         """
         if not self.graph_path.exists():
+            logger.info("%s not found, constructing!", self.graph_path)
             self._define_graphs()
 
         with self.graph_path.open("r") as f:
