@@ -47,7 +47,10 @@ class TopologyIterator:
         building_block_counts:
             Dictionary of :class:`stk.BuildingBlock` and their count in the
             proposed structures. Always put the building blocks with more
-            functional groups first (this is a current bug).
+            functional groups first (this is a current bug). Additionally, only
+            mixtures of three distinct building block functional group counts
+            is implemented, and in the case of three components, all building
+            blocks bind to the building block with the most functional groups.
 
         graph_type:
             Name of the graph. Current name convention is long, but complete,
