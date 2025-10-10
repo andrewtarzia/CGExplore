@@ -102,6 +102,8 @@ class TopologyIterator:
                 )
                 if self.max_samples is None:
                     self.used_samples = int(1e7)
+                else:
+                    self.used_samples = int(self.max_samples)
 
             case "rx":
                 self.graph_path = (
@@ -109,6 +111,8 @@ class TopologyIterator:
                 )
                 if self.max_samples is None:
                     self.used_samples = int(1e4)
+                else:
+                    self.used_samples = int(self.max_samples)
 
             case "rx_nodoubles":
                 self.graph_path = (
@@ -116,12 +120,18 @@ class TopologyIterator:
                 )
                 if self.max_samples is None:
                     self.used_samples = int(1e5)
+                else:
+                    self.used_samples = int(self.max_samples)
 
             case "nx":
                 self.graph_path = (
                     self.graph_directory / f"g_{self.graph_type}.json"
                 )
                 self.used_samples = 0
+
+            case _:
+                msg = f"{self.graph_set} not defined"
+                raise NotImplementedError(msg)
 
         # Use an angle rotation of points on a sphere for each building block
         # type to avoid overlap of distinct building block spheres with the
