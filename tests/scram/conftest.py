@@ -96,18 +96,21 @@ bbs = {
             parallels={0: True, 1: True, 2: True, 3: True, 4: False, 5: True},
             iso_pass={},
         ),
-        # tri tri tri
-        # lambda name: CaseData(
-        #     building_block_counts={bbs[4]: 2, bbs[2]: 4},
-        #     graph_type="2-4FG_4-2FG",
-        #     graph_set="rxx",
-        #     graph_directory=pathlib.Path(__file__).resolve().parent
-        #     / "temp_graphs",
-        #     max_samples=1e4,
-        #     graph_filename="rxx_2-4FG_4-2FG.json",
-        #     num_graphs=2,
-        #     name=name,
-        # ),
+        lambda name: CaseData(
+            building_block_counts={bbs[3]: 2, bbs[2]: 2, bbs[1]: 2},
+            graph_type="2-3FG_2-2FG_2-1FG",
+            graph_set="rxx",
+            graph_directory=pathlib.Path(__file__).resolve().parent
+            / "temp_graphs",
+            max_samples=1e4,
+            graph_filename="rxx_2-3FG_2-2FG_2-1FG.json",
+            num_graphs=2,
+            num_configs=0,
+            name=name,
+            doubles={0: True, 1: False},
+            parallels={0: False, 1: True},
+            iso_pass={},
+        ),
     )
 )
 def graph_data(request: pytest.FixtureRequest) -> CaseData:
