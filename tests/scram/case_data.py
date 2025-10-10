@@ -14,7 +14,9 @@ class CaseData:
     graph_directory: pathlib.Path
     graph_filename: str
     num_graphs: int
+    num_configs: int
     max_samples: int
     doubles: dict[int, bool]
     parallels: dict[int, bool]
+    iso_pass: dict[tuple[int, int], bool]
     name: str
