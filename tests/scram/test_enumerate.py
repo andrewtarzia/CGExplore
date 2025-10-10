@@ -31,6 +31,7 @@ def test_enumerate(graph_data: CaseData) -> None:
         # Remake graphs.
         graph_directory=graph_directory,
     )
+    assert iterator.count_graphs() == graph_data.num_graphs
 
     for idx, tc in enumerate(iterator.yield_graphs()):
         # Look at previous string.
