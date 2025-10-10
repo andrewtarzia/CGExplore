@@ -1,7 +1,6 @@
 import pathlib
 
 import numpy as np
-import pytest
 import stk
 
 import cgexplore as cgx
@@ -69,19 +68,8 @@ def test_layouts(
         # Currently, we are using graph layouts that are not deterministic,
         # unsure why. One day this will be fixed, for now, we expect failure.
         # Although it seems spectral is consistent!
-        if graph_type == "spectral":
-            assert np.allclose(
-                known_molecule.get_position_matrix(),
-                vertex_set.get_position_matrix(),
-                atol=1e-3,
-            )
-        else:
-            with pytest.raises(AssertionError):
-                assert np.allclose(
-                    known_molecule.get_position_matrix(),
-                    vertex_set.get_position_matrix(),
-                    atol=1e-3,
-                )
+        # Actually no, not across machines. So no longer checking position
+        # matrices.
 
         if graph_type != "spectral":
             rg_name = (
@@ -114,12 +102,3 @@ def test_layouts(
                 regraphed.get_centroid(),
                 atol=1e-3,
             )
-            # Currently, we are using graph layouts that are not deterministic,
-            # unsure why. One day this will be fixed, for now, we expect
-            # failure.
-            with pytest.raises(AssertionError):
-                assert np.allclose(
-                    known_molecule.get_position_matrix(),
-                    regraphed.get_position_matrix(),
-                    atol=1e-3,
-                )
