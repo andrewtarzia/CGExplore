@@ -130,7 +130,7 @@ class TopologyIterator:
                 self.used_samples = 0
 
             case _:
-                msg = f"{self.graph_set} not defined"
+                msg = f"{self.graph_set} not defined"  # type:ignore[unreachable]
                 raise NotImplementedError(msg)
 
         # Use an angle rotation of points on a sphere for each building block
@@ -249,7 +249,7 @@ class TopologyIterator:
         self,
         topology_code: TopologyCode,
         combinations_tested: set,
-        combinations_passed: list[tuple[int, int]],
+        combinations_passed: list[abc.Sequence[tuple[int, int]]],
     ) -> bool:
         # Need to check for nonsensical ones here.
         # Check the number of egdes per vertex is correct.
@@ -281,9 +281,9 @@ class TopologyIterator:
 
     def _one_type_algorithm(self) -> None:
         # All combinations tested.
-        combinations_tested = set()
+        combinations_tested: set[str] = set()
         # All passed combinations.
-        combinations_passed: list[tuple[int, int]] = []
+        combinations_passed: list[abc.Sequence[tuple[int, int]]] = []
 
         type1 = next(iter(set(self.vertex_types_by_fg.keys())))
 
@@ -334,9 +334,9 @@ class TopologyIterator:
 
     def _two_type_algorithm(self) -> None:
         # All combinations tested.
-        combinations_tested = set()
+        combinations_tested: set[str] = set()
         # All passed combinations.
-        combinations_passed: list[tuple[int, int]] = []
+        combinations_passed: list[abc.Sequence[tuple[int, int]]] = []
 
         type1, type2 = sorted(self.vertex_types_by_fg.keys(), reverse=True)
 
@@ -385,9 +385,9 @@ class TopologyIterator:
 
     def _three_type_algorithm(self) -> None:
         # All combinations tested.
-        combinations_tested = set()
+        combinations_tested: set[str] = set()
         # All passed combinations.
-        combinations_passed: list[tuple[int, int]] = []
+        combinations_passed: list[abc.Sequence[tuple[int, int]]] = []
 
         type1, type2, type3 = sorted(
             self.vertex_types_by_fg.keys(), reverse=True
