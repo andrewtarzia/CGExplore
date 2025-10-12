@@ -286,3 +286,7 @@ porous organic cage, CC3.
             ) for bond in structure.get_bonds()
         ),
     )
+
+.. raw:: html
+
+    <a class="btn-download" href="_static/recipes/recipe_1.py" download>⬇️ Download Python Script</a>
