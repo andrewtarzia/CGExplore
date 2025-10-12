@@ -70,7 +70,7 @@ to get the lowest energy conformer.
 
 Then we define the system.
 
-.. testcode:: recipe1-test
+.. testcode:: recipe4-test
     :hide:
 
     import stk
@@ -85,7 +85,7 @@ Then we define the system.
     )
 
 
-.. testcode:: recipe1-test
+.. testcode:: recipe4-test
 
     import stk
     import stko
@@ -119,7 +119,7 @@ Then we define the system.
 Collate iterators as a function of mulipliers, graphs and building block
 configurations.
 
-.. testcode:: recipe1-test
+.. testcode:: recipe4-test
 
     syst_d = systems["s1"]
     iterators = {}
@@ -148,7 +148,7 @@ configurations.
         )
         iterators[multiplier] = iterator
 
-.. testcode:: recipe1-test
+.. testcode:: recipe4-test
     :hide:
 
     assert graph_type == "4-3FG_6-2FG"
@@ -161,7 +161,7 @@ use for production structure prediction. For example,
 `atomistic structure prediction <https://github.com/andrewtarzia/topology_scrambler/src/model_enumeration/mgen_cs6.py>`_
 in my recent work was more complicated.
 
-.. testcode:: recipe1-test
+.. testcode:: recipe4-test
 
     for multiplier in syst_d["multipliers"]:
         iterator = iterators[multiplier]
