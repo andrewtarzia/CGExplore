@@ -361,7 +361,7 @@ def progress_plot(
     plt.close("all")
 
 
-def main() -> None:  # noqa: C901, PLR0915
+def main() -> None:  # noqa: C901, PLR0912, PLR0915
     """Run script."""
     # Define working directories.
     wd = (
@@ -491,38 +491,334 @@ def main() -> None:  # noqa: C901, PLR0915
             size=selection_size,
         )
 
-    graph_type = graph_type.rstrip("_")
+        # Yield this.
+        generations = []
+        generation = cgx.systems_optimisation.Generation(
+            chromosomes=initial_population,
+            fitness_calculator=fitness_calculator,
+            structure_calculator=structure_calculator,
+            num_processes=num_processes,
+        )
 
-    # Define the iterator.
-    iterator = cgx.scram.TopologyIterator(
-        building_block_counts=building_block_counts,
-        graph_type=graph_type,
-        # Use a known graph set.
-        graph_set="rxx",
+        generation.run_structures()
+        _ = generation.calculate_fitness_values()
+        generations.append(generation)
+
+        for generation_id in range(1, num_generations + 1):
+            logger.info("doing generation %s of seed %s", generation_id, seed)
+            logger.info(
+                "initial size is %s.", generation.get_generation_size()
+            )
+            logger.info("doing mutations.")
+            merged_chromosomes = []
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    gene_range=chromo_it.get_term_ids(),
+                    selection="random",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    gene_range=chromo_it.get_topo_ids(),
+                    selection="random",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    gene_range=chromo_it.get_prec_ids(),
+                    selection="random",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    gene_range=chromo_it.get_term_ids(),
+                    selection="roulette",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    gene_range=chromo_it.get_topo_ids(),
+                    selection="roulette",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+            merged_chromosomes.extend(
+                chromo_it.mutate_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    gene_range=chromo_it.get_prec_ids(),
+                    selection="roulette",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+
+            merged_chromosomes.extend(
+                chromo_it.crossover_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    selection="random",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+
+            merged_chromosomes.extend(
+                chromo_it.crossover_population(
+                    chromosomes={
+                        f"{chromosome.prefix}"
+                        f"_{chromosome.get_separated_string()}": chromosome
+                        for chromosome in generation.chromosomes
+                    },
+                    generator=generator,
+                    selection="roulette",
+                    num_to_select=num_to_operate,
+                    database=database,
+                )
+            )
+
+            # Add the best 5 to the new generation.
+            merged_chromosomes.extend(generation.select_best(selection_size=5))
+
+            generation = cgx.systems_optimisation.Generation(
+                chromosomes=chromo_it.dedupe_population(merged_chromosomes),
+                fitness_calculator=fitness_calculator,
+                structure_calculator=structure_calculator,
+                num_processes=num_processes,
+            )
+            logger.info("new size is %s.", generation.get_generation_size())
+
+            # Build, optimise and analyse each structure.
+            generation.run_structures()
+            _ = generation.calculate_fitness_values()
+
+            # Add final state to generations.
+            generations.append(generation)
+
+            # Select the best of the generation for the next generation.
+            best = generation.select_best(selection_size=selection_size)
+            generation = cgx.systems_optimisation.Generation(
+                chromosomes=chromo_it.dedupe_population(best),
+                fitness_calculator=fitness_calculator,
+                structure_calculator=structure_calculator,
+                num_processes=num_processes,
+            )
+            logger.info("final size is %s.", generation.get_generation_size())
+
+            progress_plot(
+                generations=generations,
+                output=figure_dir / f"fitness_progress_{seed}.png",
+                num_generations=num_generations,
+            )
+
+            # Output best structures as images.
+            best_chromosome = generation.select_best(selection_size=1)[0]
+            best_name = (
+                f"{best_chromosome.prefix}_"
+                f"{best_chromosome.get_separated_string()}"
+            )
+
+        logger.info("top scorer is %s (seed: %s)", best_name, seed)
+
+    # Report.
+    found = set()
+    for generation in generations:
+        for chromo in generation.chromosomes:
+            found.add(chromo.name)
+    logger.info(
+        "%s chromosomes found in EA (of %s)",
+        len(found),
+        chromo_it.get_num_chromosomes(),
     )
-    logger.info("graph iteration has %s graphs", iterator.count_graphs())
-    iterators[multiplier] = iterator
 
+    fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
+    ax, ax1 = axs
+    xys = defaultdict(list)
+    plotted = 0
+    for entry in database.get_entries():
+        tstr = entry.properties["topology"]
 
-for multiplier in syst_d["multipliers"]:
-    iterator = iterators[multiplier]
-    for idx, topology_code in enumerate(iterator.yield_graphs()):
-        # Filter graphs for 1-loops.
-        if topology_code.contains_parallels():
+        if "fitness" not in entry.properties:
+            continue
+        # Caution here, this is the fitness at point of calculation of each
+        # entry. Not after the reevaluation of the self-sorting.
+        fitness = entry.properties["fitness"]
+
+        ax.scatter(
+            entry.properties["opt_pore_data"]["min_distance"],
+            entry.properties["energy_per_bb"],
+            c=fitness,
+            edgecolor="none",
+            s=70,
+            marker="o",
+            alpha=1.0,
+            vmin=0,
+            vmax=40,
+            cmap="Blues",
+        )
+        xys[
+            (
+                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
+                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
+            )
+        ].append(
+            (
+                entry.properties["topology"],
+                entry.properties["energy_per_bb"],
+                fitness,
+            )
+        )
+        plotted += 1
+
+    for x, y in xys:
+        fitness_threshold = 10
+        stable = [
+            i[0]
+            for i in xys[(x, y)]
+            if i[1] < isomer_energy() and i[2] > fitness_threshold
+        ]
+
+        if len(stable) == 0:
+            cmaps = ["white"]
+        else:
+            cmaps = sorted([colours()[i] for i in stable])
+
+        if len(cmaps) > 8:  # noqa: PLR2004
+            cmaps = ["k"]
+        cgx.utilities.draw_pie(
+            colours=cmaps,
+            xpos=x,
+            ypos=y,
+            size=400,
+            ax=ax1,
+        )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel("pore size", fontsize=16)
+    ax.set_ylabel("energy", fontsize=16)
+    ax.set_yscale("log")
+    ax.set_title(
+        f"plotted: {plotted}, found: {len(found)}, "
+        f"possible: {chromo_it.get_num_chromosomes()}"
+    )
+    ax1.tick_params(axis="both", which="major", labelsize=16)
+    ax1.set_xlabel("ditopic", fontsize=16)
+    ax1.set_ylabel("tritopic", fontsize=16)
+    ax1.set_title(f"E: {isomer_energy()}, F: {fitness_threshold}", fontsize=16)
+
+    for tstr in colours():
+        ax1.scatter(
+            None,
+            None,
+            c=colours()[tstr],
+            edgecolor="none",
+            s=60,
+            marker="o",
+            alpha=1.0,
+            label=tstr,
+        )
+
+    ax1.legend(fontsize=16)
+    fig.tight_layout()
+    fig.savefig(
+        figure_dir / "space_explored.png",
+        dpi=360,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    # Write chemiscope.
+    properties = defaultdict(list)
+    structures = []
+    for entry in database.get_entries():
+        tstr = entry.properties["topology"]
+
+        if "fitness" not in entry.properties:
             continue
 
-        name = f"s1_{multiplier}_{idx}"
-
-        # Use vertex set regraphing.
-        constructed_molecule = cgx.scram.get_vertexset_molecule(
-            graph_type="kamada",
-            scale=5,
-            topology_code=topology_code,
-            iterator=iterator,
-            bb_config=None,
+        structures.append(database.get_molecule(key=entry.key))
+        properties["key"].append(entry.key)
+        properties["E_b / kjmol-1"].append(entry.properties["energy_per_bb"])
+        # Caution here, this is the fitness at point of calculation of each
+        # entry. Not after the reevaluation of the self-sorting.
+        properties["fitness"].append(entry.properties["fitness"])
+        properties["min_distance"].append(
+            entry.properties["opt_pore_data"]["min_distance"]
         )
-        constructed_molecule.write(f"{name}_unopt.mol")
+        properties["num_bbs"].append(int(entry.properties["num_bbs"]))
+        properties["b_c_o / deg"].append(
+            entry.properties["forcefield_dict"]["v_dict"]["b_c_o"]
+        )
+        properties["o_a_o / deg"].append(
+            entry.properties["forcefield_dict"]["v_dict"]["o_a_o"]
+        )
 
-        # Implement optimisation workflows!
+    logging.info("saving %s entries", len(structures))
+    cgx.utilities.write_chemiscope_json(
+        json_file=data_dir / "space_explored.json.gz",
+        structures=structures,
+        properties=properties,
+        bonds_as_shapes=True,
+        meta_dict={
+            "name": "Recipe 1 structures.",
+            "description": ("Minimal models from recipe 1."),
+            "authors": ["Andrew Tarzia"],
+            "references": [],
+        },
+        x_axis_dict={"property": "b_c_o / deg"},
+        y_axis_dict={"property": "o_a_o / deg"},
+        z_axis_dict={"property": "num_bbs"},
+        color_dict={"property": "E_b / kjmol-1", "min": 0, "max": 1.0},
+        bond_hex_colour="#919294",
+    )
 
-        # And then do some analysis!
+
+if __name__ == "__main__":
+    main()
