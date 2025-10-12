@@ -122,7 +122,7 @@ Generated with code:
 Three-type graphs
 ^^^^^^^^^^^^^^^^^
 
-Produced graphs for ``m`` in (1 - 5) with FGs in (1 - 4) and
+Produced graphs for ``m`` in (1 - 3) with FGs in (1 - 4) and
 a combinatorial check of stoichiometries. Note that current versions will
 always focus on smaller FG BBs binding only to the BB with the most FGs.
 Generated with code:
