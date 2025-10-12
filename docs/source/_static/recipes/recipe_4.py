@@ -1,4 +1,4 @@
-"""Copiable code from Recipe #1."""
+"""Copiable code from Recipe #4."""  # noqa: INP001
 
 import logging
 import pathlib
