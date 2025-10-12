@@ -96,7 +96,7 @@ Then we define the system.
     logger = logging.getLogger(__name__)
 
     # Define a working directory.
-    wd = pathlib.Path.cwd() / "source"/ "recipes" / "recipe_1_output"
+    wd = pathlib.Path.cwd() / "source"/ "recipes" / "recipe_4_output"
 
     # Currently, this definition is up to the user, but we will make this
     # uniform soon.
@@ -197,10 +197,10 @@ porous organic cage, CC3.
     import pathlib
 
     try:
-        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_1_output"
+        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_4_output"
         structure = stk.BuildingBlock.init_from_file(str(wd / "s1_1_0_unopt.mol"))
     except OSError:
-        wd = pathlib.Path.cwd() / "recipes" / "recipe_1_output"
+        wd = pathlib.Path.cwd() / "recipes" / "recipe_4_output"
         structure = stk.BuildingBlock.init_from_file(str(wd / "s1_1_0_unopt.mol"))
 
     moldoc_display_molecule = molecule.Molecule(
@@ -230,10 +230,10 @@ porous organic cage, CC3.
     import pathlib
 
     try:
-        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_1_output"
+        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_4_output"
         structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_1_unopt.mol"))
     except OSError:
-        wd = pathlib.Path.cwd() / "recipes" / "recipe_1_output"
+        wd = pathlib.Path.cwd() / "recipes" / "recipe_4_output"
         structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_1_unopt.mol"))
 
     moldoc_display_molecule = molecule.Molecule(
@@ -262,10 +262,10 @@ porous organic cage, CC3.
     import pathlib
 
     try:
-        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_1_output"
+        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_4_output"
         structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_4_unopt.mol"))
     except OSError:
-        wd = pathlib.Path.cwd() / "recipes" / "recipe_1_output"
+        wd = pathlib.Path.cwd() / "recipes" / "recipe_4_output"
         structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_4_unopt.mol"))
 
     moldoc_display_molecule = molecule.Molecule(
@@ -289,4 +289,4 @@ porous organic cage, CC3.
 
 .. raw:: html
 
-    <a class="btn-download" href="_static/recipes/recipe_1.py" download>⬇️ Download Python Script</a>
+    <a class="btn-download" href="_static/recipes/recipe_4.py" download>⬇️ Download Python Script</a>
