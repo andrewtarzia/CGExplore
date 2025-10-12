@@ -479,7 +479,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     )
 
     seeds = [4]
-    num_generations = 10
+    num_generations = 5
     selection_size = 5
     num_processes = 1
     num_to_operate = 2

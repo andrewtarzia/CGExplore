@@ -167,7 +167,7 @@ Now we can define the genetic algorithm:
     # This is a very short run for testing sake, but modify these settings
     # for further exploration.
     seeds = [4]
-    num_generations = 10
+    num_generations = 5
     selection_size = 5
     num_processes = 1
     num_to_operate = 2
