@@ -196,8 +196,12 @@ porous organic cage, CC3.
     import stk
     import pathlib
 
-    wd = pathlib.Path.cwd() / "source"/ "recipes" / "recipe_1_output"
-    structure = stk.BuildingBlock.init_from_file(str(wd / "s1_1_0_unopt.mol"))
+    try:
+        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_1_output"
+        structure = stk.BuildingBlock.init_from_file(str(wd / "s1_1_0_unopt.mol"))
+    except OSError:
+        wd = pathlib.Path.cwd() / "recipes" / "recipe_1_output"
+        structure = stk.BuildingBlock.init_from_file(str(wd / "s1_1_0_unopt.mol"))
 
     moldoc_display_molecule = molecule.Molecule(
         atoms=(
@@ -225,8 +229,12 @@ porous organic cage, CC3.
     import stk
     import pathlib
 
-    wd = pathlib.Path.cwd() / "source"/ "recipes" / "recipe_1_output"
-    structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_1_unopt.mol"))
+    try:
+        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_1_output"
+        structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_1_unopt.mol"))
+    except OSError:
+        wd = pathlib.Path.cwd() / "recipes" / "recipe_1_output"
+        structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_1_unopt.mol"))
 
     moldoc_display_molecule = molecule.Molecule(
         atoms=(
@@ -253,8 +261,12 @@ porous organic cage, CC3.
     import stk
     import pathlib
 
-    wd = pathlib.Path.cwd() / "source"/ "recipes" / "recipe_1_output"
-    structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_4_unopt.mol"))
+    try:
+        wd = pathlib.Path.cwd() / "source" / "recipes" / "recipe_1_output"
+        structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_4_unopt.mol"))
+    except OSError:
+        wd = pathlib.Path.cwd() / "recipes" / "recipe_1_output"
+        structure = stk.BuildingBlock.init_from_file(str(wd / "s1_2_4_unopt.mol"))
 
     moldoc_display_molecule = molecule.Molecule(
         atoms=(
