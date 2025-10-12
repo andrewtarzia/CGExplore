@@ -6,9 +6,9 @@ A package of the classes for optimising CG models in :mod:`cgexplore`.
 
 .. note::
 
-  Examples of these functions and the use of this package can be found in the
-  `optimisation_example <https://github.com/andrewtarzia/CGExplore/tree/main/optimisation_example>`_
-  directory.
+  Examples of these functions and the use of this package can be found in
+  `recipe 1 <recipes/recipe_1>`_.
+
 
 Inputs
 ------
@@ -77,7 +77,8 @@ by the user (described below) to:
     """
     database = cgx.utilities.AtomliteDatabase(database_path)
     target_pore = 2
-    name = f"{chromosome.prefix}_{chromosome.get_string()}"
+    # Use the separated string to distinguish between genes!
+    name = f"{chromosome.prefix}_{chromosome.get_separated_string()}"
 
     # Extract needed properties from database (done in `structure_calculator`).
     entry = database.get_entry(name)
@@ -116,7 +117,8 @@ by the user (described below) to:
     topology_str, topology_fun = chromosome.get_topology_information()
     building_blocks = chromosome.get_building_blocks()
     cage = stk.ConstructedMolecule(topology_fun(building_blocks))
-    name = f"{chromosome.prefix}_{chromosome.get_string()}"
+    # Use the separated string to distinguish between genes!
+    name = f"{chromosome.prefix}_{chromosome.get_separated_string()}"
 
     # Select forcefield by chromosome.
     forcefield = chromosome.get_forcefield()
@@ -156,12 +158,25 @@ changeable gene information and allows iteration and selection of
 which the generator should analyse automatically to find the changeable
 features.
 
-.. code-block:: python
+.. testcode:: syst_opt-test
+    :hide:
+
+    import stk
+    import cgexplore as cgx
+
+
+.. testcode:: syst_opt-test
+
+    # Define beads.
+    bead_library = cgx.molecular.BeadLibrary.from_bead_types(
+        # Type and coordination.
+        {"a": 3, "b": 2, "c": 2, "o": 2}
+    )
 
     # Define the chromosome generator, holding all the changeable genes.
     chromo_it = cgx.systems_optimisation.ChromosomeGenerator(
         prefix=prefix,
-        present_beads=(abead, bbead, cbead, dbead),
+        present_beads=bead_library.get_present_beads(),
         vdw_bond_cutoff=2,
     )
     chromo_it.add_gene(
@@ -177,11 +192,21 @@ features.
     # Set some basic building blocks up. This should be run by an algorithm
     # later.
     chromo_it.add_gene(
-        iteration=(cgx.molecular.TwoC1Arm(bead=bbead, abead1=cbead),),
+        iteration=(
+            cgx.molecular.TwoC1Arm(
+                bead=bead_library.get_from_type("b"),
+                abead1=bead_library.get_from_type("c"),
+            ),
+        ),
         gene_type="precursor",
     )
     chromo_it.add_gene(
-        iteration=(cgx.molecular.ThreeC1Arm(bead=abead, abead1=dbead),),
+        iteration=(
+            cgx.molecular.ThreeC1Arm(
+                bead=bead_library.get_from_type("a"),
+                abead1=bead_library.get_from_type("o"),
+            ),
+        ),
         gene_type="precursor",
     )
 
@@ -213,6 +238,13 @@ features.
         "o": ("nb", 10.0, 1.0),
     }
     chromo_it.add_forcefield_dict(definer_dict=definer_dict)
+
+.. testcode:: syst_opt-test
+    :hide:
+
+    print(chromo_it.get_num_chromosomes())
+    assert chromo_it.get_num_chromosomes() == 200
+
 
 Then, you can run the genetic algorithm (I will not show all the information
 for brevity):
