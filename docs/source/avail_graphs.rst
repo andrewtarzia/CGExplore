@@ -19,6 +19,9 @@ using hyphens to distinguish the multiplier by the number of FGs.
 For example: ``rxx_4-4FG_6-2FG_4-1FG`` has 4 4FG building blocks,
 6 2FG building blocks and 4 1FG building blocks.
 
+Note that making new graphs is currently quite time consuming, so start with
+a smaller ``max_samples`` than the default for ``rxx``, which is ``1e8``.
+
 Graphs:
 -------
 

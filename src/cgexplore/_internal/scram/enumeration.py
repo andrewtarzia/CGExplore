@@ -359,9 +359,30 @@ class TopologyIterator:
             for i in self.reactable_vertex_ids
             if i in self.vertex_types_by_fg[type2]
         ]
+        ### delete
+        temp_files = list(self.graph_directory.glob(f"rxx_{self.graph_type}*"))
+        max_num = 0
+        for xpath in temp_files:
+            num = int(xpath.name.replace(".json", "").split("_")[-1])
+            if num > max_num:
+                with xpath.open("r") as f:
+                    combinations_passed = json.load(f)
+                max_num = num
 
+                combinations_tested = {
+                    TopologyCode(i).get_as_string()
+                    for i in combinations_passed
+                }
+        
+        print(f"skipping until {max_num}\n")
+        ### delete
         for i in range(self.used_samples):
             rng.shuffle(options)
+            ### delete
+            if (i / self.used_samples) * 100 <= max_num:
+                continue
+            ### delete
+
             # Build an edge selection.
             combination: abc.Sequence[tuple[int, int]] = [
                 tuple(sorted((i, j)))  # type:ignore[misc]
@@ -386,6 +407,16 @@ class TopologyIterator:
                     self.used_samples,
                     round((i / self.used_samples) * 100, 1),
                 )
+                ### delete
+                val = int((i / self.used_samples) * 100)
+                valname = (
+                    self.graph_path.parent
+                    / self.graph_path.name.replace(".json", f"_{val}.json")
+                )
+
+                with valname.open("w") as f:
+                    json.dump(combinations_passed, f)
+                    ### delete
 
         with self.graph_path.open("w") as f:
             json.dump(combinations_passed, f)
@@ -417,12 +448,32 @@ class TopologyIterator:
             for i in self.reactable_vertex_ids
             if i in self.vertex_types_by_fg[type3]
         ]
+        ### delete
+        temp_files = list(self.graph_directory.glob(f"rxx_{self.graph_type}*"))
+        max_num = 0
+        for xpath in temp_files:
+            num = int(xpath.name.replace(".json", "").split("_")[-1])
+            if num > max_num:
+                with xpath.open("r") as f:
+                    combinations_passed = json.load(f)
+                max_num = num
+
+                combinations_tested = {
+                    TopologyCode(i).get_as_string()
+                    for i in combinations_passed
+                }
+        print(f"skipping until {max_num}\n")
+        ### delete
 
         for i in range(self.used_samples):
             # Merging options1 and options2 because they both bind to itera.
             mixed_options = options1 + options2
             rng.shuffle(mixed_options)
-
+            ### delete
+            if (i / self.used_samples) * 100 <= max_num:
+                continue
+            ### delete
+            # 
             # Build an edge selection.
             combination: abc.Sequence[tuple[int, int]] = [
                 tuple(sorted((i, j)))  # type:ignore[misc]
@@ -447,6 +498,16 @@ class TopologyIterator:
                     self.used_samples,
                     round((i / self.used_samples) * 100, 1),
                 )
+                ### delete
+                val = int((i / self.used_samples) * 100)
+                valname = (
+                    self.graph_path.parent
+                    / self.graph_path.name.replace(".json", f"_{val}.json")
+                )
+
+                with valname.open("w") as f:
+                    json.dump(combinations_passed, f)
+                ### delete
 
         with self.graph_path.open("w") as f:
             json.dump(combinations_passed, f)
