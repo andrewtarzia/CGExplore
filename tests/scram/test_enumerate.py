@@ -21,6 +21,17 @@ def test_enumerate(graph_data: CaseData) -> None:
     known_graph_directory = (
         pathlib.Path(__file__).resolve().parent / "test_graphs"
     )
+
+    # Delete them.
+    filename = (
+        graph_directory
+        / f"{graph_data.graph_set}_{graph_data.graph_type}.json"
+    )
+    if graph_directory.exists():
+        for filen in graph_directory.iterdir():
+            filen.unlink()
+        graph_directory.rmdir()
+
     graph_directory.mkdir(exist_ok=False)
 
     iterator = cgx.scram.TopologyIterator(
