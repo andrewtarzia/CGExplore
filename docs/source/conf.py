@@ -7,6 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 from __future__ import annotations
 
+from moldoc import molecule
+
 project = "CGExplore"
 project_copyright = "2023, Andrew Tarzia"
 author = "Andrew Tarzia"
@@ -21,6 +23,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
+    "moldoc",
 ]
 
 autosummary_imported_members = True
