@@ -80,6 +80,74 @@ Generated with code:
             pass
 
 
+.. testcode:: avail_graphs1-test
+    :hide:
+
+    import itertools as it
+    import stk
+    import cgexplore as cgx
+    import logging
+
+    knowns = (
+        "8-3FG",
+        "8-4FG",
+        "9-2FG",
+        "9-4FG",
+        "6-4FG",
+        "7-2FG",
+        "7-4FG",
+        "8-1FG",
+        "8-2FG",
+        "2-4FG",
+        "3-2FG",
+        "3-4FG",
+        "4-1FG",
+        "4-2FG",
+        "4-3FG",
+        "4-4FG",
+        "5-2FG",
+        "5-4FG",
+        "6-1FG",
+        "6-2FG",
+        "6-3FG",
+        "1-4FG",
+        "2-1FG",
+        "2-2FG",
+        "2-3FG",
+        "1-2FG",
+        "10-1FG",
+        "10-2FG",
+        "10-3FG",
+        "10-4FG",
+        "11-2FG",
+        "12-1FG",
+    )
+    bbs = {
+        1: stk.BuildingBlock("BrC", (stk.BromoFactory(),)),
+        2: stk.BuildingBlock("BrCCCCBr", (stk.BromoFactory(),)),
+        3: stk.BuildingBlock("BrCC(Br)CCBr", (stk.BromoFactory(),)),
+        4: stk.BuildingBlock("BrCC(Br)CCC(Br)CCBr", (stk.BromoFactory(),)),
+    }
+    multipliers = range(1, 11)
+
+    for midx, fgnum in it.product(multipliers, bbs):
+        try:
+            iterator = cgx.scram.TopologyIterator(
+                building_block_counts={
+                    bbs[fgnum]: midx,
+                },
+                graph_type=f"{midx}-{fgnum}FG",
+                graph_set="rxx",
+            )
+            logging.info(iterator.graph_directory / f"rxx_{iterator.graph_type}.json")
+            if iterator.graph_type in knowns:
+                assert (
+                    iterator.graph_directory / f"rxx_{iterator.graph_type}.json"
+                ).exists()
+
+        except (ZeroDivisionError, ValueError):
+            pass
+
 Two-type graphs
 ^^^^^^^^^^^^^^^
 
@@ -127,6 +195,64 @@ Generated with code:
             pass
 
 
+.. testcode:: avail_graphs2-test
+    :hide:
+
+    import itertools as it
+    import stk
+    import cgexplore as cgx
+    import logging
+
+    knowns = (
+        "1-2FG_2-1FG",
+        "1-4FG_2-2FG",
+        "2-2FG_4-1FG",
+        "2-3FG_3-2FG",
+        "2-4FG_4-2FG",
+        "3-4FG_4-3FG",
+        "4-3FG_6-2FG",
+    )
+
+    bbs = {
+        1: stk.BuildingBlock("BrC", (stk.BromoFactory(),)),
+        2: stk.BuildingBlock("BrCCCCBr", (stk.BromoFactory(),)),
+        3: stk.BuildingBlock("BrCC(Br)CCBr", (stk.BromoFactory(),)),
+        4: stk.BuildingBlock("BrCC(Br)CCC(Br)CCBr", (stk.BromoFactory(),)),
+    }
+    multipliers = range(1, 13)
+
+    two_type_stoichiometries = ((1, 2), (2, 3), (3, 4))
+    for midx, fgnum1, fgnum2, stoich in it.product(
+        multipliers, bbs, bbs, two_type_stoichiometries
+    ):
+        if fgnum1 == fgnum2:
+            continue
+
+        # Do not do all for larger stoichiomers.
+        if stoich in ((2, 3), (3, 4)) and midx > 5:
+            continue
+
+        fgnum1_, fgnum2_ = sorted((fgnum1, fgnum2), reverse=True)
+
+        try:
+            iterator = cgx.scram.TopologyIterator(
+                building_block_counts={
+                    bbs[fgnum1_]: midx * stoich[0],
+                    bbs[fgnum2_]: midx * stoich[1],
+                },
+                graph_type=f"{midx * stoich[0]}-{fgnum1_}FG_"
+                f"{midx * stoich[1]}-{fgnum2_}FG",
+                graph_set="rxx",
+            )
+            logging.info(iterator.graph_directory / f"rxx_{iterator.graph_type}.json")
+            if iterator.graph_type in knowns:
+                assert (
+                    iterator.graph_directory / f"rxx_{iterator.graph_type}.json"
+                ).exists()
+
+        except (ZeroDivisionError, ValueError):
+            pass
+
 Three-type graphs
 ^^^^^^^^^^^^^^^^^
 
@@ -170,6 +296,83 @@ Generated with code:
                 f"{midx * stoich[2]}-{fgnum3_}FG",
                 graph_set="rxx",
             )
+            logging.info(
+                "graph iteration has %s graphs", iterator.count_graphs()
+            )
+
+        except (ZeroDivisionError, ValueError):
+            pass
+
+
+.. testcode:: avail_graphs3-test
+    :hide:
+
+    import itertools as it
+    import stk
+    import cgexplore as cgx
+    import logging
+
+    knowns = (
+        "1-3FG_1-2FG_1-1FG",
+        "1-4FG_1-2FG_2-1FG",
+        "1-4FG_1-3FG_1-1FG",
+        "2-3FG_1-2FG_4-1FG",
+        "2-3FG_2-2FG_2-1FG",
+        "2-4FG_2-2FG_4-1FG",
+        "2-4FG_2-3FG_1-2FG",
+        "2-4FG_2-3FG_2-1FG",
+        "2-4FG_3-2FG_2-1FG",
+        "3-3FG_3-2FG_3-1FG",
+        "3-3FG_4-2FG_1-1FG",
+        "3-4FG_2-3FG_3-2FG",
+        "3-4FG_3-3FG_3-1FG",
+        "3-4FG_4-2FG_4-1FG",
+        "4-3FG_2-2FG_8-1FG",
+        "4-3FG_4-2FG_4-1FG",
+        "4-4FG_4-3FG_2-2FG",
+        "4-4FG_4-3FG_4-1FG",
+        "6-3FG_6-2FG_6-1FG",
+        "6-3FG_8-2FG_2-1FG",
+    )
+
+    bbs = {
+        1: stk.BuildingBlock("BrC", (stk.BromoFactory(),)),
+        2: stk.BuildingBlock("BrCCCCBr", (stk.BromoFactory(),)),
+        3: stk.BuildingBlock("BrCC(Br)CCBr", (stk.BromoFactory(),)),
+        4: stk.BuildingBlock("BrCC(Br)CCC(Br)CCBr", (stk.BromoFactory(),)),
+    }
+
+    # Three typers.
+    multipliers = range(1, 5)
+    three_type_stoichiometries = tuple(
+        (i, j, k) for i, j, k in it.product((1, 2, 3, 4), repeat=3)
+    )
+    for midx, fgnum1, fgnum2, fgnum3, stoich in it.product(
+        multipliers, bbs, bbs, bbs, three_type_stoichiometries
+    ):
+        if fgnum1 in (fgnum2, fgnum3) or fgnum2 == fgnum3:
+            continue
+        fgnum1_, fgnum2_, fgnum3_ = sorted(
+            (fgnum1, fgnum2, fgnum3), reverse=True
+        )
+
+        try:
+            iterator = cgx.scram.TopologyIterator(
+                building_block_counts={
+                    bbs[fgnum1_]: midx * stoich[0],
+                    bbs[fgnum2_]: midx * stoich[1],
+                    bbs[fgnum3_]: midx * stoich[2],
+                },
+                graph_type=f"{midx * stoich[0]}-{fgnum1_}FG_"
+                f"{midx * stoich[1]}-{fgnum2_}FG_"
+                f"{midx * stoich[2]}-{fgnum3_}FG",
+                graph_set="rxx",
+            )
+            logging.info(iterator.graph_directory / f"rxx_{iterator.graph_type}.json")
+            if iterator.graph_type in knowns:
+                assert (
+                    iterator.graph_directory / f"rxx_{iterator.graph_type}.json"
+                ).exists()
 
         except (ZeroDivisionError, ValueError):
             pass
