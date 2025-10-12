@@ -12,7 +12,7 @@ import rustworkx as rx
 import stk
 
 from .topology_code import TopologyCode
-from .utilities import points_on_sphere, vmap_to_str
+from .utilities import points_on_sphere
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,48 +28,117 @@ class TopologyIterator:
     This is the latest version, but without good symmetry and graph checks,
     this can over produce structures.
 
+    .. important::
+
+      **Warning**: Currently, the order of ``building_block_counts`` has to
+      have the building block with the most FGs first! This ordering is defined
+      by the order used when defining the graphs. If you are defining your own
+      graph library (i.e., setting ``graph_directory`` or using a new
+      ``graph_type``), then the order is defined by the order in
+      ``building_block_counts`` when generating the json.
+
+    .. important::
+
+      To reproduce the ``no_doubles'' dataset, you must use
+      ``graph_set=rx_nodoubles``, or filter the topology codes after
+      generation (this is now the recommended approach).
+
+    Parameters:
+        building_block_counts:
+            Dictionary of :class:`stk.BuildingBlock` and their count in the
+            proposed structures. Always put the building blocks with more
+            functional groups first (this is a current bug). Additionally, only
+            mixtures of three distinct building block functional group counts
+            is implemented, and in the case of three components, all building
+            blocks bind to the building block with the most functional groups.
+
+        graph_type:
+            Name of the graph. Current name convention is long, but complete,
+            capturing the count of each building block with certain functional
+            group count included. Following this name convention will allow you
+            to use saved graphs, if not, you can make your own. Although it can
+            be time consuming.
+
+        graph_set:
+            Set of graphs to use based on different algorithms or papers.
+            Can be custom, as above. Note that the code to generation ``nx``
+            graphs is no longer present in ``cgexplore`` because the
+            :mod:`networkx` algorithms were slow.
+
+        scale_multiplier:
+            Scale multiplier to use in construction.
+
+        allowed_num_components:
+            Allowed number of disconnected graph components. Usually ``1`` to
+            generate complete graphs only.
+
+        max_samples:
+            When constructing graphs, there is some randomness in their order,
+            although that order should be consistent, and only up-to
+            ``max_samples`` are sampled. For very large numbers of building
+            blocks there is not guarantee all possible graphs will be explored.
+
+        graph_directory:
+            Directory to check for and save graph jsons.
+
     """
 
     building_block_counts: dict[stk.BuildingBlock, int]
     graph_type: str
-    graph_set: Literal["rx", "nx", "rx_nodoubles"] = "rx"
+    graph_set: Literal["rxx", "rx", "nx", "rx_nodoubles"] = "rxx"
     scale_multiplier = 5
     allowed_num_components: int = 1
     max_samples: int | None = None
+    graph_directory: pathlib.Path | None = None
 
     def __post_init__(self) -> None:  # noqa: PLR0915, PLR0912, C901
         """Initialize."""
+        if self.graph_directory is None:
+            self.graph_directory = (
+                pathlib.Path(__file__).resolve().parent / "known_graphs"
+            )
+
+        if not self.graph_directory.exists():
+            msg = f"graph directory does not exist ({self.graph_directory})"
+            raise RuntimeError(msg)
+
         match self.graph_set:
+            case "rxx":
+                self.graph_path = (
+                    self.graph_directory / f"rxx_{self.graph_type}.json"
+                )
+                if self.max_samples is None:
+                    self.used_samples = int(1e7)
+                else:
+                    self.used_samples = int(self.max_samples)
+
             case "rx":
-                self.graphs_path = (
-                    pathlib.Path(__file__).resolve().parent
-                    / "known_graphs"
-                    / f"rx_{self.graph_type}.json"
+                self.graph_path = (
+                    self.graph_directory / f"rx_{self.graph_type}.json"
                 )
                 if self.max_samples is None:
                     self.used_samples = int(1e4)
+                else:
+                    self.used_samples = int(self.max_samples)
 
             case "rx_nodoubles":
-                self.graphs_path = (
-                    pathlib.Path(__file__).resolve().parent
-                    / "known_graphs"
-                    / f"rxnd_{self.graph_type}.json"
+                self.graph_path = (
+                    self.graph_directory / f"rxnd_{self.graph_type}.json"
                 )
                 if self.max_samples is None:
                     self.used_samples = int(1e5)
+                else:
+                    self.used_samples = int(self.max_samples)
 
             case "nx":
-                self.graphs_path = (
-                    pathlib.Path(__file__).resolve().parent
-                    / "known_graphs"
-                    / f"g_{self.graph_type}.json"
+                self.graph_path = (
+                    self.graph_directory / f"g_{self.graph_type}.json"
                 )
-                if not self.graphs_path.exists():
-                    msg = "building graphs with nx no longer available"
-                    raise RuntimeError(msg)
+                self.used_samples = 0
 
             case _:
-                raise RuntimeError
+                msg = f"{self.graph_set} not defined"  # type:ignore[unreachable]
+                raise NotImplementedError(msg)
 
         # Use an angle rotation of points on a sphere for each building block
         # type to avoid overlap of distinct building block spheres with the
@@ -148,7 +217,7 @@ class TopologyIterator:
                     )
 
                 else:
-                    msg = "wrong number of functional groups"
+                    msg = "Building blocks need at least 1 FG."
                     raise RuntimeError(msg)
 
                 unaligned_vertex_prototypes.append(
@@ -183,9 +252,98 @@ class TopologyIterator:
             return self.unaligned_vertex_prototypes
         return self.vertex_prototypes
 
+    def _passes_tests(
+        self,
+        topology_code: TopologyCode,
+        combinations_tested: set,
+        combinations_passed: list[abc.Sequence[tuple[int, int]]],
+    ) -> bool:
+        # Need to check for nonsensical ones here.
+        # Check the number of egdes per vertex is correct.
+        counter = Counter([i for j in topology_code.vertex_map for i in j])
+        if counter != self.vertex_counts:
+            return False
+
+        # If there are any self-reactions.
+        if any(abs(i - j) == 0 for i, j in topology_code.vertex_map):
+            return False
+
+        # Check for string done.
+        if topology_code.get_as_string() in combinations_tested:
+            return False
+
+        # Convert TopologyCode to a graph.
+        current_graph = topology_code.get_graph()
+
+        # Check that graph for isomorphism with other graphs.
+        passed_iso = True
+        for tcc in combinations_passed:
+            test_graph = TopologyCode(tcc).get_graph()
+
+            if rx.is_isomorphic(current_graph, test_graph):
+                passed_iso = False
+                break
+
+        return passed_iso
+
+    def _one_type_algorithm(self) -> None:
+        # All combinations tested.
+        combinations_tested: set[str] = set()
+        # All passed combinations.
+        combinations_passed: list[abc.Sequence[tuple[int, int]]] = []
+
+        type1 = next(iter(set(self.vertex_types_by_fg.keys())))
+
+        rng = np.random.default_rng(seed=100)
+        options = [
+            i
+            for i in self.reactable_vertex_ids
+            if i in self.vertex_types_by_fg[type1]
+        ]
+
+        for i in range(self.used_samples):
+            # Shuffle.
+            rng.shuffle(options)
+            # Split in half.
+            half1 = options[: len(options) // 2]
+            half2 = options[len(options) // 2 :]
+            # Build an edge selection.
+            try:
+                combination: abc.Sequence[tuple[int, int]] = [
+                    tuple(sorted((i, j)))  # type:ignore[misc]
+                    for i, j in zip(half1, half2, strict=True)
+                ]
+            except ValueError as exc:
+                msg = "could not split edge into two equal sets"
+                raise ValueError(msg) from exc
+
+            topology_code = TopologyCode(combination)
+            if self._passes_tests(
+                topology_code=topology_code,
+                combinations_tested=combinations_tested,
+                combinations_passed=combinations_passed,
+            ):
+                combinations_passed.append(combination)
+
+            # Add this anyway, either gets skipped, or adds the new one.
+            combinations_tested.add(topology_code.get_as_string())
+            # Progress.
+            if i % 100000 == 0:
+                logger.info(
+                    "done %s of %s (%s/100.0)",
+                    i,
+                    self.used_samples,
+                    round((i / self.used_samples) * 100, 1),
+                )
+
+        with self.graph_path.open("w") as f:
+            json.dump(combinations_passed, f)
+
     def _two_type_algorithm(self) -> None:
-        combinations_tested = set()
-        run_topology_codes: list[TopologyCode] = []
+        # All combinations tested.
+        combinations_tested: set[str] = set()
+        # All passed combinations.
+        combinations_passed: list[abc.Sequence[tuple[int, int]]] = []
 
         type1, type2 = sorted(self.vertex_types_by_fg.keys(), reverse=True)
 
@@ -201,68 +359,73 @@ class TopologyIterator:
             for i in self.reactable_vertex_ids
             if i in self.vertex_types_by_fg[type2]
         ]
+        ### delete
+        temp_files = list(self.graph_directory.glob(f"rxx_{self.graph_type}*"))
+        max_num = 0
+        for xpath in temp_files:
+            num = int(xpath.name.replace(".json", "").split("_")[-1])
+            if num > max_num:
+                with xpath.open("r") as f:
+                    combinations_passed = json.load(f)
+                max_num = num
 
-        to_save = []
-        for _ in range(self.used_samples):
+                combinations_tested = {
+                    TopologyCode(i).get_as_string()
+                    for i in combinations_passed
+                }
+        
+        print(f"skipping until {max_num}\n")
+        ### delete
+        for i in range(self.used_samples):
             rng.shuffle(options)
+            ### delete
+            if (i / self.used_samples) * 100 <= max_num:
+                continue
+            ### delete
+
             # Build an edge selection.
             combination: abc.Sequence[tuple[int, int]] = [
                 tuple(sorted((i, j)))  # type:ignore[misc]
                 for i, j in zip(itera1, options, strict=True)
             ]
 
-            # Need to check for nonsensical ones here.
-            # Check the number of egdes per vertex is correct.
-            counter = Counter([i for j in combination for i in j])
-            if counter != self.vertex_counts:
-                continue
-
-            # If are any self-reactions.
-            if any(abs(i - j) == 0 for i, j in combination):
-                continue
-
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
-
-            if (
-                self.graph_set == "rx_nodoubles"
-                and topology_code.contains_doubles()
+            topology_code = TopologyCode(combination)
+            if self._passes_tests(
+                topology_code=topology_code,
+                combinations_tested=combinations_tested,
+                combinations_passed=combinations_passed,
             ):
-                continue
+                combinations_passed.append(combination)
 
-            # Check for string done.
-            if topology_code.as_string in combinations_tested:
-                continue
+            # Add this anyway, either gets skipped, or adds the new one.
+            combinations_tested.add(topology_code.get_as_string())
+            # Progress.
+            if i % 100000 == 0:
+                logger.info(
+                    "done %s of %s (%s/100.0)",
+                    i,
+                    self.used_samples,
+                    round((i / self.used_samples) * 100, 1),
+                )
+                ### delete
+                val = int((i / self.used_samples) * 100)
+                valname = (
+                    self.graph_path.parent
+                    / self.graph_path.name.replace(".json", f"_{val}.json")
+                )
 
-            combinations_tested.add(topology_code.as_string)
+                with valname.open("w") as f:
+                    json.dump(combinations_passed, f)
+                    ### delete
 
-            # Convert TopologyCode to a graph.
-            current_graph = topology_code.get_graph()
-
-            # Check that graph for isomorphism with others graphs.
-            passed_iso = True
-            for tc in run_topology_codes:
-                test_graph = tc.get_graph()
-
-                if rx.is_isomorphic(current_graph, test_graph):
-                    passed_iso = False
-                    break
-
-            if not passed_iso:
-                continue
-
-            run_topology_codes.append(topology_code)
-            to_save.append(combination)
-            logger.info("found one at %s", _)
-
-        with self.graphs_path.open("w") as f:
-            json.dump(to_save, f)
+        with self.graph_path.open("w") as f:
+            json.dump(combinations_passed, f)
 
     def _three_type_algorithm(self) -> None:
-        combinations_tested = set()
-        run_topology_codes: list[TopologyCode] = []
+        # All combinations tested.
+        combinations_tested: set[str] = set()
+        # All passed combinations.
+        combinations_passed: list[abc.Sequence[tuple[int, int]]] = []
 
         type1, type2, type3 = sorted(
             self.vertex_types_by_fg.keys(), reverse=True
@@ -285,97 +448,106 @@ class TopologyIterator:
             for i in self.reactable_vertex_ids
             if i in self.vertex_types_by_fg[type3]
         ]
+        ### delete
+        temp_files = list(self.graph_directory.glob(f"rxx_{self.graph_type}*"))
+        max_num = 0
+        for xpath in temp_files:
+            num = int(xpath.name.replace(".json", "").split("_")[-1])
+            if num > max_num:
+                with xpath.open("r") as f:
+                    combinations_passed = json.load(f)
+                max_num = num
 
-        to_save = []
-        for _ in range(self.used_samples):
+                combinations_tested = {
+                    TopologyCode(i).get_as_string()
+                    for i in combinations_passed
+                }
+        print(f"skipping until {max_num}\n")
+        ### delete
+
+        for i in range(self.used_samples):
             # Merging options1 and options2 because they both bind to itera.
             mixed_options = options1 + options2
             rng.shuffle(mixed_options)
-
+            ### delete
+            if (i / self.used_samples) * 100 <= max_num:
+                continue
+            ### delete
+            # 
             # Build an edge selection.
             combination: abc.Sequence[tuple[int, int]] = [
                 tuple(sorted((i, j)))  # type:ignore[misc]
                 for i, j in zip(itera1, mixed_options, strict=True)
             ]
 
-            # Need to check for nonsensical ones here.
-            # Check the number of egdes per vertex is correct.
-            counter = Counter([i for j in combination for i in j])
-            if counter != self.vertex_counts:
-                continue
-
-            # If are any self-reactions.
-            if any(abs(i - j) == 0 for i, j in combination):
-                continue
-
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
-
-            if (
-                self.graph_set == "rx_nodoubles"
-                and topology_code.contains_doubles()
+            topology_code = TopologyCode(combination)
+            if self._passes_tests(
+                topology_code=topology_code,
+                combinations_tested=combinations_tested,
+                combinations_passed=combinations_passed,
             ):
-                continue
+                combinations_passed.append(combination)
 
-            # Check for string done.
-            if topology_code.as_string in combinations_tested:
-                continue
+            # Add this anyway, either gets skipped, or adds the new one.
+            combinations_tested.add(topology_code.get_as_string())
+            # Progress.
+            if i % 100000 == 0:
+                logger.info(
+                    "done %s of %s (%s/100.0)",
+                    i,
+                    self.used_samples,
+                    round((i / self.used_samples) * 100, 1),
+                )
+                ### delete
+                val = int((i / self.used_samples) * 100)
+                valname = (
+                    self.graph_path.parent
+                    / self.graph_path.name.replace(".json", f"_{val}.json")
+                )
 
-            combinations_tested.add(topology_code.as_string)
+                with valname.open("w") as f:
+                    json.dump(combinations_passed, f)
+                ### delete
 
-            # Convert TopologyCode to a graph.
-            current_graph = topology_code.get_graph()
+        with self.graph_path.open("w") as f:
+            json.dump(combinations_passed, f)
 
-            # Check that graph for isomorphism with others graphs.
-            passed_iso = True
-            for tc in run_topology_codes:
-                test_graph = tc.get_graph()
+    def _define_graphs(self) -> None:
+        if self.graph_set in ("nx", "rx", "rx_nodoubles"):
+            msg = (
+                "Graph definitions are no longer implemented for graph sets"
+                "other than ``rxx``. Please use that graph set."
+            )
+            raise RuntimeError(msg)
 
-                if rx.is_isomorphic(current_graph, test_graph):
-                    passed_iso = False
-                    break
-
-            if not passed_iso:
-                continue
-
-            run_topology_codes.append(topology_code)
-            to_save.append(combination)
-            logger.info("found one at %s", _)
-
-        with self.graphs_path.open("w") as f:
-            json.dump(to_save, f)
-
-    def _define_all_graphs(self) -> None:
         num_types = len(self.vertex_types_by_fg.keys())
-        if num_types == 2:  # noqa: PLR2004
+        if num_types == 1:
+            self._one_type_algorithm()
+        elif num_types == 2:  # noqa: PLR2004
             self._two_type_algorithm()
         elif num_types == 3:  # noqa: PLR2004
             self._three_type_algorithm()
         else:
-            msg = "not implemented for other types yet"
+            msg = (
+                "Not implemented for mixtures of more than 3 distinct "
+                "FG numbers"
+            )
             raise RuntimeError(msg)
 
     def count_graphs(self) -> int:
         """Count completely connected graphs in iteration."""
-        if not self.graphs_path.exists():
-            self._define_all_graphs()
+        if not self.graph_path.exists():
+            logger.info("%s not found, constructing!", self.graph_path)
+            self._define_graphs()
 
-        with self.graphs_path.open("r") as f:
+        with self.graph_path.open("r") as f:
             all_graphs = json.load(f)
 
         count = 0
         for combination in all_graphs:
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
+            topology_code = TopologyCode(combination)
 
-            num_components = rx.number_connected_components(
-                topology_code.get_graph()
-            )
-
+            num_components = topology_code.get_number_connected_components()
             if num_components == self.allowed_num_components:
                 count += 1
 
@@ -386,20 +558,16 @@ class TopologyIterator:
 
         Yields only completely connected graphs.
         """
-        if not self.graphs_path.exists():
-            self._define_all_graphs()
+        if not self.graph_path.exists():
+            logger.info("%s not found, constructing!", self.graph_path)
+            self._define_graphs()
 
-        with self.graphs_path.open("r") as f:
+        with self.graph_path.open("r") as f:
             all_graphs = json.load(f)
 
         for combination in all_graphs:
-            topology_code = TopologyCode(
-                vertex_map=combination,
-                as_string=vmap_to_str(combination),
-            )
+            topology_code = TopologyCode(combination)
 
-            num_components = rx.number_connected_components(
-                topology_code.get_graph()
-            )
+            num_components = topology_code.get_number_connected_components()
             if num_components == self.allowed_num_components:
                 yield topology_code

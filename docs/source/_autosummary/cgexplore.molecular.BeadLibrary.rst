@@ -17,9 +17,11 @@ cgexplore.molecular.BeadLibrary
    .. autosummary::
       :nosignatures:
    
-      ~BeadLibrary.get_cgbead_from_class
-      ~BeadLibrary.get_cgbead_from_element
-      ~BeadLibrary.get_cgbead_from_type
+      ~BeadLibrary.from_bead_types
+      ~BeadLibrary.get_from_class
+      ~BeadLibrary.get_from_element
+      ~BeadLibrary.get_from_type
+      ~BeadLibrary.get_present_beads
    
    
 

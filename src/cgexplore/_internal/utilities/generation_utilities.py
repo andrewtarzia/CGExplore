@@ -51,7 +51,7 @@ def optimise_ligand(
 ) -> stk.Molecule:
     """Optimise a building block.
 
-    Keywords:
+    Parameters:
 
         molecule:
             The molecule to optimise.
@@ -111,7 +111,7 @@ def soften_forcefield(
 ) -> AssignedSystem:
     """Soften force field by scaling parameters and turning off torsions.
 
-    Keywords:
+    Parameters:
 
         assigned_system:
             Molecule with force field terms assigned that will be modified.
@@ -214,7 +214,7 @@ def run_soft_md_cycle(  # noqa: PLR0913
 ) -> OMMTrajectory | None:
     """Run MD exploration with soft potentials.
 
-    Keywords:
+    Parameters:
 
         name:
             Name to use for naming output files. E.g. produces a file
@@ -308,7 +308,7 @@ def run_constrained_optimisation(  # noqa: PLR0913
 ) -> stk.Molecule:
     """Run optimisation with constraints and softened potentials.
 
-    Keywords:
+    Parameters:
 
         assigned_system:
             The system to optimise with force field assigned.
@@ -376,7 +376,7 @@ def run_optimisation(  # noqa: PLR0913
 ) -> Conformer:
     """Run optimisation.
 
-    Keywords:
+    Parameters:
 
         assigned_system:
             The system to optimise with force field assigned.
@@ -434,7 +434,7 @@ def yield_near_models(
 ) -> abc.Iterator[stk.Molecule]:
     """Yield structures of models with neighbouring force field parameters.
 
-    Keywords:
+    Parameters:
 
         molecule:
             The molecule to modify the position matrix of.
@@ -470,7 +470,7 @@ def shift_beads(
 ) -> stk.Molecule:
     """Shift beads away from cage centroid.
 
-    Keywords:
+    Parameters:
 
         molecule:
             The molecule to manipulate.
@@ -509,7 +509,7 @@ def yield_shifted_models(
 ) -> abc.Iterator[stk.Molecule]:
     """Yield conformers with atom positions of particular beads shifted.
 
-    Keywords:
+    Parameters:
 
         molecule:
             The molecule to manipulate.

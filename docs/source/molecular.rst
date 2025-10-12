@@ -6,6 +6,14 @@ A package of the classes for handling molecules in `cgexplore`.
 CG-Beads
 --------
 
+.. note::
+
+    It is recommended to use the method
+    :meth:`from_bead_types` in :class:`cgexplore.molecular.BeadLibrary` to
+    create a :class:`cgexplore.molecular.CgBead` instance.
+    This will automatically assign element strings based on coordination
+    numbers, avoiding double ups and simplifying the selection process.
+
 .. toctree::
   :maxdepth: 1
 
@@ -73,8 +81,8 @@ For precursors useful in random/algorithmic structure generation:
   VaBeneGenerator <_autosummary/cgexplore.molecular.VaBeneGenerator>
   check_fit <_autosummary/cgexplore.molecular.check_fit>
 
-.. For rigid, shape-based precursors:
 
+.. For rigid, shape-based precursors:
 
 ..   :maxdepth: 1
 

@@ -54,6 +54,7 @@ get-values = "cgexplore._internal.scripts.get_values:main"
 
 [project.urls]
 github = "https://github.com/andrewtarzia/CGExplore"
+documentation = "https://cgexplore.readthedocs.io"
 
 [tool.setuptools_scm]
 write_to = "src/cgexplore/_version.py"

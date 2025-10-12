@@ -20,7 +20,9 @@ cgexplore.scram.TopologyCode
       ~TopologyCode.contains_doubles
       ~TopologyCode.contains_parallels
       ~TopologyCode.edges_from_connection
+      ~TopologyCode.get_as_string
       ~TopologyCode.get_graph
+      ~TopologyCode.get_number_connected_components
       ~TopologyCode.get_nx_graph
       ~TopologyCode.get_weighted_graph
    
@@ -33,6 +35,5 @@ cgexplore.scram.TopologyCode
    .. autosummary::
    
       ~TopologyCode.vertex_map
-      ~TopologyCode.as_string
    
    

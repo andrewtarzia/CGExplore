@@ -313,6 +313,7 @@ def get_custom_bb_configurations(  # noqa: C901
 
         if bbconfig.get_hashable_bbidx_dict() in saved_bb_dicts:
             continue
+
         # Check for deduplication.
         saved_bb_dicts.add(bbconfig.get_hashable_bbidx_dict())
 

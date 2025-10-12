@@ -15,8 +15,6 @@ from cgexplore._internal.topologies.graphs import (
     UnalignedM1L2,
 )
 
-from .utilities import vmap_to_str
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
@@ -29,7 +27,11 @@ class TopologyCode:
     """Naming convention for topology graphs."""
 
     vertex_map: abc.Sequence[tuple[int, int]]
-    as_string: str
+
+    def get_as_string(self) -> str:
+        """Convert TopologyCode to string of the vertex map."""
+        strs = sorted([f"{i[0]}-{i[1]}" for i in self.vertex_map])
+        return "_".join(strs)
 
     def get_nx_graph(self) -> nx.Graph:
         """Convert TopologyCode to a networkx graph."""
@@ -94,13 +96,6 @@ class TopologyCode:
     def contains_doubles(self) -> bool:
         """True if the graph contains "double-walls"."""
         weighted_graph = self.get_weighted_graph()
-        num_parallel_edges = len(
-            [
-                i
-                for i in weighted_graph.edges()
-                if i == 2  # noqa: PLR2004
-            ]
-        )
 
         filtered_paths = set()
         for node in weighted_graph.nodes():
@@ -124,20 +119,18 @@ class TopologyCode:
         path_lengths = [len(i) - 1 for i in filtered_paths]
         counter = Counter(path_lengths)
 
-        return num_parallel_edges != 0 or counter[4] != 0
+        return counter[4] != 0
 
     def contains_parallels(self) -> bool:
         """True if the graph contains "1-loops"."""
         weighted_graph = self.get_weighted_graph()
-        num_parallel_edges = len(
-            [
-                i
-                for i in weighted_graph.edges()
-                if i == 2  # noqa: PLR2004
-            ]
-        )
+        num_parallel_edges = len([i for i in weighted_graph.edges() if i > 1])
 
         return num_parallel_edges != 0
+
+    def get_number_connected_components(self) -> int:
+        """Get the number of connected components."""
+        return rx.number_connected_components(self.get_graph())
 
 
 @dataclass
@@ -172,10 +165,7 @@ def get_stk_topology_code(
     eps = target._edge_prototypes  # noqa: SLF001
 
     combination = [(i.get_vertex1_id(), i.get_vertex2_id()) for i in eps]
-    tc = TopologyCode(
-        vertex_map=combination,
-        as_string=vmap_to_str(combination),
-    )
+    tc = TopologyCode(combination)
 
     positions = [i.get_position() for i in vps]
 
