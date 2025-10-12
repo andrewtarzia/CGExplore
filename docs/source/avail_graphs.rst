@@ -103,6 +103,11 @@ Generated with code:
     ):
         if fgnum1 == fgnum2:
             continue
+
+        # Do not do all for larger stoichiomers.
+        if stoich in ((2, 3), (3, 4)) and midx > 5:
+            continue
+
         fgnum1_, fgnum2_ = sorted((fgnum1, fgnum2), reverse=True)
 
         try:
