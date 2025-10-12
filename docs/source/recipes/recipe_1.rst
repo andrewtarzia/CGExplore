@@ -1,74 +1,8 @@
-Atomistic structure prediction
-==============================
+Minimal model genetic algorithm
+===============================
 
-Given two building blocks:
-
-.. moldoc::
-
-    import moldoc.molecule as molecule
-    import stk
-
-    tritopic_building_block = stk.BuildingBlock(
-        smiles="C1=C(C=C(C=C1C=O)C=O)C=O",
-        functional_groups=[stk.AldehydeFactory()],
-    )
-
-    moldoc_display_molecule = molecule.Molecule(
-        atoms=(
-            molecule.Atom(
-                atomic_number=atom.get_atomic_number(),
-                position=position,
-            ) for atom, position in zip(
-                tritopic_building_block.get_atoms(),
-                tritopic_building_block.get_position_matrix(),
-            )
-        ),
-        bonds=(
-            molecule.Bond(
-                atom1_id=bond.get_atom1().get_id(),
-                atom2_id=bond.get_atom2().get_id(),
-                order=bond.get_order(),
-            ) for bond in tritopic_building_block.get_bonds()
-        ),
-    )
-
-
-.. moldoc::
-
-    import moldoc.molecule as molecule
-    import stk
-
-    ditopic_building_block = stk.BuildingBlock(
-        smiles="NC1CCCCC1N",
-        functional_groups=[stk.PrimaryAminoFactory()],
-    )
-
-    moldoc_display_molecule = molecule.Molecule(
-        atoms=(
-            molecule.Atom(
-                atomic_number=atom.get_atomic_number(),
-                position=position,
-            ) for atom, position in zip(
-                ditopic_building_block.get_atoms(),
-                ditopic_building_block.get_position_matrix(),
-            )
-        ),
-        bonds=(
-            molecule.Bond(
-                atom1_id=bond.get_atom1().get_id(),
-                atom2_id=bond.get_atom2().get_id(),
-                order=bond.get_order(),
-            ) for bond in ditopic_building_block.get_bonds()
-        ),
-    )
-
-Let's predict structures with ``m=2`` and ``s=2:3``.
-
-First (but optional!), use `bbprepared
-<https://bbprepared.readthedocs.io/en/latest/recipes/recipe_2.html>`_
-to get the lowest energy conformer.
-
-Then we define the system.
+We first define a chromosome of one pair of building blocks, with a range of
+forcefield parameters and multiple topology graph choices.
 
 .. testcode:: recipe1-test
     :hide:
