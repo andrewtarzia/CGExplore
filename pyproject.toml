@@ -44,6 +44,7 @@ dev = [
     "twine",
     "sphinx_rtd_theme",
     "furo",
+    "moldoc",
 ]
 
 [project.scripts]
