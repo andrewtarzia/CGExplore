@@ -8,20 +8,6 @@ forcefield parameters and multiple topology graph choices.
     :hide:
 
     import stk
-
-    tritopic_building_block = stk.BuildingBlock(
-        smiles="C1=C(C=C(C=C1C=O)C=O)C=O",
-        functional_groups=[stk.AldehydeFactory()],
-    )
-    ditopic_building_block = stk.BuildingBlock(
-        smiles="NC1CCCCC1N",
-        functional_groups=[stk.PrimaryAminoFactory()],
-    )
-
-
-.. testcode:: recipe1-test
-
-    import stk
     import stko
     import cgexplore as cgx
     import logging
@@ -31,29 +17,25 @@ forcefield parameters and multiple topology graph choices.
 
     # Define a working directory.
     wd = pathlib.Path.cwd() / "source"/ "recipes" / "recipe_1_output"
+    struct_output = wd / "structures"
+    calc_dir = wd / "calculations"
+    data_dir = wd / "data"
+    figure_dir = wd / "figures"
 
-    # Currently, this definition is up to the user, but we will make this
-    # uniform soon.
-    building_block_library = {
-        "ditopic": ditopic_building_block,
-        "tritopic": tritopic_building_block,
-    }
-
-    # Currently, this definition is up to the user, but we will make this
-    # uniform soon.
-    systems = {
-        "s1": {
-            # Always order with the most functional groups first.
-            "stoichiometry_map": {"tritopic": 2, "ditopic": 3},
-            "multipliers": (1, 2),
-        },
-    }
-
-
-Collate iterators as a function of mulipliers, graphs and building block
-configurations.
 
 .. testcode:: recipe1-test
+
+    # Define a database, and a prefix for naming structure, forcefield and
+    # output files.
+    prefix = "opt"
+    database_path = data_dir / "test.db"
+    database = cgx.utilities.AtomliteDatabase(database_path)
+
+    # Define beads.
+    bead_library = cgx.molecular.BeadLibrary.from_bead_types(
+        # Type and coordination.
+        {"a": 3, "b": 2, "c": 2, "o": 2}
+    )
 
     syst_d = systems["s1"]
     iterators = {}
