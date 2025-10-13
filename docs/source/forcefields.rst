@@ -24,11 +24,8 @@ These classes allow the user to automatically define a series of forcefields
 that vary some parameters in a systematic way in a brute-force combinatorial
 way.
 
-.. toctree::
-  :maxdepth: 1
-
-  ForceFieldLibrary <_autosummary/cgexplore.forcefields.ForceFieldLibrary>
-  MartiniForceFieldLibrary <_autosummary/cgexplore.forcefields.MartiniForceFieldLibrary>
+- :doc:`ForceFieldLibrary <_autosummary/cgexplore.forcefields.ForceFieldLibrary>`
+- :doc:`MartiniForceFieldLibrary <_autosummary/cgexplore.forcefields.MartiniForceFieldLibrary>`
 
 
 Forcefields
@@ -38,11 +35,8 @@ Classes defining the forcefield before it is assigned to any molecule. This
 provides an interface for the user to set the target terms of the forcefield
 that can then be assigned to any molecule.
 
-.. toctree::
-  :maxdepth: 1
-
-  ForceField <_autosummary/cgexplore.forcefields.ForceField>
-  MartiniForceField <_autosummary/cgexplore.forcefields.MartiniForceField>
+- :doc:`ForceField <_autosummary/cgexplore.forcefields.ForceField>`
+- :doc:`MartiniForceField <_autosummary/cgexplore.forcefields.MartiniForceField>`
 
 
 Forced systems
@@ -51,22 +45,12 @@ Forced systems
 Here, the user creates the object that interfaces between a forcefield and an
 `OpenMM` simulation.
 
-.. toctree::
-  :maxdepth: 1
-
-  AssignedSystem <_autosummary/cgexplore.forcefields.AssignedSystem>
-  MartiniSystem <_autosummary/cgexplore.forcefields.MartiniSystem>
+- :doc:`AssignedSystem <_autosummary/cgexplore.forcefields.AssignedSystem>`
+- :doc:`MartiniSystem <_autosummary/cgexplore.forcefields.MartiniSystem>`
 
 
 Utilities
 ---------
 
-.. toctree::
-  :maxdepth: 1
-
-  MartiniTopology <_autosummary/cgexplore.forcefields.MartiniTopology>
-  get_martini_mass_by_type <_autosummary/cgexplore.forcefields.get_martini_mass_by_type>
-
-
-.. toctree::
-  :maxdepth: 1
+- :doc:`MartiniTopology <_autosummary/cgexplore.forcefields.MartiniTopology>`
+- :doc:`get_martini_mass_by_type <_autosummary/cgexplore.forcefields.get_martini_mass_by_type>`

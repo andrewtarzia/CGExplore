@@ -1,13 +1,9 @@
 Utilities
 =========
 
-A package of useful utilities for `cgexplore`.
-
-
 Host-guest conformer generation using SpinDry
 ---------------------------------------------
 
-.. toctree::
-  :maxdepth: 1
+For details, see the `SpinDry docs <https://spindry.readthedocs.io/en/latest/>`_.
 
-  get_supramolecule <_autosummary/cgexplore.utilities.get_supramolecule>
+- :doc:`get_supramolecule <_autosummary/cgexplore.utilities.get_supramolecule>`

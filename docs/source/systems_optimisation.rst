@@ -19,11 +19,9 @@ A :class:`cgexplore.systems_optimisation.ChromosomeGenerator` is used to add
 methods for exploring this library through optimisation algorithms, such as a
 genetic algorithm).
 
-.. toctree::
-  :maxdepth: 1
 
-  ChromosomeGenerator <_autosummary/cgexplore.systems_optimisation.ChromosomeGenerator>
-  Chromosome <_autosummary/cgexplore.systems_optimisation.Chromosome>
+- :doc:`ChromosomeGenerator <_autosummary/cgexplore.systems_optimisation.ChromosomeGenerator>`
+- :doc:`Chromosome <_autosummary/cgexplore.systems_optimisation.Chromosome>`
 
 Generation Handling
 -------------------
@@ -31,11 +29,7 @@ Generation Handling
 Once you have a library of chromosomes, you can iterate over them to produce
 generations, which are handled here:
 
-.. toctree::
-  :maxdepth: 1
-
-  Generation <_autosummary/cgexplore.systems_optimisation.Generation>
-
+- :doc:`Generation <_autosummary/cgexplore.systems_optimisation.Generation>`
 
 Fitness and Structure Calculation
 ---------------------------------
@@ -45,11 +39,8 @@ how a :class:`cgexplore.systems_optimisation.Chromosome` is translated into a
 model and how to calculate that models fitness. These are provided as functions
 by the user (described below) to:
 
-.. toctree::
-  :maxdepth: 1
-
-  FitnessCalculator <_autosummary/cgexplore.systems_optimisation.FitnessCalculator>
-  StructureCalculator <_autosummary/cgexplore.systems_optimisation.StructureCalculator>
+- :doc:`FitnessCalculator <_autosummary/cgexplore.systems_optimisation.FitnessCalculator>`
+- :doc:`StructureCalculator <_autosummary/cgexplore.systems_optimisation.StructureCalculator>`
 
 .. note::
   The `options` argument allows the user to provide custom information or

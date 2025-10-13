@@ -8,10 +8,7 @@ Databasing with atomlite
 
     atomlite: https://atomlite.readthedocs.io/en/latest/index.html
 
-.. toctree::
-  :maxdepth: 1
-
-  AtomliteDatabase <_autosummary/cgexplore.utilities.AtomliteDatabase>
+- :doc:`AtomliteDatabase <_autosummary/cgexplore.utilities.AtomliteDatabase>`
 
 
 Mapping with chemiscope
@@ -21,20 +18,15 @@ Mapping with chemiscope
 
     chemiscope: https://chemiscope.org/
 
-.. toctree::
-  :maxdepth: 1
 
-  write_chemiscope_json <_autosummary/cgexplore.utilities.write_chemiscope_json>
-  extract_property <_autosummary/cgexplore.utilities.extract_property>
+- :doc:`write_chemiscope_json <_autosummary/cgexplore.utilities.write_chemiscope_json>`
+- :doc:`extract_property <_autosummary/cgexplore.utilities.extract_property>`
 
 
 Visualisation
 -------------
 
-.. toctree::
-  :maxdepth: 1
-
-  Pymol <_autosummary/cgexplore.utilities.Pymol>
-  draw_pie <_autosummary/cgexplore.utilities.draw_pie>
-  add_text_to_ax <_autosummary/cgexplore.utilities.add_text_to_ax>
-  add_structure_to_ax <_autosummary/cgexplore.utilities.add_structure_to_ax>
+- :doc:`Pymol <_autosummary/cgexplore.utilities.Pymol>`
+- :doc:`draw_pie <_autosummary/cgexplore.utilities.draw_pie>`
+- :doc:`add_text_to_ax <_autosummary/cgexplore.utilities.add_text_to_ax>`
+- :doc:`add_structure_to_ax <_autosummary/cgexplore.utilities.add_structure_to_ax>`

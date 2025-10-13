@@ -13,10 +13,10 @@
    Forcefields <forcefields>
    Terms <terms>
    Analysis <analysis>
-   Utilities <utilities>
    Executables <executables>
    Topologies <topologies>
    Atomistic tools <atomistic>
+   Utilities <utilities>
 
 .. toctree::
   :hidden:
