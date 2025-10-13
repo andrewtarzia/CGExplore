@@ -356,7 +356,6 @@ file)!
 
 With a top scorer:
 
-
 .. moldoc::
 
     import moldoc.molecule as molecule

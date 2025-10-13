@@ -7,7 +7,7 @@ A package of the classes for optimising CG models in :mod:`cgexplore`.
 .. note::
 
   Examples of these functions and the use of this package can be found in
-  `recipe 1 <recipes/recipe_1>`_.
+  `recipe 1 <recipes/recipe_1.html>`_.
 
 
 Inputs
