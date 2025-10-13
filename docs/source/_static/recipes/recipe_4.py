@@ -52,20 +52,18 @@ def main() -> None:
     iterators = {}
     for multiplier in syst_d["multipliers"]:
         # Automate the graph type naming.
-        graph_type = ""
-        building_block_counts = {}
-        for name, stoich in syst_d["stoichiometry_map"].items():
-            fgnum = building_block_library[name].get_num_functional_groups()
-            graph_type += f"{stoich * multiplier}-{fgnum}FG_"
-            building_block_counts[building_block_library[name]] = (
-                stoich * multiplier
-            )
-
-        graph_type = graph_type.rstrip("_")
+        graph_type = cgx.scram.generate_graph_type(
+            stoichiometry_map=syst_d["stoichiometry_map"],
+            multiplier=multiplier,
+            bb_library=building_block_library,
+        )
 
         # Define the iterator.
         iterator = cgx.scram.TopologyIterator(
-            building_block_counts=building_block_counts,
+            building_block_counts={
+                building_block_library[name]: stoich * multiplier
+                for name, stoich in syst_d["stoichiometry_map"].items()
+            },
             graph_type=graph_type,
             # Use a known graph set.
             graph_set="rxx",
