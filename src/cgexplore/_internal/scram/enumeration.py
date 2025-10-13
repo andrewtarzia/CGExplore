@@ -41,7 +41,8 @@ class TopologyIterator:
 
       To reproduce the ``no_doubles'' dataset, you must use
       ``graph_set=rx_nodoubles``, or filter the topology codes after
-      generation (this is now the recommended approach).
+      generation using the :class:`cgexplore.scram.TopologyCode` methods
+      (this is now the recommended approach).
 
     Parameters:
         building_block_counts:
@@ -108,7 +109,7 @@ class TopologyIterator:
                     self.graph_directory / f"rxx_{self.graph_type}.json"
                 )
                 if self.max_samples is None:
-                    self.used_samples = int(1e7)
+                    self.used_samples = int(1e6)
                 else:
                     self.used_samples = int(self.max_samples)
 
@@ -328,7 +329,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 100000 == 0:
+            if i % 10000 == 0:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
@@ -373,7 +374,7 @@ class TopologyIterator:
                     TopologyCode(i).get_as_string()
                     for i in combinations_passed
                 }
-        
+
         print(f"skipping until {max_num}\n")
         ### delete
         for i in range(self.used_samples):
@@ -400,7 +401,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 100000 == 0:
+            if i % 10000 == 0:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
@@ -473,7 +474,7 @@ class TopologyIterator:
             if (i / self.used_samples) * 100 <= max_num:
                 continue
             ### delete
-            # 
+            #
             # Build an edge selection.
             combination: abc.Sequence[tuple[int, int]] = [
                 tuple(sorted((i, j)))  # type:ignore[misc]
@@ -491,7 +492,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 100000 == 0:
+            if i % 10000 == 0:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
