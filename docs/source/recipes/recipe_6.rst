@@ -109,9 +109,10 @@ And the parameters we want to scan in different tests.
     ]
 
 Time to iterate! Again, skipping the structure prediction, and just assuming we
-have a target structure with a ``key`` in a database of ``XX``. Once defined,
-we can run :func:`cgexplore.scram.target_optimisation` over the parameters we
-are interested in.
+have a target structure with a ``key`` in a database generated during structure
+prediction. Once defined, we can run
+:func:`cgexplore.scram.target_optimisation` over the parameters we are
+interested in.
 
 .. testcode:: recipe6-test
 
