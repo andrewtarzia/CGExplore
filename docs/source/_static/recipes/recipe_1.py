@@ -49,6 +49,7 @@ def analyse_cage(
             "prefix": name.split("_")[0],
             "chromosome": tuple(int(i) for i in chromosome.name),
             "topology": topology_str,
+            "num_bbs": cgx.topologies.stoich_map(topology_str),
             "energy_per_bb": cgx.utilities.get_energy_per_bb(
                 energy_decomposition=properties["energy_decomposition"],
                 number_building_blocks=cgx.topologies.stoich_map(topology_str),
@@ -479,7 +480,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     )
 
     seeds = [4]
-    num_generations = 5
+    num_generations = 10
     selection_size = 5
     num_processes = 1
     num_to_operate = 2
@@ -696,7 +697,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             entry.properties["energy_per_bb"],
             c=fitness,
             edgecolor="none",
-            s=70,
+            s=100,
             marker="o",
             alpha=1.0,
             vmin=0,
@@ -741,16 +742,18 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
         )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
-    ax.set_xlabel("pore size", fontsize=16)
-    ax.set_ylabel("energy", fontsize=16)
+    ax.axvline(x=2, c="k", zorder=-2)
+    ax.set_xlabel("min centroid distance [angstrom]", fontsize=16)
+    ax.set_ylabel(r"$E_{\mathrm{b}}$ [kjmol-1]", fontsize=16)
     ax.set_yscale("log")
     ax.set_title(
         f"plotted: {plotted}, found: {len(found)}, "
-        f"possible: {chromo_it.get_num_chromosomes()}"
+        f"possible: {chromo_it.get_num_chromosomes()}",
+        fontsize=16,
     )
     ax1.tick_params(axis="both", which="major", labelsize=16)
-    ax1.set_xlabel("ditopic", fontsize=16)
-    ax1.set_ylabel("tritopic", fontsize=16)
+    ax1.set_xlabel("b_c_o [deg]", fontsize=16)
+    ax1.set_ylabel("o_a_o [deg]", fontsize=16)
     ax1.set_title(f"E: {isomer_energy()}, F: {fitness_threshold}", fontsize=16)
 
     for tstr in colours():
@@ -765,7 +768,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             label=tstr,
         )
 
-    ax1.legend(fontsize=16)
+    ax1.legend(fontsize=16, loc="lower left")
     fig.tight_layout()
     fig.savefig(
         figure_dir / "space_explored.png",

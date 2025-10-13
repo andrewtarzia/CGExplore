@@ -167,7 +167,7 @@ Now we can define the genetic algorithm:
     # This is a very short run for testing sake, but modify these settings
     # for further exploration.
     seeds = [4]
-    num_generations = 5
+    num_generations = 10
     selection_size = 5
     num_processes = 1
     num_to_operate = 2
@@ -352,9 +352,61 @@ Now we can define the genetic algorithm:
 And now we can analyse the space we have explored (code in the downloadable
 file)!
 
-.. image:: recipes/recipe_1_output/figures/space_explored.png
+.. image:: recipe_1_output/figures/space_explored.png
 
-.. chemiscope:: recipes/recipe_1_output/data/space_explored.json.gz
+With a top scorer:
+
+
+.. moldoc::
+
+    import moldoc.molecule as molecule
+    import stk
+    import pathlib
+
+    try:
+        wd = (
+            pathlib.Path.cwd()
+            / "source"
+            / "recipes"
+            / "recipe_1_output"
+            / "structures"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "opt_3-0-0-9-9_optc.mol")
+        )
+    except OSError:
+        wd = (
+            pathlib.Path.cwd()
+            / "recipes"
+            / "recipe_1_output"
+            / "structures"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "opt_3-0-0-9-9_optc.mol")
+        )
+
+    moldoc_display_molecule = molecule.Molecule(
+        atoms=(
+            molecule.Atom(
+                atomic_number=atom.get_atomic_number(),
+                position=position,
+            ) for atom, position in zip(
+                structure.get_atoms(),
+                structure.get_position_matrix(),
+            )
+        ),
+        bonds=(
+            molecule.Bond(
+                atom1_id=bond.get_atom1().get_id(),
+                atom2_id=bond.get_atom2().get_id(),
+                order=bond.get_order(),
+            ) for bond in structure.get_bonds()
+        ),
+    )
+
+And we can use chemiscope to explore this map interactively!
+
+.. chemiscope:: recipe_1_output/data/space_explored.json.gz
 
 
 .. raw:: html
