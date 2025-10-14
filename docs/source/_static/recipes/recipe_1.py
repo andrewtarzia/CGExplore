@@ -1,5 +1,6 @@
 """Copiable code from Recipe #1."""  # noqa: INP001
 
+import argparse
 import logging
 import pathlib
 from collections import defaultdict
@@ -362,8 +363,19 @@ def progress_plot(
     plt.close("all")
 
 
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--run",
+        action="store_true",
+        help="set to iterate through structure functions",
+    )
+    return parser.parse_args()
+
+
 def main() -> None:  # noqa: C901, PLR0912, PLR0915
     """Run script."""
+    args = _parse_args()
     # Define working directories.
     wd = (
         pathlib.Path(__file__).resolve().parent
@@ -484,189 +496,200 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     selection_size = 5
     num_processes = 1
     num_to_operate = 2
-    for seed in seeds:
-        generator = np.random.default_rng(seed)
+    if args.run:
+        for seed in seeds:
+            generator = np.random.default_rng(seed)
 
-        initial_population = chromo_it.select_random_population(
-            generator,
-            size=selection_size,
-        )
-
-        # Yield this.
-        generations = []
-        generation = cgx.systems_optimisation.Generation(
-            chromosomes=initial_population,
-            fitness_calculator=fitness_calculator,
-            structure_calculator=structure_calculator,
-            num_processes=num_processes,
-        )
-
-        generation.run_structures()
-        _ = generation.calculate_fitness_values()
-        generations.append(generation)
-
-        for generation_id in range(1, num_generations + 1):
-            logger.info("doing generation %s of seed %s", generation_id, seed)
-            logger.info(
-                "initial size is %s.", generation.get_generation_size()
-            )
-            logger.info("doing mutations.")
-            merged_chromosomes = []
-            merged_chromosomes.extend(
-                chromo_it.mutate_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    gene_range=chromo_it.get_term_ids(),
-                    selection="random",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromo_it.mutate_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    gene_range=chromo_it.get_topo_ids(),
-                    selection="random",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromo_it.mutate_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    gene_range=chromo_it.get_prec_ids(),
-                    selection="random",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromo_it.mutate_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    gene_range=chromo_it.get_term_ids(),
-                    selection="roulette",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromo_it.mutate_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    gene_range=chromo_it.get_topo_ids(),
-                    selection="roulette",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
-            )
-            merged_chromosomes.extend(
-                chromo_it.mutate_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    gene_range=chromo_it.get_prec_ids(),
-                    selection="roulette",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
+            initial_population = chromo_it.select_random_population(
+                generator,
+                size=selection_size,
             )
 
-            merged_chromosomes.extend(
-                chromo_it.crossover_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    selection="random",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
-            )
-
-            merged_chromosomes.extend(
-                chromo_it.crossover_population(
-                    chromosomes={
-                        f"{chromosome.prefix}"
-                        f"_{chromosome.get_separated_string()}": chromosome
-                        for chromosome in generation.chromosomes
-                    },
-                    generator=generator,
-                    selection="roulette",
-                    num_to_select=num_to_operate,
-                    database=database,
-                )
-            )
-
-            # Add the best 5 to the new generation.
-            merged_chromosomes.extend(generation.select_best(selection_size=5))
-
+            # Yield this.
+            generations = []
             generation = cgx.systems_optimisation.Generation(
-                chromosomes=chromo_it.dedupe_population(merged_chromosomes),
+                chromosomes=initial_population,
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
                 num_processes=num_processes,
             )
-            logger.info("new size is %s.", generation.get_generation_size())
 
-            # Build, optimise and analyse each structure.
             generation.run_structures()
             _ = generation.calculate_fitness_values()
-
-            # Add final state to generations.
             generations.append(generation)
 
-            # Select the best of the generation for the next generation.
-            best = generation.select_best(selection_size=selection_size)
-            generation = cgx.systems_optimisation.Generation(
-                chromosomes=chromo_it.dedupe_population(best),
-                fitness_calculator=fitness_calculator,
-                structure_calculator=structure_calculator,
-                num_processes=num_processes,
-            )
-            logger.info("final size is %s.", generation.get_generation_size())
+            for generation_id in range(1, num_generations + 1):
+                logger.info(
+                    "doing generation %s of seed %s", generation_id, seed
+                )
+                logger.info(
+                    "initial size is %s.", generation.get_generation_size()
+                )
+                logger.info("doing mutations.")
+                merged_chromosomes = []
+                merged_chromosomes.extend(
+                    chromo_it.mutate_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        gene_range=chromo_it.get_term_ids(),
+                        selection="random",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromo_it.mutate_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        gene_range=chromo_it.get_topo_ids(),
+                        selection="random",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromo_it.mutate_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        gene_range=chromo_it.get_prec_ids(),
+                        selection="random",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromo_it.mutate_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        gene_range=chromo_it.get_term_ids(),
+                        selection="roulette",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromo_it.mutate_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        gene_range=chromo_it.get_topo_ids(),
+                        selection="roulette",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
+                merged_chromosomes.extend(
+                    chromo_it.mutate_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        gene_range=chromo_it.get_prec_ids(),
+                        selection="roulette",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
 
-            progress_plot(
-                generations=generations,
-                output=figure_dir / f"fitness_progress_{seed}.png",
-                num_generations=num_generations,
-            )
+                merged_chromosomes.extend(
+                    chromo_it.crossover_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        selection="random",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
 
-            # Output best structures as images.
-            best_chromosome = generation.select_best(selection_size=1)[0]
-            best_name = (
-                f"{best_chromosome.prefix}_"
-                f"{best_chromosome.get_separated_string()}"
-            )
+                merged_chromosomes.extend(
+                    chromo_it.crossover_population(
+                        chromosomes={
+                            f"{chromosome.prefix}"
+                            f"_{chromosome.get_separated_string()}": chromosome
+                            for chromosome in generation.chromosomes
+                        },
+                        generator=generator,
+                        selection="roulette",
+                        num_to_select=num_to_operate,
+                        database=database,
+                    )
+                )
 
-        logger.info("top scorer is %s (seed: %s)", best_name, seed)
+                # Add the best 5 to the new generation.
+                merged_chromosomes.extend(
+                    generation.select_best(selection_size=5)
+                )
+
+                generation = cgx.systems_optimisation.Generation(
+                    chromosomes=chromo_it.dedupe_population(
+                        merged_chromosomes
+                    ),
+                    fitness_calculator=fitness_calculator,
+                    structure_calculator=structure_calculator,
+                    num_processes=num_processes,
+                )
+                logger.info(
+                    "new size is %s.", generation.get_generation_size()
+                )
+
+                # Build, optimise and analyse each structure.
+                generation.run_structures()
+                _ = generation.calculate_fitness_values()
+
+                # Add final state to generations.
+                generations.append(generation)
+
+                # Select the best of the generation for the next generation.
+                best = generation.select_best(selection_size=selection_size)
+                generation = cgx.systems_optimisation.Generation(
+                    chromosomes=chromo_it.dedupe_population(best),
+                    fitness_calculator=fitness_calculator,
+                    structure_calculator=structure_calculator,
+                    num_processes=num_processes,
+                )
+                logger.info(
+                    "final size is %s.", generation.get_generation_size()
+                )
+
+                progress_plot(
+                    generations=generations,
+                    output=figure_dir / f"fitness_progress_{seed}.png",
+                    num_generations=num_generations,
+                )
+
+                # Output best structures as images.
+                best_chromosome = generation.select_best(selection_size=1)[0]
+                best_name = (
+                    f"{best_chromosome.prefix}_"
+                    f"{best_chromosome.get_separated_string()}"
+                )
+
+            logger.info("top scorer is %s (seed: %s)", best_name, seed)
 
     # Report.
     found = set()
