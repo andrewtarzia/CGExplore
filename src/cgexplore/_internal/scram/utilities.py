@@ -1,5 +1,7 @@
 """Utilities module."""
 
+from collections import defaultdict
+
 import numpy as np
 import stk
 
@@ -34,3 +36,21 @@ def points_on_sphere(
     new_points = new_points.T
 
     return np.array(new_points, dtype=np.float64)
+
+
+def generate_graph_type(
+    stoichiometry_map: dict[str, int],
+    multiplier: int,
+    bb_library: dict[str, stk.BuildingBlock],
+) -> str:
+    """Automatically get the graph type to match the new naming convention."""
+    fgcounts: dict[int, int] = defaultdict(int)
+    for name, stoich in stoichiometry_map.items():
+        fgcounts[bb_library[name].get_num_functional_groups()] += (
+            stoich * multiplier
+        )
+
+    string = ""
+    for fgtype, fgnum in sorted(fgcounts.items(), reverse=True):
+        string += f"{fgnum}-{fgtype}FG_"
+    return string.rstrip("_")

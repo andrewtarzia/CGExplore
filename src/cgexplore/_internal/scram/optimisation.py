@@ -85,6 +85,7 @@ def target_optimisation(  # noqa: C901, PLR0913, PLR0915
         )
 
     else:
+        energies = []
         ff_map = dict(enumerate(modifiable_terms))
 
         initial_ff_params = []
@@ -182,11 +183,14 @@ def target_optimisation(  # noqa: C901, PLR0913, PLR0915
                 return 100
             conformer = structure_f(params)
 
-            # Return Energy.
-            return get_energy_per_bb(
+            energy = get_energy_per_bb(
                 energy_decomposition=conformer.energy_decomposition,
                 number_building_blocks=num_building_blocks,
             )
+            energies.append(energy)
+
+            # Return Energy.
+            return energy
 
         result = optimize.dual_annealing(
             f,
@@ -216,6 +220,7 @@ def target_optimisation(  # noqa: C901, PLR0913, PLR0915
             "optimisation_energy_per_bb": float(result.fun),
             "optimisation_x": [float(i) for i in result.x],
             "optimisation_map": ff_map,  # type:ignore[dict-item]
+            "optimisation_energies": energies,  # type:ignore[dict-item]
             "optimisation_rmsd": stko.KabschRmsdCalculator(
                 input_cage
             ).calculate(min_conformer.molecule),

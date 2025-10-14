@@ -32,6 +32,7 @@ cgexplore.scram
       :toctree:
       :nosignatures:
    
+      generate_graph_type
       get_bb_topology_code_graph
       get_custom_bb_configurations
       get_potential_bb_dicts

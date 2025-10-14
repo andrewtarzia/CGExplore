@@ -24,13 +24,17 @@ from cgexplore._internal.scram.topology_code import (
     TopologyCode,
     get_stk_topology_code,
 )
-from cgexplore._internal.scram.utilities import points_on_sphere
+from cgexplore._internal.scram.utilities import (
+    generate_graph_type,
+    points_on_sphere,
+)
 
 __all__ = [
     "BuildingBlockConfiguration",
     "Constructed",
     "TopologyCode",
     "TopologyIterator",
+    "generate_graph_type",
     "get_bb_topology_code_graph",
     "get_custom_bb_configurations",
     "get_potential_bb_dicts",

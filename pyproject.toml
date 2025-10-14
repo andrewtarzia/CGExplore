@@ -7,10 +7,6 @@ name = "cgexplore"
 maintainers = [{ name = "Andrew Tarzia", email = "andrew.tarzia@gmail.com" }]
 dependencies = [
     "numpy<2",
-    # Added a new restriction (<2025.3.1 for rdkit because of changes in
-    # rdkit's handling of metal-bonded/dative smiles) - done through manual testing.
-    # This can change if updates to stk occur.
-    "rdkit != 2024.3.5, <= 2024.9.1",
     "stk",
     "stko",
     "openmm[cuda12]",
@@ -44,6 +40,7 @@ dev = [
     "twine",
     "sphinx_rtd_theme",
     "furo",
+    "moldoc",
 ]
 
 [project.scripts]
@@ -96,15 +93,6 @@ convention = "google"
     "INP001",
     "ERA001",
     "ANN001",
-    "PLR0912",
-    "PLR0913",
-    "PLR0915",
-]
-"optimisation_example/*" = [
-    "D103",
-    "C901",
-    "INP001",
-    "ERA001",
     "PLR0912",
     "PLR0913",
     "PLR0915",

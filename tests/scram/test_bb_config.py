@@ -51,6 +51,10 @@ def test_building_block_configuration(graph_data: CaseData) -> None:
                     run_topology_codes=run_topology_codes,
                 ):
                     assert (idx, bb_config.idx) in graph_data.iso_pass
+                    assert graph_data.iso_pass[len(run_topology_codes)] == (
+                        idx,
+                        bb_config.idx,
+                    )
                     run_topology_codes.append((topology_code, bb_config))
 
             bc_name = (

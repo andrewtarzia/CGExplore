@@ -1,30 +1,25 @@
 Topologies
 ==========
 
-A package of the classes for handling topology graphs in `cgexplore`.
+A package of the classes for handling standard ``pre-built`` topology graphs
+in ``cgx``.
+For structure prediction, see the :doc:`scram package <scram>`.
 
 New topology graphs
 -------------------
 
-.. toctree::
-  :maxdepth: 1
-
-  stoichiometry_map <_autosummary/cgexplore.topologies.stoich_map>
-  UnalignedM1L2 <_autosummary/cgexplore.topologies.UnalignedM1L2>
-  CGM4L8 <_autosummary/cgexplore.topologies.CGM4L8>
-  M4L82 <_autosummary/cgexplore.topologies.M4L82>
-  M6L122 <_autosummary/cgexplore.topologies.M6L122>
-  M8L162 <_autosummary/cgexplore.topologies.M8L162>
-  CGM12L24 <_autosummary/cgexplore.topologies.CGM12L24>
+- :doc:`stoichiometry_map <_autosummary/cgexplore.topologies.stoich_map>`
+- :doc:`UnalignedM1L2 <_autosummary/cgexplore.topologies.UnalignedM1L2>`
+- :doc:`CGM4L8 <_autosummary/cgexplore.topologies.CGM4L8>`
+- :doc:`M4L82 <_autosummary/cgexplore.topologies.M4L82>`
+- :doc:`M6L122 <_autosummary/cgexplore.topologies.M6L122>`
+- :doc:`M8L162 <_autosummary/cgexplore.topologies.M8L162>`
+- :doc:`CGM12L24 <_autosummary/cgexplore.topologies.CGM12L24>`
 
 
-Custom topology graphs
-----------------------
+Class for handling custom topology graphs
+-----------------------------------------
 
-For working with structure prediction in `scram`.
+For working with structure prediction in :doc:`scram <scram>`.
 
-.. toctree::
-  :maxdepth: 1
-
-  CustomTopology <_autosummary/cgexplore.topologies.CustomTopology>
-
+- :doc:`CustomTopology <_autosummary/cgexplore.topologies.CustomTopology>`

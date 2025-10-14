@@ -1,8 +1,9 @@
 .. toctree::
    :hidden:
    :caption: CGExplore
-   :maxdepth: 2
+   :maxdepth: 1
 
+   Recipes <recipes>
    First paper example <first_paper_example>
    Structure prediction <scram>
    Systems optimisation <systems_optimisation>
@@ -12,10 +13,10 @@
    Forcefields <forcefields>
    Terms <terms>
    Analysis <analysis>
-   Utilities <utilities>
    Executables <executables>
    Topologies <topologies>
    Atomistic tools <atomistic>
+   Utilities <utilities>
 
 .. toctree::
   :hidden:

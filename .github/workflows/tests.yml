@@ -17,7 +17,7 @@ jobs:
               with:
                   python-version-file: "pyproject.toml"
             - run: uv sync --all-extras --dev
-            - run: uv run ruff check src/ tests/ docs/source/ first_paper_example/ optimisation_example/
+            - run: uv run ruff check src/ tests/ docs/source/ first_paper_example/
 
     mypy:
         runs-on: ubuntu-latest
@@ -43,7 +43,7 @@ jobs:
               with:
                   python-version-file: "pyproject.toml"
             - run: uv sync --all-extras --dev
-            - run: uv run ruff format --check src/ tests/ docs/source/ first_paper_example/ optimisation_example/
+            - run: uv run ruff format --check src/ tests/ docs/source/ first_paper_example/
 
     pytest:
         runs-on: ubuntu-latest

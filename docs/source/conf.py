@@ -7,6 +7,8 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 from __future__ import annotations
 
+from moldoc import molecule
+
 project = "CGExplore"
 project_copyright = "2023, Andrew Tarzia"
 author = "Andrew Tarzia"
@@ -21,6 +23,8 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
+    "moldoc",
+    "chemiscope.sphinx",
 ]
 
 autosummary_imported_members = True
@@ -45,3 +49,11 @@ html_theme = "furo"
 html_static_path = ["_static"]
 html_logo = "_static/logo.png"
 html_theme_options = {}
+
+# --- Options for moldoc -----------------------------------------------------
+
+
+moldoc_default_molecule_config = molecule.MoleculeConfig(
+    background_color=molecule.Color(32, 32, 32),
+    atom_scale=0.2,
+)
