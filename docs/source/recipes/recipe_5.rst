@@ -337,52 +337,10 @@ While the heteroleptic stirrup (``mix1_2-2-1-1_1_0_b8`` is also stable, but
 not as stable. However, the flexibility of the bent ligand and the exchange
 reaction to form the heteroleptic can explain this outcome.
 
-.. moldoc::
+.. image:: recipe_2_output/figures/star_test.png
 
-    import moldoc.molecule as molecule
-    import stk
-    import pathlib
+With the structure:
 
-    try:
-        wd = (
-            pathlib.Path.cwd()
-            / "source"
-            / "recipes"
-            / "recipe_5_output"
-            / "structures"
-        )
-        structure = stk.BuildingBlock.init_from_file(
-            str(wd / "mix1_2-2-1-1_1_0_b8_optc.mol")
-        )
-    except OSError:
-        wd = (
-            pathlib.Path.cwd()
-            / "recipes"
-            / "recipe_5_output"
-            / "structures"
-        )
-        structure = stk.BuildingBlock.init_from_file(
-            str(wd / "mix1_2-2-1-1_1_0_b8_optc.mol")
-        )
-
-    moldoc_display_molecule = molecule.Molecule(
-        atoms=(
-            molecule.Atom(
-                atomic_number=atom.get_atomic_number(),
-                position=position,
-            ) for atom, position in zip(
-                structure.get_atoms(),
-                structure.get_position_matrix(),
-            )
-        ),
-        bonds=(
-            molecule.Bond(
-                atom1_id=bond.get_atom1().get_id(),
-                atom2_id=bond.get_atom2().get_id(),
-                order=bond.get_order(),
-            ) for bond in structure.get_bonds()
-        ),
-    )
 
 .. raw:: html
 
