@@ -166,7 +166,7 @@ features.
 
     # Define the chromosome generator, holding all the changeable genes.
     chromo_it = cgx.systems_optimisation.ChromosomeGenerator(
-        prefix=prefix,
+        prefix="syst_opt_test",
         present_beads=bead_library.get_present_beads(),
         vdw_bond_cutoff=2,
     )
@@ -233,8 +233,7 @@ features.
 .. testcode:: syst_opt-test
     :hide:
 
-    print(chromo_it.get_num_chromosomes())
-    assert chromo_it.get_num_chromosomes() == 200
+    assert chromo_it.get_num_chromosomes() == 1425
 
 
 Then, you can run the genetic algorithm (I will not show all the information
