@@ -142,7 +142,7 @@ interested in.
 
         # A structure i have predicted earlier (using the same approach as
         # recipe 2/5).
-        chosen_name = ""
+        chosen_name = "cc3_2_4"
         conformer_db_path = calc_dir / f"{chosen_name}.db"
         conformer_db = cgx.utilities.AtomliteDatabase(conformer_db_path)
         min_energy_structure = None
@@ -150,7 +150,10 @@ interested in.
         for entry in conformer_db.get_entries():
             if entry.properties["energy_per_bb"] < min_energy:
                 min_energy = entry.properties["energy_per_bb"]
-                min_energy_structure = conformer_db.get_molecule(key=entry.key)
+                min_energy_structure = conformer_db.get_molecule(
+                    key=entry.key
+                )
+                num_bbs = entry.properties["num_bbs"]
 
         for ps, parameters in enumerate(parameter_sets):
             logger.info("doing %s", parameters)
@@ -164,7 +167,13 @@ interested in.
             )
             cgx.utilities.AtomliteDatabase(database_path).add_properties(
                 key=chosen_name,
-                property_dict={"energy_per_bb": min_energy},
+                property_dict={
+                    "energy_per_bb": min_energy,
+                    "num_bbs": num_bbs,
+                    "forcefield_dict": (
+                        forcefield.get_forcefield_dictionary()
+                    ),
+                },
             )
             cgx.scram.target_optimisation(
                 database_path=database_path,
