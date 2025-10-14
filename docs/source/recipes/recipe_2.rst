@@ -20,6 +20,7 @@ In this recipe,
     import cgexplore as cgx
     import logging
     import pathlib
+    import itertools as it
 
     logger = logging.getLogger(__name__)
 
@@ -31,6 +32,31 @@ In this recipe,
     figure_dir = wd / "figures"
     ligand_dir = wd / "ligands"
     database_path = data_dir / "test.db"
+
+    def optimisation_workflow(  # noqa: PLR0913
+        config_name: str,
+        conformer_db_path: pathlib.Path,
+        topology_code: cgx.scram.TopologyCode,
+        iterator: cgx.scram.TopologyIterator,
+        bb_config: cgx.scram.BuildingBlockConfiguration,
+        calculation_dir: pathlib.Path,
+        forcefield: cgx.forcefields.ForceField,
+    ) -> None:
+        """Geometry optimise a configuration."""
+        # Fake for the test.
+        return
+
+
+    def analyse_cage(
+        database_path: pathlib.Path,
+        name: str,
+        min_energy_key: str,
+        conformer_db_path: pathlib.Path,
+    ) -> None:
+        """Analyse toy model cage."""
+        # Fake for the test.
+        return
+
 
 We will start by defining our ``definer_dict`` for the constant terms, and the
 associated bead library.

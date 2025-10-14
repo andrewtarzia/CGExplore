@@ -20,6 +20,7 @@ forcefield parameters and multiple topology graph choices.
     import cgexplore as cgx
     import logging
     import pathlib
+    import numpy as np
 
     logger = logging.getLogger(__name__)
 

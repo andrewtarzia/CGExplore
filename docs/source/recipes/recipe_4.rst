@@ -180,7 +180,8 @@ in my recent work was more complicated.
                 iterator=iterator,
                 bb_config=None,
             )
-            constructed_molecule.write(wd / f"{name}_unopt.mol")
+            # Output to file.
+            # constructed_molecule.write(wd / f"{name}_unopt.mol")
 
             # Implement optimisation workflows!
 

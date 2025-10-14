@@ -15,8 +15,8 @@ requires a :class:`cgexplore.forcefields.AssignedSystem`.
 
    Developing libraries of forcefields for iteration can be much simpler
    in the Systems Optimisation module, using the `definer dictionary`
-   interface and chromosomes (see `recipe 1 <recipes/recipe_1.html`_ and
-   `recipe 3 <recipes/recipe_3.html`_).
+   interface and chromosomes (see `recipe 1 <recipes/recipe_1.html>`_ and
+   `recipe 3 <recipes/recipe_3.html>`_).
 
 Libraries
 ---------
