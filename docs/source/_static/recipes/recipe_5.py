@@ -6,6 +6,7 @@ import pathlib
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+import numpy as np
 import openmm
 import stko
 
@@ -207,7 +208,7 @@ def make_summary_plot(
     )
 
     # define the bins and normalize
-    bounds = [0, 0.1, 0.2, 0.3, 0.5, 1.0]
+    bounds = np.arange(0, 5, 0.5)
     norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
     for (pair, multi), evalues in energies.items():
         sorted_energies = sorted(evalues, key=lambda p: p[0])
@@ -227,15 +228,6 @@ def make_summary_plot(
             cmap=cmap,
             norm=norm,
         )
-        ax.text(
-            x=x + 0.5,
-            y=y,
-            s=f"t:{min_energy[1]},b:{min_energy[2]}",
-            horizontalalignment="center",
-            verticalalignment="center_baseline",
-            color="k",
-            fontsize=10,
-        )
 
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_xlabel("multiplier", fontsize=16)
@@ -244,8 +236,8 @@ def make_summary_plot(
     ax.set_yticks(list(range(len(ys))))
     ax.set_yticklabels(["_".join(i) for i in ys])
 
-    for i in list(range(len(xs))):
-        ax.axvline(int(i) + 0.8, c="k", alpha=0.5)
+    ax.axhline(4.5, c="k", alpha=0.5)
+    ax.axhline(8.5, c="k", alpha=0.5)
 
     cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
     cbar = fig.colorbar(
