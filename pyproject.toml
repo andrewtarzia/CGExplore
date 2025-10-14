@@ -101,15 +101,6 @@ convention = "google"
     "PLR0913",
     "PLR0915",
 ]
-"optimisation_example/*" = [
-    "D103",
-    "C901",
-    "INP001",
-    "ERA001",
-    "PLR0912",
-    "PLR0913",
-    "PLR0915",
-]
 "docs/source/conf.py" = ["D100", "INP001"]
 
 [tool.ruff.format]
