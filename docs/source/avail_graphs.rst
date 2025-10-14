@@ -73,7 +73,7 @@ Generated with code:
                 graph_type=f"{midx}-{fgnum}FG",
                 graph_set="rxx",
             )
-            logging.info(
+            logger.info(
                 "graph iteration has %s graphs", iterator.count_graphs()
             )
         except (ZeroDivisionError, ValueError):
@@ -86,7 +86,6 @@ Generated with code:
     import itertools as it
     import stk
     import cgexplore as cgx
-    import logging
 
     knowns = (
         "8-3FG",
@@ -139,7 +138,7 @@ Generated with code:
                 graph_type=f"{midx}-{fgnum}FG",
                 graph_set="rxx",
             )
-            logging.info(iterator.graph_directory / f"rxx_{iterator.graph_type}.json")
+
             if iterator.graph_type in knowns:
                 assert (
                     iterator.graph_directory / f"rxx_{iterator.graph_type}.json"
@@ -188,7 +187,7 @@ Generated with code:
                 f"{midx * stoich[1]}-{fgnum2_}FG",
                 graph_set="rxx",
             )
-            logging.info(
+            logger.info(
                 "graph iteration has %s graphs", iterator.count_graphs()
             )
         except (ZeroDivisionError, ValueError):
@@ -201,7 +200,6 @@ Generated with code:
     import itertools as it
     import stk
     import cgexplore as cgx
-    import logging
 
     knowns = (
         "1-2FG_2-1FG",
@@ -244,7 +242,7 @@ Generated with code:
                 f"{midx * stoich[1]}-{fgnum2_}FG",
                 graph_set="rxx",
             )
-            logging.info(iterator.graph_directory / f"rxx_{iterator.graph_type}.json")
+
             if iterator.graph_type in knowns:
                 assert (
                     iterator.graph_directory / f"rxx_{iterator.graph_type}.json"
@@ -296,7 +294,7 @@ Generated with code:
                 f"{midx * stoich[2]}-{fgnum3_}FG",
                 graph_set="rxx",
             )
-            logging.info(
+            logger.info(
                 "graph iteration has %s graphs", iterator.count_graphs()
             )
 
@@ -310,7 +308,6 @@ Generated with code:
     import itertools as it
     import stk
     import cgexplore as cgx
-    import logging
 
     knowns = (
         "1-3FG_1-2FG_1-1FG",
@@ -368,7 +365,7 @@ Generated with code:
                 f"{midx * stoich[2]}-{fgnum3_}FG",
                 graph_set="rxx",
             )
-            logging.info(iterator.graph_directory / f"rxx_{iterator.graph_type}.json")
+
             if iterator.graph_type in knowns:
                 assert (
                     iterator.graph_directory / f"rxx_{iterator.graph_type}.json"

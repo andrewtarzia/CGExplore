@@ -691,16 +691,16 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
 
             logger.info("top scorer is %s (seed: %s)", best_name, seed)
 
-    # Report.
-    found = set()
-    for generation in generations:
-        for chromo in generation.chromosomes:
-            found.add(chromo.name)
-    logger.info(
-        "%s chromosomes found in EA (of %s)",
-        len(found),
-        chromo_it.get_num_chromosomes(),
-    )
+        # Report.
+        found = set()
+        for generation in generations:
+            for chromo in generation.chromosomes:
+                found.add(chromo.name)
+        logger.info(
+            "%s chromosomes found in EA (of %s)",
+            len(found),
+            chromo_it.get_num_chromosomes(),
+        )
 
     fig, axs = plt.subplots(ncols=2, figsize=(16, 5))
     ax, ax1 = axs
