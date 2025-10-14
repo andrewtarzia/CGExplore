@@ -3,7 +3,12 @@ Target optimisation
 
 Here I show the use of the :func:`cgexplore.scram.target optimisation` function
 to optimise selected parameters of an input forcefield to minimise the energy
-of a provided structure.
+of a provided structure. We have a FourPlusSix cage, that is strained, with
+building block parameters coming from the same building blocks in
+`recipe 4 <recipe_4.html>`_. We then apply a series of different forcefield
+parameter optimisations.
+
+.. image:: ../_static/recipe_6.png
 
 .. testcode:: recipe6-test
     :hide:

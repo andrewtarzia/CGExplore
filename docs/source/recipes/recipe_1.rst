@@ -1,6 +1,14 @@
 Minimal model genetic algorithm
 ===============================
 
+In this recipe, I will perform genetic algorithm-based optimisation of minimal
+models of ditopic and tritopic building blocks and targetting a pore size of 2
+Angstrom. The optimisation is over the building block angles, and cage
+topology graph.
+
+.. image:: ../_static/recipe_1.png
+
+
 We first define a chromosome of one pair of building blocks, with a range of
 forcefield parameters and multiple topology graph choices.
 
