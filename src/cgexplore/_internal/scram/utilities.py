@@ -44,7 +44,7 @@ def generate_graph_type(
     bb_library: dict[str, stk.BuildingBlock],
 ) -> str:
     """Automatically get the graph type to match the new naming convention."""
-    fgcounts = defaultdict(int)
+    fgcounts: dict[int, int] = defaultdict(int)
     for name, stoich in stoichiometry_map.items():
         fgcounts[bb_library[name].get_num_functional_groups()] += (
             stoich * multiplier

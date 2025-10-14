@@ -220,7 +220,7 @@ def target_optimisation(  # noqa: C901, PLR0913, PLR0915
             "optimisation_energy_per_bb": float(result.fun),
             "optimisation_x": [float(i) for i in result.x],
             "optimisation_map": ff_map,  # type:ignore[dict-item]
-            "optimisation_energies": energies,
+            "optimisation_energies": energies,  # type:ignore[dict-item]
             "optimisation_rmsd": stko.KabschRmsdCalculator(
                 input_cage
             ).calculate(min_conformer.molecule),
