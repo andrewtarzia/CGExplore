@@ -278,13 +278,111 @@ Time to iterate!
                     min_energy_key=min_energy_key,
                 )
 
-And now we can plot the most stable structure for each multiplier to show the
-star ship is indeed the most stable.
+And now we can plot the most stable structure for each multiplier. graph and
+building block configuration combination (different stoichiometries are split
+by the horizontal lines). The data shows that the homoleptic structure:
+``mix1_2-2-0-2_1_0_b5`` (with the bent ligand) is the most stable (along side
+another homoleptic structure with a different graph):
 
-.. image:: recipe_2_output/figures/star_test.png
+.. image:: recipe_5_output/figures/recipe_5_test.png
 
-With the structure:
+.. moldoc::
 
+    import moldoc.molecule as molecule
+    import stk
+    import pathlib
+
+    try:
+        wd = (
+            pathlib.Path.cwd()
+            / "source"
+            / "recipes"
+            / "recipe_5_output"
+            / "structures"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "mix1_2-2-0-2_1_0_b5_optc.mol")
+        )
+    except OSError:
+        wd = (
+            pathlib.Path.cwd()
+            / "recipes"
+            / "recipe_5_output"
+            / "structures"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "mix1_2-2-0-2_1_0_b5_optc.mol")
+        )
+
+    moldoc_display_molecule = molecule.Molecule(
+        atoms=(
+            molecule.Atom(
+                atomic_number=atom.get_atomic_number(),
+                position=position,
+            ) for atom, position in zip(
+                structure.get_atoms(),
+                structure.get_position_matrix(),
+            )
+        ),
+        bonds=(
+            molecule.Bond(
+                atom1_id=bond.get_atom1().get_id(),
+                atom2_id=bond.get_atom2().get_id(),
+                order=bond.get_order(),
+            ) for bond in structure.get_bonds()
+        ),
+    )
+
+While the heteroleptic stirrup (``mix1_2-2-1-1_1_0_b8`` is also stable, but
+not as stable. However, the flexibility of the bent ligand and the exchange
+reaction to form the heteroleptic can explain this outcome.
+
+.. moldoc::
+
+    import moldoc.molecule as molecule
+    import stk
+    import pathlib
+
+    try:
+        wd = (
+            pathlib.Path.cwd()
+            / "source"
+            / "recipes"
+            / "recipe_5_output"
+            / "structures"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "mix1_2-2-1-1_1_0_b8_optc.mol")
+        )
+    except OSError:
+        wd = (
+            pathlib.Path.cwd()
+            / "recipes"
+            / "recipe_5_output"
+            / "structures"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "mix1_2-2-1-1_1_0_b8_optc.mol")
+        )
+
+    moldoc_display_molecule = molecule.Molecule(
+        atoms=(
+            molecule.Atom(
+                atomic_number=atom.get_atomic_number(),
+                position=position,
+            ) for atom, position in zip(
+                structure.get_atoms(),
+                structure.get_position_matrix(),
+            )
+        ),
+        bonds=(
+            molecule.Bond(
+                atom1_id=bond.get_atom1().get_id(),
+                atom2_id=bond.get_atom2().get_id(),
+                order=bond.get_order(),
+            ) for bond in structure.get_bonds()
+        ),
+    )
 
 .. raw:: html
 
