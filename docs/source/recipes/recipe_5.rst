@@ -20,6 +20,7 @@ atomistic building blocks.
     import cgexplore as cgx
     import logging
     import pathlib
+    import itertools as it
 
     logger = logging.getLogger(__name__)
 
@@ -31,10 +32,38 @@ atomistic building blocks.
     figure_dir = wd / "figures"
     ligand_dir = wd / "ligands"
 
+    def optimisation_workflow(  # noqa: PLR0913
+        config_name: str,
+        conformer_db_path: pathlib.Path,
+        topology_code: cgx.scram.TopologyCode,
+        iterator: cgx.scram.TopologyIterator,
+        bb_config: cgx.scram.BuildingBlockConfiguration,
+        calculation_dir: pathlib.Path,
+        forcefield: cgx.forcefields.ForceField,
+    ) -> None:
+        """Geometry optimise a configuration."""
+        # Fake for the test.
+        return
+
+
+    def analyse_cage(
+        database_path: pathlib.Path,
+        name: str,
+        min_energy_key: str,
+        conformer_db_path: pathlib.Path,
+    ) -> None:
+        """Analyse toy model cage."""
+        # Fake for the test.
+        return
+
 We will start by defining our ``definer_dict`` for the constant terms, and the
 associated bead library.
 
 .. testcode:: recipe5-test
+
+    # Define a database, and a prefix for naming structure, forcefield and
+    # output files.
+    database_path = data_dir / "test.db"
 
     # Define a definer dictionary.
     # These are constants, while different systems can override these
@@ -42,55 +71,55 @@ associated bead library.
     cg_scale = 2
     constant_definer_dict = {
         # Bonds.
-        "nb": ("bond", 1.0, 1e5),
+        "mb": ("bond", 1.0, 1e5),
         # Angles.
         "aca": ("angle", 180, 1e2),
-        "nba": ("angle", 180, 1e2),
+        "ede": ("angle", 180, 1e2),
+        "mba": ("angle", 180, 1e2),
+        "mbe": ("angle", 180, 1e2),
         # Nonbondeds.
-        "n": ("nb", 10.0, 1.0),
+        "m": ("nb", 10.0, 1.0),
+        "d": ("nb", 10.0, 1.0),
+        "e": ("nb", 10.0, 1.0),
         "a": ("nb", 10.0, 1.0),
         "b": ("nb", 10.0, 1.0),
         "c": ("nb", 10.0, 1.0),
+        "f": ("nb", 10.0, 1.0),
     }
 
     # Define beads.
     bead_library = cgx.molecular.BeadLibrary.from_bead_types(
         # Type and coordination.
-        {"n": 3, "a": 2, "b": 2, "c": 2}
+        {"m": 4, "a": 2, "b": 2, "c": 2, "d": 2, "e": 2, "f": 2}
     )
 
-Then we can map that to our building block library. In this example, I am just
-using one pair of ditopic building blocks, unlike in the manuscript.
+
+Then we can map that to our building block library.
 
 .. testcode:: recipe5-test
 
     # Define your forcefield alterations as building blocks.
     building_block_library = {
-        "la": {
-            "precursor": cgx.molecular.SixBead(
-                bead=bead_library.get_from_type("d"),
-                abead1=bead_library.get_from_type("e"),
-                abead2=bead_library.get_from_type("g"),
-            ),
-            "mod_definer_dict": {
-                "dd": ("bond", 7.0 / cg_scale, 1e5),
-                "de": ("bond", 1.5 / cg_scale, 1e5),
-                "dde": ("angle", 170, 1e2),
-                "eg": ("bond", 1.4 / cg_scale, 1e5),
-                "gb": ("bond", 1.4 / cg_scale, 1e5),
-                "egb": ("angle", 120, 1e2),
-                "deg": ("angle", 180, 1e2),
-            },
-        },
-        "st5": {
+        "lin": {
             "precursor": cgx.molecular.TwoC1Arm(
                 bead=bead_library.get_from_type("c"),
                 abead1=bead_library.get_from_type("a"),
             ),
             "mod_definer_dict": {
                 "ba": ("bond", 2.8 / cg_scale, 1e5),
-                "ac": ("bond", 3.9 / 2 / cg_scale, 1e5),
-                "bac": ("angle", 120, 1e2),
+                "ac": ("bond", 1.5 / 2 / cg_scale, 1e5),
+                "bac": ("angle", 180, 1e2),
+            },
+        },
+        "mxy": {
+            "precursor": cgx.molecular.TwoC1Arm(
+                bead=bead_library.get_from_type("d"),
+                abead1=bead_library.get_from_type("e"),
+            ),
+            "mod_definer_dict": {
+                "be": ("bond", 7.6 / cg_scale, 1e5),
+                "ed": ("bond", 5.0 / 2 / cg_scale, 1e5),
+                "bed": ("angle", 90, 1e2),
             },
         },
         "tetra": {
@@ -98,40 +127,42 @@ using one pair of ditopic building blocks, unlike in the manuscript.
                 bead=bead_library.get_from_type("m"),
                 abead1=bead_library.get_from_type("b"),
             ),
-            "mod_definer_dict": {},
+            "mod_definer_dict": {
+                "mb": ("bond", 2.0 / cg_scale, 1e5),
+                "bmb": ("pyramid", 90, 1e2),
+            },
+        },
+        "corner": {
+            "precursor": cgx.molecular.TwoC0Arm(
+                bead=bead_library.get_from_type("f"),
+            ),
+            "mod_definer_dict": {
+                "bf": ("bond", 2.0 / cg_scale, 1e5),
+                "bfb": ("angle", 90, 1e2),
+                "fbm": ("angle", 90, 1e2),
+            },
         },
     }
 
-And define a series of systems to explore. Here, I want to check all possible
-stoichiometry mixtures of these three building blocks, with various
-multipliers.
+And define a series of systems to explore. Here, I only check particular
+homoleptic and heteroleptic combinations.
 
 .. testcode:: recipe5-test
 
     # Define systems to predict the structure of.
     systems = {
-        "la_st5_423": {
-            "stoichiometry_map": {"tetra": 3, "la": 4, "st5": 2},
+        "mix1_2-2-1-1": {
+            "stoichiometry_map": {"tetra": 2, "corner": 2, "lin": 1, "mxy": 1},
             "multipliers": (1,),
             "vdw_cutoff": 2,
         },
-        "la_st5_111": {
-            "stoichiometry_map": {"tetra": 1, "la": 1, "st5": 1},
-            "multipliers": (3,),
-            "vdw_cutoff": 2,
-        },
-        "la_st5_243": {
-            "stoichiometry_map": {"tetra": 3, "la": 2, "st5": 4},
+        "mix1_2-2-2-0": {
+            "stoichiometry_map": {"tetra": 2, "corner": 2, "lin": 2},
             "multipliers": (1,),
             "vdw_cutoff": 2,
         },
-        "la_st5_153": {
-            "stoichiometry_map": {"tetra": 3, "la": 1, "st5": 5},
-            "multipliers": (1,),
-            "vdw_cutoff": 2,
-        },
-        "la_st5_513": {
-            "stoichiometry_map": {"tetra": 3, "la": 5, "st5": 1},
+        "mix1_2-2-0-2": {
+            "stoichiometry_map": {"tetra": 2, "corner": 2, "mxy": 2},
             "multipliers": (1,),
             "vdw_cutoff": 2,
         },
@@ -164,16 +195,22 @@ Time to iterate!
         bb_map = {}
         for prec_name in syst_d["stoichiometry_map"]:
             prec = building_block_library[prec_name]["precursor"]
-            bb = cgx.utilities.optimise_ligand(
-                molecule=prec.get_building_block(),
-                name=f"{system_name}_{prec.get_name()}",
-                output_dir=calc_dir,
-                forcefield=forcefield,
-                platform=None,
-            ).clone()
-            bb.write(
-                str(ligand_dir / f"{system_name}_{prec.get_name()}_optl.mol")
-            )
+            if prec_name == "corner":
+                bb = prec.get_building_block()
+            else:
+                bb = cgx.utilities.optimise_ligand(
+                    molecule=prec.get_building_block(),
+                    name=f"{system_name}_{prec.get_name()}",
+                    output_dir=calc_dir,
+                    forcefield=forcefield,
+                    platform=None,
+                ).clone()
+                bb.write(
+                    str(
+                        ligand_dir
+                        / f"{system_name}_{prec.get_name()}_optl.mol"
+                    )
+                )
             bb_map[prec_name] = bb
 
         for multiplier in syst_d["multipliers"]:
