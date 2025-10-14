@@ -174,7 +174,10 @@ Here are the energies during those parameter optimisations.
 
 .. image:: recipe_6_output/figures/recipe_6_image.png
 
-And the changes in the terms for each parameter set.
+And the changes in the terms for each parameter set. The data here suggests
+that stable structures can be achieved by more by changing the ditopic
+building block terms (``ba``, ``ac`` and ``bac``). But even small changes bring
+th energies very close to 0 kJ/mol.
 
 .. image:: recipe_6_output/figures/recipe_6_image_2.png
 

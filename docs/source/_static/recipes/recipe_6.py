@@ -33,8 +33,8 @@ def make_topt_plot(
         ("ba", "ac"): "tab:green",
         ("bac", "ba", "nb", "bnb"): "tab:red",
         ("bnb",): "tab:purple",
-        ("bnb", "nb"): "tab:gray",
-        ("nb", "ba"): "tab:cyan",
+        ("bnb", "nb"): "tab:brown",
+        ("nb", "ba"): "tab:pink",
     }
 
     fig, axs = plt.subplots(
@@ -116,7 +116,6 @@ def make_topt_plot(
     fig.tight_layout()
     fig.savefig(figure_dir / filename, dpi=360, bbox_inches="tight")
     plt.close()
-    raise SystemExit("check colours matcj")
 
 
 def main() -> None:  # noqa: PLR0915
