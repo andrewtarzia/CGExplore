@@ -1,4 +1,5 @@
 import pathlib
+from collections import abc
 from dataclasses import dataclass
 
 import stk
@@ -18,5 +19,5 @@ class CaseData:
     max_samples: int
     doubles: dict[int, bool]
     parallels: dict[int, bool]
-    iso_pass: dict[tuple[int, int], bool]
+    iso_pass: abc.Sequence[tuple[int, int]]
     name: str

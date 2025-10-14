@@ -187,7 +187,7 @@ Time to iterate!
             bb_map[prec_name] = bb
 
         for multiplier in syst_d["multipliers"]:
-            logging.info(
+            logger.info(
                 "doing system: %s, multi: %s", system_name, multiplier
             )
 
@@ -207,14 +207,14 @@ Time to iterate!
                 graph_type=graph_type,
                 graph_set="rxx",
             )
-            logging.info(
+            logger.info(
                 "graph iteration has %s graphs", iterator.count_graphs()
             )
 
             possible_bbdicts = cgx.scram.get_custom_bb_configurations(
                 iterator=iterator
             )
-            logging.info(
+            logger.info(
                 "building block iteration has %s options",
                 len(possible_bbdicts),
             )
