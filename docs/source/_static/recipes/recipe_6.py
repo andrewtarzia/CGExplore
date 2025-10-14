@@ -335,7 +335,7 @@ def main() -> None:  # noqa: PLR0915
     )
     plt.close()
 
-    logging.info("saving %s entries", len(structures))
+    logger.info("saving %s entries", len(structures))
     cgx.utilities.write_chemiscope_json(
         json_file=data_dir / "opt_structures.json.gz",
         structures=structures,

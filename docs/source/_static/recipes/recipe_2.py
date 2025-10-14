@@ -60,7 +60,7 @@ def optimisation_workflow(  # noqa: PLR0913
 
         constructed_molecule.write(calculation_dir / f"{name}_unopt.mol")
         # Optimise and save.
-        logging.info("building %s", name)
+        logger.info("building %s", name)
 
         try:
             # Check all the other possible mashes.
@@ -125,7 +125,7 @@ def optimisation_workflow(  # noqa: PLR0913
                 )
 
         except openmm.OpenMMException:
-            logging.info("failed optimisation of %s", name)
+            logger.info("failed optimisation of %s", name)
 
 
 def analyse_cage(
@@ -445,7 +445,7 @@ def main() -> None:  # noqa: PLR0915
                 bb_map[prec_name] = bb
 
             for multiplier in syst_d["multipliers"]:
-                logging.info(
+                logger.info(
                     "doing system: %s, multi: %s", system_name, multiplier
                 )
 
@@ -465,14 +465,14 @@ def main() -> None:  # noqa: PLR0915
                     graph_type=graph_type,
                     graph_set="rxx",
                 )
-                logging.info(
+                logger.info(
                     "graph iteration has %s graphs", iterator.count_graphs()
                 )
 
                 possible_bbdicts = cgx.scram.get_custom_bb_configurations(
                     iterator=iterator
                 )
-                logging.info(
+                logger.info(
                     "building block iteration has %s options",
                     len(possible_bbdicts),
                 )

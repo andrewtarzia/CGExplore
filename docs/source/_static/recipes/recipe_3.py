@@ -23,7 +23,7 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:  # noqa: PLR0912, PLR0915
+def main() -> None:  # noqa: C901, PLR0912, PLR0915
     """Run script."""
     args = _parse_args()
     wd = (
@@ -202,7 +202,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                     continue
                 topology_codes.append((tidx, tc))
 
-            logging.info(
+            logger.info(
                 "graph iteration has %s graphs (from %s)",
                 len(topology_codes),
                 len(all_topology_codes),
@@ -217,7 +217,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
             possible_bbdicts = cgx.scram.get_custom_bb_configurations(
                 iterator=iterator
             )
-            logging.info(
+            logger.info(
                 "building block iteration has %s options",
                 len(possible_bbdicts),
             )
@@ -589,7 +589,7 @@ def main() -> None:  # noqa: PLR0912, PLR0915
                     entry.properties["forcefield_dict"]["v_dict"]["o_a_o"]
                 )
 
-            logging.info("saving %s entries", len(structures))
+            logger.info("saving %s entries", len(structures))
             cgx.utilities.write_chemiscope_json(
                 json_file=data_dir / "space_explored.json.gz",
                 structures=structures,

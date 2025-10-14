@@ -826,7 +826,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             entry.properties["forcefield_dict"]["v_dict"]["o_a_o"]
         )
 
-    logging.info("saving %s entries", len(structures))
+    logger.info("saving %s entries", len(structures))
     cgx.utilities.write_chemiscope_json(
         json_file=data_dir / "space_explored.json.gz",
         structures=structures,
