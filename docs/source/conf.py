@@ -55,4 +55,5 @@ html_theme_options = {}
 
 moldoc_default_molecule_config = molecule.MoleculeConfig(
     background_color=molecule.Color(32, 32, 32),
+    atom_scale=0.2,
 )
