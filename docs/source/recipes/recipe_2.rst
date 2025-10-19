@@ -2,11 +2,11 @@ Minimal model structure prediction
 ==================================
 
 In this recipe, I will reproduce the prediction of the ``starship`` structures
-from `this paper <>`_. Using minimal models of ditopic and tetratopic building
-blocks, we generated all possible heteroleptic graphs with various
-stoichiometries and compute their relative stability, aiming for the most
-stable structure. Note that the forcefield is not modified, but defined from
-atomistic building blocks.
+from `this paper <https://doi.org/10.1016/j.chempr.2025.102780>`_.
+Using minimal models of ditopic and tetratopic building blocks, we generated
+all possible heteroleptic graphs with various stoichiometries and compute
+their relative stability, aiming for the most stable structure. Note that the
+forcefield is not modified, but defined from atomistic building blocks.
 
 .. image:: ../_static/recipe_2.png
 
