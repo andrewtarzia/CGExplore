@@ -17,6 +17,15 @@ optimising and exploring molecular coarse-grained models.
   **Warning**: This package is still very much underdevelopment and many changes
   are expected.
 
+  In particular, if you are trying to reproduce exactly
+  `our recent work on structure prediction <>`_,
+  then you should install an old version of the code
+  (``cgexplore==2025.2.5.1``) alongside the `topology_scrambler <https://github.com/andrewtarzia/topology_scrambler/tree/main>`_
+  code and use `these docs <https://cgexplore.readthedocs.io/en/v2025.02.05.1/>`_.
+  Note, however, that the `recipes <recipes.html>`_ actually reproduce that
+  work with the updated interface.
+
+
 Installation
 ============
 
@@ -56,6 +65,10 @@ to setup the dev environment:
 Usage
 =====
 
+We are moving toward implementing a recipe list, which can be found in the
+`recipe page <recipes.html>`_.
+
+
 **To reproduce data in DOI:
 `10.1039/D3SC03991A <https://doi.org/10.1039/D3SC03991A>`_**:
 Download the source code from ``first_paper_example - presubmission``
@@ -93,7 +106,7 @@ How To Cite
 
 If you use ``cgexplore``, please cite this paper
 
-  TBD
+  `Predicting stable cage structures by enumerating stoichiometry and topology <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_
 
 and reference this URL
 
@@ -101,7 +114,7 @@ and reference this URL
 
 If you use our minimial model, please cite this paper
 
-  https://pubs.rsc.org/en/content/articlelanding/2023/sc/d3sc03991a
+  `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_
 
 
 Publications using CGExplore
@@ -109,7 +122,7 @@ Publications using CGExplore
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
 * Starship structure prediction: (`Adjacent backbone interactions control self-sorting of chiral heteroleptic Pd3A2B4 isosceles triangles and Pd4A4C4 pseudo-tetrahedra <https://doi.org/10.1016/j.chempr.2025.102780>`_)
-* Blind structure prediction: TBD (`blind_oct2025 <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
+* Structure prediction: (`Predicting stable cage structures by enumerating stoichiometry and topology <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
 
 Acknowledgements
 ================
