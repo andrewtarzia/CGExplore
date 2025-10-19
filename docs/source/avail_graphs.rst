@@ -27,7 +27,7 @@ Graphs:
 
 .. important::
 
-  All new graphs are run with a ``max_samples`` of 1e7 (compared to 1e5 of
+  All new graphs are run with a ``max_samples`` of 1e6 (compared to 1e5 of
   ``cgexplore`` version ``2025.2.5.1``).
 
 Filtering graphs
@@ -254,10 +254,14 @@ Generated with code:
 Three-type graphs
 ^^^^^^^^^^^^^^^^^
 
-Produced graphs for ``m`` in (1 - 3) with FGs in (1 - 4) and
+Produced graphs for ``m`` in (1, 2) with FGs in (1 - 4) and
 a combinatorial check of stoichiometries. Note that current versions will
 always focus on smaller FG BBs binding only to the BB with the most FGs.
 Generated with code:
+
+.. important::
+
+  We did not complete the run for ``8-4FG_8-3FG_8-1FG``.
 
 .. code-block:: python
 
@@ -269,7 +273,7 @@ Generated with code:
     }
 
     # Three typers.
-    multipliers = range(1, 5)
+    multipliers = (1, 2)
     three_type_stoichiometries = tuple(
         (i, j, k) for i, j, k in it.product((1, 2, 3, 4), repeat=3)
     )
@@ -340,7 +344,7 @@ Generated with code:
     }
 
     # Three typers.
-    multipliers = range(1, 5)
+    multipliers = (1, 2)
     three_type_stoichiometries = tuple(
         (i, j, k) for i, j, k in it.product((1, 2, 3, 4), repeat=3)
     )
