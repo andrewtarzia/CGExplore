@@ -18,7 +18,7 @@ def main() -> None:
     }
 
     # Three typers.
-    multipliers = range(1, 3)
+    multipliers = (1, 2)
     three_type_stoichiometries = tuple(
         (i, j, k) for i, j, k in it.product((1, 2, 3, 4), repeat=3)
     )
