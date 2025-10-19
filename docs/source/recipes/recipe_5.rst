@@ -431,4 +431,4 @@ reaction to form the heteroleptic can explain this outcome.
 
 .. raw:: html
 
-    <a class="btn-download" href="_static/recipes/recipe_5.py" download>⬇️ Download Python Script</a>
+    <a class="btn-download" href="../_static/recipes/recipe_5.py" download>⬇️ Download Python Script</a>

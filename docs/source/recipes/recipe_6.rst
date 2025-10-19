@@ -202,4 +202,4 @@ And a visualisation of the structures:
 
 .. raw:: html
 
-    <a class="btn-download" href="_static/recipes/recipe_6.py" download>⬇️ Download Python Script</a>
+    <a class="btn-download" href="../_static/recipes/recipe_6.py" download>⬇️ Download Python Script</a>

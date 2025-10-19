@@ -10,8 +10,6 @@ forcefield is not modified, but defined from atomistic building blocks.
 
 .. image:: ../_static/recipe_2.png
 
-In this recipe,
-
 .. testcode:: recipe2-test
     :hide:
 
@@ -378,4 +376,4 @@ With the structure:
 
 .. raw:: html
 
-    <a class="btn-download" href="_static/recipes/recipe_2.py" download>⬇️ Download Python Script</a>
+    <a class="btn-download" href="../_static/recipes/recipe_2.py" download>⬇️ Download Python Script</a>
