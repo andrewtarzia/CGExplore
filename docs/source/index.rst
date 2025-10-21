@@ -134,7 +134,7 @@ Publications using CGExplore
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
 * Starship structure prediction: (`Adjacent backbone interactions control self-sorting of chiral heteroleptic Pd3A2B4 isosceles triangles and Pd4A4C4 pseudo-tetrahedra <https://doi.org/10.1016/j.chempr.2025.102780>`_)
-* Structure prediction: (`Predicting stable cage structures by enumerating stoichiometry and topology <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
+* Structure prediction: (`Predicting stable cage structures... <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_)
 
 Acknowledgements
 ================
