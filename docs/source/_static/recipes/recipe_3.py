@@ -3,7 +3,6 @@
 import argparse
 import logging
 import pathlib
-from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -64,6 +63,7 @@ def progress_plot(
     ax.tick_params(axis="both", which="major", labelsize=16)
     ax.set_ylabel("fitness", fontsize=16)
     ax.set_yscale("log")
+    ax.set_ylim(None, 10)
     ax.set_xlabel("generation", fontsize=16)
     ax.legend(ncols=2, fontsize=16)
 
@@ -560,7 +560,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             "mod_definer_dict": {
                 "ba": ("bond", 1.5 / cg_scale, 1e5),
                 "ac": ("bond", 9.5 / 2 / cg_scale, 1e5),
-                "bac": ("angle", 120, 1e2),
+                "bac": ("angle", 150, 1e2),
             },
         },
         "tetra": {
@@ -576,16 +576,16 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     # Only focussing on m=9.
     multiplier = 1
     systems = {
-        "l1a_90_9-9-9": {
-            "stoichiometry_map": {"tetra": 9, "l1a": 9, "deg90": 9},
-            "vdw_cutoff": 2,
-        },
         "l1a_90_6-12-9": {
             "stoichiometry_map": {"tetra": 9, "l1a": 6, "deg90": 12},
             "vdw_cutoff": 2,
         },
         "l1a_90_12-6-9": {
             "stoichiometry_map": {"tetra": 9, "l1a": 12, "deg90": 6},
+            "vdw_cutoff": 2,
+        },
+        "l1a_90_9-9-9": {
+            "stoichiometry_map": {"tetra": 9, "l1a": 9, "deg90": 9},
             "vdw_cutoff": 2,
         },
     }
@@ -616,20 +616,25 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             bb_map = {}
             for prec_name in syst_d["stoichiometry_map"]:
                 prec = building_block_library[prec_name]["precursor"]
-                bb = cgx.utilities.optimise_ligand(
-                    molecule=prec.get_building_block(),
-                    name=f"{system_name}_{prec.get_name()}",
-                    output_dir=calc_dir,
-                    forcefield=forcefield,
-                    platform=None,
-                ).clone()
-                bb.write(
-                    str(
-                        ligand_dir
-                        / f"{system_name}_{prec.get_name()}_optl.mol"
-                    )
+                opt_bb_file = (
+                    ligand_dir / f"{system_name}_{prec.get_name()}_optl.mol"
                 )
-                bb_map[prec_name] = bb
+                if opt_bb_file.exists():
+                    bb_map[prec_name] = (
+                        prec.get_building_block().with_structure_from_file(
+                            opt_bb_file
+                        )
+                    )
+                else:
+                    bb = cgx.utilities.optimise_ligand(
+                        molecule=prec.get_building_block(),
+                        name=f"{system_name}_{prec.get_name()}",
+                        output_dir=calc_dir,
+                        forcefield=forcefield,
+                        platform=None,
+                    ).clone()
+                    bb.write(str(opt_bb_file))
+                    bb_map[prec_name] = bb
 
             # Define the chromosome generator, holding all the changeable
             # genes.
@@ -805,9 +810,10 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
 
             # Report.
             found = set()
-            for generation in seeded_generations.values():
-                for chromo in generation.chromosomes:
-                    found.add(chromo.name)
+            for generations in seeded_generations.values():
+                for generation in generations:
+                    for chromo in generation.chromosomes:
+                        found.add(chromo.name)
             logger.info(
                 "%s chromosomes found in EA (of %s)",
                 len(found),
@@ -817,8 +823,6 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     fig, axs = plt.subplots(ncols=3, figsize=(16, 5), sharex=True, sharey=True)
     ss_axes = {"9-9-9": axs[0], "12-6-9": axs[1], "6-12-9": axs[2]}
     top_fit = {"9-9-9": None, "12-6-9": None, "6-12-9": None}
-    xys = defaultdict(list)
-    plotted = 0
     for entry in database.get_entries():
         if (
             "stoichstring" not in entry.properties
@@ -840,7 +844,8 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
         )
         ax.tick_params(axis="both", which="major", labelsize=16)
         ax.set_xlabel("topology idx", fontsize=16)
-        ax.set_ylabel(r"config ifx", fontsize=16)
+        if ss_str == "9-9-9":
+            ax.set_ylabel(r"config idx", fontsize=16)
 
         fitness = entry.properties["fitness"]
         if top_fit[ss_str] is None or fitness > top_fit[ss_str][2]:
@@ -850,36 +855,6 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                 fitness,
             )
         continue
-
-        # Caution here, this is the fitness at point of calculation of each
-        # entry. Not after the reevaluation of the self-sorting.
-        fitness = entry.properties["fitness"]
-
-        ax.scatter(
-            entry.properties["opt_pore_data"]["min_distance"],
-            entry.properties["energy_per_bb"],
-            c=fitness,
-            edgecolor="none",
-            s=100,
-            marker="o",
-            alpha=1.0,
-            vmin=0,
-            vmax=40,
-            cmap="Blues",
-        )
-        xys[
-            (
-                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
-                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
-            )
-        ].append(
-            (
-                entry.properties["topology"],
-                entry.properties["energy_per_bb"],
-                fitness,
-            )
-        )
-        plotted += 1
 
     for ss_str, ax in ss_axes.items():
         if top_fit[ss_str] is None:
@@ -900,6 +875,67 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     fig.tight_layout()
     fig.savefig(
         figure_dir / "space_explored.png",
+        dpi=360,
+        bbox_inches="tight",
+    )
+    plt.close()
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    energies = {"9-9-9": [], "12-6-9": [], "6-12-9": []}
+    cs = {
+        "9-9-9": "tab:blue",
+        "12-6-9": "tab:orange",
+        "6-12-9": "tab:green",
+    }
+    max_energy = 0
+    for entry in database.get_entries():
+        if (
+            "stoichstring" not in entry.properties
+            or "fitness" not in entry.properties
+        ):
+            continue
+
+        ss_str = entry.properties["stoichstring"]
+        energies[ss_str].append(entry.properties["energy_per_bb"])
+        max_energy = max((max_energy, entry.properties["energy_per_bb"]))
+
+    steps = range(len(energies) - 1, -1, -1)
+    xmin = 0
+    xmax = max_energy
+    xwidth = 0.2
+    ystep = 1
+    xbins = np.arange(xmin - xwidth, xmax + xwidth, xwidth)
+    for i, (ss_str, xdata) in enumerate(energies.items()):
+        ax.hist(
+            x=xdata,
+            bins=xbins,
+            density=True,
+            bottom=steps[i] * ystep,
+            histtype="stepfilled",
+            stacked=True,
+            linewidth=1.0,
+            edgecolor="k",
+            facecolor=cs[ss_str],
+            label=f"{ss_str}",
+        )
+        if len(xdata) == 0:
+            continue
+        ax.text(
+            x=6,
+            y=(steps[i] * ystep) + 0.2,
+            s=f"min.: {round(min(xdata), 3)}",
+            fontsize=16,
+        )
+
+    ax.tick_params(axis="both", which="major", labelsize=16)
+    ax.set_xlabel(r"$E_{\mathrm{b}}$ [kjmol-1]", fontsize=16)
+    ax.set_ylabel("frequency", fontsize=16)
+    ax.set_yticks([])
+    ax.legend(fontsize=16)
+
+    fig.tight_layout()
+    fig.savefig(
+        figure_dir / "energy_dist.png",
         dpi=360,
         bbox_inches="tight",
     )
