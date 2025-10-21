@@ -2,7 +2,9 @@ Four component structure prediction
 ===================================
 
 In this recipe, I will reproduce the prediction of the ``stirrup`` structures
-from `this paper <>`_. Using minimal models of ditopic and tetratopic building
+from
+`this paper <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_.
+Using minimal models of ditopic and tetratopic building
 blocks, we generated all possible homoleptic and heteroleptic graphs and
 building block configurations with ``2:2:1:1``, ``2:2:0:2`` or ``2:2:2:0``
 stoichiometries and compute their relative stability, aiming for the most
