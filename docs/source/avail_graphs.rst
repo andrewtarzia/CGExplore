@@ -201,6 +201,13 @@ Generated with code:
     import stk
     import cgexplore as cgx
 
+
+
+
+
+
+
+
     knowns = (
         "1-2FG_2-1FG",
         "1-4FG_2-2FG",
@@ -208,7 +215,27 @@ Generated with code:
         "2-3FG_3-2FG",
         "2-4FG_4-2FG",
         "3-4FG_4-3FG",
+        "3-2FG_6-1FG",
+        "3-4FG_6-2FG",
         "4-3FG_6-2FG",
+        "4-2FG_8-1FG",
+        "4-4FG_8-2FG",
+        "5-2FG_10-1FG",
+        "5-4FG_10-2FG",
+        "6-2FG_12-1FG",
+        "6-3FG_9-2FG",
+        "6-4FG_12-2FG",
+        "6-4FG_8-3FG",
+        "7-2FG_14-1FG",
+        "7-4FG_14-2FG",
+        "8-2FG_16-1FG",
+        "8-3FG_12-2FG",
+        "8-4FG_16-2FG",
+        "9-2FG_18-1FG",
+        "9-4FG_12-3FG",
+        "9-4FG_18-2FG",
+        "10-2FG_20-1FG",
+        "10-4FG_20-2FG",
     )
 
     bbs = {
@@ -334,6 +361,11 @@ Generated with code:
         "4-4FG_4-3FG_4-1FG",
         "6-3FG_6-2FG_6-1FG",
         "6-3FG_8-2FG_2-1FG",
+        "1-3FG_1-2FG_1-1FG",
+        "4-4FG_4-2FG_8-1FG",
+        "6-4FG_6-3FG_6-1FG",
+        "6-4FG_8-2FG_8-1FG",
+        "8-3FG_8-2FG_8-1FG",
     )
 
     bbs = {

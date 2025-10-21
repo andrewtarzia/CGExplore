@@ -27,13 +27,7 @@ geometry optimisation (hence, the results may not be as described in the paper).
 
     logger = logging.getLogger(__name__)
 
-    wd = (
-        pathlib.Path(__file__).resolve().parent
-        / ".."
-        / ".."
-        / "recipes"
-        / "recipe_3_output"
-    )
+    wd = pathlib.Path.cwd() / "source"/ "recipes" / "recipe_3_output"
     struct_output = wd / "structures"
     calc_dir = wd / "calculations"
     data_dir = wd / "data"
