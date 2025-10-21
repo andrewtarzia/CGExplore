@@ -2,10 +2,10 @@ Genetic algorithm-driven graph exploration
 ==========================================
 
 To simplify this example, which mirrors our
-`recently published example <>`_, I am showing the beginnings of exploring
-graph and building block configurations with a hierarchical genetic algorihm,
-with the shortest possible geometry optimisation (hence, the results may not
-be as described in the paper).
+`recently published example <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_,
+I am showing the beginnings of exploring graph and building block
+configurations with a hierarchical genetic algorihm, with the shortest possible
+geometry optimisation (hence, the results may not be as described in the paper).
 
 .. image:: ../_static/recipe_3.png
 
@@ -100,7 +100,7 @@ As per usual, we will define our building blocks and systems:
             "mod_definer_dict": {
                 "ba": ("bond", 1.5 / cg_scale, 1e5),
                 "ac": ("bond", 9.5 / 2 / cg_scale, 1e5),
-                "bac": ("angle", 120, 1e2),
+                "bac": ("angle", 150, 1e2),
             },
         },
         "tetra": {
@@ -596,20 +596,25 @@ Now, the hierarchical genetic algorithm runs look like these calls to the
         bb_map = {}
         for prec_name in syst_d["stoichiometry_map"]:
             prec = building_block_library[prec_name]["precursor"]
-            bb = cgx.utilities.optimise_ligand(
-                molecule=prec.get_building_block(),
-                name=f"{system_name}_{prec.get_name()}",
-                output_dir=calc_dir,
-                forcefield=forcefield,
-                platform=None,
-            ).clone()
-            bb.write(
-                str(
-                    ligand_dir
-                    / f"{system_name}_{prec.get_name()}_optl.mol"
-                )
+            opt_bb_file = (
+                ligand_dir / f"{system_name}_{prec.get_name()}_optl.mol"
             )
-            bb_map[prec_name] = bb
+            if opt_bb_file.exists():
+                bb_map[prec_name] = (
+                    prec.get_building_block().with_structure_from_file(
+                        opt_bb_file
+                    )
+                )
+            else:
+                bb = cgx.utilities.optimise_ligand(
+                    molecule=prec.get_building_block(),
+                    name=f"{system_name}_{prec.get_name()}",
+                    output_dir=calc_dir,
+                    forcefield=forcefield,
+                    platform=None,
+                ).clone()
+                bb.write(str(opt_bb_file))
+                bb_map[prec_name] = bb
 
         # Define the chromosome generator, holding all the changeable
         # genes.
@@ -873,9 +878,15 @@ Now, the hierarchical genetic algorithm runs look like these calls to the
             )
 
 
-This process generated XX structures (out of the possible XX!) and did
-reproduce the experimental outcome, where the ``s=6:12:9`` system is the most
-stable.
+This process (for one stoichiometry) generated 2825 structures
+out of the possible 15370992 (not considering duplicate symmetries)!
+However, with the cheap optimisation process, it did not reproduce the
+experimental outcome, where the ``s=12:6:9`` system is the most stable. This
+highlights the importance of the geometry optimisation workflow.
+Indeed the energy distribution shows that the lowest energy structure has the
+wrong stoichiometry.
+
+.. image:: recipe_3_output/figures/energy_dist.png
 
 And here is the lowest energy structure of all stoiochiometries:
 
@@ -890,21 +901,21 @@ And here is the lowest energy structure of all stoiochiometries:
             pathlib.Path.cwd()
             / "source"
             / "recipes"
-            / "recipe_2_output"
+            / "recipe_3_output"
             / "structures"
         )
         structure = stk.BuildingBlock.init_from_file(
-            str(wd / "la_st5_423_1_2_b2_optc.mol")
+            str(wd / "l1a_90_6-12-9_1791_b1539_optc.mol")
         )
     except OSError:
         wd = (
             pathlib.Path.cwd()
             / "recipes"
-            / "recipe_2_output"
+            / "recipe_3_output"
             / "structures"
         )
         structure = stk.BuildingBlock.init_from_file(
-            str(wd / "la_st5_423_1_2_b2_optc.mol")
+            str(wd / "l1a_90_6-12-9_1791_b1539_optc.mol")
         )
 
     moldoc_display_molecule = molecule.Molecule(
@@ -926,6 +937,54 @@ And here is the lowest energy structure of all stoiochiometries:
         ),
     )
 
+Which does not look like the most stable structure from the manuscript:
+
+.. moldoc::
+
+    import moldoc.molecule as molecule
+    import stk
+    import pathlib
+
+    try:
+        wd = (
+            pathlib.Path.cwd()
+            / "source"
+            / "recipes"
+            / "recipe_3_output"
+            / "expt"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "cs490_cs41a_6-12-9_1396_b6500_optc.mol")
+        )
+    except OSError:
+        wd = (
+            pathlib.Path.cwd()
+            / "recipes"
+            / "recipe_3_output"
+            / "expt"
+        )
+        structure = stk.BuildingBlock.init_from_file(
+            str(wd / "cs490_cs41a_6-12-9_1396_b6500_optc.mol")
+        )
+
+    moldoc_display_molecule = molecule.Molecule(
+        atoms=(
+            molecule.Atom(
+                atomic_number=atom.get_atomic_number(),
+                position=position,
+            ) for atom, position in zip(
+                structure.get_atoms(),
+                structure.get_position_matrix(),
+            )
+        ),
+        bonds=(
+            molecule.Bond(
+                atom1_id=bond.get_atom1().get_id(),
+                atom2_id=bond.get_atom2().get_id(),
+                order=bond.get_order(),
+            ) for bond in structure.get_bonds()
+        ),
+    )
 
 Here are the three fitness plots for the three tested stoichiometries:
 
@@ -934,7 +993,7 @@ Here are the three fitness plots for the three tested stoichiometries:
 .. image:: recipe_3_output/figures/fp_l1a_90_9-9-9.png
 
 ``s=6:12:9``:
-d
+
 .. image:: recipe_3_output/figures/fp_l1a_90_6-12-9.png
 
 ``s=12:6:9``:
