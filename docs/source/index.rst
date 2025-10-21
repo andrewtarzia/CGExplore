@@ -50,7 +50,7 @@ optimising and exploring molecular coarse-grained models.
   are expected.
 
   In particular, if you are trying to reproduce exactly
-  `Predicting stable cage structures by enumerating stoichiometry and topology <https://github.com/andrewtarzia/topology_scrambler/tree/main>`_,
+  `DOI: 10.26434/chemrxiv-2025-f034c <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_,
   then you should install an old version of the code
   (``cgexplore==2025.2.5.1``) alongside the `topology_scrambler <https://github.com/andrewtarzia/topology_scrambler/tree/main>`_
   code and use `these docs <https://cgexplore.readthedocs.io/en/v2025.02.05.1/>`_.
@@ -118,7 +118,7 @@ How To Cite
 
 If you use ``cgexplore``, please cite this paper
 
-  `Predicting stable cage structures by enumerating stoichiometry and topology <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_
+  `Predicting stable cage structures by enumerating stoichiometry and topology <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_
 
 and reference this URL
 

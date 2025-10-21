@@ -18,7 +18,7 @@ optimising and exploring molecular coarse-grained models.
   are expected.
 
   In particular, if you are trying to reproduce exactly
-  `our recent work on structure prediction <>`_,
+  `our recent work on structure prediction <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_,
   then you should install an old version of the code
   (``cgexplore==2025.2.5.1``) alongside the `topology_scrambler <https://github.com/andrewtarzia/topology_scrambler/tree/main>`_
   code and use `these docs <https://cgexplore.readthedocs.io/en/v2025.02.05.1/>`_.
@@ -106,7 +106,7 @@ How To Cite
 
 If you use ``cgexplore``, please cite this paper
 
-  `Predicting stable cage structures by enumerating stoichiometry and topology <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_
+  `https://doi.org/10.26434/chemrxiv-2025-f034c <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_
 
 and reference this URL
 
@@ -122,7 +122,7 @@ Publications using CGExplore
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
 * Starship structure prediction: (`Adjacent backbone interactions control self-sorting of chiral heteroleptic Pd3A2B4 isosceles triangles and Pd4A4C4 pseudo-tetrahedra <https://doi.org/10.1016/j.chempr.2025.102780>`_)
-* Structure prediction: (`Predicting stable cage structures by enumerating stoichiometry and topology <https://cgmodels.readthedocs.io/en/latest/blind_oct2025.html>`_)
+* Structure prediction: (`Predicting stable cage structures by enumerating stoichiometry and topology <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_)
 
 Acknowledgements
 ================
