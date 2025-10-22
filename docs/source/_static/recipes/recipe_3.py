@@ -672,6 +672,9 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             for tidx, tc in all_topology_codes:
                 if tc.contains_parallels():
                     continue
+                # Also exlcude double walls to lower the search space.
+                if tc.contains_doubles():
+                    continue
                 topology_codes.append((tidx, tc))
 
             logger.info(
@@ -724,11 +727,12 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             seeded_generations: dict[
                 int, list[cgx.systems_optimisation.Generation]
             ] = {}
+            # Very short runs!
             scan_config = {
-                "seeds": [4, 12689, 18, 999],
+                "seeds": [4, 12689],
                 "mutations": 2,
-                "num_generations": 10,
-                "selection_size": 10,
+                "num_generations": 5,
+                "selection_size": 5,
                 "num_processes": 1,
                 "long_seeds": [142],
                 "neighbour_seeds": [6582],
@@ -763,12 +767,6 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             for seed in scan_config["long_seeds"]:  # type:ignore[attr-defined]
                 temp_scan_config = scan_config.copy()
                 temp_scan_config.update(
-                    {"selection_size": scan_config["selection_size"] * 2}  # type:ignore[operator]
-                )
-                temp_scan_config.update(
-                    {"mutations": scan_config["mutations"] * 2}  # type:ignore[operator]
-                )
-                temp_scan_config.update(
                     {"num_generations": scan_config["num_generations"] * 2}  # type:ignore[operator]
                 )
                 seeded_generations[seed] = run_genetic_algorithm(
@@ -799,7 +797,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             )
             for seed in scan_config["neighbour_seeds"]:  # type:ignore[attr-defined]
                 temp_scan_config = scan_config.copy()
-                temp_scan_config.update({"selection_size": 200})
+                temp_scan_config.update({"selection_size": 50})
                 temp_scan_config.update(
                     {
                         "num_generations": int(scan_config["num_generations"])  # type:ignore[call-overload]
@@ -904,7 +902,6 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
         "12-6-9": "tab:orange",
         "6-12-9": "tab:green",
     }
-    max_energy = 0
     for entry in database.get_entries():
         if (
             "stoichstring" not in entry.properties
@@ -914,11 +911,10 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
 
         ss_str = entry.properties["stoichstring"]
         energies[ss_str].append(entry.properties["energy_per_bb"])  # type:ignore[index,arg-type]
-        max_energy = max((max_energy, entry.properties["energy_per_bb"]))  # type:ignore[assignment, type-var]
 
     steps = range(len(energies) - 1, -1, -1)
     xmin = 0
-    xmax = max_energy
+    xmax = 10
     xwidth = 0.2
     ystep = 1
     xbins = np.arange(xmin - xwidth, xmax + xwidth, xwidth)
