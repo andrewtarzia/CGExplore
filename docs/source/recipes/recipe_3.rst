@@ -559,7 +559,8 @@ graph and building block configurations:
         return generations
 
 Now, the hierarchical genetic algorithm runs look like these calls to the
-``run_genetic_algorithm`` function:
+``run_genetic_algorithm`` function. Note that we limit the search space
+siginficantly for the sake of the test here.
 
 
 .. testcode:: recipe3-test
@@ -638,6 +639,9 @@ Now, the hierarchical genetic algorithm runs look like these calls to the
         for tidx, tc in all_topology_codes:
             if tc.contains_parallels():
                 continue
+            # Also exlcude double walls to lower the search space.
+            if tc.contains_doubles():
+                continue
             topology_codes.append((tidx, tc))
 
         logger.info(
@@ -688,11 +692,12 @@ Now, the hierarchical genetic algorithm runs look like these calls to the
 
         # Short runs.
         seeded_generations = {}
+        # Very short runs!
         scan_config = {
-            "seeds": [4, 12689, 18, 999],
+            "seeds": [4, 12689],
             "mutations": 2,
-            "num_generations": 10,
-            "selection_size": 10,
+            "num_generations": 5,
+            "selection_size": 5,
             "num_processes": 1,
             "long_seeds": [142],
             "neighbour_seeds": [6582],
@@ -723,12 +728,6 @@ Now, the hierarchical genetic algorithm runs look like these calls to the
         for seed in scan_config["long_seeds"]:
             temp_scan_config = scan_config.copy()
             temp_scan_config.update(
-                {"selection_size": scan_config["selection_size"] * 2}
-            )
-            temp_scan_config.update(
-                {"mutations": scan_config["mutations"] * 2}
-            )
-            temp_scan_config.update(
                 {"num_generations": scan_config["num_generations"] * 2}
             )
             seeded_generations[seed] = run_genetic_algorithm(
@@ -755,7 +754,7 @@ Now, the hierarchical genetic algorithm runs look like these calls to the
         )
         for seed in scan_config["neighbour_seeds"]:
             temp_scan_config = scan_config.copy()
-            temp_scan_config.update({"selection_size": 200})
+            temp_scan_config.update({"selection_size": 50})
             temp_scan_config.update(
                 {"num_generations": scan_config["num_generations"] * 2}
             )
@@ -872,8 +871,8 @@ Now, the hierarchical genetic algorithm runs look like these calls to the
             )
 
 
-This process (for one stoichiometry) generated 2825 structures
-out of the possible 15370992 (not considering duplicate symmetries)!
+This process (for one stoichiometry) generated 612 structures
+out of the possible 297024 (not considering duplicate symmetries)!
 However, with the cheap optimisation process, it did not reproduce the
 experimental outcome, where the ``s=12:6:9`` system is the most stable. This
 highlights the importance of the geometry optimisation workflow.
@@ -899,7 +898,7 @@ And here is the lowest energy structure of all stoiochiometries:
             / "structures"
         )
         structure = stk.BuildingBlock.init_from_file(
-            str(wd / "l1a_90_6-12-9_1791_b1539_optc.mol")
+            str(wd / "l1a_90_6-12-9_1395_b16190_optc.mol")
         )
     except OSError:
         wd = (
@@ -909,7 +908,7 @@ And here is the lowest energy structure of all stoiochiometries:
             / "structures"
         )
         structure = stk.BuildingBlock.init_from_file(
-            str(wd / "l1a_90_6-12-9_1791_b1539_optc.mol")
+            str(wd / "l1a_90_6-12-9_1395_b16190_optc.mol")
         )
 
     moldoc_display_molecule = molecule.Molecule(
