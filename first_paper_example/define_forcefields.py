@@ -173,7 +173,7 @@ def define_forcefield_library(
             TargetTorsionRange(
                 search_string=("b1", "a1", "c1", "a1", "b1"),
                 search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
-                measured_atom_ids=[0, 1, 3, 4],
+                measured_atom_ids=(0, 1, 3, 4),
                 phi0s=(
                     openmm.unit.Quantity(value=180, unit=openmm.unit.degrees),
                 ),
