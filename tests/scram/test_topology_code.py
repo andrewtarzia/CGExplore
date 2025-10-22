@@ -10,19 +10,12 @@ from .case_data import CaseData
 
 
 def test_topology_code_nxgraph(graph_data: CaseData) -> None:
-    """Test topology code methods.
-
-    Parameters:
-
-        graph_data:
-            The graph data.
-
-    """
+    """Test topology code methods."""
     graph_directory = pathlib.Path(__file__).resolve().parent / "test_graphs"
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=graph_directory,
@@ -59,7 +52,7 @@ def test_topology_code_rxgraph(graph_data: CaseData) -> None:
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=graph_directory,
@@ -70,7 +63,7 @@ def test_topology_code_rxgraph(graph_data: CaseData) -> None:
         if not rxgml_file.exists():
             rx.write_graphml(tc.get_graph(), str(rxgml_file))
 
-        test = rx.read_graphml(str(rxgml_file))[0]
+        test: rx.PyGraph = rx.read_graphml(str(rxgml_file))[0]  # type:ignore[assignment]
 
         # Odd formatting of nodes, caution.
         assert [
@@ -85,7 +78,7 @@ def test_topology_code_rxgraph(graph_data: CaseData) -> None:
         if not rxgml_file.exists():
             rx.write_graphml(tc.get_weighted_graph(), str(rxgml_file))
 
-        test = rx.read_graphml(str(rxgml_file))[0]
+        test = rx.read_graphml(str(rxgml_file))[0]  # type:ignore[assignment]
 
         assert [
             int(i["id"].strip("n")) for i in test.nodes()
@@ -109,7 +102,7 @@ def test_topology_code_as_string(graph_data: CaseData) -> None:
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=graph_directory,
@@ -140,7 +133,7 @@ def test_topology_code_components(graph_data: CaseData) -> None:
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=graph_directory,
@@ -163,7 +156,7 @@ def test_topology_code_doubles(graph_data: CaseData) -> None:
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=graph_directory,

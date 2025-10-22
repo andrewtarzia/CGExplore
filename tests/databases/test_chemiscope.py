@@ -16,7 +16,7 @@ def test_chemiscope(molecule: CaseData) -> None:
     if path.exists():
         path.unlink()
 
-    properties = {}
+    properties: dict[str, list[float | str | int]] = {}
     for propm in molecule.property_dicts:
         for prop in propm:
             if prop not in properties:
@@ -37,7 +37,7 @@ def test_chemiscope(molecule: CaseData) -> None:
         write_chemiscope_json(
             json_file=path,
             structures=molecule.molecules,
-            properties=properties,
+            properties=properties,  # type:ignore[arg-type]
             bonds_as_shapes=True,
             meta_dict={
                 "name": "a test!",
@@ -64,7 +64,7 @@ def test_chemiscope(molecule: CaseData) -> None:
     write_chemiscope_json(
         json_file=path,
         structures=molecule.molecules,
-        properties=properties,
+        properties=properties,  # type:ignore[arg-type]
         bonds_as_shapes=True,
         meta_dict={
             "name": "a test!",
@@ -117,50 +117,50 @@ def test_chemiscope(molecule: CaseData) -> None:
             "structure": [
                 {
                     "vector": [
-                        0.22304293537021347,
-                        0.054461393723354276,
-                        -1.0952980247208781,
+                        0.22304293537021314,
+                        0.05446139372335451,
+                        -1.0952980247208786,
                     ],
                     "position": [
-                        0.7563930326851623,
-                        -0.01926391540105227,
-                        -0.036668302736346435,
+                        0.7563930326851626,
+                        -0.019263915401052985,
+                        -0.036668302736345935,
                     ],
                 },
                 {
                     "vector": [
-                        -0.5223374946083974,
-                        0.8112914209329797,
-                        0.5661687958436197,
+                        -0.5223374946083956,
+                        0.8112914209329757,
+                        0.5661687958436128,
                     ],
                     "position": [
-                        -1.1975128536868043,
-                        -0.07986658455873856,
-                        -0.0564288743416208,
+                        -1.1975128536868038,
+                        -0.07986658455873355,
+                        -0.05642887434161332,
                     ],
                 },
                 {
                     "vector": [
-                        -0.01425198400365102,
-                        0.9614121228603414,
-                        -0.5657493874400913,
+                        -0.014251984003599283,
+                        0.9614121228603478,
+                        -0.5657493874401469,
                     ],
                     "position": [
-                        -1.7244190203314924,
-                        -0.31510088950566123,
-                        -0.07183607003687872,
+                        -1.7244190203315088,
+                        -0.31510088950560533,
+                        -0.07183607003684883,
                     ],
                 },
                 {
                     "vector": [
-                        -0.5223374946083974,
-                        0.8112914209329797,
-                        0.5661687958436197,
+                        -0.5223374946083956,
+                        0.8112914209329757,
+                        0.5661687958436128,
                     ],
                     "position": [
-                        -1.1975128536868043,
-                        -0.07986658455873856,
-                        -0.0564288743416208,
+                        -1.1975128536868038,
+                        -0.07986658455873355,
+                        -0.05642887434161332,
                     ],
                 },
             ],

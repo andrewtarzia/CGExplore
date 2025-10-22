@@ -23,5 +23,4 @@ def test_topology_xml_writer(molecule: CaseData) -> None:
     xml_string = assigned_system._get_topology_xml_string(  # noqa: SLF001
         molecule.molecule
     )
-    print(xml_string)
     assert xml_string == molecule.topology_xml_string

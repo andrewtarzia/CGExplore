@@ -11,7 +11,6 @@ class CaseData:
 
     building_block_counts: dict[stk.BuildingBlock, int]
     graph_type: str
-    graph_set: str
     graph_directory: pathlib.Path
     graph_filename: str
     num_graphs: int

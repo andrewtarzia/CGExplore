@@ -207,5 +207,5 @@ chromo_it2.add_forcefield_dict(definer_dict=definer_dict)
 )
 def chromosome_generator(request: pytest.FixtureRequest) -> CaseData:
     return request.param(
-        f"{request.fixturename}{request.param_index}",
+        f"{request.fixturename}{request.param_index}",  # type: ignore[attr-defined]
     )

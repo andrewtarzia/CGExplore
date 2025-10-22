@@ -48,7 +48,7 @@ a_bead = CgBead(
             precursor=FourC0Arm(bead=ag_bead),
             precursor_name="4C0c1",
             bead_set={"c1": ag_bead},
-            smiles="Br[Ag](Br)(Br)Br",
+            smiles="[Br][Ag]([Br])([Br])[Br]",
             position_matrix=np.array(
                 [
                     [-2.0, 0.0, -1.0],
@@ -82,7 +82,7 @@ a_bead = CgBead(
             precursor=ThreeC0Arm(bead=ag_bead),
             precursor_name="3C0c1",
             bead_set={"c1": ag_bead},
-            smiles="Br[Ag](Br)Br",
+            smiles="[Br][Ag]([Br])[Br]",
             position_matrix=np.array(
                 [
                     [-2, 0, 0],
@@ -133,7 +133,7 @@ a_bead = CgBead(
             precursor=TwoC0Arm(bead=ag_bead),
             precursor_name="2C0c1",
             bead_set={"c1": ag_bead},
-            smiles="Br[Ag]Br",
+            smiles="[Br][Ag][Br]",
             position_matrix=np.array(
                 [
                     [-3, 0, 0],
@@ -201,5 +201,5 @@ a_bead = CgBead(
 )
 def precursor(request: pytest.FixtureRequest) -> CaseData:
     return request.param(
-        f"{request.fixturename}{request.param_index}",
+        f"{request.fixturename}{request.param_index}",  # type: ignore[attr-defined]
     )

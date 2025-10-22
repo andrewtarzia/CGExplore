@@ -27,17 +27,17 @@ def test_present_torsions(molecule: CaseData) -> None:
             )
 
             present_terms = assigned_system.forcefield_terms["torsion"]
-            print(present_terms)
+            # Ignore a bunch of typing because of different term types.
             assert len(present_terms) == len(molecule.present_torsions[i])
             for test, present in zip(
                 present_terms, molecule.present_torsions[i], strict=True
             ):
-                assert test.atom_names == present.atom_names
-                assert test.atom_ids == present.atom_ids
-                assert test.phi0 == present.phi0
-                assert test.torsion_k == present.torsion_k
-                assert test.torsion_n == present.torsion_n
-                assert test.force == present.force
+                assert test.atom_names == present.atom_names  # type:ignore[union-attr]
+                assert test.atom_ids == present.atom_ids  # type:ignore[union-attr]
+                assert test.phi0 == present.phi0  # type:ignore[union-attr]
+                assert test.torsion_k == present.torsion_k  # type:ignore[union-attr]
+                assert test.torsion_n == present.torsion_n  # type:ignore[union-attr]
+                assert test.force == present.force  # type:ignore[union-attr]
 
     except ForceFieldUnitError:
         assert molecule.num_forcefields == 0

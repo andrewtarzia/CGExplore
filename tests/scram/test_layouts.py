@@ -13,20 +13,13 @@ def test_layouts(
     graph_type: str,
     scale: int,
 ) -> None:
-    """Test graph layout processes.
-
-    Parameters:
-
-        graph_data:
-            The graph data.
-
-    """
+    """Test graph layout processes."""
     known_mols = pathlib.Path(__file__).resolve().parent / "test_molecules"
 
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=pathlib.Path(__file__).resolve().parent

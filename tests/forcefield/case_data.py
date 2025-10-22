@@ -13,27 +13,31 @@ class CaseData:
         molecule: stk.Molecule,
         forcefield_library: cgx.forcefields.ForceFieldLibrary,
         bond_ranges: abc.Sequence[cgx.terms.TargetBondRange],
-        angle_ranges: abc.Sequence[cgx.terms.TargetAngleRange],
+        angle_ranges: abc.Sequence[
+            cgx.terms.TargetAngleRange
+            | cgx.terms.PyramidAngleRange
+            | cgx.terms.TargetCosineAngleRange
+        ],
         torsion_ranges: abc.Sequence[cgx.terms.TargetTorsionRange],
         nonbonded_ranges: abc.Sequence[cgx.terms.TargetNonbondedRange],
-        present_bonds: tuple[tuple],
-        present_angles: tuple[tuple],
-        present_nonbondeds: tuple[tuple],
-        present_torsions: tuple[tuple],
+        present_bonds: list[list[cgx.terms.Bond]],
+        present_angles: list[list[cgx.terms.Angle | cgx.terms.CosineAngle]],
+        present_nonbondeds: list[list[cgx.terms.Nonbonded]],
+        present_torsions: list[list[cgx.terms.Torsion]],
         num_forcefields: int,
         library_string: str,
         name: str,
     ) -> None:
         self.molecule = molecule
         self.forcefield_library = forcefield_library
-        for i in bond_ranges:
-            self.forcefield_library.add_bond_range(i)
-        for i in angle_ranges:
-            self.forcefield_library.add_angle_range(i)
-        for i in torsion_ranges:
-            self.forcefield_library.add_torsion_range(i)
-        for i in nonbonded_ranges:
-            self.forcefield_library.add_nonbonded_range(i)
+        for bond in bond_ranges:
+            self.forcefield_library.add_bond_range(bond)
+        for angle in angle_ranges:
+            self.forcefield_library.add_angle_range(angle)
+        for torsion in torsion_ranges:
+            self.forcefield_library.add_torsion_range(torsion)
+        for nonbonded in nonbonded_ranges:
+            self.forcefield_library.add_nonbonded_range(nonbonded)
         self.num_forcefields = num_forcefields
         self.present_bonds = present_bonds
         self.present_angles = present_angles
