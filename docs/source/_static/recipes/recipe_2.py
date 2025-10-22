@@ -62,7 +62,6 @@ def optimisation_workflow(  # noqa: PLR0913
         except ValueError:
             continue
 
-        constructed_molecule.write(calculation_dir / f"{name}_unopt.mol")
         # Optimise and save.
         logger.info("building %s", name)
 
