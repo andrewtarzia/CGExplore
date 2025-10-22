@@ -48,15 +48,15 @@ def analyse_cage(
         property_dict={
             "cage_name": name,
             "prefix": name.split("_")[0],
-            "chromosome": tuple(int(i) for i in chromosome.name),
+            "chromosome": tuple(int(i) for i in chromosome.name),  # type:ignore[dict-item]
             "topology": topology_str,
             "num_bbs": cgx.topologies.stoich_map(topology_str),
             "energy_per_bb": cgx.utilities.get_energy_per_bb(
-                energy_decomposition=properties["energy_decomposition"],
+                energy_decomposition=properties["energy_decomposition"],  # type:ignore[arg-type]
                 number_building_blocks=cgx.topologies.stoich_map(topology_str),
             ),
-            "forcefield_dict": forcefield.get_forcefield_dictionary(),
-            "opt_pore_data": cgx.analysis.GeomMeasure().calculate_min_distance(
+            "forcefield_dict": forcefield.get_forcefield_dictionary(),  # type:ignore[dict-item]
+            "opt_pore_data": cgx.analysis.GeomMeasure().calculate_min_distance(  # type:ignore[dict-item]
                 molecule
             ),
         },
@@ -81,7 +81,7 @@ def optimise_cage(  # noqa: PLR0913
 
         return cgx.molecular.Conformer(
             molecule=final_molecule,
-            energy_decomposition=database.get_property(
+            energy_decomposition=database.get_property(  # type:ignore[arg-type]
                 key=name,
                 property_key="energy_decomposition",
                 property_type=dict,
@@ -102,7 +102,7 @@ def optimise_cage(  # noqa: PLR0913
         database.add_properties(
             key=name,
             property_dict={
-                "energy_decomposition": conformer.energy_decomposition,
+                "energy_decomposition": conformer.energy_decomposition,  # type:ignore[dict-item]
                 "source": conformer.source,
                 "optimised": True,
             },
@@ -182,7 +182,7 @@ def optimise_cage(  # noqa: PLR0913
     database.add_properties(
         key=name,
         property_dict={
-            "energy_decomposition": min_energy_conformer.energy_decomposition,
+            "energy_decomposition": min_energy_conformer.energy_decomposition,  # type:ignore[dict-item]
             "source": min_energy_conformer.source,
             "optimised": True,
         },
@@ -201,16 +201,16 @@ def fitness_function(  # noqa: PLR0913
 ) -> float:
     """Calculate fitness."""
     database = cgx.utilities.AtomliteDatabase(database_path)
-    target_pore = 2
+    target_pore = 2.0
     name = f"{chromosome.prefix}_{chromosome.get_separated_string()}"
     entry = database.get_entry(name)
-    tstr = entry.properties["topology"]
-    pore = entry.properties["opt_pore_data"]["min_distance"]
-    energy = entry.properties["energy_per_bb"]
+    tstr = str(entry.properties["topology"])
+    pore = float(entry.properties["opt_pore_data"]["min_distance"])  # type:ignore[arg-type,index, call-overload]
+    energy = float(entry.properties["energy_per_bb"])  # type:ignore[arg-type]
     pore_diff = abs(target_pore - pore) / target_pore
 
     # If energy is too high, return bad fitness.
-    if energy > isomer_energy() * 2:
+    if float(energy) > isomer_energy() * 2:  # type:ignore[arg-type]
         database.add_properties(
             key=name,
             property_dict={"fitness": 0},
@@ -228,7 +228,7 @@ def fitness_function(  # noqa: PLR0913
     )
 
     other_topologies = {}
-    current_stoich = cgx.topologies.stoich_map(tstr)
+    current_stoich = cgx.topologies.stoich_map(str(tstr))
     for other_chromosome in differ_by_topology:
         other_name = (
             f"{other_chromosome.prefix}_"
@@ -250,7 +250,8 @@ def fitness_function(  # noqa: PLR0913
             other_entry = database.get_entry(other_name)
             other_energy = other_entry.properties["energy_per_bb"]
             other_topologies[other_tstr] = other_energy
-    if len(other_topologies) > 0 and min(other_topologies.values()) < energy:
+
+    if len(other_topologies) > 0 and min(other_topologies.values()) < energy:  # type:ignore[operator,type-var]
         smaller_is_stable = True
     else:
         smaller_is_stable = False
@@ -526,7 +527,9 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                     "initial size is %s.", generation.get_generation_size()
                 )
                 logger.info("doing mutations.")
-                merged_chromosomes = []
+                merged_chromosomes: list[
+                    cgx.systems_optimisation.Chromosome
+                ] = []
                 merged_chromosomes.extend(
                     chromo_it.mutate_population(
                         chromosomes={
@@ -716,7 +719,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
         fitness = entry.properties["fitness"]
 
         ax.scatter(
-            entry.properties["opt_pore_data"]["min_distance"],
+            entry.properties["opt_pore_data"]["min_distance"],  # type:ignore[index,arg-type,call-overload]
             entry.properties["energy_per_bb"],
             c=fitness,
             edgecolor="none",
@@ -729,8 +732,8 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
         )
         xys[
             (
-                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],
-                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],
+                entry.properties["forcefield_dict"]["v_dict"]["b_c_o"],  # type:ignore[index,call-overload]
+                entry.properties["forcefield_dict"]["v_dict"]["o_a_o"],  # type:ignore[index,call-overload]
             )
         ].append(
             (
@@ -746,20 +749,20 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
         stable = [
             i[0]
             for i in xys[(x, y)]
-            if i[1] < isomer_energy() and i[2] > fitness_threshold
+            if i[1] < isomer_energy() and i[2] > fitness_threshold  # type:ignore[operator]
         ]
 
         if len(stable) == 0:
             cmaps = ["white"]
         else:
-            cmaps = sorted([colours()[i] for i in stable])
+            cmaps = sorted([colours()[i] for i in stable])  # type:ignore[index]
 
         if len(cmaps) > 8:  # noqa: PLR2004
             cmaps = ["k"]
         cgx.utilities.draw_pie(
             colours=cmaps,
-            xpos=x,
-            ypos=y,
+            xpos=float(x),  # type:ignore[index,arg-type,call-overload]
+            ypos=float(y),  # type:ignore[index,arg-type,call-overload]
             size=400,
             ax=ax1,
         )
@@ -811,26 +814,26 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
 
         structures.append(database.get_molecule(key=entry.key))
         properties["key"].append(entry.key)
-        properties["E_b / kjmol-1"].append(entry.properties["energy_per_bb"])
+        properties["E_b / kjmol-1"].append(entry.properties["energy_per_bb"])  # type:ignore[arg-type]
         # Caution here, this is the fitness at point of calculation of each
         # entry. Not after the reevaluation of the self-sorting.
-        properties["fitness"].append(entry.properties["fitness"])
+        properties["fitness"].append(entry.properties["fitness"])  # type:ignore[arg-type]
         properties["min_distance"].append(
-            entry.properties["opt_pore_data"]["min_distance"]
+            entry.properties["opt_pore_data"]["min_distance"]  # type:ignore[index,arg-type,call-overload]
         )
-        properties["num_bbs"].append(int(entry.properties["num_bbs"]))
+        properties["num_bbs"].append(int(entry.properties["num_bbs"]))  # type:ignore[arg-type]
         properties["b_c_o / deg"].append(
-            entry.properties["forcefield_dict"]["v_dict"]["b_c_o"]
+            entry.properties["forcefield_dict"]["v_dict"]["b_c_o"]  # type:ignore[index,arg-type,call-overload]
         )
         properties["o_a_o / deg"].append(
-            entry.properties["forcefield_dict"]["v_dict"]["o_a_o"]
+            entry.properties["forcefield_dict"]["v_dict"]["o_a_o"]  # type:ignore[index,arg-type,call-overload]
         )
 
     logger.info("saving %s entries", len(structures))
     cgx.utilities.write_chemiscope_json(
         json_file=data_dir / "space_explored.json.gz",
         structures=structures,
-        properties=properties,
+        properties=properties,  # type:ignore[arg-type]
         bonds_as_shapes=True,
         meta_dict={
             "name": "Recipe 1 structures.",

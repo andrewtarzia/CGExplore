@@ -4,10 +4,14 @@ import argparse
 import logging
 import pathlib
 from collections import abc, defaultdict
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 
 import cgexplore as cgx
+
+if TYPE_CHECKING:
+    import stk
 
 logger = logging.getLogger(__name__)
 
@@ -16,9 +20,9 @@ def make_topt_plot(
     database_dir: pathlib.Path,
     figure_dir: pathlib.Path,
     filename: str,
-    parameter_sets: list[abc.Sequence[str]],
+    parameter_sets: abc.Sequence[abc.Sequence[str]],
     chosen_name: str,
-) -> dict:
+) -> None:
     """Visualise energies."""
     possible_modifiable = ["nb", "bnb", "bac", "ba", "ac"]
     units = {
@@ -55,18 +59,19 @@ def make_topt_plot(
             raise RuntimeError
 
         term_dict = {
-            term: entry.properties["optimisation_x"][int(i)]
-            for i, term in entry.properties["optimisation_map"].items()
+            term: entry.properties["optimisation_x"][int(i)]  # type:ignore[index]
+            for i, term in entry.properties["optimisation_map"].items()  # type:ignore[union-attr]
         }
 
-        ffdict = entry.properties["forcefield_dict"]["v_dict"]
+        ffdict = entry.properties["forcefield_dict"]["v_dict"]  # type:ignore[index, call-overload]
         init_term_dict = {
-            term: ffdict["_".join(list(term))] for term in term_dict
+            term: ffdict["_".join(list(term))]  # type:ignore[index, call-overload, arg-type]
+            for term in term_dict
         }
 
         init_term_dict.update(
             {
-                term: ffdict["_".join(list(term))]
+                term: ffdict["_".join(list(term))]  # type:ignore[index, call-overload]
                 for term in possible_modifiable
                 if term not in init_term_dict
             }
@@ -74,7 +79,7 @@ def make_topt_plot(
 
         term_dict.update(
             {
-                term: ffdict["_".join(list(term))]
+                term: ffdict["_".join(list(term))]  # type:ignore[index, call-overload]
                 for term in possible_modifiable
                 if term not in term_dict
             }
@@ -87,7 +92,7 @@ def make_topt_plot(
             ax.scatter(
                 term_dict[term_key],
                 entry.properties["optimisation_energy_per_bb"],
-                c=colours[parameters],
+                c=colours[parameters],  # type:ignore[index]
                 alpha=1,
                 ec="k",
                 s=80,
@@ -99,7 +104,7 @@ def make_topt_plot(
                     entry.properties["optimisation_energy_per_bb"],
                     entry.properties["optimisation_energy_per_bb"],
                 ),
-                c=colours[parameters],
+                c=colours[parameters],  # type:ignore[index]
                 alpha=1,
                 lw=1,
                 zorder=-2,
@@ -224,9 +229,9 @@ def main() -> None:  # noqa: PLR0915
             merged_definer_dicts = (
                 cgx.systems_optimisation.merge_definer_dicts(
                     original_definer_dict=constant_definer_dict,
-                    new_definer_dicts=[
-                        building_block_library[i]["mod_definer_dict"]
-                        for i in syst_d["stoichiometry_map"]
+                    new_definer_dicts=[  # type:ignore[arg-type]
+                        building_block_library[i]["mod_definer_dict"]  # type:ignore[misc]
+                        for i in syst_d["stoichiometry_map"]  # type:ignore[attr-defined]
                     ],
                 )
             )
@@ -234,7 +239,7 @@ def main() -> None:  # noqa: PLR0915
             forcefield = cgx.systems_optimisation.get_forcefield_from_dict(
                 identifier=f"{system_name}ff",
                 prefix=f"{system_name}ff",
-                vdw_bond_cutoff=syst_d["vdw_cutoff"],
+                vdw_bond_cutoff=int(syst_d["vdw_cutoff"]),  # type:ignore[call-overload]
                 present_beads=bead_library.get_present_beads(),
                 definer_dict=merged_definer_dicts,
             )
@@ -247,8 +252,8 @@ def main() -> None:  # noqa: PLR0915
             min_energy_structure = None
             min_energy = float("inf")
             for entry in conformer_db.get_entries():
-                if entry.properties["energy_per_bb"] < min_energy:
-                    min_energy = entry.properties["energy_per_bb"]
+                if float(entry.properties["energy_per_bb"]) < min_energy:  # type:ignore[arg-type]
+                    min_energy = float(entry.properties["energy_per_bb"])  # type:ignore[arg-type]
                     min_energy_structure = conformer_db.get_molecule(
                         key=entry.key
                     )
@@ -262,14 +267,14 @@ def main() -> None:  # noqa: PLR0915
                 # To database.
                 cgx.utilities.AtomliteDatabase(database_path).add_molecule(
                     key=chosen_name,
-                    molecule=min_energy_structure,
+                    molecule=min_energy_structure,  # type:ignore[arg-type]
                 )
                 cgx.utilities.AtomliteDatabase(database_path).add_properties(
                     key=chosen_name,
                     property_dict={
                         "energy_per_bb": min_energy,
                         "num_bbs": num_bbs,
-                        "forcefield_dict": (
+                        "forcefield_dict": (  # type:ignore[dict-item]
                             forcefield.get_forcefield_dictionary()
                         ),
                     },
@@ -279,14 +284,14 @@ def main() -> None:  # noqa: PLR0915
                     target_key=chosen_name,
                     calculation_dir=ffoptcalculation_dir,
                     definer_dict=merged_definer_dicts,
-                    modifiable_terms=parameters,
+                    modifiable_terms=list(parameters),
                     forcefield=forcefield,
                 )
 
     # Now let's make a plot given those datasets.
     fig, ax = plt.subplots(figsize=(8, 5))
     properties = defaultdict(list)
-    structures = []
+    structures: list[stk.Molecule] = []
     chosen_name = "cc3_2_4"
     for ps, parameters in enumerate(parameter_sets):  # noqa: B007
         database_path = data_dir / f"set_{ps}.db"
@@ -314,7 +319,7 @@ def main() -> None:  # noqa: PLR0915
         properties["rmsd / AA"].append(entry.properties["optimisation_rmsd"])
 
         ax.plot(
-            entry.properties["optimisation_energies"],
+            entry.properties["optimisation_energies"],  # type:ignore[arg-type]
             alpha=1.0,
             ms=3,
             marker="o",
@@ -339,7 +344,7 @@ def main() -> None:  # noqa: PLR0915
     cgx.utilities.write_chemiscope_json(
         json_file=data_dir / "opt_structures.json.gz",
         structures=structures,
-        properties=properties,
+        properties=properties,  # type:ignore[arg-type]
         bonds_as_shapes=True,
         meta_dict={
             "name": "Recipe 6 structures.",

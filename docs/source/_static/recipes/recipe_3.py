@@ -3,6 +3,7 @@
 import argparse
 import logging
 import pathlib
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,9 @@ import stko
 from openmm import OpenMMException
 
 import cgexplore as cgx
+
+if TYPE_CHECKING:
+    import stk
 
 logger = logging.getLogger(__name__)
 seed_cs = {
@@ -89,15 +93,17 @@ def fitness_function(  # noqa: PLR0913
     entry = database.get_entry(name)
 
     if not entry.properties["opt_passed"]:
-        energy = 100
+        energy = 100.0
 
     elif entry.properties["is_duplicate"]:
-        energy = database.get_entry(
-            entry.properties["duplicate_of"]
-        ).properties["energy_per_bb"]
+        energy = float(
+            database.get_entry(entry.properties["duplicate_of"]).properties[  # type:ignore[arg-type]
+                "energy_per_bb"
+            ]
+        )
 
     else:
-        energy = entry.properties["energy_per_bb"]
+        energy = float(entry.properties["energy_per_bb"])  # type:ignore[arg-type]
 
     fitness = np.exp(-energy * options["beta"])
     database.add_properties(key=name, property_dict={"fitness": fitness})
@@ -179,7 +185,7 @@ def structure_function(  # noqa: C901, PLR0915
         )
 
         try:
-            nd_ = known_entry.properties["num_duplicates"] + 1
+            nd_ = int(known_entry.properties["num_duplicates"]) + 1  # type:ignore[arg-type]
         except KeyError:
             nd_ = 1
         database.add_properties(
@@ -277,7 +283,7 @@ def run_genetic_algorithm(  # noqa: PLR0913
     elite_population: cgx.systems_optimisation.Generation | None,
     database: cgx.utilities.AtomliteDatabase,
     neighbour_opt: bool,
-) -> list[float]:
+) -> list[cgx.systems_optimisation.Generation]:
     """A helper function for running each GA."""
     generator = np.random.default_rng(seed)
 
@@ -319,7 +325,7 @@ def run_genetic_algorithm(  # noqa: PLR0913
         logger.info("initial size is %s.", generation.get_generation_size())
         logger.info("doing mutations.")
         if neighbour_opt:
-            merged_chromosomes = []
+            merged_chromosomes: list[cgx.systems_optimisation.Chromosome] = []
             merged_chromosomes.extend(
                 chromo_it.get_population_neighbours(
                     chromosomes={
@@ -598,8 +604,8 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                 cgx.systems_optimisation.merge_definer_dicts(
                     original_definer_dict=constant_definer_dict,
                     new_definer_dicts=[
-                        building_block_library[i]["mod_definer_dict"]
-                        for i in syst_d["stoichiometry_map"]
+                        building_block_library[i]["mod_definer_dict"]  # type:ignore[misc]
+                        for i in syst_d["stoichiometry_map"]  # type:ignore[attr-defined]
                     ],
                 )
             )
@@ -607,15 +613,17 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             forcefield = cgx.systems_optimisation.get_forcefield_from_dict(
                 identifier=f"{system_name}ff",
                 prefix=f"{system_name}ff",
-                vdw_bond_cutoff=syst_d["vdw_cutoff"],
+                vdw_bond_cutoff=syst_d["vdw_cutoff"],  # type:ignore[arg-type]
                 present_beads=bead_library.get_present_beads(),
                 definer_dict=merged_definer_dicts,
             )
 
             # Build all the building blocks and pre optimise their structures.
             bb_map = {}
-            for prec_name in syst_d["stoichiometry_map"]:
-                prec = building_block_library[prec_name]["precursor"]
+            for prec_name in syst_d["stoichiometry_map"]:  # type:ignore[attr-defined]
+                prec: cgx.molecular.Precursor = building_block_library[  # type:ignore[assignment]
+                    prec_name
+                ]["precursor"]
                 opt_bb_file = (
                     ligand_dir / f"{system_name}_{prec.get_name()}_optl.mol"
                 )
@@ -626,7 +634,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                         )
                     )
                 else:
-                    bb = cgx.utilities.optimise_ligand(
+                    bb: stk.BuildingBlock = cgx.utilities.optimise_ligand(  # type:ignore[assignment]
                         molecule=prec.get_building_block(),
                         name=f"{system_name}_{prec.get_name()}",
                         output_dir=calc_dir,
@@ -641,12 +649,12 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             chromo_it = cgx.systems_optimisation.ChromosomeGenerator(
                 prefix=system_name,
                 present_beads=bead_library.get_present_beads(),
-                vdw_bond_cutoff=syst_d["vdw_cutoff"],
+                vdw_bond_cutoff=syst_d["vdw_cutoff"],  # type:ignore[arg-type]
             )
 
             # Automate the graph type naming.
             graph_type = cgx.scram.generate_graph_type(
-                stoichiometry_map=syst_d["stoichiometry_map"],
+                stoichiometry_map=syst_d["stoichiometry_map"],  # type:ignore[arg-type]
                 multiplier=multiplier,
                 bb_library=bb_map,
             )
@@ -654,7 +662,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             iterator = cgx.scram.TopologyIterator(
                 building_block_counts={
                     bb_map[name]: stoich * multiplier
-                    for name, stoich in syst_d["stoichiometry_map"].items()
+                    for name, stoich in syst_d["stoichiometry_map"].items()  # type:ignore[attr-defined]
                 },
                 graph_type=graph_type,
                 graph_set="rxx",
@@ -713,7 +721,9 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             )
 
             # Short runs.
-            seeded_generations = {}
+            seeded_generations: dict[
+                int, list[cgx.systems_optimisation.Generation]
+            ] = {}
             scan_config = {
                 "seeds": [4, 12689, 18, 999],
                 "mutations": 2,
@@ -723,7 +733,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                 "long_seeds": [142],
                 "neighbour_seeds": [6582],
             }
-            for seed in scan_config["seeds"]:
+            for seed in scan_config["seeds"]:  # type:ignore[attr-defined]
                 seeded_generations[seed] = run_genetic_algorithm(
                     seed=seed,
                     chromo_it=chromo_it,
@@ -740,7 +750,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                 )
 
             # Run longer GA from elites.
-            chromosomes = []
+            chromosomes: list[cgx.systems_optimisation.Chromosome] = []
             for generations in seeded_generations.values():
                 for generation in generations:
                     chromosomes.extend(generation.chromosomes)
@@ -748,18 +758,18 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                 chromosomes=chromo_it.dedupe_population(chromosomes),
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
-                num_processes=scan_config["num_processes"],
+                num_processes=scan_config["num_processes"],  # type:ignore[arg-type]
             )
-            for seed in scan_config["long_seeds"]:
+            for seed in scan_config["long_seeds"]:  # type:ignore[attr-defined]
                 temp_scan_config = scan_config.copy()
                 temp_scan_config.update(
-                    {"selection_size": scan_config["selection_size"] * 2}
+                    {"selection_size": scan_config["selection_size"] * 2}  # type:ignore[operator]
                 )
                 temp_scan_config.update(
-                    {"mutations": scan_config["mutations"] * 2}
+                    {"mutations": scan_config["mutations"] * 2}  # type:ignore[operator]
                 )
                 temp_scan_config.update(
-                    {"num_generations": scan_config["num_generations"] * 2}
+                    {"num_generations": scan_config["num_generations"] * 2}  # type:ignore[operator]
                 )
                 seeded_generations[seed] = run_genetic_algorithm(
                     seed=seed,
@@ -785,13 +795,16 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                 chromosomes=chromo_it.dedupe_population(chromosomes),
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
-                num_processes=scan_config["num_processes"],
+                num_processes=scan_config["num_processes"],  # type:ignore[arg-type]
             )
-            for seed in scan_config["neighbour_seeds"]:
+            for seed in scan_config["neighbour_seeds"]:  # type:ignore[attr-defined]
                 temp_scan_config = scan_config.copy()
                 temp_scan_config.update({"selection_size": 200})
                 temp_scan_config.update(
-                    {"num_generations": scan_config["num_generations"] * 2}
+                    {
+                        "num_generations": int(scan_config["num_generations"])  # type:ignore[call-overload]
+                        * 2
+                    }
                 )
                 seeded_generations[seed] = run_genetic_algorithm(
                     seed=seed,
@@ -831,7 +844,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             continue
 
         ss_str = entry.properties["stoichstring"]
-        ax = ss_axes[ss_str]
+        ax = ss_axes[ss_str]  # type:ignore[index]
         ax.scatter(
             entry.properties["topology_idx"],
             entry.properties["bb_config_idx"],
@@ -848,8 +861,8 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             ax.set_ylabel(r"config idx", fontsize=16)
 
         fitness = entry.properties["fitness"]
-        if top_fit[ss_str] is None or fitness > top_fit[ss_str][2]:
-            top_fit[ss_str] = (
+        if top_fit[ss_str] is None or fitness > top_fit[ss_str][2]:  # type:ignore[index]
+            top_fit[ss_str] = (  # type:ignore[assignment, index]
                 entry.properties["topology_idx"],
                 entry.properties["bb_config_idx"],
                 fitness,
@@ -860,15 +873,15 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
         if top_fit[ss_str] is None:
             continue
         ax.scatter(
-            top_fit[ss_str][0],
-            top_fit[ss_str][1],
+            top_fit[ss_str][0],  # type:ignore[index]
+            top_fit[ss_str][1],  # type:ignore[index]
             marker="P",
             s=80,
             c="tab:red",
             zorder=2,
         )
         ax.set_title(
-            f"$s=${ss_str} ({top_fit[ss_str][0]}, {top_fit[ss_str][1]})",
+            f"$s=${ss_str} ({top_fit[ss_str][0]}, {top_fit[ss_str][1]})",  # type:ignore[index]
             fontsize=16,
         )
 
@@ -881,7 +894,11 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     plt.close()
 
     fig, ax = plt.subplots(figsize=(8, 5))
-    energies = {"9-9-9": [], "12-6-9": [], "6-12-9": []}
+    energies: dict[str, list[float]] = {
+        "9-9-9": [],
+        "12-6-9": [],
+        "6-12-9": [],
+    }
     cs = {
         "9-9-9": "tab:blue",
         "12-6-9": "tab:orange",
@@ -896,8 +913,8 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             continue
 
         ss_str = entry.properties["stoichstring"]
-        energies[ss_str].append(entry.properties["energy_per_bb"])
-        max_energy = max((max_energy, entry.properties["energy_per_bb"]))
+        energies[ss_str].append(entry.properties["energy_per_bb"])  # type:ignore[index,arg-type]
+        max_energy = max((max_energy, entry.properties["energy_per_bb"]))  # type:ignore[assignment, type-var]
 
     steps = range(len(energies) - 1, -1, -1)
     xmin = 0
@@ -908,7 +925,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     for i, (ss_str, xdata) in enumerate(energies.items()):
         ax.hist(
             x=xdata,
-            bins=xbins,
+            bins=xbins,  # type:ignore[arg-type]
             density=True,
             bottom=steps[i] * ystep,
             histtype="stepfilled",

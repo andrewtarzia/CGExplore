@@ -66,8 +66,8 @@ def main() -> None:
         for multiplier in syst_d["multipliers"]:
             # Automate the graph type naming.
             graph_type = cgx.scram.generate_graph_type(
-                stoichiometry_map=syst_d["stoichiometry_map"],
-                multiplier=multiplier,
+                stoichiometry_map=syst_d["stoichiometry_map"],  # type:ignore[arg-type]
+                multiplier=int(multiplier),
                 bb_library=building_block_library,
             )
 
@@ -75,7 +75,7 @@ def main() -> None:
             iterator = cgx.scram.TopologyIterator(
                 building_block_counts={
                     building_block_library[name]: stoich * multiplier
-                    for name, stoich in syst_d["stoichiometry_map"].items()
+                    for name, stoich in syst_d["stoichiometry_map"].items()  # type:ignore[attr-defined]
                 },
                 graph_type=graph_type,
                 # Use a known graph set.
