@@ -46,7 +46,7 @@ def optimisation_workflow(  # noqa: PLR0913
             if method == "regraphed":
                 constructed_molecule = cgx.scram.get_regraphed_molecule(
                     graph_type=graph_type,  # type:ignore[arg-type]
-                    scale=float(scale),  # type:ignore[arg-type]
+                    scale=scale,  # type:ignore[arg-type]
                     topology_code=topology_code,
                     iterator=iterator,
                     bb_config=bb_config,
@@ -55,7 +55,7 @@ def optimisation_workflow(  # noqa: PLR0913
             else:
                 constructed_molecule = cgx.scram.get_vertexset_molecule(
                     graph_type=graph_type,
-                    scale=float(scale),  # type:ignore[arg-type]
+                    scale=scale,  # type:ignore[arg-type]
                     topology_code=topology_code,
                     iterator=iterator,
                     bb_config=bb_config,
@@ -63,7 +63,6 @@ def optimisation_workflow(  # noqa: PLR0913
         except ValueError:
             continue
 
-        constructed_molecule.write(calculation_dir / f"{name}_unopt.mol")
         # Optimise and save.
         logger.info("building %s", name)
 
