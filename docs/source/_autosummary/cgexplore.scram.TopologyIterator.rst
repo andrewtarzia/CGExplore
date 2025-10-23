@@ -20,6 +20,7 @@ cgexplore.scram.TopologyIterator
       ~TopologyIterator.count_graphs
       ~TopologyIterator.get_num_building_blocks
       ~TopologyIterator.get_vertex_prototypes
+      ~TopologyIterator.graph_exists
       ~TopologyIterator.yield_graphs
    
    
