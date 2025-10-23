@@ -110,16 +110,16 @@ As per usual, we will define our building blocks and systems:
     # Only focussing on m=9.
     multiplier = 1
     systems = {
-        "l1a_90_9-9-9": {
-            "stoichiometry_map": {"tetra": 9, "l1a": 9, "deg90": 9},
-            "vdw_cutoff": 2,
-        },
         "l1a_90_6-12-9": {
             "stoichiometry_map": {"tetra": 9, "l1a": 6, "deg90": 12},
             "vdw_cutoff": 2,
         },
         "l1a_90_12-6-9": {
             "stoichiometry_map": {"tetra": 9, "l1a": 12, "deg90": 6},
+            "vdw_cutoff": 2,
+        },
+        "l1a_90_9-9-9": {
+            "stoichiometry_map": {"tetra": 9, "l1a": 9, "deg90": 9},
             "vdw_cutoff": 2,
         },
     }
@@ -774,13 +774,13 @@ siginficantly for the sake of the test here.
 
 .. code-block:: python
 
-    # Short runs.
     seeded_generations = {}
+    # Very short runs!
     scan_config = {
-        "seeds": [4, 12689, 18, 999],
+        "seeds": [4, 12689],
         "mutations": 2,
-        "num_generations": 10,
-        "selection_size": 10,
+        "num_generations": 5,
+        "selection_size": 5,
         "num_processes": 1,
         "long_seeds": [142],
         "neighbour_seeds": [6582],
@@ -815,12 +815,6 @@ siginficantly for the sake of the test here.
         for seed in scan_config["long_seeds"]:
             temp_scan_config = scan_config.copy()
             temp_scan_config.update(
-                {"selection_size": scan_config["selection_size"] * 2}
-            )
-            temp_scan_config.update(
-                {"mutations": scan_config["mutations"] * 2}
-            )
-            temp_scan_config.update(
                 {"num_generations": scan_config["num_generations"] * 2}
             )
             seeded_generations[seed] = run_genetic_algorithm(
@@ -851,7 +845,7 @@ siginficantly for the sake of the test here.
         )
         for seed in scan_config["neighbour_seeds"]:
             temp_scan_config = scan_config.copy()
-            temp_scan_config.update({"selection_size": 200})
+            temp_scan_config.update({"selection_size": 50})
             temp_scan_config.update(
                 {"num_generations": scan_config["num_generations"] * 2}
             )
