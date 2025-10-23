@@ -70,12 +70,12 @@ def main() -> None:
         "12-5FG_30-2FG",
     )
 
-    for known_, (tfun, bbs) in knowns.items():
+    for known_, (tfun, sele_bbs) in knowns.items():
         found = False
         string = known_.replace("x", "") if "x" in known_ else known_
         stk_topology_code, _ = cgx.scram.get_stk_topology_code(tfun)
         iterator = cgx.scram.TopologyIterator(
-            building_block_counts=bbs,
+            building_block_counts=sele_bbs,
             graph_type=string,
             graph_set="rxx",
         )

@@ -141,8 +141,8 @@ def get_stk_topology_code(
     tfun: abc.Callable,
 ) -> tuple[TopologyCode, list[np.ndarray]]:
     """Get the default stk graph."""
-    vps = tfun._vertex_prototypes  # noqa: SLF001
-    eps = tfun._edge_prototypes  # noqa: SLF001
+    vps = tfun._vertex_prototypes  # type: ignore[attr-defined] # noqa: SLF001
+    eps = tfun._edge_prototypes  # type: ignore[attr-defined] # noqa: SLF001
 
     combination = [(i.get_vertex1_id(), i.get_vertex2_id()) for i in eps]
     tc = TopologyCode(vertex_map=combination)

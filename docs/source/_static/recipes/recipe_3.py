@@ -130,9 +130,7 @@ def structure_function(  # noqa: C901, PLR0915
     l1, l2, stoichstring = chromosome.prefix.split("_")
     multiplier = stoichstring.split("-")[2]
 
-    print(database.has_molecule(base_name), base_name)
     if database.has_molecule(base_name):
-        print("he")
         return
 
     # Check if this has been run before.
