@@ -201,13 +201,6 @@ Generated with code:
     import stk
     import cgexplore as cgx
 
-
-
-
-
-
-
-
     knowns = (
         "1-2FG_2-1FG",
         "1-4FG_2-2FG",
@@ -236,6 +229,9 @@ Generated with code:
         "9-4FG_18-2FG",
         "10-2FG_20-1FG",
         "10-4FG_20-2FG",
+        "11-4FG_22-2FG",
+        "12-4FG_24-2FG",
+        "12-4FG_16-3FG",
     )
 
     bbs = {
