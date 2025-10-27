@@ -4,6 +4,7 @@ import argparse
 import itertools as it
 import logging
 import pathlib
+from typing import TYPE_CHECKING
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -12,6 +13,9 @@ import openmm
 import stko
 
 import cgexplore as cgx
+
+if TYPE_CHECKING:
+    import stk
 
 logger = logging.getLogger(__name__)
 
@@ -28,11 +32,11 @@ def optimisation_workflow(  # noqa: PLR0913
     """Geometry optimise a configuration."""
     attempts = (
         (None, None, None),
-        ("set", "kamada", 10),
-        ("set", "spring", 10),
-        ("set", "spectral", 10),
-        ("regraphed", "spring", 10),
-        ("regraphed", "kamada", 10),
+        ("set", "kamada", 10.0),
+        ("set", "spring", 10.0),
+        ("set", "spectral", 10.0),
+        ("regraphed", "spring", 10.0),
+        ("regraphed", "kamada", 10.0),
     )
 
     for midx, (method, graph_type, scale) in enumerate(attempts):
@@ -41,8 +45,8 @@ def optimisation_workflow(  # noqa: PLR0913
         try:
             if method == "regraphed":
                 constructed_molecule = cgx.scram.get_regraphed_molecule(
-                    graph_type=graph_type,
-                    scale=scale,
+                    graph_type=graph_type,  # type:ignore[arg-type]
+                    scale=scale,  # type:ignore[arg-type]
                     topology_code=topology_code,
                     iterator=iterator,
                     bb_config=bb_config,
@@ -51,7 +55,7 @@ def optimisation_workflow(  # noqa: PLR0913
             else:
                 constructed_molecule = cgx.scram.get_vertexset_molecule(
                     graph_type=graph_type,
-                    scale=scale,
+                    scale=scale,  # type:ignore[arg-type]
                     topology_code=topology_code,
                     iterator=iterator,
                     bb_config=bb_config,
@@ -59,7 +63,6 @@ def optimisation_workflow(  # noqa: PLR0913
         except ValueError:
             continue
 
-        constructed_molecule.write(calculation_dir / f"{name}_unopt.mol")
         # Optimise and save.
         logger.info("building %s", name)
 
@@ -122,7 +125,7 @@ def optimisation_workflow(  # noqa: PLR0913
                     conformer_db_path
                 ).add_properties(
                     key=name,
-                    property_dict=properties,
+                    property_dict=properties,  # type:ignore[arg-type]
                 )
 
         except openmm.OpenMMException:
@@ -166,10 +169,10 @@ def make_summary_plot(
     figure_dir: pathlib.Path,
     filename: str,
     width_height: tuple[float, float] = (7, 10),
-) -> dict:
+) -> None:
     """Visualise energies."""
     fig, ax = plt.subplots(figsize=width_height)
-    energies = {}
+    energies: dict[tuple[tuple[str, ...], str], list[tuple]] = {}
 
     xs = []
     ys = []
@@ -182,26 +185,26 @@ def make_summary_plot(
         if multi not in xs:
             xs.append(multi)
 
-        config_name = tuple(entry.properties["config_name"].split("_"))
+        config_name = tuple(entry.properties["config_name"].split("_"))  # type:ignore[union-attr]
         if config_name not in ys:
             ys.append(config_name)
 
-        tidx = entry.properties["topology_idx"]
-        bidx = entry.properties["bb_config_idx"]
-        midx = entry.properties["mash_idx"]
-        energy = entry.properties["energy_per_bb"]
+        tidx = int(entry.properties["topology_idx"])  # type:ignore[arg-type]
+        bidx = int(entry.properties["bb_config_idx"])  # type:ignore[arg-type]
+        midx = int(entry.properties["mash_idx"])  # type:ignore[arg-type]
+        energy = float(entry.properties["energy_per_bb"])  # type:ignore[arg-type]
 
         if (config_name, multi) not in energies:
             energies[(config_name, multi)] = []
 
-        if entry.properties["num_components"] > 1:
+        if int(entry.properties["num_components"]) > 1:  # type:ignore[arg-type]
             continue
         energies[(config_name, multi)].append(
-            (round(energy, 4), tidx, bidx, midx)
+            (round(energy, 4), tidx, bidx, midx)  # type:ignore[arg-type]
         )
 
     # create the new map
-    cmap = plt.cm.Blues_r  # define the colormap
+    cmap = plt.cm.Blues_r  # type:ignore[attr-defined]
     # extract all colors from the .jet map
     cmaplist = [cmap(i) for i in range(cmap.N)]
     cmap = mpl.colors.LinearSegmentedColormap.from_list(
@@ -240,7 +243,7 @@ def make_summary_plot(
     ax.axhline(4.5, c="k", alpha=0.5)
     ax.axhline(8.5, c="k", alpha=0.5)
 
-    cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])
+    cbar_ax = fig.add_axes([1.01, 0.2, 0.02, 0.7])  # type:ignore[call-overload]
     cbar = fig.colorbar(
         mpl.cm.ScalarMappable(norm=norm, cmap=cmap),
         cax=cbar_ax,
@@ -397,8 +400,8 @@ def main() -> None:  # noqa: PLR0915
                 cgx.systems_optimisation.merge_definer_dicts(
                     original_definer_dict=constant_definer_dict,
                     new_definer_dicts=[
-                        building_block_library[i]["mod_definer_dict"]
-                        for i in syst_d["stoichiometry_map"]
+                        building_block_library[i]["mod_definer_dict"]  # type:ignore[misc]
+                        for i in syst_d["stoichiometry_map"]  # type:ignore[attr-defined]
                     ],
                 )
             )
@@ -406,19 +409,21 @@ def main() -> None:  # noqa: PLR0915
             forcefield = cgx.systems_optimisation.get_forcefield_from_dict(
                 identifier=f"{system_name}ff",
                 prefix=f"{system_name}ff",
-                vdw_bond_cutoff=syst_d["vdw_cutoff"],
+                vdw_bond_cutoff=syst_d["vdw_cutoff"],  # type:ignore[arg-type]
                 present_beads=bead_library.get_present_beads(),
                 definer_dict=merged_definer_dicts,
             )
 
             # Build all the building blocks and pre optimise their structures.
             bb_map = {}
-            for prec_name in syst_d["stoichiometry_map"]:
-                prec = building_block_library[prec_name]["precursor"]
+            for prec_name in syst_d["stoichiometry_map"]:  # type:ignore[attr-defined]
+                prec: cgx.molecular.Precursor = building_block_library[  # type:ignore[assignment]
+                    prec_name
+                ]["precursor"]
                 if prec_name == "corner":
-                    bb = prec.get_building_block()
+                    bb: stk.BuildingBlock = prec.get_building_block()
                 else:
-                    bb = cgx.utilities.optimise_ligand(
+                    bb = cgx.utilities.optimise_ligand(  # type:ignore[assignment]
                         molecule=prec.get_building_block(),
                         name=f"{system_name}_{prec.get_name()}",
                         output_dir=calc_dir,
@@ -433,14 +438,14 @@ def main() -> None:  # noqa: PLR0915
                     )
                 bb_map[prec_name] = bb
 
-            for multiplier in syst_d["multipliers"]:
+            for multiplier in syst_d["multipliers"]:  # type:ignore[attr-defined]
                 logger.info(
                     "doing system: %s, multi: %s", system_name, multiplier
                 )
 
                 # Automate the graph type naming.
                 graph_type = cgx.scram.generate_graph_type(
-                    stoichiometry_map=syst_d["stoichiometry_map"],
+                    stoichiometry_map=syst_d["stoichiometry_map"],  # type:ignore[arg-type]
                     multiplier=multiplier,
                     bb_library=bb_map,
                 )
@@ -449,7 +454,7 @@ def main() -> None:  # noqa: PLR0915
                 iterator = cgx.scram.TopologyIterator(
                     building_block_counts={
                         bb_map[name]: stoich * multiplier
-                        for name, stoich in syst_d["stoichiometry_map"].items()
+                        for name, stoich in syst_d["stoichiometry_map"].items()  # type:ignore[attr-defined]
                     },
                     graph_type=graph_type,
                     graph_set="rxx",
@@ -470,7 +475,12 @@ def main() -> None:  # noqa: PLR0915
                     "iterating over %s graphs and bb configurations...",
                     iterator.count_graphs() * len(possible_bbdicts),
                 )
-                run_topology_codes = []
+                run_topology_codes: list[
+                    tuple[
+                        cgx.scram.TopologyCode,
+                        cgx.scram.BuildingBlockConfiguration,
+                    ]
+                ] = []
                 for bb_config, (idx, topology_code) in it.product(
                     possible_bbdicts,
                     enumerate(iterator.yield_graphs()),
@@ -508,21 +518,22 @@ def main() -> None:  # noqa: PLR0915
                     min_energy = float("inf")
                     min_energy_key = None
                     for entry in conformer_db.get_entries():
-                        if entry.properties["energy_per_bb"] < min_energy:
-                            min_energy = entry.properties["energy_per_bb"]
+                        if entry.properties["energy_per_bb"] < min_energy:  # type:ignore[operator]
+                            min_energy = entry.properties["energy_per_bb"]  # type:ignore[assignment]
                             min_energy_structure = conformer_db.get_molecule(
                                 key=entry.key
                             )
                             min_energy_key = entry.key
 
                     # To file.
-                    min_energy_structure.write(
+                    min_energy_structure.write(  # type:ignore[union-attr]
                         str(struct_output / f"{config_name}_optc.mol")
                     )
 
                     # To database.
                     cgx.utilities.AtomliteDatabase(database_path).add_molecule(
-                        molecule=min_energy_structure, key=config_name
+                        molecule=min_energy_structure,  # type:ignore[arg-type]
+                        key=config_name,
                     )
                     properties = {
                         "multiplier": multiplier,
@@ -536,7 +547,7 @@ def main() -> None:  # noqa: PLR0915
                         database_path=database_path,
                         name=config_name,
                         conformer_db_path=conformer_db_path,
-                        min_energy_key=min_energy_key,
+                        min_energy_key=min_energy_key,  # type:ignore[arg-type]
                     )
 
     make_summary_plot(

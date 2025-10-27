@@ -59,7 +59,7 @@ from .case_data import CaseData
                     TargetTorsion(
                         search_string=("b1", "a1", "c1", "a1", "b1"),
                         search_estring=(),
-                        measured_atom_ids=[0, 1, 3, 4],
+                        measured_atom_ids=(0, 1, 3, 4),
                         phi0=openmm.unit.Quantity(
                             value=180,
                             unit=openmm.unit.degrees,
@@ -68,7 +68,7 @@ from .case_data import CaseData
                             value=50,
                             unit=openmm.unit.kilojoules_per_mole,
                         ),
-                        torsion_n=1.0,
+                        torsion_n=1,
                     ),
                 ),
                 nonbonded_targets=(
@@ -201,7 +201,7 @@ from .case_data import CaseData
                     TargetTorsion(
                         search_string=("b1", "a1", "c1", "a1", "b1"),
                         search_estring=(),
-                        measured_atom_ids=[0, 1, 3, 4],
+                        measured_atom_ids=(0, 1, 3, 4),
                         phi0=openmm.unit.Quantity(
                             value=180,
                             unit=openmm.unit.degrees,
@@ -210,7 +210,7 @@ from .case_data import CaseData
                             value=50,
                             unit=openmm.unit.kilojoules_per_mole,
                         ),
-                        torsion_n=1.0,
+                        torsion_n=1,
                     ),
                 ),
                 nonbonded_targets=(
@@ -271,5 +271,5 @@ from .case_data import CaseData
 )
 def molecule(request: pytest.FixtureRequest) -> CaseData:
     return request.param(
-        f"{request.fixturename}{request.param_index}",
+        f"{request.fixturename}{request.param_index}",  # type: ignore[attr-defined]
     )

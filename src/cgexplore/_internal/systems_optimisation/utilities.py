@@ -275,7 +275,7 @@ def yield_near_models(
 
 def merge_definer_dicts(
     original_definer_dict: dict,
-    new_definer_dicts: dict,
+    new_definer_dicts: list[dict],
 ) -> dict:
     """Merge multiple definer dicts, overring the original."""
     temp_definer_dict = deepcopy(original_definer_dict)

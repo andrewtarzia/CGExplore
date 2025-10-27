@@ -131,7 +131,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 TargetTorsionRange(
                     search_string=("b1", "a1", "c1", "a1", "b1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
-                    measured_atom_ids=[0, 1, 3, 4],
+                    measured_atom_ids=(0, 1, 3, 4),
                     phi0s=(
                         openmm.unit.Quantity(
                             value=180, unit=openmm.unit.degrees
@@ -169,8 +169,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             num_forcefields=2,
-            present_bonds=(
-                (
+            present_bonds=[
+                [
                     Bond(
                         atom_names=("Pb1", "Ba2"),
                         atom_ids=(0, 1),
@@ -197,8 +197,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.Ba(3), stk.Pb(4)),
                         force="HarmonicBondForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Bond(
                         atom_names=("Pb1", "Ba2"),
                         atom_ids=(0, 1),
@@ -225,11 +225,11 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.Ba(3), stk.Pb(4)),
                         force="HarmonicBondForce",
                     ),
-                ),
-            ),
-            present_angles=((), ()),
-            present_nonbondeds=(
-                (
+                ],
+            ],
+            present_angles=[[], []],
+            present_nonbondeds=[
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="b",
@@ -260,8 +260,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-                (
+                ],
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="b",
@@ -292,10 +292,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-            ),
-            present_torsions=(
-                (
+                ],
+            ],
+            present_torsions=[
+                [
                     Torsion(
                         atom_names=("Pb1", "Ba2", "Ba4", "Pb5"),
                         atom_ids=(0, 1, 3, 4),
@@ -306,8 +306,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         torsion_n=1,
                         force="PeriodicTorsionForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Torsion(
                         atom_names=("Pb1", "Ba2", "Ba4", "Pb5"),
                         atom_ids=(0, 1, 3, 4),
@@ -318,8 +318,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         torsion_n=1,
                         force="PeriodicTorsionForce",
                     ),
-                ),
-            ),
+                ],
+            ],
             library_string=(
                 "ForceFieldLibrary(\n  present_beads=(CgBead(element_string='A"
                 "g', bead_type='c1', bead_class='c', coordination=2), CgBead(e"
@@ -333,7 +333,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 "e_ks=(100.0 kJ/(mol rad**2),)),),\n  torsion_ranges=(TargetTo"
                 "rsionRange(search_string=('b1', 'a1', 'c1', 'a1', 'b1'), sear"
                 "ch_estring=('Pb', 'Ba', 'Ag', 'Ba', 'Pb'), measured_atom_ids="
-                "[0, 1, 3, 4], phi0s=(180 deg,), torsion_ks=(50 kJ/mol, 0 kJ/m"
+                "(0, 1, 3, 4), phi0s=(180 deg,), torsion_ks=(50 kJ/mol, 0 kJ/m"
                 "ol), torsion_ns=(1,)),),\n  nonbonded_ranges=(TargetNonbonded"
                 "Range(bead_class='c', bead_element='Ag', sigmas=(1.0 A,), eps"
                 "ilons=(10.0 kJ/mol,), force='custom-excl-vol'), TargetNonbond"
@@ -428,7 +428,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 TargetTorsionRange(
                     search_string=("c1", "n1", "c1", "c1"),
                     search_estring=("C", "N", "C", "C"),
-                    measured_atom_ids=[0, 1, 2, 3],
+                    measured_atom_ids=(0, 1, 2, 3),
                     phi0s=(
                         openmm.unit.Quantity(
                             value=180, unit=openmm.unit.degrees
@@ -477,8 +477,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             num_forcefields=4,
-            present_bonds=(
-                (
+            present_bonds=[
+                [
                     Bond(
                         atom_names=("C1", "N2"),
                         atom_ids=(0, 1),
@@ -531,8 +531,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.N(6), stk.C(7)),
                         force="HarmonicBondForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Bond(
                         atom_names=("C1", "N2"),
                         atom_ids=(0, 1),
@@ -585,8 +585,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.N(6), stk.C(7)),
                         force="HarmonicBondForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Bond(
                         atom_names=("C1", "N2"),
                         atom_ids=(0, 1),
@@ -639,8 +639,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.N(6), stk.C(7)),
                         force="HarmonicBondForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Bond(
                         atom_names=("C1", "N2"),
                         atom_ids=(0, 1),
@@ -693,10 +693,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.N(6), stk.C(7)),
                         force="HarmonicBondForce",
                     ),
-                ),
-            ),
-            present_angles=(
-                (
+                ],
+            ],
+            present_angles=[
+                [
                     Angle(
                         atom_names=("C1", "N2", "C3"),
                         atom_ids=(0, 1, 2),
@@ -721,8 +721,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.C(5), stk.N(6), stk.C(7)),
                         force="HarmonicAngleForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Angle(
                         atom_names=("C1", "N2", "C3"),
                         atom_ids=(0, 1, 2),
@@ -747,8 +747,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.C(5), stk.N(6), stk.C(7)),
                         force="HarmonicAngleForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Angle(
                         atom_names=("C1", "N2", "C3"),
                         atom_ids=(0, 1, 2),
@@ -773,8 +773,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.C(5), stk.N(6), stk.C(7)),
                         force="HarmonicAngleForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Angle(
                         atom_names=("C1", "N2", "C3"),
                         atom_ids=(0, 1, 2),
@@ -799,10 +799,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.C(5), stk.N(6), stk.C(7)),
                         force="HarmonicAngleForce",
                     ),
-                ),
-            ),
-            present_nonbondeds=(
-                (
+                ],
+            ],
+            present_nonbondeds=[
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="c",
@@ -903,8 +903,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-                (
+                ],
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="c",
@@ -1005,8 +1005,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-                (
+                ],
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="c",
@@ -1107,8 +1107,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-                (
+                ],
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="c",
@@ -1209,10 +1209,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-            ),
-            present_torsions=(
-                (
+                ],
+            ],
+            present_torsions=[
+                [
                     Torsion(
                         atom_names=("C1", "N2", "C3", "C4"),
                         atom_ids=(0, 1, 2, 3),
@@ -1243,8 +1243,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         torsion_n=1,
                         force="PeriodicTorsionForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Torsion(
                         atom_names=("C1", "N2", "C3", "C4"),
                         atom_ids=(0, 1, 2, 3),
@@ -1275,8 +1275,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         torsion_n=1,
                         force="PeriodicTorsionForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Torsion(
                         atom_names=("C1", "N2", "C3", "C4"),
                         atom_ids=(0, 1, 2, 3),
@@ -1307,8 +1307,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         torsion_n=1,
                         force="PeriodicTorsionForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Torsion(
                         atom_names=("C1", "N2", "C3", "C4"),
                         atom_ids=(0, 1, 2, 3),
@@ -1339,8 +1339,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         torsion_n=1,
                         force="PeriodicTorsionForce",
                     ),
-                ),
-            ),
+                ],
+            ],
             library_string=(
                 "ForceFieldLibrary(\n  present_beads=(CgBead(element_string='C"
                 "', bead_type='c1', bead_class='c', coordination=2), CgBead(el"
@@ -1355,7 +1355,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 "nt1='C', element2='N', element3='C', angles=(160 deg,), angle"
                 "_ks=(100.0 kJ/(mol rad**2),)),),\n  torsion_ranges=(TargetTor"
                 "sionRange(search_string=('c1', 'n1', 'c1', 'c1'), search_estr"
-                "ing=('C', 'N', 'C', 'C'), measured_atom_ids=[0, 1, 2, 3], phi"
+                "ing=('C', 'N', 'C', 'C'), measured_atom_ids=(0, 1, 2, 3), phi"
                 "0s=(180 deg,), torsion_ks=(50 kJ/mol,), torsion_ns=(1,)),),\n"
                 "  nonbonded_ranges=(TargetNonbondedRange(bead_class='c', bead"
                 "_element='C', sigmas=(1.0 A, 2.0 A), epsilons=(10.0 kJ/mol,),"
@@ -1449,8 +1449,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             num_forcefields=2,
-            present_bonds=(
-                (
+            present_bonds=[
+                [
                     Bond(
                         atom_names=("Pd1", "Pb2"),
                         atom_ids=(0, 1),
@@ -1503,8 +1503,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.Pd(0), stk.Pb(4)),
                         force="HarmonicBondForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Bond(
                         atom_names=("Pd1", "Pb2"),
                         atom_ids=(0, 1),
@@ -1557,10 +1557,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.Pd(0), stk.Pb(4)),
                         force="HarmonicBondForce",
                     ),
-                ),
-            ),
-            present_angles=(
-                (
+                ],
+            ],
+            present_angles=[
+                [
                     Angle(
                         atoms=None,
                         atom_names=("Pb2", "Pd1", "Pb3"),
@@ -1633,8 +1633,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         ),
                         force="HarmonicAngleForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Angle(
                         atoms=None,
                         atom_names=("Pb2", "Pd1", "Pb3"),
@@ -1707,10 +1707,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         ),
                         force="HarmonicAngleForce",
                     ),
-                ),
-            ),
-            present_nonbondeds=(
-                (
+                ],
+            ],
+            present_nonbondeds=[
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="m",
@@ -1761,8 +1761,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-                (
+                ],
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="m",
@@ -1813,9 +1813,9 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-            ),
-            present_torsions=((), ()),
+                ],
+            ],
+            present_torsions=[[], []],
             library_string=(
                 "ForceFieldLibrary(\n  present_beads=(CgBead(element_string='P"
                 "d', bead_type='m1', bead_class='m', coordination=4), CgBead(e"
@@ -1879,7 +1879,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 TargetTorsionRange(
                     search_string=("b1", "a1", "c1", "a1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba"),
-                    measured_atom_ids=[0, 1, 2, 3],
+                    measured_atom_ids=(0, 1, 2, 3),
                     phi0s=(180,),
                     torsion_ks=(50,),
                     torsion_ns=(1,),
@@ -1887,7 +1887,7 @@ kjmol = openmm.unit.kilojoules_per_mole
                 TargetTorsionRange(
                     search_string=("b1", "a1", "c1", "a1", "b1"),
                     search_estring=("Pb", "Ba", "Ag", "Ba", "Pb"),
-                    measured_atom_ids=[0, 1, 3, 4],
+                    measured_atom_ids=(0, 1, 3, 4),
                     phi0s=(180,),
                     torsion_ks=(50,),
                     torsion_ns=(1,),
@@ -1910,10 +1910,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             num_forcefields=0,
-            present_bonds=([]),
-            present_angles=([]),
-            present_nonbondeds=([]),
-            present_torsions=([]),
+            present_bonds=[[]],
+            present_angles=[[]],
+            present_nonbondeds=[[]],
+            present_torsions=[[]],
             library_string="",
             name=name,
         ),
@@ -1964,10 +1964,10 @@ kjmol = openmm.unit.kilojoules_per_mole
             torsion_ranges=(),
             nonbonded_ranges=(),
             num_forcefields=0,
-            present_bonds=([]),
-            present_angles=([]),
-            present_nonbondeds=([]),
-            present_torsions=([]),
+            present_bonds=[[]],
+            present_angles=[[]],
+            present_nonbondeds=[[]],
+            present_torsions=[[]],
             library_string="",
             name=name,
         ),
@@ -2045,8 +2045,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                 ),
             ),
             num_forcefields=2,
-            present_bonds=(
-                (
+            present_bonds=[
+                [
                     Bond(
                         atom_names=("C1", "N2"),
                         atom_ids=(0, 1),
@@ -2073,8 +2073,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.N(1), stk.C(2)),
                         force="HarmonicBondForce",
                     ),
-                ),
-                (
+                ],
+                [
                     Bond(
                         atom_names=("C1", "N2"),
                         atom_ids=(0, 1),
@@ -2101,10 +2101,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.N(1), stk.C(2)),
                         force="HarmonicBondForce",
                     ),
-                ),
-            ),
-            present_angles=(
-                (
+                ],
+            ],
+            present_angles=[
+                [
                     CosineAngle(
                         atom_names=("C1", "N2", "C3"),
                         atom_ids=(0, 1, 2),
@@ -2116,8 +2116,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.C(0), stk.N(1), stk.C(2)),
                         force="CosinePeriodicAngleForce",
                     ),
-                ),
-                (
+                ],
+                [
                     CosineAngle(
                         atom_names=("C1", "N2", "C3"),
                         atom_ids=(0, 1, 2),
@@ -2129,10 +2129,10 @@ kjmol = openmm.unit.kilojoules_per_mole
                         atoms=(stk.C(0), stk.N(1), stk.C(2)),
                         force="CosinePeriodicAngleForce",
                     ),
-                ),
-            ),
-            present_nonbondeds=(
-                (
+                ],
+            ],
+            present_nonbondeds=[
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="c",
@@ -2163,8 +2163,8 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-                (
+                ],
+                [
                     Nonbonded(
                         atom_id=0,
                         bead_class="c",
@@ -2195,9 +2195,9 @@ kjmol = openmm.unit.kilojoules_per_mole
                         epsilon=openmm.unit.Quantity(value=10.0, unit=kjmol),
                         force="custom-excl-vol",
                     ),
-                ),
-            ),
-            present_torsions=((), ()),
+                ],
+            ],
+            present_torsions=[[], []],
             library_string=(
                 "ForceFieldLibrary(\n  present_beads=(CgBead(element_string='C"
                 "', bead_type='c1', bead_class='c', coordination=2), CgBead(el"
@@ -2220,5 +2220,5 @@ kjmol = openmm.unit.kilojoules_per_mole
 )
 def molecule(request: pytest.FixtureRequest) -> CaseData:
     return request.param(
-        f"{request.fixturename}{request.param_index}",
+        f"{request.fixturename}{request.param_index}",  # type: ignore[attr-defined]
     )

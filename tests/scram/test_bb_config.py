@@ -8,20 +8,13 @@ from .case_data import CaseData
 
 
 def test_building_block_configuration(graph_data: CaseData) -> None:
-    """Test graph layout processes.
-
-    Parameters:
-
-        graph_data:
-            The graph data.
-
-    """
+    """Test graph layout processes."""
     graph_directory = pathlib.Path(__file__).resolve().parent / "test_graphs"
     config_directory = pathlib.Path(__file__).resolve().parent / "test_configs"
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=graph_directory,
@@ -41,7 +34,9 @@ def test_building_block_configuration(graph_data: CaseData) -> None:
         )
         assert len(possible_bbdicts) == graph_data.num_configs
 
-        run_topology_codes = []
+        run_topology_codes: list[
+            tuple[cgx.scram.TopologyCode, cgx.scram.BuildingBlockConfiguration]
+        ] = []
         for bb_config in possible_bbdicts:
             # Check for iso checks, iterating over topology codes as well.
             for idx, topology_code in enumerate(iterator.yield_graphs()):

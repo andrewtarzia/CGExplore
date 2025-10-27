@@ -11,11 +11,6 @@ def test_enumerate(graph_data: CaseData) -> None:
     This should produce a graph and check the string against known ones, then
     delete them.
 
-    Parameters:
-
-        graph_data:
-            The graph data.
-
     """
     graph_directory = pathlib.Path(__file__).resolve().parent / "temp_graphs"
     known_graph_directory = (
@@ -23,10 +18,7 @@ def test_enumerate(graph_data: CaseData) -> None:
     )
 
     # Delete them.
-    filename = (
-        graph_directory
-        / f"{graph_data.graph_set}_{graph_data.graph_type}.json"
-    )
+    filename = graph_directory / f"rxx_{graph_data.graph_type}.json"
     if graph_directory.exists():
         for filen in graph_directory.iterdir():
             filen.unlink()
@@ -37,7 +29,7 @@ def test_enumerate(graph_data: CaseData) -> None:
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
         graph_type=graph_data.graph_type,
-        graph_set=graph_data.graph_set,
+        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Remake graphs.
         graph_directory=graph_directory,
@@ -58,9 +50,6 @@ def test_enumerate(graph_data: CaseData) -> None:
         assert lines[0] == tc.get_as_string()
 
     # Delete them.
-    filename = (
-        graph_directory
-        / f"{graph_data.graph_set}_{graph_data.graph_type}.json"
-    )
+    filename = graph_directory / f"rxx_{graph_data.graph_type}.json"
     filename.unlink()
     graph_directory.rmdir()

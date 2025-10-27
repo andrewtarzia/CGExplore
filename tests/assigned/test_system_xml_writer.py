@@ -1,7 +1,5 @@
 import pathlib
 
-from cgexplore.utilities import ForceFieldUnitError
-
 from .case_data import CaseData
 
 
@@ -17,34 +15,29 @@ def test_system_xml_writer(molecule: CaseData) -> None:
         None : :class:`NoneType`
 
     """
-    try:
-        syst_xml_file = pathlib.Path(__file__).resolve().parent / (
-            f"{molecule.name}_{molecule.forcefield.get_prefix()}_"
-            f"{molecule.name}_syst.xml"
-        )
-        saved_syst_xml_file = pathlib.Path(__file__).resolve().parent / (
-            f"{molecule.name}_{molecule.forcefield.get_prefix()}_"
-            f"{molecule.name}_syst_saved.xml"
-        )
+    syst_xml_file = pathlib.Path(__file__).resolve().parent / (
+        f"{molecule.name}_{molecule.forcefield.get_prefix()}_"
+        f"{molecule.name}_syst.xml"
+    )
+    saved_syst_xml_file = pathlib.Path(__file__).resolve().parent / (
+        f"{molecule.name}_{molecule.forcefield.get_prefix()}_"
+        f"{molecule.name}_syst_saved.xml"
+    )
 
-        assigned_system = molecule.forcefield.assign_terms(
-            molecule=molecule.molecule,
-            output_dir=pathlib.Path(__file__).resolve().parent,
-            name=molecule.name,
-        )
-        assigned_system.get_openmm_system()
-        with syst_xml_file.open("r") as f:
-            xml_string_list = f.readlines()
-        with saved_syst_xml_file.open("r") as f:
-            test_xml_string_list = f.readlines()
+    assigned_system = molecule.forcefield.assign_terms(
+        molecule=molecule.molecule,
+        output_dir=pathlib.Path(__file__).resolve().parent,
+        name=molecule.name,
+    )
+    assigned_system.get_openmm_system()
+    with syst_xml_file.open("r") as f:
+        xml_string_list = f.readlines()
+    with saved_syst_xml_file.open("r") as f:
+        test_xml_string_list = f.readlines()
 
-        for xml, test in zip(
-            xml_string_list, test_xml_string_list, strict=True
-        ):
-            if "openmmVersion" in xml and "openmmVersion" in test:
-                continue
-            print(xml, test)
-            assert xml == test
-        syst_xml_file.unlink()
-    except ForceFieldUnitError:
-        assert molecule.num_forcefields == 0
+    for xml, test in zip(xml_string_list, test_xml_string_list, strict=True):
+        if "openmmVersion" in xml and "openmmVersion" in test:
+            continue
+        print(xml, test)
+        assert xml == test
+    syst_xml_file.unlink()

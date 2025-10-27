@@ -27,7 +27,7 @@ Graphs:
 
 .. important::
 
-  All new graphs are run with a ``max_samples`` of 1e7 (compared to 1e5 of
+  All new graphs are run with a ``max_samples`` of 1e6 (compared to 1e5 of
   ``cgexplore`` version ``2025.2.5.1``).
 
 Filtering graphs
@@ -172,7 +172,7 @@ Generated with code:
             continue
 
         # Do not do all for larger stoichiomers.
-        if stoich in ((2, 3), (3, 4)) and midx > 5:
+        if stoich in ((2, 3), (3, 4)) and midx > 4:
             continue
 
         fgnum1_, fgnum2_ = sorted((fgnum1, fgnum2), reverse=True)
@@ -201,6 +201,13 @@ Generated with code:
     import stk
     import cgexplore as cgx
 
+
+
+
+
+
+
+
     knowns = (
         "1-2FG_2-1FG",
         "1-4FG_2-2FG",
@@ -208,7 +215,27 @@ Generated with code:
         "2-3FG_3-2FG",
         "2-4FG_4-2FG",
         "3-4FG_4-3FG",
+        "3-2FG_6-1FG",
+        "3-4FG_6-2FG",
         "4-3FG_6-2FG",
+        "4-2FG_8-1FG",
+        "4-4FG_8-2FG",
+        "5-2FG_10-1FG",
+        "5-4FG_10-2FG",
+        "6-2FG_12-1FG",
+        "6-3FG_9-2FG",
+        "6-4FG_12-2FG",
+        "6-4FG_8-3FG",
+        "7-2FG_14-1FG",
+        "7-4FG_14-2FG",
+        "8-2FG_16-1FG",
+        "8-3FG_12-2FG",
+        "8-4FG_16-2FG",
+        "9-2FG_18-1FG",
+        "9-4FG_12-3FG",
+        "9-4FG_18-2FG",
+        "10-2FG_20-1FG",
+        "10-4FG_20-2FG",
     )
 
     bbs = {
@@ -254,10 +281,14 @@ Generated with code:
 Three-type graphs
 ^^^^^^^^^^^^^^^^^
 
-Produced graphs for ``m`` in (1 - 3) with FGs in (1 - 4) and
+Produced graphs for ``m`` in (1, 2) with FGs in (1 - 4) and
 a combinatorial check of stoichiometries. Note that current versions will
 always focus on smaller FG BBs binding only to the BB with the most FGs.
 Generated with code:
+
+.. important::
+
+  We did not complete the run for ``8-4FG_8-3FG_8-1FG``.
 
 .. code-block:: python
 
@@ -269,7 +300,7 @@ Generated with code:
     }
 
     # Three typers.
-    multipliers = range(1, 5)
+    multipliers = (1, 2)
     three_type_stoichiometries = tuple(
         (i, j, k) for i, j, k in it.product((1, 2, 3, 4), repeat=3)
     )
@@ -330,6 +361,11 @@ Generated with code:
         "4-4FG_4-3FG_4-1FG",
         "6-3FG_6-2FG_6-1FG",
         "6-3FG_8-2FG_2-1FG",
+        "1-3FG_1-2FG_1-1FG",
+        "4-4FG_4-2FG_8-1FG",
+        "6-4FG_6-3FG_6-1FG",
+        "6-4FG_8-2FG_8-1FG",
+        "8-3FG_8-2FG_8-1FG",
     )
 
     bbs = {
@@ -340,7 +376,7 @@ Generated with code:
     }
 
     # Three typers.
-    multipliers = range(1, 5)
+    multipliers = (1, 2)
     three_type_stoichiometries = tuple(
         (i, j, k) for i, j, k in it.product((1, 2, 3, 4), repeat=3)
     )

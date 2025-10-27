@@ -290,4 +290,4 @@ porous organic cage, CC3.
 
 .. raw:: html
 
-    <a class="btn-download" href="_static/recipes/recipe_4.py" download>⬇️ Download Python Script</a>
+    <a class="btn-download" href="../_static/recipes/recipe_4.py" download>⬇️ Download Python Script</a>

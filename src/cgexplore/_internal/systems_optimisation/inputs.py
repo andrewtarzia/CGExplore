@@ -428,7 +428,7 @@ class ChromosomeGenerator:
         self,
         generator: np.random.Generator,
         size: int,
-    ) -> list[Chromosome]:
+    ) -> abc.Sequence[Chromosome]:
         """Select `size` instances from population."""
         selected = []
 
@@ -470,8 +470,8 @@ class ChromosomeGenerator:
 
     def dedupe_population(
         self,
-        list_of_chromosomes: list[Chromosome],
-    ) -> list[Chromosome]:
+        list_of_chromosomes: abc.Sequence[Chromosome],
+    ) -> abc.Sequence[Chromosome]:
         """Deduplicate the list of chromosomes."""
         tuples = {i.name for i in list_of_chromosomes}
         return [self.select_chromosome(i) for i in tuples]
@@ -480,7 +480,7 @@ class ChromosomeGenerator:
         self,
         chromosome: Chromosome,
         free_gene_id: int,
-    ) -> list[Chromosome]:
+    ) -> abc.Sequence[Chromosome]:
         """Select chromosomes where only one gene is allowed to change."""
         selected = []
         filter_range = tuple(
@@ -506,7 +506,7 @@ class ChromosomeGenerator:
         selection: str,
         num_to_select: int,
         database: AtomliteDatabase,
-    ) -> list[Chromosome]:
+    ) -> abc.Sequence[Chromosome]:
         """Mutate chromosomes in the gene range only.
 
         Available selections for which chromosomes to mutate:
@@ -621,7 +621,7 @@ class ChromosomeGenerator:
         selection: str,
         num_to_select: int,
         database: AtomliteDatabase,
-    ) -> list[Chromosome]:
+    ) -> abc.Sequence[Chromosome]:
         """Crossover chromosomes.
 
         Available selections for which chromosomes to mutate:
@@ -711,7 +711,7 @@ class ChromosomeGenerator:
         chromosomes: dict[str, Chromosome],
         gene_range: abc.Sequence[int],
         selection: str,
-    ) -> list[Chromosome]:
+    ) -> abc.Sequence[Chromosome]:
         """Get all nearest neighbours of provided chromosomes.
 
         Available selections for which chromosomes to mutate:

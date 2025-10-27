@@ -110,7 +110,7 @@ def main() -> None:
         cgx.utilities.write_chemiscope_json(
             json_file=data_output / f"cs_{study}_{tstr}.json.gz",
             structures=structures,
-            properties=properties,
+            properties=properties,  # type:ignore[arg-type]
             bonds_as_shapes=True,
             meta_dict={
                 "name": f"CGGeom: {study_pre}|{tstr}|{torsion}",

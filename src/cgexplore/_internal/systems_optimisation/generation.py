@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 class Generation:
     """Define the chromosomes in a single generation."""
 
-    chromosomes: list[Chromosome]
+    chromosomes: abc.Sequence[Chromosome]
     fitness_calculator: FitnessCalculator
     structure_calculator: StructureCalculator
     num_processes: int = 1
@@ -57,7 +57,7 @@ class Generation:
             for chromosome in self.chromosomes:
                 self.structure_calculator.calculate(chromosome=chromosome)
 
-    def select_best(self, selection_size: int) -> abc.Iterable[Chromosome]:
+    def select_best(self, selection_size: int) -> abc.Sequence[Chromosome]:
         """Select the best in the generation by fitness."""
         temp = [
             (
@@ -72,7 +72,7 @@ class Generation:
 
         return [self.chromosomes[i] for i in best_indices]
 
-    def select_worst(self, selection_size: int) -> abc.Iterable[Chromosome]:
+    def select_worst(self, selection_size: int) -> abc.Sequence[Chromosome]:
         """Select the worst in the generation by fitness."""
         temp = [
             (
@@ -90,13 +90,13 @@ class Generation:
     def select_elite(
         self,
         proportion_threshold: float,
-    ) -> abc.Iterable[Chromosome]:
+    ) -> abc.Sequence[Chromosome]:
         """Select the elite in the generation by fitness."""
         num_in_generation = self.get_generation_size()
         proportion_to_select = round(num_in_generation * proportion_threshold)
         return self.select_best(proportion_to_select)
 
-    def select_all(self) -> abc.Iterable[Chromosome]:
+    def select_all(self) -> abc.Sequence[Chromosome]:
         """Select all in the generation."""
         return list(self.chromosomes)
 

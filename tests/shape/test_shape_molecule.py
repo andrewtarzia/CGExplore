@@ -27,5 +27,4 @@ def test_shape(molecule: CaseData) -> None:
         expected_points=molecule.expected_points,
     )
 
-    print(stk.Smiles().get_key(shape_mol))
-    assert stk.Smiles().get_key(shape_mol) == molecule.shape_string
+    assert stk.Smiles().get_key(shape_mol) == molecule.shape_string  # type:ignore[arg-type]

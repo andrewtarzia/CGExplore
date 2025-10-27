@@ -419,4 +419,4 @@ And we can use chemiscope to explore this map interactively!
 
 .. raw:: html
 
-    <a class="btn-download" href="_static/recipes/recipe_1.py" download>⬇️ Download Python Script</a>
+    <a class="btn-download" href="../_static/recipes/recipe_1.py" download>⬇️ Download Python Script</a>

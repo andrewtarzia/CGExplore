@@ -156,9 +156,9 @@ class TargetTorsionRange:
     search_string: abc.Sequence[str]
     search_estring: abc.Sequence[str]
     measured_atom_ids: tuple[int, int, int, int]
-    phi0s: tuple[openmm.unit.Quantity]
-    torsion_ks: tuple[openmm.unit.Quantity]
-    torsion_ns: tuple[int]
+    phi0s: abc.Sequence[openmm.unit.Quantity]
+    torsion_ks: abc.Sequence[openmm.unit.Quantity]
+    torsion_ns: abc.Sequence[int]
 
     def yield_torsions(self) -> abc.Iterable[TargetTorsion]:
         """Find interactions matching target."""

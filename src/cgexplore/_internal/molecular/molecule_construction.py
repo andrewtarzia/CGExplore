@@ -1,10 +1,4 @@
-# Distributed under the terms of the MIT License.
-
-"""Classes of topologies of precursors.
-
-Author: Andrew Tarzia
-
-"""
+"""Classes of topologies of precursors."""
 
 from collections import abc
 from dataclasses import dataclass

@@ -40,8 +40,7 @@ def test_shape(molecule: CaseData) -> None:
             expected_points=molecule.expected_points,
         )
 
-        shape_output = shape_calc.calculate(shape_mol)
-        print(shape_output, molecule.shape_dict)
+        shape_output = shape_calc.calculate(shape_mol)  # type:ignore[arg-type]
         assert shape_output == molecule.shape_dict
         shutil.rmtree(output_dir)
 

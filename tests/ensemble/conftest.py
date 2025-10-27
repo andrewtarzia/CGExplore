@@ -14,5 +14,5 @@ from .case_data import CaseData
 )
 def ensemble(request: pytest.FixtureRequest) -> CaseData:
     return request.param(
-        f"{request.fixturename}{request.param_index}",
+        f"{request.fixturename}{request.param_index}",  # type: ignore[attr-defined]
     )

@@ -374,8 +374,6 @@ class TopologyIterator:
                     TopologyCode(i).get_as_string()
                     for i in combinations_passed
                 }
-
-        print(f"skipping until {max_num}\n")
         ### delete
         for i in range(self.used_samples):
             rng.shuffle(options)
@@ -463,7 +461,6 @@ class TopologyIterator:
                     TopologyCode(i).get_as_string()
                     for i in combinations_passed
                 }
-        print(f"skipping until {max_num}\n")
         ### delete
 
         for i in range(self.used_samples):

@@ -9,12 +9,6 @@ import numpy as np
 import rustworkx as rx
 import stk
 
-from cgexplore._internal.topologies.graphs import (
-    CGM4L8,
-    CGM12L24,
-    UnalignedM1L2,
-)
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
@@ -144,29 +138,14 @@ class Constructed:
 
 
 def get_stk_topology_code(
-    graph_type: str,
+    tfun: abc.Callable,
 ) -> tuple[TopologyCode, list[np.ndarray]]:
     """Get the default stk graph."""
-    knowns = {
-        "1P2": UnalignedM1L2,
-        "2P4": stk.cage.M2L4Lantern,
-        "3P6": stk.cage.M3L6,
-        "4P8": CGM4L8,
-        "6P12": stk.cage.M6L12Cube,
-        "12P24": CGM12L24,
-    }
-
-    if graph_type not in knowns:
-        msg = f"{graph_type} not known"
-        raise RuntimeError(msg)
-
-    target = knowns[graph_type]
-    vps = target._vertex_prototypes  # noqa: SLF001
-    eps = target._edge_prototypes  # noqa: SLF001
+    vps = tfun._vertex_prototypes  # type: ignore[attr-defined] # noqa: SLF001
+    eps = tfun._edge_prototypes  # type: ignore[attr-defined] # noqa: SLF001
 
     combination = [(i.get_vertex1_id(), i.get_vertex2_id()) for i in eps]
-    tc = TopologyCode(combination)
-
+    tc = TopologyCode(vertex_map=combination)
     positions = [i.get_position() for i in vps]
 
     return tc, positions

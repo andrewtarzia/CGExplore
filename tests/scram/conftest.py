@@ -19,10 +19,9 @@ bbs = {
         lambda name: CaseData(
             building_block_counts={bbs[4]: 2, bbs[2]: 4},
             graph_type="2-4FG_4-2FG",
-            graph_set="rxx",
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
-            max_samples=1e4,
+            max_samples=int(1e4),
             graph_filename="rxx_2-4FG_4-2FG.json",
             num_graphs=2,
             num_configs=0,
@@ -34,10 +33,9 @@ bbs = {
         lambda name: CaseData(
             building_block_counts={bbs[4]: 3, bbs[2]: 3, bbs["2x"]: 3},
             graph_type="3-4FG_6-2FG",
-            graph_set="rxx",
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
-            max_samples=1e4,
+            max_samples=int(1e4),
             graph_filename="rxx_3-4FG_6-2FG.json",
             num_graphs=4,
             num_configs=20,
@@ -64,17 +62,14 @@ bbs = {
                 (1, 9),
                 (1, 10),
                 (3, 17),
-                # (0, 12),
-                # (0, 16),
             ),
         ),
         lambda name: CaseData(
             building_block_counts={bbs[3]: 4, bbs[2]: 6},
             graph_type="4-3FG_6-2FG",
-            graph_set="rxx",
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
-            max_samples=1e4,
+            max_samples=int(1e4),
             graph_filename="rxx_4-3FG_6-2FG.json",
             num_graphs=5,
             num_configs=0,
@@ -86,10 +81,9 @@ bbs = {
         lambda name: CaseData(
             building_block_counts={bbs[4]: 5},
             graph_type="5-4FG",
-            graph_set="rxx",
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
-            max_samples=1e4,
+            max_samples=int(1e4),
             graph_filename="rxx_5-4FG.json",
             num_graphs=6,
             num_configs=0,
@@ -101,10 +95,9 @@ bbs = {
         lambda name: CaseData(
             building_block_counts={bbs[3]: 2, bbs[2]: 2, bbs[1]: 2},
             graph_type="2-3FG_2-2FG_2-1FG",
-            graph_set="rxx",
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
-            max_samples=1e4,
+            max_samples=int(1e4),
             graph_filename="rxx_2-3FG_2-2FG_2-1FG.json",
             num_graphs=2,
             num_configs=0,
@@ -117,7 +110,7 @@ bbs = {
 )
 def graph_data(request: pytest.FixtureRequest) -> CaseData:
     return request.param(
-        f"{request.fixturename}{request.param_index}",
+        f"{request.fixturename}{request.param_index}",  # type: ignore[attr-defined]
     )
 
 

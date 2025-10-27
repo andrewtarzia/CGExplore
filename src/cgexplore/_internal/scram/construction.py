@@ -99,7 +99,7 @@ def get_vertexset_molecule(
     scale: float,
     topology_code: TopologyCode,
     iterator: TopologyIterator,
-    bb_config: BuildingBlockConfiguration,
+    bb_config: BuildingBlockConfiguration | None,
 ) -> stk.ConstructedMolecule:
     """Take a graph and genereate from graph vertex positions.
 

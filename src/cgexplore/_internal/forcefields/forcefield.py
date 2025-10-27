@@ -869,30 +869,30 @@ class ForceFieldLibrary:
 
     def add_bond_range(
         self,
-        bond_range: abc.Sequence[TargetBondRange],
+        bond_range: TargetBondRange,
     ) -> None:
         """Add a range of terms to library."""
         self._bond_ranges += (bond_range,)
 
     def add_angle_range(
         self,
-        angle_range: abc.Sequence[
-            TargetAngleRange | TargetCosineAngleRange | PyramidAngleRange
-        ],
+        angle_range: TargetAngleRange
+        | TargetCosineAngleRange
+        | PyramidAngleRange,
     ) -> None:
         """Add a range of terms to library."""
         self._angle_ranges += (angle_range,)
 
     def add_torsion_range(
         self,
-        torsion_range: abc.Sequence[TargetTorsionRange],
+        torsion_range: TargetTorsionRange,
     ) -> None:
         """Add a range of terms to library."""
         self._torsion_ranges += (torsion_range,)
 
     def add_nonbonded_range(
         self,
-        nonbonded_range: abc.Sequence[TargetNonbondedRange],
+        nonbonded_range: TargetNonbondedRange,
     ) -> None:
         """Add a range of terms to library."""
         self._nonbonded_ranges += (nonbonded_range,)

@@ -10,7 +10,7 @@ class CaseData:
 
     chromosome_generator: cgx.systems_optimisation.ChromosomeGenerator
     known_map: dict[int, dict]
-    known_types: dict[int, dict]
+    known_types: dict[int, str]
     num: int
     term_ids: abc.Sequence[int]
     topo_ids: abc.Sequence[int]
