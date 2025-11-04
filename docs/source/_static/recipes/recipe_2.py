@@ -16,6 +16,10 @@ import cgexplore as cgx
 if TYPE_CHECKING:
     import stk
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
