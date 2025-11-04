@@ -8,6 +8,11 @@ on:
 jobs:
     ruff:
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version:
+                    - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -21,6 +26,11 @@ jobs:
 
     mypy:
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version:
+                    - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -34,6 +44,11 @@ jobs:
 
     ruff-format:
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version:
+                    - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -47,6 +62,11 @@ jobs:
 
     pytest:
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version:
+                    - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -60,6 +80,11 @@ jobs:
 
     doctest:
         runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                python-version:
+                    - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -73,7 +98,10 @@ jobs:
 
     build-test:
         runs-on: ubuntu-latest
-
+        strategy:
+            matrix:
+                python-version:
+                    - "3.13"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
