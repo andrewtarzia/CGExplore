@@ -26,10 +26,6 @@
   Modules <modules>
 
 
-.. tip::
-
-  ⭐ Star us on `GitHub <https://www.github.com/andrewtarzia/CGExplore>`_! ⭐
-
 ============
 Introduction
 ============
@@ -40,6 +36,10 @@ Introduction
 :mod:`cgexplore` or ``cgx`` is a general toolkit built on
 `stk <https://stk.readthedocs.io/en/stable/>`_ for constructing,
 optimising and exploring molecular coarse-grained models.
+
+.. tip::
+
+  ⭐ Star us on `GitHub <https://www.github.com/andrewtarzia/CGExplore>`_! ⭐
 
 .. figure:: _static/logo.png
 
