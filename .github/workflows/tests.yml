@@ -21,6 +21,7 @@ jobs:
             - uses: actions/setup-python@v5
               with:
                   python-version-file: "pyproject.toml"
+                  python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run ruff check src/ tests/ docs/source/ first_paper_example/
 
@@ -39,6 +40,7 @@ jobs:
             - uses: actions/setup-python@v5
               with:
                   python-version-file: "pyproject.toml"
+                  python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run mypy src/ tests docs/source/_static/recipes
 
@@ -57,6 +59,7 @@ jobs:
             - uses: actions/setup-python@v5
               with:
                   python-version-file: "pyproject.toml"
+                  python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run ruff format --check src/ tests/ docs/source/ first_paper_example/
 
@@ -75,6 +78,7 @@ jobs:
             - uses: actions/setup-python@v5
               with:
                   python-version-file: "pyproject.toml"
+                  python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run pytest
 
@@ -93,6 +97,7 @@ jobs:
             - uses: actions/setup-python@v5
               with:
                   python-version-file: "pyproject.toml"
+                  python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run make -C docs doctest
 
@@ -110,6 +115,7 @@ jobs:
             - uses: actions/setup-python@v5
               with:
                   python-version-file: "pyproject.toml"
+                  python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
 
             - name: Clone repo
