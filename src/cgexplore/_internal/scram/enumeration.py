@@ -82,6 +82,9 @@ class TopologyIterator:
         graph_directory:
             Directory to check for and save graph jsons.
 
+        verbose:
+            Whether to log outcomes.
+
     """
 
     building_block_counts: dict[stk.BuildingBlock, int]
@@ -91,6 +94,7 @@ class TopologyIterator:
     allowed_num_components: int = 1
     max_samples: int | None = None
     graph_directory: pathlib.Path | None = None
+    verbose: bool = True
 
     def __post_init__(self) -> None:  # noqa: PLR0915, PLR0912, C901
         """Initialize."""
@@ -329,7 +333,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 10000 == 0:
+            if i % 100 == 0 and self.verbose:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
@@ -362,9 +366,10 @@ class TopologyIterator:
         ]
         ### delete
         temp_files = list(self.graph_directory.glob(f"rxx_{self.graph_type}*"))
-        max_num = 0
+        max_num = 0.0
         for xpath in temp_files:
-            num = int(xpath.name.replace(".json", "").split("_")[-1])
+            num = float(xpath.name.replace(".json", "").split("_")[-1])
+
             if num > max_num:
                 with xpath.open("r") as f:
                     combinations_passed = json.load(f)
@@ -374,6 +379,7 @@ class TopologyIterator:
                     TopologyCode(i).get_as_string()
                     for i in combinations_passed
                 }
+        print(max_num)
         ### delete
         for i in range(self.used_samples):
             rng.shuffle(options)
@@ -399,7 +405,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 10000 == 0:
+            if i % 1000 == 0 and self.verbose:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
@@ -407,11 +413,13 @@ class TopologyIterator:
                     round((i / self.used_samples) * 100, 1),
                 )
                 ### delete
-                val = int((i / self.used_samples) * 100)
+                val = round((i / self.used_samples) * 100, 1)
+                print(val)
                 valname = (
                     self.graph_path.parent
                     / self.graph_path.name.replace(".json", f"_{val}.json")
                 )
+                print(valname)
 
                 with valname.open("w") as f:
                     json.dump(combinations_passed, f)
@@ -489,7 +497,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 10000 == 0:
+            if i % 10000 == 0 and self.verbose:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
@@ -535,7 +543,8 @@ class TopologyIterator:
     def count_graphs(self) -> int:
         """Count completely connected graphs in iteration."""
         if not self.graph_path.exists():
-            logger.info("%s not found, constructing!", self.graph_path)
+            if self.verbose:
+                logger.info("%s not found, constructing!", self.graph_path)
             self._define_graphs()
 
         with self.graph_path.open("r") as f:
@@ -551,13 +560,18 @@ class TopologyIterator:
 
         return count
 
+    def graph_exists(self) -> bool:
+        """Checks if the graphs have been defined."""
+        return self.graph_path.exists()
+
     def yield_graphs(self) -> abc.Generator[TopologyCode]:
         """Get constructed molecules from iteration.
 
         Yields only completely connected graphs.
         """
         if not self.graph_path.exists():
-            logger.info("%s not found, constructing!", self.graph_path)
+            if self.verbose:
+                logger.info("%s not found, constructing!", self.graph_path)
             self._define_graphs()
 
         with self.graph_path.open("r") as f:
