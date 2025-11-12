@@ -2,8 +2,10 @@
 
 from cgexplore._internal.scram.building_block_enum import (
     BuildingBlockConfiguration,
+    VertexAlignment,
     get_custom_bb_configurations,
     get_potential_bb_dicts,
+    get_vertex_alignments,
 )
 from cgexplore._internal.scram.comparisons import (
     get_bb_topology_code_graph,
@@ -34,12 +36,14 @@ __all__ = [
     "Constructed",
     "TopologyCode",
     "TopologyIterator",
+    "VertexAlignment",
     "generate_graph_type",
     "get_bb_topology_code_graph",
     "get_custom_bb_configurations",
     "get_potential_bb_dicts",
     "get_regraphed_molecule",
     "get_stk_topology_code",
+    "get_vertex_alignments",
     "get_vertexset_molecule",
     "graph_optimise_cage",
     "optimise_cage",
