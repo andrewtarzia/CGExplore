@@ -147,7 +147,7 @@ class Crest(stko.Optimizer):
                 shell=True,
             )
 
-    def optimize(self, molecule: stko.MoleculeT) -> stko.MoleculeT:
+    def optimize(self, molecule: stk.Molecule) -> stk.Molecule:
         """Optimise a solute-solvent pair."""
         if self._output_dir is None:
             output_dir = pathlib.Path(str(uuid.uuid4().int)).resolve()
