@@ -23,7 +23,7 @@ from cgexplore._internal.utilities.generation_utilities import (
     yield_shifted_models,
 )
 
-from .building_block_enum import BuildingBlockConfiguration
+from .building_block_enum import BuildingBlockConfiguration, VertexAlignment
 from .enumeration import TopologyIterator
 
 logging.basicConfig(
@@ -33,12 +33,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def get_regraphed_molecule(
+def get_regraphed_molecule(  # noqa: PLR0913
     graph_type: str,
     scale: float,
     topology_code: TopologyCode,
     iterator: TopologyIterator,
     bb_config: BuildingBlockConfiguration | None,
+    vertex_alignment: VertexAlignment | None = None,
 ) -> stk.ConstructedMolecule:
     """Take a graph that considers all atoms, and get atom positions.
 
@@ -65,6 +66,9 @@ def get_regraphed_molecule(
         bb_config:
             The configuration of building blocks on the graph.
 
+        vertex_alignment:
+            The vertex alignment of building blocks on the graph.
+
     Returns:
         A constructed molecule at (0, 0, 0).
 
@@ -78,6 +82,7 @@ def get_regraphed_molecule(
         iterator=iterator,
         topology_code=topology_code,
         building_block_configuration=bb_config,
+        vertex_alignment=vertex_alignment,
         vertex_positions=None,
     )
 
@@ -94,12 +99,13 @@ def get_regraphed_molecule(
     ).with_centroid(np.array((0.0, 0.0, 0.0)))
 
 
-def get_vertexset_molecule(
+def get_vertexset_molecule(  # noqa: PLR0913
     graph_type: str | None,
     scale: float,
     topology_code: TopologyCode,
     iterator: TopologyIterator,
     bb_config: BuildingBlockConfiguration | None,
+    vertex_alignment: VertexAlignment | None = None,
 ) -> stk.ConstructedMolecule:
     """Take a graph and genereate from graph vertex positions.
 
@@ -125,6 +131,10 @@ def get_vertexset_molecule(
         bb_config:
             The configuration of building blocks on the graph.
 
+        vertex_alignment:
+            The vertex alignment of building blocks on the graph.
+
+
     Returns:
         A constructed molecule at (0, 0, 0).
 
@@ -134,6 +144,7 @@ def get_vertexset_molecule(
             iterator=iterator,
             topology_code=topology_code,
             building_block_configuration=bb_config,
+            vertex_alignment=vertex_alignment,
             vertex_positions=None,
         ).with_centroid(np.array((0.0, 0.0, 0.0)))
 
@@ -156,6 +167,7 @@ def get_vertexset_molecule(
         iterator=iterator,
         topology_code=topology_code,
         building_block_configuration=bb_config,
+        vertex_alignment=vertex_alignment,
         vertex_positions=vertex_positions,
     ).with_centroid(np.array((0.0, 0.0, 0.0)))
 
@@ -684,6 +696,7 @@ def try_except_construction(  # noqa: PLR0913
     scale_multiplier: float | None = None,
     building_block_configuration: BuildingBlockConfiguration | None = None,
     vertex_positions: dict[int, np.ndarray] | None = None,
+    vertex_alignment: VertexAlignment | None = None,
     reaction_factory: stk.ReactionFactory = stk.GenericReactionFactory(),  # noqa: B008
     optimizer: stk.Optimizer = stk.NullOptimizer(),  # noqa: B008
 ) -> stk.ConstructedMolecule:
@@ -692,6 +705,11 @@ def try_except_construction(  # noqa: PLR0913
         bbs = iterator.building_blocks
     else:
         bbs = building_block_configuration.get_building_block_dictionary()
+
+    if vertex_alignment is None:
+        vertex_alignments = None
+    else:
+        vertex_alignments = vertex_alignment.vertex_dict
 
     try:
         # Try with aligning vertices.
@@ -705,7 +723,7 @@ def try_except_construction(  # noqa: PLR0913
                 edge_prototypes=topology_code.edges_from_connection(
                     iterator.get_vertex_prototypes(unaligning=False)
                 ),
-                vertex_alignments=None,
+                vertex_alignments=vertex_alignments,
                 vertex_positions=vertex_positions,
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None
@@ -727,7 +745,7 @@ def try_except_construction(  # noqa: PLR0913
                 edge_prototypes=topology_code.edges_from_connection(
                     iterator.get_vertex_prototypes(unaligning=True)
                 ),
-                vertex_alignments=None,
+                vertex_alignments=vertex_alignments,
                 vertex_positions=vertex_positions,
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None
