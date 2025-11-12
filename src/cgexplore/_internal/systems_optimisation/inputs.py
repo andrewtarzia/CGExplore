@@ -66,6 +66,14 @@ class Chromosome:
             if self.gene_dict[i][2] == "topology"
         )
 
+    def get_building_block_configurations(self) -> tuple:
+        """Get the chromosomes building block configuration."""
+        return tuple(
+            self.gene_dict[i][1]
+            for i in self.gene_dict
+            if self.gene_dict[i][2] == "building_block_configuration"
+        )
+
     def get_vertex_alignments(self) -> tuple:
         """Get the chromosomes vertex alignments."""
         return tuple(
@@ -250,28 +258,23 @@ class ChromosomeGenerator:
             iteration:
                 The range of values to use in the chromosome.
                 For term: use the `add_forcefield_dict`
-                For topology:
-                For precursor:
-                For forcefield:
-                For vertex_alignment:
 
             gene_type:
                 A string defining the gene type.
                 Can be `term`, `topology`, `precursor`, `forcefield`,
-                `vertex_alignment`.
+                `vertex_alignment`, `building_block_configuration`.
 
         """
-        if gene_type not in (
+        _known_terms = (
             "term",
             "topology",
             "precursor",
             "forcefield",
             "vertex_alignment",
-        ):
-            msg = (
-                "gene_type not `term`, `topology`, `precursor`, `forcefield`, "
-                "`vertex_alignment`"
-            )
+            "building_block_configuration",
+        )
+        if gene_type not in _known_terms:
+            msg = f"gene_type not in {_known_terms}"
             raise RuntimeError(msg)
 
         known_types = set(self.chromosome_types.values())
@@ -382,6 +385,14 @@ class ChromosomeGenerator:
             i
             for i in self.chromosome_types
             if self.chromosome_types[i] == "vertex_alignment"
+        )
+
+    def get_bc_ids(self) -> abc.Sequence[int]:
+        """Get chromosome indices associated with building block configs."""
+        return tuple(
+            i
+            for i in self.chromosome_types
+            if self.chromosome_types[i] == "building_block_configuration"
         )
 
     def get_prec_ids(self) -> abc.Sequence[int]:
