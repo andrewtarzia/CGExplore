@@ -143,7 +143,7 @@ Firstly, the structure and fitness functions:
         """Calculate fitness."""
         database = cgx.utilities.AtomliteDatabase(database_path)
         topology_idx, _ = chromosome.get_topology_information()
-        building_block_config = chromosome.get_vertex_alignments()[0]
+        building_block_config = chromosome.get_building_block_configurations()[0]
         name = f"{chromosome.prefix}_{topology_idx}_b{building_block_config.idx}"
 
         entry = database.get_entry(name)
@@ -181,7 +181,7 @@ configurations to avoid rerunning calculations.
         database = cgx.utilities.AtomliteDatabase(database_path)
 
         topology_idx, topology_code = chromosome.get_topology_information()
-        building_block_config = chromosome.get_vertex_alignments()[0]
+        building_block_config = chromosome.get_building_block_configurations()[0]
 
         base_name = (
             f"{chromosome.prefix}_{topology_idx}_b{building_block_config.idx}"
@@ -339,9 +339,9 @@ graph and building block configurations:
 .. note::
 
     The building block configurations are added to the chromosome generator
-    as vertex alignments, while the graphs are added as topology graphs. Hence,
-    they are accessed through ``get_va_ids()`` and ``get_topo_ids()``,
-    respectively.
+    as ``building_block_configurations``, while the graphs are added as
+    ``topology``. Hence, they are accessed through ``get_bc_ids()`` and
+    ``get_topo_ids()``, respectively.
 
 .. testcode:: recipe3-test
 
@@ -403,12 +403,12 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
                         selection="all",
-                        gene_range=chromo_it.get_va_ids(),
+                        gene_range=chromo_it.get_bc_ids(),
                     )
                 )
                 merged_chromosomes.extend(generation.select_all())
@@ -420,12 +420,12 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
                         generator=generator,
-                        gene_range=chromo_it.get_va_ids(),
+                        gene_range=chromo_it.get_bc_ids(),
                         selection="random",
                         num_to_select=scan_config["mutations"],
                         database=database,
@@ -437,7 +437,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -454,12 +454,12 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
                         generator=generator,
-                        gene_range=chromo_it.get_va_ids(),
+                        gene_range=chromo_it.get_bc_ids(),
                         selection="roulette",
                         num_to_select=scan_config["mutations"],
                         database=database,
@@ -471,7 +471,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -489,7 +489,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -506,7 +506,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -552,7 +552,7 @@ graph and building block configurations:
             best_name = (
                 f"{best_chromosome.prefix}_"
                 f"{best_chromosome.get_topology_information()[0]}_"
-                f"b{best_chromosome.get_vertex_alignments()[0].idx}"
+                f"b{best_chromosome.get_building_block_configurations()[0].idx}"
             )
 
         logger.info("top scorer is %s (seed: %s)", best_name, seed)
@@ -661,7 +661,7 @@ siginficantly for the sake of the test here.
         )
         chromo_it.add_gene(
             iteration=possible_bbdicts,
-            gene_type="vertex_alignment",
+            gene_type="building_block_configuration",
         )
 
         # Define fitness calculator.
