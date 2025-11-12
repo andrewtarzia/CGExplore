@@ -9,7 +9,9 @@ from cgexplore._internal.scram.building_block_enum import (
 )
 from cgexplore._internal.scram.comparisons import (
     get_bb_topology_code_graph,
+    get_bb_va_topology_code_graph,
     passes_graph_bb_iso,
+    passes_graph_bb_va_iso,
 )
 from cgexplore._internal.scram.construction import (
     get_regraphed_molecule,
@@ -39,6 +41,7 @@ __all__ = [
     "VertexAlignment",
     "generate_graph_type",
     "get_bb_topology_code_graph",
+    "get_bb_va_topology_code_graph",
     "get_custom_bb_configurations",
     "get_potential_bb_dicts",
     "get_regraphed_molecule",
@@ -49,6 +52,7 @@ __all__ = [
     "optimise_cage",
     "optimise_from_files",
     "passes_graph_bb_iso",
+    "passes_graph_bb_va_iso",
     "points_on_sphere",
     "target_optimisation",
     "try_except_construction",
