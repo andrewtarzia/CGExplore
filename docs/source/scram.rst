@@ -4,6 +4,11 @@ Scrambler: blind structure prediction
 A package of the classes for scrambling and blind structure prediction in
 :mod:`cgexplore`.
 
+The graphing aspect and the graphs available in :mod:`cgexplore.scram` for
+performing blind structure prediction is now part of :mod:`agx`, which can
+be found in the
+`agx documentation <https://agx.readthedocs.io/en/latest/index.html>`_.
+
 .. toctree::
   :maxdepth: 1
 
@@ -12,24 +17,19 @@ A package of the classes for scrambling and blind structure prediction in
 The iterators
 -------------
 
-.. note::
-
-  These are under a lot of development!
-
+This class now handles graph and building block configuration exploration.
 
 - :doc:`TopologyIterator <_autosummary/cgexplore.scram.TopologyIterator>`
-- :doc:`get_custom_bb_configurations <_autosummary/cgexplore.scram.get_custom_bb_configurations>`
 
 
 Containers
 ----------
 
 These are likely to be updated, but when performing structure prediction,
-you will use these classes.
+you will use these classes to access the new graphs/configurations.
 
 - :doc:`TopologyCode <_autosummary/cgexplore.scram.TopologyCode>`
-- :doc:`BuildingBlockConfiguration <_autosummary/cgexplore.scram.BuildingBlockConfiguration>`
-- :doc:`Constructed <_autosummary/cgexplore.scram.Constructed>`
+- :doc:`Configuration <_autosummary/cgexplore.scram.Configuration>`
 
 Performing target optimisation
 ------------------------------
@@ -43,14 +43,6 @@ the structure energy (energy per building block).
   Examples of this function can be found in `recipe 6 <recipes/recipe_6.html>`_.
 
 - :doc:`target_optimisation <_autosummary/cgexplore.scram.target_optimisation>`
-
-
-Graph manipulation and mapping to building block configurations
----------------------------------------------------------------
-
-- :doc:`get_bb_topology_code_graph <_autosummary/cgexplore.scram.get_bb_topology_code_graph>`
-- :doc:`get_potential_bb_dicts <_autosummary/cgexplore.scram.get_potential_bb_dicts>`
-- :doc:`passes_graph_bb_iso <_autosummary/cgexplore.scram.passes_graph_bb_iso>`
 
 
 Construction with arbitrary graphs
