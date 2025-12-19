@@ -42,5 +42,12 @@ cgexplore.scram.TopologyIterator
       ~TopologyIterator.scale_multiplier
       ~TopologyIterator.verbose
       ~TopologyIterator.building_block_counts
+      ~TopologyIterator.node_to_bb_map
+      ~TopologyIterator.node_counts
+      ~TopologyIterator.iterator
+      ~TopologyIterator.building_blocks
+      ~TopologyIterator.vertex_types_by_fg
+      ~TopologyIterator.vertex_prototypes
+      ~TopologyIterator.unaligned_vertex_prototypes
    
    

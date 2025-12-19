@@ -3,7 +3,7 @@
 import logging
 import pathlib
 from collections import abc, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import agx
 import stk
@@ -92,6 +92,15 @@ class TopologyIterator:
     max_samples: int | None = None
     graph_directory: pathlib.Path | None = None
     verbose: bool = True
+    node_to_bb_map: dict[agx.NodeType, stk.BuildingBlock] = field(init=False)
+    node_counts: dict[agx.NodeType, abc.Sequence[int]] = field(init=False)
+    iterator: agx.TopologyIterator = field(init=False)
+    building_blocks: dict[stk.BuildingBlock, abc.Sequence[int]] = field(
+        init=False
+    )
+    vertex_types_by_fg: dict[int, abc.Sequence[int]] = field(init=False)
+    vertex_prototypes: list[stk.Vertex] = field(init=False)
+    unaligned_vertex_prototypes: list[stk.Vertex] = field(init=False)
 
     def __post_init__(self) -> None:
         """Initialize."""
@@ -113,9 +122,7 @@ class TopologyIterator:
             agx.NodeType(
                 type_id=idx, num_connections=key.get_num_functional_groups()
             ): key
-            for idx, (key, value) in enumerate(
-                self.building_block_counts.items()
-            )
+            for idx, key in enumerate(self.building_block_counts)
         }
         self.node_counts = {
             agx.NodeType(
