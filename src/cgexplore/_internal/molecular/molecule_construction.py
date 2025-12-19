@@ -334,19 +334,32 @@ class FourC1Arm(Precursor):
 class ThreeC0Arm(Precursor):
     """A `ThreeC0Arm` Precursor."""
 
-    def __init__(self, bead: CgBead) -> None:
+    def __init__(
+        self,
+        bead: CgBead,
+        deleter_bead: CgBead | None = None,
+    ) -> None:
         """Initialize a precursor."""
         self._bead = bead
+        deleter_string = (
+            deleter_bead.element_string if deleter_bead is not None else "Br"
+        )
+
         self._name = f"3C0{bead.bead_type}"
         self._bead_set = {
             bead.bead_type: bead,
         }
+        if deleter_bead is not None:
+            self._bead_set[deleter_bead.bead_type] = deleter_bead
         three_c_bb = stk.BuildingBlock(
-            smiles=f"[Br][{bead.element_string}]([Br])[Br]",
+            smiles=(
+                f"[{deleter_string}][{bead.element_string}]"
+                f"([{deleter_string}])[{deleter_string}]"
+            ),
             position_matrix=np.array(
                 [
                     [-2, 0, 0],
-                    [0, 0, 0],
+                    [0, 0, 1],
                     [-1.2, 1, 0],
                     [-1.2, -1, 0],
                 ]
@@ -354,7 +367,7 @@ class ThreeC0Arm(Precursor):
         )
 
         new_fgs = stk.SmartsFunctionalGroupFactory(
-            smarts=f"[{bead.element_string}][Br]",
+            smarts=f"[{bead.element_string}][{deleter_string}]",
             bonders=(0,),
             deleters=(1,),
             placers=(0, 1),
