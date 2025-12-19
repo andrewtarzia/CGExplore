@@ -18,6 +18,8 @@ cgexplore.scram.TopologyIterator
       :nosignatures:
    
       ~TopologyIterator.count_graphs
+      ~TopologyIterator.get_configurations
+      ~TopologyIterator.get_edges_from_topology_code
       ~TopologyIterator.get_num_building_blocks
       ~TopologyIterator.get_vertex_prototypes
       ~TopologyIterator.graph_exists
@@ -35,10 +37,10 @@ cgexplore.scram.TopologyIterator
       ~TopologyIterator.allowed_num_components
       ~TopologyIterator.graph_directory
       ~TopologyIterator.graph_set
+      ~TopologyIterator.graph_type
       ~TopologyIterator.max_samples
       ~TopologyIterator.scale_multiplier
       ~TopologyIterator.verbose
       ~TopologyIterator.building_block_counts
-      ~TopologyIterator.graph_type
    
    

@@ -22,6 +22,7 @@ cgexplore.systems\_optimisation.ChromosomeGenerator
       ~ChromosomeGenerator.crossover_population
       ~ChromosomeGenerator.dedupe_population
       ~ChromosomeGenerator.define_chromosomes
+      ~ChromosomeGenerator.get_bc_ids
       ~ChromosomeGenerator.get_num_chromosomes
       ~ChromosomeGenerator.get_population_neighbours
       ~ChromosomeGenerator.get_prec_ids
