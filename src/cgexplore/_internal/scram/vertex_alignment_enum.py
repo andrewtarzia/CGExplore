@@ -1,18 +1,77 @@
 """Script to generate and optimise CG models."""
 
+import itertools as it
 import logging
 from collections import abc
+from dataclasses import dataclass
 
 import rustworkx as rx
 from agx import Configuration, TopologyCode
 
-from .building_block_enum import VertexAlignment
+from cgexplore._internal.scram.enumeration import TopologyIterator
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class VertexAlignment:
+    """Naming convention for vertex alignments."""
+
+    idx: int
+    vertex_dict: dict[int, int]
+
+    def __str__(self) -> str:
+        """Return a string representation of the OMMTrajectory."""
+        return (
+            f"{self.__class__.__name__}(idx={self.idx}, "
+            f"vertex_dict={self.vertex_dict})"
+        )
+
+    def __repr__(self) -> str:
+        """Return a string representation of the OMMTrajectory."""
+        return str(self)
+
+
+def get_vertex_alignments(
+    iterator: TopologyIterator,
+    allow_rotation: abc.Sequence[int],
+) -> abc.Sequence[VertexAlignment]:
+    """Get potential vertex alignment dictionaries.
+
+    Parameters:
+        iterator:
+            The graph iterator.
+
+        allow_rotation:
+            Which building blocks to allow rotation based on the number of
+            functional groups.
+
+    """
+    allow_rotation = tuple(allow_rotation)
+
+    # Get the associated vertex ids.
+    modifiable_vertices = {
+        vertex: range(fg_count) if fg_count in allow_rotation else [0]
+        for fg_count in iterator.vertex_types_by_fg
+        for vertex in iterator.vertex_types_by_fg[fg_count]
+        if fg_count > 1
+    }
+
+    if len(modifiable_vertices) == 0:
+        msg = "There are no modifiable types"
+        raise RuntimeError(msg)
+
+    iteration = it.product(*modifiable_vertices.values())
+    possible_dicts = []
+    for idx, item in enumerate(iteration):
+        vmap = dict(zip(modifiable_vertices.keys(), item, strict=True))
+        possible_dicts.append(VertexAlignment(idx=idx, vertex_dict=vmap))
+
+    return tuple(possible_dicts)
 
 
 def get_bb_va_topology_code_graph(
@@ -27,7 +86,7 @@ def get_bb_va_topology_code_graph(
     for vi in sorted({i for j in topology_code.vertex_map for i in j}):
         bb_id = next(
             i
-            for i, vert_ids in bb_config.building_block_idx_dict.items()
+            for i, vert_ids in bb_config.node_idx_dict.items()
             if vi in vert_ids
         )
         va = vertex_alignment.vertex_dict[vi]
@@ -38,7 +97,7 @@ def get_bb_va_topology_code_graph(
         v1 = vert[0]
         bb_id = next(
             i
-            for i, vert_ids in bb_config.building_block_idx_dict.items()
+            for i, vert_ids in bb_config.node_idx_dict.items()
             if v1 in vert_ids
         )
         va1 = vertex_alignment.vertex_dict[v1]
@@ -46,7 +105,7 @@ def get_bb_va_topology_code_graph(
         v2 = vert[1]
         bb_id = next(
             i
-            for i, vert_ids in bb_config.building_block_idx_dict.items()
+            for i, vert_ids in bb_config.node_idx_dict.items()
             if v2 in vert_ids
         )
         va2 = vertex_alignment.vertex_dict[v2]
@@ -74,7 +133,7 @@ def passes_graph_bb_va_iso(
 
     # Testing bb-config aware graph check.
     # Convert TopologyCode to a graph.
-    current_graph = get_bb_va_topology_code_graph(
+    current_graph = get_bb_va_topology_code_graph(  # type: ignore[unreachable]
         topology_code=topology_code,
         bb_config=bb_config,
         vertex_alignment=vertex_alignment,
