@@ -220,6 +220,7 @@ class TopologyIterator:
         }
         self.vertex_prototypes = vertex_prototypes
         self.unaligned_vertex_prototypes = unaligned_vertex_prototypes
+        self.graph_type = self.iterator.graph_type
 
     def get_num_building_blocks(self) -> int:
         """Get number of building blocks."""
