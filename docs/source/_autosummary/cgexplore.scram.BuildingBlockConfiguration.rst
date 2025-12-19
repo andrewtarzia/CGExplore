@@ -28,7 +28,7 @@ cgexplore.scram.BuildingBlockConfiguration
 
    .. autosummary::
    
-      ~BuildingBlockConfiguration.idx
+      ~BuildingBlockConfiguration.configuration
       ~BuildingBlockConfiguration.building_block_idx_map
       ~BuildingBlockConfiguration.building_block_idx_dict
    
