@@ -37,7 +37,7 @@ class TopologyIterator:
 
     .. important::
 
-      To reproduce the ``no_doubles'' dataset, you must filter the topology
+      To reproduce the ``no_doubles`` dataset, you must filter the topology
       codes after generation using the :class:`cgexplore.scram.TopologyCode`
       methods (this is now the recommended approach).
 

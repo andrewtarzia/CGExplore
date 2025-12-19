@@ -47,7 +47,7 @@ def get_stk_topology_code(
     eps = tfun._edge_prototypes  # type: ignore[attr-defined] # noqa: SLF001
 
     combination = [(i.get_vertex1_id(), i.get_vertex2_id()) for i in eps]
-    tc = agx.TopologyCode(id=0, vertex_map=combination)
+    tc = agx.TopologyCode(idx=0, vertex_map=combination)
     positions = [i.get_position() for i in vps]
 
     return tc, positions
