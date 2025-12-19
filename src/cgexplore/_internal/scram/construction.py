@@ -23,8 +23,8 @@ from cgexplore._internal.utilities.generation_utilities import (
     yield_shifted_models,
 )
 
-from .building_block_enum import VertexAlignment
 from .enumeration import TopologyIterator
+from .vertex_alignment_enum import VertexAlignment
 
 logging.basicConfig(
     level=logging.INFO,

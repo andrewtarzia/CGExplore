@@ -115,7 +115,7 @@ def graph_data(request: pytest.FixtureRequest) -> CaseData:
 
 
 @pytest.fixture(params=["kamada", "spring", "spectral"])
-def graph_type(request: pytest.FixtureRequest) -> CaseData:
+def layout_type(request: pytest.FixtureRequest) -> CaseData:
     return request.param
 
 

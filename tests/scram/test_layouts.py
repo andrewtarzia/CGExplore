@@ -10,7 +10,7 @@ from .case_data import CaseData
 
 def test_layouts(
     graph_data: CaseData,
-    graph_type: str,
+    layout_type: str,
     scale: int,
 ) -> None:
     """Test graph layout processes."""
@@ -18,7 +18,6 @@ def test_layouts(
 
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
-        graph_type=graph_data.graph_type,
         graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
@@ -29,27 +28,27 @@ def test_layouts(
     for idx, tc in enumerate(iterator.yield_graphs()):
         vs_name = (
             known_mols
-            / f"vs_{graph_data.graph_type}_{idx}_{graph_type}_{scale}.mol"
+            / f"vs_{iterator.graph_type}_{idx}_{layout_type}_{scale}.mol"
         )
 
         if not vs_name.exists():
             # Build it.
             vertex_set = cgx.scram.get_vertexset_molecule(
-                graph_type=graph_type,
+                layout_type=layout_type,
                 scale=scale,
                 topology_code=tc,
                 iterator=iterator,
-                bb_config=None,
+                configuration=None,
             )
             vertex_set.write(vs_name)
 
         known_molecule = stk.BuildingBlock.init_from_file(vs_name)
         vertex_set = cgx.scram.get_vertexset_molecule(
-            graph_type=graph_type,
+            layout_type=layout_type,
             scale=scale,
             topology_code=tc,
             iterator=iterator,
-            bb_config=None,
+            configuration=None,
         )
 
         # Actual coordinates are not constant, so test other measures.
@@ -64,29 +63,29 @@ def test_layouts(
         # Actually no, not across machines. So no longer checking position
         # matrices.
 
-        if graph_type != "spectral":
+        if layout_type != "spectral":
             rg_name = (
                 known_mols
-                / f"rg_{graph_data.graph_type}_{idx}_{graph_type}_{scale}.mol"
+                / f"rg_{iterator.graph_type}_{idx}_{layout_type}_{scale}.mol"
             )
 
             if not rg_name.exists():
                 regraphed = cgx.scram.get_regraphed_molecule(
-                    graph_type=graph_type,
+                    layout_type=layout_type,
                     scale=scale,
                     topology_code=tc,
                     iterator=iterator,
-                    bb_config=None,
+                    configuration=None,
                 )
                 regraphed.write(rg_name)
 
             known_molecule = stk.BuildingBlock.init_from_file(rg_name)
             regraphed = cgx.scram.get_regraphed_molecule(
-                graph_type=graph_type,
+                layout_type=layout_type,
                 scale=scale,
                 topology_code=tc,
                 iterator=iterator,
-                bb_config=None,
+                configuration=None,
             )
 
             # Actual coordinates are not constant, so test other measures.

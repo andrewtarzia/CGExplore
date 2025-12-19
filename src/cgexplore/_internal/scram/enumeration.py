@@ -2,7 +2,7 @@
 
 import logging
 import pathlib
-from collections import abc
+from collections import abc, defaultdict
 from dataclasses import dataclass
 
 import agx
@@ -147,6 +147,7 @@ class TopologyIterator:
         # and position them on spheres.
         vertex_prototypes: list[stk.Vertex] = []
         unaligned_vertex_prototypes: list[stk.Vertex] = []
+        vertex_types_by_fg = defaultdict(list)
         building_block_dict: dict[stk.BuildingBlock, list[int]] = {}
         for building_block, angle_rotation in zip(
             self.building_block_counts,
@@ -169,6 +170,7 @@ class TopologyIterator:
                 strict=True,
             ):
                 vertex_id = len(vertex_prototypes)
+                vertex_types_by_fg[num_functional_groups].append(vertex_id)
                 building_block_dict[building_block].append(vertex_id)
 
                 if num_functional_groups == 1:
@@ -212,6 +214,9 @@ class TopologyIterator:
 
         self.building_blocks: dict[stk.BuildingBlock, abc.Sequence[int]] = {
             i: tuple(building_block_dict[i]) for i in building_block_dict
+        }
+        self.vertex_types_by_fg = {
+            i: tuple(vertex_types_by_fg[i]) for i in vertex_types_by_fg
         }
         self.vertex_prototypes = vertex_prototypes
         self.unaligned_vertex_prototypes = unaligned_vertex_prototypes
