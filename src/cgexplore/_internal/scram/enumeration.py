@@ -93,7 +93,7 @@ class TopologyIterator:
     graph_directory: pathlib.Path | None = None
     verbose: bool = True
     node_to_bb_map: dict[agx.NodeType, stk.BuildingBlock] = field(init=False)
-    node_counts: dict[agx.NodeType, abc.Sequence[int]] = field(init=False)
+    node_counts: dict[agx.NodeType, int] = field(init=False)
     iterator: agx.TopologyIterator = field(init=False)
     building_blocks: dict[stk.BuildingBlock, abc.Sequence[int]] = field(
         init=False
