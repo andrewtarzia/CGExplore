@@ -18,7 +18,7 @@ def test_enumerate(graph_data: CaseData) -> None:
     )
 
     # Delete them.
-    filename = graph_directory / f"rxx_{graph_data.graph_type}.json"
+    filename = graph_directory / f"rxx_{graph_data.graph_type}.json.gz"
     if graph_directory.exists():
         for filen in graph_directory.iterdir():
             filen.unlink()
@@ -28,20 +28,22 @@ def test_enumerate(graph_data: CaseData) -> None:
 
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
-        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Remake graphs.
         graph_directory=graph_directory,
     )
     assert iterator.count_graphs() == graph_data.num_graphs
 
-    for idx, tc in enumerate(iterator.yield_graphs()):
+    for tc in iterator.yield_graphs():
         # Look at previous string.
         str_file = (
-            known_graph_directory / f"str_{iterator.graph_type}_{idx}.txt"
+            known_graph_directory / f"str_{iterator.graph_type}_{tc.idx}.txt"
         )
         if not str_file.exists():
-            raise AssertionError
+            msg = f"{str_file} not found"
+            with str_file.open("w") as f:
+                f.write(tc.get_as_string())
+            raise AssertionError(msg)
 
         with str_file.open("r") as f:
             lines = f.readlines()
@@ -49,6 +51,6 @@ def test_enumerate(graph_data: CaseData) -> None:
         assert lines[0] == tc.get_as_string()
 
     # Delete them.
-    filename = graph_directory / f"rxx_{iterator.graph_type}.json"
+    filename = graph_directory / f"rxx_{iterator.graph_type}.json.gz"
     filename.unlink()
     graph_directory.rmdir()

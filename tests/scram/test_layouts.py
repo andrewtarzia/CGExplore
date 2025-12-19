@@ -18,17 +18,16 @@ def test_layouts(
 
     iterator = cgx.scram.TopologyIterator(
         building_block_counts=graph_data.building_block_counts,
-        graph_set="rxx",
         max_samples=graph_data.max_samples,
         # Use known graphs.
         graph_directory=pathlib.Path(__file__).resolve().parent
         / "test_graphs",
     )
 
-    for idx, tc in enumerate(iterator.yield_graphs()):
+    for tc in iterator.yield_graphs():
         vs_name = (
             known_mols
-            / f"vs_{iterator.graph_type}_{idx}_{layout_type}_{scale}.mol"
+            / f"vs_{iterator.graph_type}_{tc.idx}_{layout_type}_{scale}.mol"
         )
 
         if not vs_name.exists():
@@ -65,8 +64,8 @@ def test_layouts(
 
         if layout_type != "spectral":
             rg_name = (
-                known_mols
-                / f"rg_{iterator.graph_type}_{idx}_{layout_type}_{scale}.mol"
+                known_mols / f"rg_{iterator.graph_type}_{tc.idx}_"
+                f"{layout_type}_{scale}.mol"
             )
 
             if not rg_name.exists():

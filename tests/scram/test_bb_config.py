@@ -34,22 +34,26 @@ def test_building_block_configuration(graph_data: CaseData) -> None:
         run_topology_codes: list[agx.ConfiguredCode] = []
         for bb_config in possible_bbdicts:
             # Check for iso checks, iterating over topology codes as well.
-            for idx, topology_code in enumerate(iterator.yield_graphs()):
+            for topology_code in iterator.yield_graphs():
                 configured = agx.ConfiguredCode(topology_code, bb_config)
                 if agx.utilities.is_configured_code_isomoprhic(
                     test_code=configured,
                     run_topology_codes=run_topology_codes,
                 ):
-                    assert (idx, bb_config.idx) in graph_data.iso_pass
+                    assert (
+                        topology_code.idx,
+                        bb_config.idx,
+                    ) in graph_data.iso_pass
                     assert graph_data.iso_pass[len(run_topology_codes)] == (
-                        idx,
+                        topology_code.idx,
                         bb_config.idx,
                     )
                     run_topology_codes.append(configured)
 
             bc_name = (
                 config_directory
-                / f"bc_{graph_data.graph_type}_{idx}_{bb_config.idx}.txt"
+                / f"bc_{graph_data.graph_type}_{topology_code.idx}"
+                f"_{bb_config.idx}.txt"
             )
 
             if not bc_name.exists():
