@@ -2,6 +2,10 @@
 
 from agx import Configuration, ConfiguredCode, TopologyCode
 
+from cgexplore._internal.scram.building_block_enum import (
+    VertexAlignment,
+    get_vertex_alignments,
+)
 from cgexplore._internal.scram.construction import (
     get_regraphed_molecule,
     get_vertexset_molecule,
@@ -22,6 +26,7 @@ __all__ = [
     "ConfiguredCode",
     "TopologyCode",
     "TopologyIterator",
+    "VertexAlignment",
     "get_regraphed_molecule",
     "get_stk_topology_code",
     "get_vertex_alignments",
