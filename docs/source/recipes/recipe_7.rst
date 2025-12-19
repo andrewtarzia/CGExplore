@@ -90,13 +90,8 @@ graphs in our iterator.
 
     for known_, (tfun, bbs) in knowns.items():
         found = False
-        string = known_.replace("x", "") if "x" in known_ else known_
         stk_topology_code, _ = cgx.scram.get_stk_topology_code(tfun)
-        iterator = cgx.scram.TopologyIterator(
-            building_block_counts=bbs,
-            graph_type=string,
-            graph_set="rxx",
-        )
+        iterator = cgx.scram.TopologyIterator(building_block_counts=bbs)
         if not iterator.graph_exists():
             logger.info("%s graph not built yet", known_)
             if known_ in known_failures:
@@ -114,6 +109,7 @@ graphs in our iterator.
                 known_,
                 iterator.count_graphs(),
             )
+
         else:
             logger.info(
                 "not found stk graph for %s in the %s graphs",

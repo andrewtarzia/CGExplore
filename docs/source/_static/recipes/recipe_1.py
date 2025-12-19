@@ -12,6 +12,10 @@ import stk
 
 import cgexplore as cgx
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -773,8 +777,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
     ax.set_ylabel(r"$E_{\mathrm{b}}$ [kjmol-1]", fontsize=16)
     ax.set_yscale("log")
     ax.set_title(
-        f"plotted: {plotted}, found: {len(found)}, "
-        f"possible: {chromo_it.get_num_chromosomes()}",
+        f"plotted: {plotted} of possible: {chromo_it.get_num_chromosomes()}",
         fontsize=16,
     )
     ax1.tick_params(axis="both", which="major", labelsize=16)

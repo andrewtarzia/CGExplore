@@ -26,10 +26,6 @@
   Modules <modules>
 
 
-.. tip::
-
-  ⭐ Star us on `GitHub <https://www.github.com/andrewtarzia/CGExplore>`_! ⭐
-
 ============
 Introduction
 ============
@@ -40,6 +36,10 @@ Introduction
 :mod:`cgexplore` or ``cgx`` is a general toolkit built on
 `stk <https://stk.readthedocs.io/en/stable/>`_ for constructing,
 optimising and exploring molecular coarse-grained models.
+
+.. tip::
+
+  ⭐ Star us on `GitHub <https://www.github.com/andrewtarzia/CGExplore>`_! ⭐
 
 .. figure:: _static/logo.png
 
@@ -65,13 +65,6 @@ Installation
 .. code-block:: bash
 
   pip install cgexplore
-
-With dependancies `openmm <https://openmm.org/>`_:
-
-.. code-block:: bash
-
-  mamba install openmm
-
 
 Then, update directory structure in `env_set.py` if using example code.
 
@@ -140,7 +133,7 @@ Acknowledgements
 ================
 
 Funded by the European Union - Next Generation EU, Mission 4 Component 1
-CUP E13C22002930006 and the ERC under projects DYNAPOL.
+CUP E13C22002930006.
 
 This work is now developed as part of the `Tarzia Research Group at the
 University of Birmingham <https://tarziaresearchgroup.github.io>`_.

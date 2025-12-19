@@ -35,12 +35,6 @@ Installation
 
   pip install cgexplore
 
-With dependancies `openmm <https://openmm.org/>`_:
-
-.. code-block:: bash
-
-  mamba install openmm
-
 
 Then, update directory structure in ``env_set.py`` if using example code.
 
@@ -128,7 +122,7 @@ Acknowledgements
 ================
 
 Funded by the European Union - Next Generation EU, Mission 4 Component 1
-CUP E13C22002930006 and the ERC under projects DYNAPOL.
+CUP E13C22002930006.
 
 This work is now developed as part of the `Tarzia Research Group at the
 University of Birmingham <https://tarziaresearchgroup.github.io>`_.

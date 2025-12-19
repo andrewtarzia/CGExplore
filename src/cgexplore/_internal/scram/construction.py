@@ -7,13 +7,13 @@ import networkx as nx
 import numpy as np
 import stk
 import stko
+from agx import Configuration, TopologyCode
 from openmm import OpenMMException, openmm
 
 from cgexplore._internal.forcefields.assigned_system import AssignedSystem
 from cgexplore._internal.forcefields.forcefield import ForceField
 from cgexplore._internal.molecular.conformer import Conformer
 from cgexplore._internal.molecular.ensembles import Ensemble
-from cgexplore._internal.scram.topology_code import TopologyCode
 from cgexplore._internal.topologies.custom_topology import CustomTopology
 from cgexplore._internal.utilities.databases import AtomliteDatabase
 from cgexplore._internal.utilities.generation_utilities import (
@@ -23,8 +23,8 @@ from cgexplore._internal.utilities.generation_utilities import (
     yield_shifted_models,
 )
 
-from .building_block_enum import BuildingBlockConfiguration
 from .enumeration import TopologyIterator
+from .vertex_alignment_enum import VertexAlignment
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,11 +34,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_regraphed_molecule(
-    graph_type: str,
+    layout_type: str,
     scale: float,
     topology_code: TopologyCode,
     iterator: TopologyIterator,
-    bb_config: BuildingBlockConfiguration | None,
+    configuration: Configuration | None,
 ) -> stk.ConstructedMolecule:
     """Take a graph that considers all atoms, and get atom positions.
 
@@ -50,7 +50,7 @@ def get_regraphed_molecule(
       coordinates in multiple runs.
 
     Parameters:
-        graph_type:
+        layout_type:
             Which networkx layout to use (of `spring`, `kamada`).
 
         scale:
@@ -62,8 +62,11 @@ def get_regraphed_molecule(
         iterator:
             The `scram` algorithm used to generate the graph and configuration.
 
-        bb_config:
+        configuration:
             The configuration of building blocks on the graph.
+
+        vertex_alignment:
+            The vertex alignment of building blocks on the graph.
 
     Returns:
         A constructed molecule at (0, 0, 0).
@@ -77,14 +80,14 @@ def get_regraphed_molecule(
     constructed_molecule = try_except_construction(
         iterator=iterator,
         topology_code=topology_code,
-        building_block_configuration=bb_config,
+        configuration=configuration,
         vertex_positions=None,
     )
 
     stko_graph = stko.Network.init_from_molecule(constructed_molecule)
-    if graph_type == "spring":
+    if layout_type == "spring":
         nx_positions = nx.spring_layout(stko_graph.get_graph(), dim=3)
-    elif graph_type == "kamada":
+    elif layout_type == "kamada":
         nx_positions = nx.kamada_kawai_layout(stko_graph.get_graph(), dim=3)
     else:
         raise NotImplementedError
@@ -95,11 +98,11 @@ def get_regraphed_molecule(
 
 
 def get_vertexset_molecule(
-    graph_type: str | None,
+    layout_type: str,
     scale: float,
     topology_code: TopologyCode,
     iterator: TopologyIterator,
-    bb_config: BuildingBlockConfiguration | None,
+    configuration: Configuration | None,
 ) -> stk.ConstructedMolecule:
     """Take a graph and genereate from graph vertex positions.
 
@@ -109,7 +112,7 @@ def get_vertexset_molecule(
       coordinates in multiple runs.
 
     Parameters:
-        graph_type:
+        layout_type:
             Which networkx layout to use (of `spring`,
             `kamada`, `spectral`).
 
@@ -122,40 +125,25 @@ def get_vertexset_molecule(
         iterator:
             The `scram` algorithm used to generate the graph and configuration.
 
-        bb_config:
+        configuration:
             The configuration of building blocks on the graph.
+
+        vertex_alignment:
+            The vertex alignment of building blocks on the graph.
+
 
     Returns:
         A constructed molecule at (0, 0, 0).
 
     """
-    if graph_type is None:
-        return try_except_construction(
-            iterator=iterator,
-            topology_code=topology_code,
-            building_block_configuration=bb_config,
-            vertex_positions=None,
-        ).with_centroid(np.array((0.0, 0.0, 0.0)))
-
-    nx_graph = topology_code.get_nx_graph()
-
-    if graph_type == "kamada":
-        nxpos = nx.kamada_kawai_layout(nx_graph, dim=3)
-    elif graph_type == "spring":
-        nxpos = nx.spring_layout(nx_graph, dim=3)
-    elif graph_type == "spectral":
-        nxpos = nx.spectral_layout(nx_graph, dim=3)
-    else:
-        raise NotImplementedError
-
-    vertex_positions = {
-        nidx: np.array(nxpos[nidx]) * float(scale)
-        for nidx in topology_code.get_nx_graph().nodes
-    }
+    vertex_positions = topology_code.get_layout(
+        layout_type=layout_type,
+        scale=scale,
+    )
     return try_except_construction(
         iterator=iterator,
         topology_code=topology_code,
-        building_block_configuration=bb_config,
+        configuration=configuration,
         vertex_positions=vertex_positions,
     ).with_centroid(np.array((0.0, 0.0, 0.0)))
 
@@ -263,6 +251,7 @@ def graph_optimise_cage(  # noqa: PLR0913
         )
         ensemble.add_conformer(conformer=conformer, source="shifted")
 
+    # Try with graph positions.
     stko_graph = stko.Network.init_from_molecule(conformer.molecule)
     for i, nx_positions in enumerate(
         (
@@ -303,7 +292,7 @@ def graph_optimise_cage(  # noqa: PLR0913
             except OpenMMException:
                 logger.info("failed graph opt of %s", name)
 
-    # Try with graph positions.
+    # Try with random positions.
     rng = np.random.default_rng(seed=100)
     for attempt in range(10):
         pos_mat = rng.random(size=(conformer.molecule.get_num_atoms(), 3))
@@ -682,16 +671,25 @@ def try_except_construction(  # noqa: PLR0913
     iterator: TopologyIterator,
     topology_code: TopologyCode,
     scale_multiplier: float | None = None,
-    building_block_configuration: BuildingBlockConfiguration | None = None,
+    configuration: Configuration | None = None,
     vertex_positions: dict[int, np.ndarray] | None = None,
+    vertex_alignment: VertexAlignment | None = None,
     reaction_factory: stk.ReactionFactory = stk.GenericReactionFactory(),  # noqa: B008
     optimizer: stk.Optimizer = stk.NullOptimizer(),  # noqa: B008
 ) -> stk.ConstructedMolecule:
     """Try construction with alignment, then without."""
-    if building_block_configuration is None:
+    if configuration is None:
         bbs = iterator.building_blocks
     else:
-        bbs = building_block_configuration.get_building_block_dictionary()
+        bbs = {
+            iterator.node_to_bb_map[i]: j
+            for i, j in configuration.get_node_dictionary().items()
+        }
+
+    if vertex_alignment is None:
+        vertex_alignments = None
+    else:
+        vertex_alignments = vertex_alignment.vertex_dict
 
     try:
         # Try with aligning vertices.
@@ -702,10 +700,11 @@ def try_except_construction(  # noqa: PLR0913
                     unaligning=False
                 ),
                 # Convert to edge prototypes.
-                edge_prototypes=topology_code.edges_from_connection(
-                    iterator.get_vertex_prototypes(unaligning=False)
+                edge_prototypes=iterator.get_edges_from_topology_code(
+                    topology_code=topology_code,
+                    unaligning=False,
                 ),
-                vertex_alignments=None,
+                vertex_alignments=vertex_alignments,
                 vertex_positions=vertex_positions,
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None
@@ -724,10 +723,11 @@ def try_except_construction(  # noqa: PLR0913
                     unaligning=True
                 ),
                 # Convert to edge prototypes.
-                edge_prototypes=topology_code.edges_from_connection(
-                    iterator.get_vertex_prototypes(unaligning=True)
+                edge_prototypes=iterator.get_edges_from_topology_code(
+                    topology_code=topology_code,
+                    unaligning=True,
                 ),
-                vertex_alignments=None,
+                vertex_alignments=vertex_alignments,
                 vertex_positions=vertex_positions,
                 scale_multiplier=iterator.scale_multiplier
                 if scale_multiplier is None

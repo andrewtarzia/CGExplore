@@ -8,6 +8,10 @@ import stk
 
 import cgexplore as cgx
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -64,22 +68,12 @@ def main() -> None:
     iterators = {}
     if args.run:
         for multiplier in syst_d["multipliers"]:
-            # Automate the graph type naming.
-            graph_type = cgx.scram.generate_graph_type(
-                stoichiometry_map=syst_d["stoichiometry_map"],  # type:ignore[arg-type]
-                multiplier=int(multiplier),
-                bb_library=building_block_library,
-            )
-
             # Define the iterator.
             iterator = cgx.scram.TopologyIterator(
                 building_block_counts={
                     building_block_library[name]: stoich * multiplier
                     for name, stoich in syst_d["stoichiometry_map"].items()  # type:ignore[attr-defined]
                 },
-                graph_type=graph_type,
-                # Use a known graph set.
-                graph_set="rxx",
             )
             logger.info(
                 "graph iteration has %s graphs", iterator.count_graphs()
@@ -88,20 +82,20 @@ def main() -> None:
 
         for multiplier in syst_d["multipliers"]:
             iterator = iterators[multiplier]
-            for idx, topology_code in enumerate(iterator.yield_graphs()):
+            for topology_code in iterator.yield_graphs():
                 # Filter graphs for 1-loops.
                 if topology_code.contains_parallels():
                     continue
 
-                name = f"s1_{multiplier}_{idx}"
+                name = f"s1_{multiplier}_{topology_code.idx}"
 
                 # Use vertex set regraphing.
                 constructed_molecule = cgx.scram.get_vertexset_molecule(
-                    graph_type="kamada",
+                    layout_type="kamada",
                     scale=5,
                     topology_code=topology_code,
                     iterator=iterator,
-                    bb_config=None,
+                    configuration=None,
                 )
                 if not (wd / f"{name}_unopt.mol").exists():
                     constructed_molecule.write(wd / f"{name}_unopt.mol")

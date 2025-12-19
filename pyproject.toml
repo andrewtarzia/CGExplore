@@ -6,20 +6,15 @@ build-backend = "setuptools.build_meta"
 name = "cgexplore"
 maintainers = [{ name = "Andrew Tarzia", email = "andrew.tarzia@gmail.com" }]
 dependencies = [
-    "numpy<2",
+    "numpy",
     "stk",
     "stko",
     "openmm[cuda12]",
-    # Added to handle uv issue with metadata.
-    # From https://github.com/astral-sh/uv/issues/15876
-    "torch>=2.8.0",
     "OpenMM-CUDA-12",
-    # Requirements to ensure installation with Python 3.13.
-    "dgl==0.1.3",
-    "atomlite",
     "chemiscope>0.7.3",
     "rustworkx",
-    "bbprepared"
+    "bbprepared",
+    "agraphx"
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]

@@ -124,24 +124,12 @@ configurations.
     syst_d = systems["s1"]
     iterators = {}
     for multiplier in syst_d["multipliers"]:
-        # Automate the graph type naming.
-        graph_type = ""
-        building_block_counts = {}
-        for name, stoich in syst_d["stoichiometry_map"].items():
-            fgnum = building_block_library[name].get_num_functional_groups()
-            graph_type += f"{stoich * multiplier}-{fgnum}FG_"
-            building_block_counts[building_block_library[name]] = (
-                stoich * multiplier
-            )
-
-        graph_type = graph_type.rstrip("_")
-
         # Define the iterator.
         iterator = cgx.scram.TopologyIterator(
-            building_block_counts=building_block_counts,
-            graph_type=graph_type,
-            # Use a known graph set.
-            graph_set="rxx",
+            building_block_counts={
+                building_block_library[name]: stoich * multiplier
+                for name, stoich in syst_d["stoichiometry_map"].items()
+            },
         )
         logger.info(
             "graph iteration has %s graphs", iterator.count_graphs()
@@ -151,7 +139,7 @@ configurations.
 .. testcode:: recipe4-test
     :hide:
 
-    assert graph_type == "4-3FG_6-2FG"
+    assert iterator.graph_type == "4-3FG_6-2FG"
     assert len(iterators) == 2
     assert iterator.count_graphs() == 5
 
@@ -165,20 +153,20 @@ in my recent work was more complicated.
 
     for multiplier in syst_d["multipliers"]:
         iterator = iterators[multiplier]
-        for idx, topology_code in enumerate(iterator.yield_graphs()):
+        for topology_code in iterator.yield_graphs():
             # Filter graphs for 1-loops.
             if topology_code.contains_parallels():
                 continue
 
-            name = f"s1_{multiplier}_{idx}"
+            name = f"s1_{multiplier}_{topology_code.idx}"
 
             # Use vertex set regraphing.
             constructed_molecule = cgx.scram.get_vertexset_molecule(
-                graph_type="kamada",
+                layout_type="kamada",
                 scale=5,
                 topology_code=topology_code,
                 iterator=iterator,
-                bb_config=None,
+                configuration=None,
             )
             # Output to file.
             # constructed_molecule.write(wd / f"{name}_unopt.mol")

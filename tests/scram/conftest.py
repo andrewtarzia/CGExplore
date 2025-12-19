@@ -11,6 +11,7 @@ bbs = {
     3: stk.BuildingBlock("BrC(Br)BCBr", (stk.BromoFactory(),)),
     4: stk.BuildingBlock("BrCC(Br)COC(Br)CCBr", (stk.BromoFactory(),)),
     "2x": stk.BuildingBlock("BrCCSCCBr", (stk.BromoFactory(),)),
+    "3x": stk.BuildingBlock("BrC(Br)SCSBCBr", (stk.BromoFactory(),)),
 }
 
 
@@ -22,7 +23,6 @@ bbs = {
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
             max_samples=int(1e4),
-            graph_filename="rxx_2-4FG_4-2FG.json",
             num_graphs=2,
             num_configs=0,
             name=name,
@@ -36,32 +36,31 @@ bbs = {
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
             max_samples=int(1e4),
-            graph_filename="rxx_3-4FG_6-2FG.json",
             num_graphs=4,
             num_configs=20,
             name=name,
-            doubles={0: True, 1: True, 2: True, 3: False},
-            parallels={0: True, 1: True, 2: False, 3: True},
+            doubles={0: True, 1: True, 2: True, 4: False},
+            parallels={0: True, 1: True, 2: False, 4: True},
             iso_pass=(
                 (0, 0),
                 (1, 0),
                 (2, 0),
-                (3, 0),
-                (0, 1),
+                (4, 0),
                 (1, 1),
                 (2, 1),
-                (3, 1),
-                (0, 2),
+                (4, 1),
                 (1, 2),
-                (3, 2),
-                (3, 4),
-                (0, 5),
+                (4, 2),
+                (0, 3),
+                (0, 4),
+                (4, 4),
                 (1, 5),
-                (3, 6),
-                (0, 7),
-                (1, 9),
-                (1, 10),
-                (3, 17),
+                (4, 6),
+                (1, 7),
+                (0, 10),
+                (0, 12),
+                (0, 16),
+                (4, 17),
             ),
         ),
         lambda name: CaseData(
@@ -70,12 +69,11 @@ bbs = {
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
             max_samples=int(1e4),
-            graph_filename="rxx_4-3FG_6-2FG.json",
             num_graphs=5,
             num_configs=0,
             name=name,
-            doubles={0: True, 1: True, 2: True, 3: False, 4: False},
-            parallels={0: True, 1: False, 2: True, 3: True, 4: False},
+            doubles={0: True, 1: True, 2: True, 3: False, 5: False},
+            parallels={0: True, 1: False, 2: True, 3: True, 5: False},
             iso_pass=(),
         ),
         lambda name: CaseData(
@@ -84,7 +82,6 @@ bbs = {
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
             max_samples=int(1e4),
-            graph_filename="rxx_5-4FG.json",
             num_graphs=6,
             num_configs=0,
             name=name,
@@ -98,13 +95,64 @@ bbs = {
             graph_directory=pathlib.Path(__file__).resolve().parent
             / "temp_graphs",
             max_samples=int(1e4),
-            graph_filename="rxx_2-3FG_2-2FG_2-1FG.json",
             num_graphs=2,
             num_configs=0,
             name=name,
-            doubles={0: True, 1: False},
-            parallels={0: False, 1: True},
+            doubles={0: True, 2: False},
+            parallels={0: False, 2: True},
             iso_pass=(),
+        ),
+        lambda name: CaseData(
+            building_block_counts={bbs[4]: 3, bbs[3]: 3, bbs["3x"]: 1},
+            graph_type="3-4FG_4-3FG",
+            graph_directory=pathlib.Path(__file__).resolve().parent
+            / "temp_graphs",
+            max_samples=int(1e4),
+            num_graphs=9,
+            num_configs=4,
+            name=name,
+            doubles={
+                0: True,
+                1: True,
+                2: True,
+                3: True,
+                4: True,
+                5: True,
+                6: False,
+                7: True,
+                8: False,
+            },
+            parallels={
+                0: True,
+                1: True,
+                2: True,
+                3: True,
+                4: True,
+                5: False,
+                6: True,
+                7: True,
+                8: True,
+            },
+            iso_pass=(
+                (0, 0),
+                (1, 0),
+                (2, 0),
+                (3, 0),
+                (4, 0),
+                (5, 0),
+                (6, 0),
+                (7, 0),
+                (8, 0),
+                (0, 1),
+                (1, 1),
+                (2, 1),
+                (8, 1),
+                (4, 2),
+                (6, 2),
+                (0, 3),
+                (3, 3),
+                (4, 3),
+            ),
         ),
     )
 )
@@ -115,7 +163,7 @@ def graph_data(request: pytest.FixtureRequest) -> CaseData:
 
 
 @pytest.fixture(params=["kamada", "spring", "spectral"])
-def graph_type(request: pytest.FixtureRequest) -> CaseData:
+def layout_type(request: pytest.FixtureRequest) -> CaseData:
     return request.param
 
 

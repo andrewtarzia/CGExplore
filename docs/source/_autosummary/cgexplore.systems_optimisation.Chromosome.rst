@@ -17,6 +17,7 @@ cgexplore.systems\_optimisation.Chromosome
    .. autosummary::
       :nosignatures:
    
+      ~Chromosome.get_building_block_configurations
       ~Chromosome.get_building_blocks
       ~Chromosome.get_forcefield
       ~Chromosome.get_precursors

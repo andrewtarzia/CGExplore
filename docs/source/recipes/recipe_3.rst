@@ -18,6 +18,7 @@ geometry optimisation (hence, the results may not be as described in the paper).
     import pathlib
     from collections import defaultdict
 
+    import agx
     import matplotlib.pyplot as plt
     import numpy as np
     import stko
@@ -143,7 +144,7 @@ Firstly, the structure and fitness functions:
         """Calculate fitness."""
         database = cgx.utilities.AtomliteDatabase(database_path)
         topology_idx, _ = chromosome.get_topology_information()
-        building_block_config = chromosome.get_vertex_alignments()[0]
+        building_block_config = chromosome.get_building_block_configurations()[0]
         name = f"{chromosome.prefix}_{topology_idx}_b{building_block_config.idx}"
 
         entry = database.get_entry(name)
@@ -181,7 +182,7 @@ configurations to avoid rerunning calculations.
         database = cgx.utilities.AtomliteDatabase(database_path)
 
         topology_idx, topology_code = chromosome.get_topology_information()
-        building_block_config = chromosome.get_vertex_alignments()[0]
+        building_block_config = chromosome.get_building_block_configurations()[0]
 
         base_name = (
             f"{chromosome.prefix}_{topology_idx}_b{building_block_config.idx}"
@@ -217,10 +218,10 @@ configurations to avoid rerunning calculations.
                 continue
 
             # Testing bb-config aware graph check.
-            if not cgx.scram.passes_graph_bb_iso(
-                topology_code=topology_code,
-                bb_config=building_block_config,
-                run_topology_codes=[(entry_tc[1], entry_bb_config)],
+            configured = agx.ConfiguredCode(topology_code, building_block_config)
+            if not agx.utilities.is_configured_code_isomoprhic(
+                test_code=configured,
+                run_topology_codes=[agx.ConfiguredCode(entry_tc, entry_bb_config)],
             ):
                 known_entry = entry
                 break
@@ -257,11 +258,11 @@ configurations to avoid rerunning calculations.
 
         # Actually do the calculation, now, just because we have too.
         constructed_molecule = cgx.scram.get_regraphed_molecule(
-            graph_type="kamada",
+            layout_type="kamada",
             scale=10,
             topology_code=topology_code,
             iterator=options["iterator"],
-            bb_config=building_block_config,
+            configuration=building_block_config,
         )
 
         constructed_molecule.write(calculation_output / f"{base_name}_unopt.mol")
@@ -339,9 +340,9 @@ graph and building block configurations:
 .. note::
 
     The building block configurations are added to the chromosome generator
-    as vertex alignments, while the graphs are added as topology graphs. Hence,
-    they are accessed through ``get_va_ids()`` and ``get_topo_ids()``,
-    respectively.
+    as ``building_block_configurations``, while the graphs are added as
+    ``topology``. Hence, they are accessed through ``get_bc_ids()`` and
+    ``get_topo_ids()``, respectively.
 
 .. testcode:: recipe3-test
 
@@ -403,12 +404,12 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
                         selection="all",
-                        gene_range=chromo_it.get_va_ids(),
+                        gene_range=chromo_it.get_bc_ids(),
                     )
                 )
                 merged_chromosomes.extend(generation.select_all())
@@ -420,12 +421,12 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
                         generator=generator,
-                        gene_range=chromo_it.get_va_ids(),
+                        gene_range=chromo_it.get_bc_ids(),
                         selection="random",
                         num_to_select=scan_config["mutations"],
                         database=database,
@@ -437,7 +438,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -454,12 +455,12 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
                         generator=generator,
-                        gene_range=chromo_it.get_va_ids(),
+                        gene_range=chromo_it.get_bc_ids(),
                         selection="roulette",
                         num_to_select=scan_config["mutations"],
                         database=database,
@@ -471,7 +472,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -489,7 +490,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -506,7 +507,7 @@ graph and building block configurations:
                             (
                                 f"{chromosome.prefix}"
                                 f"_{chromosome.get_topology_information()[0]}"
-                                f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                                f"_b{chromosome.get_building_block_configurations()[0].idx}"
                             ): chromosome
                             for chromosome in generation.chromosomes
                         },
@@ -552,7 +553,7 @@ graph and building block configurations:
             best_name = (
                 f"{best_chromosome.prefix}_"
                 f"{best_chromosome.get_topology_information()[0]}_"
-                f"b{best_chromosome.get_vertex_alignments()[0].idx}"
+                f"b{best_chromosome.get_building_block_configurations()[0].idx}"
             )
 
         logger.info("top scorer is %s (seed: %s)", best_name, seed)
@@ -600,6 +601,7 @@ siginficantly for the sake of the test here.
                         opt_bb_file
                     )
                 )
+
             else:
                 bb = cgx.utilities.optimise_ligand(
                     molecule=prec.get_building_block(),
@@ -619,30 +621,22 @@ siginficantly for the sake of the test here.
             vdw_bond_cutoff=syst_d["vdw_cutoff"],
         )
 
-        # Automate the graph type naming.
-        graph_type = cgx.scram.generate_graph_type(
-            stoichiometry_map=syst_d["stoichiometry_map"],
-            multiplier=multiplier,
-            bb_library=bb_map,
-        )
         # Add graphs.
         iterator = cgx.scram.TopologyIterator(
             building_block_counts={
                 bb_map[name]: stoich * multiplier
                 for name, stoich in syst_d["stoichiometry_map"].items()
             },
-            graph_type=graph_type,
-            graph_set="rxx",
         )
-        all_topology_codes = tuple(enumerate(iterator.yield_graphs()))
+        all_topology_codes = tuple(iterator.yield_graphs())
         topology_codes = []
-        for tidx, tc in all_topology_codes:
+        for tc in all_topology_codes:
             if tc.contains_parallels():
                 continue
             # Also exlcude double walls to lower the search space.
             if tc.contains_doubles():
                 continue
-            topology_codes.append((tidx, tc))
+            topology_codes.append((tc.idx, tc))
 
         logger.info(
             "graph iteration has %s graphs (from %s)",
@@ -652,16 +646,14 @@ siginficantly for the sake of the test here.
         chromo_it.add_gene(iteration=topology_codes, gene_type="topology")
 
         # Add building block configurations.
-        possible_bbdicts = cgx.scram.get_custom_bb_configurations(
-            iterator=iterator
-        )
+        possible_bbdicts = iterator.get_configurations()
         logger.info(
             "building block iteration has %s options",
             len(possible_bbdicts),
         )
         chromo_it.add_gene(
             iteration=possible_bbdicts,
-            gene_type="vertex_alignment",
+            gene_type="building_block_configuration",
         )
 
         # Define fitness calculator.

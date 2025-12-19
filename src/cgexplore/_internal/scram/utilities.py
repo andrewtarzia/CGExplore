@@ -1,7 +1,8 @@
 """Utilities module."""
 
-from collections import defaultdict
+from collections import abc
 
+import agx
 import numpy as np
 import stk
 
@@ -38,19 +39,15 @@ def points_on_sphere(
     return np.array(new_points, dtype=np.float64)
 
 
-def generate_graph_type(
-    stoichiometry_map: dict[str, int],
-    multiplier: int,
-    bb_library: dict[str, stk.BuildingBlock],
-) -> str:
-    """Automatically get the graph type to match the new naming convention."""
-    fgcounts: dict[int, int] = defaultdict(int)
-    for name, stoich in stoichiometry_map.items():
-        fgcounts[bb_library[name].get_num_functional_groups()] += (
-            stoich * multiplier
-        )
+def get_stk_topology_code(
+    tfun: abc.Callable,
+) -> tuple[agx.TopologyCode, list[np.ndarray]]:
+    """Get the default stk graph."""
+    vps = tfun._vertex_prototypes  # type: ignore[attr-defined] # noqa: SLF001
+    eps = tfun._edge_prototypes  # type: ignore[attr-defined] # noqa: SLF001
 
-    string = ""
-    for fgtype, fgnum in sorted(fgcounts.items(), reverse=True):
-        string += f"{fgnum}-{fgtype}FG_"
-    return string.rstrip("_")
+    combination = [(i.get_vertex1_id(), i.get_vertex2_id()) for i in eps]
+    tc = agx.TopologyCode(idx=0, vertex_map=combination)
+    positions = [i.get_position() for i in vps]
+
+    return tc, positions

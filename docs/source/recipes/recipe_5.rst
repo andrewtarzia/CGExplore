@@ -19,6 +19,7 @@ atomistic building blocks.
 
     import stk
     import stko
+    import agx
     import cgexplore as cgx
     import logging
     import pathlib
@@ -39,7 +40,7 @@ atomistic building blocks.
         conformer_db_path: pathlib.Path,
         topology_code: cgx.scram.TopologyCode,
         iterator: cgx.scram.TopologyIterator,
-        bb_config: cgx.scram.BuildingBlockConfiguration,
+        bb_config: cgx.scram.Configuration,
         calculation_dir: pathlib.Path,
         forcefield: cgx.forcefields.ForceField,
     ) -> None:
@@ -220,29 +221,18 @@ Time to iterate!
                 "doing system: %s, multi: %s", system_name, multiplier
             )
 
-            # Automate the graph type naming.
-            graph_type = cgx.scram.generate_graph_type(
-                stoichiometry_map=syst_d["stoichiometry_map"],
-                multiplier=multiplier,
-                bb_library=bb_map,
-            )
-
             # Define a connectivity based on a multiplier.
             iterator = cgx.scram.TopologyIterator(
                 building_block_counts={
                     bb_map[name]: stoich * multiplier
                     for name, stoich in syst_d["stoichiometry_map"].items()
                 },
-                graph_type=graph_type,
-                graph_set="rxx",
             )
             logger.info(
                 "graph iteration has %s graphs", iterator.count_graphs()
             )
 
-            possible_bbdicts = cgx.scram.get_custom_bb_configurations(
-                iterator=iterator
-            )
+            possible_bbdicts = iterator.get_configurations()
             logger.info(
                 "building block iteration has %s options",
                 len(possible_bbdicts),
@@ -252,29 +242,27 @@ Time to iterate!
                 "iterating over %s graphs and bb configurations...",
                 iterator.count_graphs() * len(possible_bbdicts),
             )
-            run_topology_codes = []
-            for bb_config, (idx, topology_code) in it.product(
+            run_topology_codes: list[agx.ConfiguredCode] = []
+            for bb_config, topology_code in it.product(
                 possible_bbdicts,
-                enumerate(iterator.yield_graphs()),
+                iterator.yield_graphs(),
             ):
-                # Filter graphs for 1-loops.
-                if topology_code.contains_parallels():
-                    continue
-
-                if not cgx.scram.passes_graph_bb_iso(
-                    topology_code=topology_code,
-                    bb_config=bb_config,
+                configured = agx.ConfiguredCode(topology_code, bb_config)
+                if not agx.utilities.is_configured_code_isomoprhic(
+                    test_code=configured,
                     run_topology_codes=run_topology_codes,
                 ):
                     continue
 
-                run_topology_codes.append((topology_code, bb_config))
+                run_topology_codes.append(configured)
 
                 # Here we apply a multi-initial state, multi-step geometry
                 # optimisation algorithm.
                 config_name = (
-                    f"{system_name}_{multiplier}_{idx}_b{bb_config.idx}"
+                    f"{system_name}_{multiplier}_"
+                    f"{topology_code.idx}_b{bb_config.idx}"
                 )
+
                 # Each conformer is stored here.
                 conformer_db_path = calc_dir / f"{config_name}.db"
                 optimisation_workflow(
@@ -312,7 +300,7 @@ Time to iterate!
                 )
                 properties = {
                     "multiplier": multiplier,
-                    "topology_idx": idx,
+                    "topology_idx": topology_code.idx,
                 }
                 cgx.utilities.AtomliteDatabase(database_path).add_properties(
                     key=config_name, property_dict=properties
