@@ -13,7 +13,8 @@ dependencies = [
     "OpenMM-CUDA-12",
     "chemiscope>0.7.3",
     "rustworkx",
-    "bbprepared"
+    "bbprepared",
+    "agraphx"
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]
