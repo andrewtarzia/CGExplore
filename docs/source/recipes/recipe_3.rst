@@ -18,6 +18,7 @@ geometry optimisation (hence, the results may not be as described in the paper).
     import pathlib
     from collections import defaultdict
 
+    import agx
     import matplotlib.pyplot as plt
     import numpy as np
     import stko
@@ -217,10 +218,10 @@ configurations to avoid rerunning calculations.
                 continue
 
             # Testing bb-config aware graph check.
-            if not cgx.scram.passes_graph_bb_iso(
-                topology_code=topology_code,
-                bb_config=building_block_config,
-                run_topology_codes=[(entry_tc[1], entry_bb_config)],
+            configured = agx.ConfiguredCode(topology_code, building_block_config)
+            if not agx.utilities.is_configured_code_isomoprhic(
+                test_code=configured,
+                run_topology_codes=[agx.ConfiguredCode(entry_tc, entry_bb_config)],
             ):
                 known_entry = entry
                 break
@@ -257,11 +258,11 @@ configurations to avoid rerunning calculations.
 
         # Actually do the calculation, now, just because we have too.
         constructed_molecule = cgx.scram.get_regraphed_molecule(
-            graph_type="kamada",
+            layout_type="kamada",
             scale=10,
             topology_code=topology_code,
             iterator=options["iterator"],
-            bb_config=building_block_config,
+            configuration=building_block_config,
         )
 
         constructed_molecule.write(calculation_output / f"{base_name}_unopt.mol")
@@ -600,6 +601,7 @@ siginficantly for the sake of the test here.
                         opt_bb_file
                     )
                 )
+
             else:
                 bb = cgx.utilities.optimise_ligand(
                     molecule=prec.get_building_block(),
@@ -619,30 +621,22 @@ siginficantly for the sake of the test here.
             vdw_bond_cutoff=syst_d["vdw_cutoff"],
         )
 
-        # Automate the graph type naming.
-        graph_type = cgx.scram.generate_graph_type(
-            stoichiometry_map=syst_d["stoichiometry_map"],
-            multiplier=multiplier,
-            bb_library=bb_map,
-        )
         # Add graphs.
         iterator = cgx.scram.TopologyIterator(
             building_block_counts={
                 bb_map[name]: stoich * multiplier
                 for name, stoich in syst_d["stoichiometry_map"].items()
             },
-            graph_type=graph_type,
-            graph_set="rxx",
         )
-        all_topology_codes = tuple(enumerate(iterator.yield_graphs()))
+        all_topology_codes = tuple(iterator.yield_graphs())
         topology_codes = []
-        for tidx, tc in all_topology_codes:
+        for tc in all_topology_codes:
             if tc.contains_parallels():
                 continue
             # Also exlcude double walls to lower the search space.
             if tc.contains_doubles():
                 continue
-            topology_codes.append((tidx, tc))
+            topology_codes.append((tc.idx, tc))
 
         logger.info(
             "graph iteration has %s graphs (from %s)",
@@ -652,9 +646,7 @@ siginficantly for the sake of the test here.
         chromo_it.add_gene(iteration=topology_codes, gene_type="topology")
 
         # Add building block configurations.
-        possible_bbdicts = cgx.scram.get_custom_bb_configurations(
-            iterator=iterator
-        )
+        possible_bbdicts = iterator.get_configurations()
         logger.info(
             "building block iteration has %s options",
             len(possible_bbdicts),

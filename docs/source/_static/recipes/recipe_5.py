@@ -6,6 +6,7 @@ import logging
 import pathlib
 from typing import TYPE_CHECKING
 
+import agx
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
@@ -29,7 +30,7 @@ def optimisation_workflow(  # noqa: PLR0913
     conformer_db_path: pathlib.Path,
     topology_code: cgx.scram.TopologyCode,
     iterator: cgx.scram.TopologyIterator,
-    bb_config: cgx.scram.BuildingBlockConfiguration,
+    bb_config: cgx.scram.Configuration,
     calculation_dir: pathlib.Path,
     forcefield: cgx.forcefields.ForceField,
 ) -> None:
@@ -43,27 +44,36 @@ def optimisation_workflow(  # noqa: PLR0913
         ("regraphed", "kamada", 10.0),
     )
 
-    for midx, (method, graph_type, scale) in enumerate(attempts):
+    for midx, (method, layout_type, scale) in enumerate(attempts):
         name = f"{config_name}_{midx}"
 
         try:
             if method == "regraphed":
                 constructed_molecule = cgx.scram.get_regraphed_molecule(
-                    graph_type=graph_type,  # type:ignore[arg-type]
+                    layout_type=layout_type,  # type:ignore[arg-type]
                     scale=scale,  # type:ignore[arg-type]
                     topology_code=topology_code,
                     iterator=iterator,
-                    bb_config=bb_config,
+                    configuration=bb_config,
+                )
+
+            elif method == "set":
+                constructed_molecule = cgx.scram.get_vertexset_molecule(
+                    layout_type=layout_type,  # type:ignore[arg-type]
+                    scale=scale,  # type:ignore[arg-type]
+                    topology_code=topology_code,
+                    iterator=iterator,
+                    configuration=bb_config,
                 )
 
             else:
-                constructed_molecule = cgx.scram.get_vertexset_molecule(
-                    graph_type=graph_type,
-                    scale=scale,  # type:ignore[arg-type]
-                    topology_code=topology_code,
+                constructed_molecule = cgx.scram.try_except_construction(
                     iterator=iterator,
-                    bb_config=bb_config,
-                )
+                    topology_code=topology_code,
+                    configuration=bb_config,
+                    vertex_positions=None,
+                ).with_centroid(np.array((0.0, 0.0, 0.0)))
+
         except ValueError:
             continue
 
@@ -447,29 +457,18 @@ def main() -> None:  # noqa: PLR0915
                     "doing system: %s, multi: %s", system_name, multiplier
                 )
 
-                # Automate the graph type naming.
-                graph_type = cgx.scram.generate_graph_type(
-                    stoichiometry_map=syst_d["stoichiometry_map"],  # type:ignore[arg-type]
-                    multiplier=multiplier,
-                    bb_library=bb_map,
-                )
-
                 # Define a connectivity based on a multiplier.
                 iterator = cgx.scram.TopologyIterator(
                     building_block_counts={
                         bb_map[name]: stoich * multiplier
                         for name, stoich in syst_d["stoichiometry_map"].items()  # type:ignore[attr-defined]
                     },
-                    graph_type=graph_type,
-                    graph_set="rxx",
                 )
                 logger.info(
                     "graph iteration has %s graphs", iterator.count_graphs()
                 )
 
-                possible_bbdicts = cgx.scram.get_custom_bb_configurations(
-                    iterator=iterator
-                )
+                possible_bbdicts = iterator.get_configurations()
                 logger.info(
                     "building block iteration has %s options",
                     len(possible_bbdicts),
@@ -479,29 +478,25 @@ def main() -> None:  # noqa: PLR0915
                     "iterating over %s graphs and bb configurations...",
                     iterator.count_graphs() * len(possible_bbdicts),
                 )
-                run_topology_codes: list[
-                    tuple[
-                        cgx.scram.TopologyCode,
-                        cgx.scram.BuildingBlockConfiguration,
-                    ]
-                ] = []
-                for bb_config, (idx, topology_code) in it.product(
+                run_topology_codes: list[agx.ConfiguredCode] = []
+                for bb_config, topology_code in it.product(
                     possible_bbdicts,
-                    enumerate(iterator.yield_graphs()),
+                    iterator.yield_graphs(),
                 ):
-                    if not cgx.scram.passes_graph_bb_iso(
-                        topology_code=topology_code,
-                        bb_config=bb_config,
+                    configured = agx.ConfiguredCode(topology_code, bb_config)
+                    if not agx.utilities.is_configured_code_isomoprhic(
+                        test_code=configured,
                         run_topology_codes=run_topology_codes,
                     ):
                         continue
 
-                    run_topology_codes.append((topology_code, bb_config))
+                    run_topology_codes.append(configured)
 
                     # Here we apply a multi-initial state, multi-step geometry
                     # optimisation algorithm.
                     config_name = (
-                        f"{system_name}_{multiplier}_{idx}_b{bb_config.idx}"
+                        f"{system_name}_{multiplier}_"
+                        f"{topology_code.idx}_b{bb_config.idx}"
                     )
                     # Each conformer is stored here.
                     conformer_db_path = calc_dir / f"{config_name}.db"
@@ -541,7 +536,7 @@ def main() -> None:  # noqa: PLR0915
                     )
                     properties = {
                         "multiplier": multiplier,
-                        "topology_idx": idx,
+                        "topology_idx": topology_code.idx,
                     }
                     cgx.utilities.AtomliteDatabase(
                         database_path
