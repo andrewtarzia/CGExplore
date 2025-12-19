@@ -140,7 +140,7 @@ Acknowledgements
 ================
 
 Funded by the European Union - Next Generation EU, Mission 4 Component 1
-CUP E13C22002930006 and the ERC under projects DYNAPOL.
+CUP E13C22002930006.
 
 This work is now developed as part of the `Tarzia Research Group at the
 University of Birmingham <https://tarziaresearchgroup.github.io>`_.
