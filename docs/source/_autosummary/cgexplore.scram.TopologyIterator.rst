@@ -23,6 +23,7 @@ cgexplore.scram.TopologyIterator
       ~TopologyIterator.get_num_building_blocks
       ~TopologyIterator.get_vertex_prototypes
       ~TopologyIterator.graph_exists
+      ~TopologyIterator.is_type_possible
       ~TopologyIterator.yield_configured_codes
       ~TopologyIterator.yield_graphs
    
