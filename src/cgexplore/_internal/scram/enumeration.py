@@ -267,6 +267,10 @@ class TopologyIterator:
         """Checks if the graphs have been defined."""
         return self.iterator.graph_path.exists()
 
+    def is_type_possible(self) -> bool:
+        """Return `True` if the graph is chemically possible."""
+        self.iterator.is_type_possible()
+
     def yield_graphs(self) -> abc.Generator[agx.TopologyCode]:
         """Get constructed molecules from iteration.
 
