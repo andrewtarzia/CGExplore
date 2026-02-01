@@ -36,7 +36,7 @@ def test_building_block_configuration(graph_data: CaseData) -> None:
             # Check for iso checks, iterating over topology codes as well.
             for topology_code in iterator.yield_graphs():
                 configured = agx.ConfiguredCode(topology_code, bb_config)
-                if agx.utilities.is_configured_code_isomoprhic(
+                if agx.utilities.is_configured_code_isomorphic(
                     test_code=configured,
                     run_topology_codes=run_topology_codes,
                 ):

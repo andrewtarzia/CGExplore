@@ -165,7 +165,7 @@ def structure_function(  # noqa: C901, PLR0915
 
         # Testing bb-config aware graph check.
         configured = agx.ConfiguredCode(topology_code, building_block_config)
-        if not agx.utilities.is_configured_code_isomoprhic(
+        if not agx.utilities.is_configured_code_isomorphic(
             test_code=configured,
             run_topology_codes=[agx.ConfiguredCode(entry_tc, entry_bb_config)],
         ):
