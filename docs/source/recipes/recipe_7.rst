@@ -80,6 +80,8 @@ known failures at this time.
         "20-3FG_30-2FG",
         "24-4FG_48-2FG",
         "12-5FG_30-2FG",
+        "12-4FG_24-2FG",
+        "x12-4FG_24-2FG",
     )
 
 And so all we do now is iterate through and check for isomoprhism of all the
