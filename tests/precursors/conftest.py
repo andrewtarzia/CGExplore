@@ -1,40 +1,29 @@
 import numpy as np
 import pytest
 
-from cgexplore.molecular import (
-    CgBead,
-    FourC0Arm,
-    FourC1Arm,
-    ThreeC0Arm,
-    ThreeC1Arm,
-    ThreeC2Arm,
-    TwoC0Arm,
-    TwoC1Arm,
-    TwoC2Arm,
-    TwoC3Arm,
-)
+import cgexplore as cgx
 
 from .case_data import CaseData
 
-ag_bead = CgBead(
+ag_bead = cgx.molecular.CgBead(
     element_string="Ag",
     bead_type="c1",
     bead_class="c",
     coordination=4,
 )
-p_bead = CgBead(
+p_bead = cgx.molecular.CgBead(
     element_string="P",
     bead_type="p1",
     bead_class="p",
     coordination=2,
 )
-n_bead = CgBead(
+n_bead = cgx.molecular.CgBead(
     element_string="N",
     bead_class="n",
     bead_type="n1",
     coordination=2,
 )
-a_bead = CgBead(
+a_bead = cgx.molecular.CgBead(
     element_string="C",
     bead_class="a",
     bead_type="a1",
@@ -45,7 +34,7 @@ a_bead = CgBead(
 @pytest.fixture(
     params=(
         lambda name: CaseData(
-            precursor=FourC0Arm(bead=ag_bead),
+            precursor=cgx.molecular.FourC0Arm(bead=ag_bead),
             precursor_name="4C0c1",
             bead_set={"c1": ag_bead},
             smiles="[Br][Ag]([Br])([Br])[Br]",
@@ -62,7 +51,7 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=FourC1Arm(bead=ag_bead, abead1=p_bead),
+            precursor=cgx.molecular.FourC1Arm(bead=ag_bead, abead1=p_bead),
             precursor_name="4C1c1p1",
             bead_set={"c1": ag_bead, "p1": p_bead},
             smiles="[P][Ag]([P])([P])[P]",
@@ -79,7 +68,7 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=ThreeC0Arm(bead=ag_bead),
+            precursor=cgx.molecular.ThreeC0Arm(bead=ag_bead),
             precursor_name="3C0c1",
             bead_set={"c1": ag_bead},
             smiles="[Br][Ag]([Br])[Br]",
@@ -95,7 +84,7 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=ThreeC1Arm(bead=ag_bead, abead1=p_bead),
+            precursor=cgx.molecular.ThreeC1Arm(bead=ag_bead, abead1=p_bead),
             precursor_name="3C1c1p1",
             bead_set={"c1": ag_bead, "p1": p_bead},
             smiles="[P][Ag]([P])[P]",
@@ -111,7 +100,9 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=ThreeC2Arm(bead=ag_bead, abead1=p_bead, abead2=n_bead),
+            precursor=cgx.molecular.ThreeC2Arm(
+                bead=ag_bead, abead1=p_bead, abead2=n_bead
+            ),
             precursor_name="3C2c1p1n1",
             bead_set={"c1": ag_bead, "p1": p_bead, "n1": n_bead},
             smiles="[N][P][Ag]([P][N])[P][N]",
@@ -130,7 +121,7 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=TwoC0Arm(bead=ag_bead),
+            precursor=cgx.molecular.TwoC0Arm(bead=ag_bead),
             precursor_name="2C0c1",
             bead_set={"c1": ag_bead},
             smiles="[Br][Ag][Br]",
@@ -145,7 +136,7 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=TwoC1Arm(bead=ag_bead, abead1=p_bead),
+            precursor=cgx.molecular.TwoC1Arm(bead=ag_bead, abead1=p_bead),
             precursor_name="2C1c1p1",
             bead_set={"c1": ag_bead, "p1": p_bead},
             smiles="[P][Ag][P]",
@@ -160,7 +151,9 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=TwoC2Arm(bead=ag_bead, abead1=p_bead, abead2=n_bead),
+            precursor=cgx.molecular.TwoC2Arm(
+                bead=ag_bead, abead1=p_bead, abead2=n_bead
+            ),
             precursor_name="2C2c1p1n1",
             bead_set={"c1": ag_bead, "p1": p_bead, "n1": n_bead},
             smiles="[N][P][Ag][P][N]",
@@ -177,8 +170,11 @@ a_bead = CgBead(
             name=name,
         ),
         lambda name: CaseData(
-            precursor=TwoC3Arm(
-                bead=ag_bead, abead1=p_bead, abead2=n_bead, abead3=a_bead
+            precursor=cgx.molecular.TwoC3Arm(
+                bead=ag_bead,
+                abead1=p_bead,
+                abead2=n_bead,
+                abead3=a_bead,
             ),
             precursor_name="2C3c1p1n1a1",
             bead_set={"c1": ag_bead, "p1": p_bead, "n1": n_bead, "a1": a_bead},
@@ -195,6 +191,15 @@ a_bead = CgBead(
                 ]
             ),
             num_fgs=2,
+            name=name,
+        ),
+        lambda name: CaseData(
+            precursor=cgx.molecular.Single(bead=ag_bead),
+            precursor_name="S1c1",
+            bead_set={"c1": ag_bead},
+            smiles="[Ag]",
+            position_matrix=np.array([[0, 0, 0]]),
+            num_fgs=1,
             name=name,
         ),
     )

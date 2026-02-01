@@ -242,7 +242,7 @@ class Single(Precursor):
                     )
                 ),
             ),
-            position_matrix=np.array((0, 0, 0)),
+            position_matrix=np.array([[0, 0, 0]]),
         )
 
 
