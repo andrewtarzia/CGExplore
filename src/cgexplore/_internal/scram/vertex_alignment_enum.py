@@ -5,10 +5,13 @@ import logging
 from collections import abc
 from dataclasses import dataclass
 
+import numpy as np
 import rustworkx as rx
+import stk
 from agx import Configuration, TopologyCode
 
 from cgexplore._internal.scram.enumeration import TopologyIterator
+from cgexplore._internal.topologies.custom_topology import CustomTopology
 
 logging.basicConfig(
     level=logging.INFO,
@@ -115,6 +118,58 @@ def get_bb_va_topology_code_graph(
         graph.add_edge(nodeaidx, nodebidx, None)
 
     return graph
+
+
+def aligned_construction(  # noqa: PLR0913
+    iterator: TopologyIterator,
+    topology_code: TopologyCode,
+    scale_multiplier: float | None = None,
+    building_block_configuration: Configuration | None = None,
+    vertex_positions: dict[int, np.ndarray] | None = None,
+    vertex_alignment: VertexAlignment | None = None,
+    reaction_factory: stk.ReactionFactory = stk.GenericReactionFactory(),  # noqa: B008
+    optimizer: stk.Optimizer = stk.NullOptimizer(),  # noqa: B008
+) -> stk.ConstructedMolecule:
+    """Try construction with alignment, then without."""
+    msg = "To be implemented with other construction once vas done."
+    raise NotImplementedError(msg)
+    if building_block_configuration is None:  # type: ignore[unreachable]
+        bbs = iterator.building_blocks
+    else:
+        bbs = building_block_configuration.get_building_block_dictionary()
+
+    if vertex_alignment is None:
+        vertex_alignments = None
+    else:
+        vertex_alignments = vertex_alignment.vertex_dict
+
+    new_vertices = [
+        i
+        if i.__class__.__name__ == "NonLinearVertex"
+        else stk.cage.LinearVertex(
+            id=i.get_id(),
+            position=i.get_position(),
+            use_neighbor_placement=False,
+        )
+        for i in iterator.get_vertex_prototypes(unaligning=False)
+    ]
+
+    # Try with aligning vertices.
+    return stk.ConstructedMolecule(
+        CustomTopology(  # type: ignore[arg-type]
+            building_blocks=bbs,
+            vertex_prototypes=new_vertices,
+            # Convert to edge prototypes.
+            edge_prototypes=topology_code.edges_from_connection(new_vertices),
+            vertex_alignments=vertex_alignments,
+            vertex_positions=vertex_positions,
+            scale_multiplier=iterator.scale_multiplier
+            if scale_multiplier is None
+            else scale_multiplier,
+            reaction_factory=reaction_factory,
+            optimizer=optimizer,
+        )
+    )
 
 
 def passes_graph_bb_va_iso(
