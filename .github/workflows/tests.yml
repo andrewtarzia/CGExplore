@@ -89,6 +89,7 @@ jobs:
               with:
                   python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
+            - run: rm -rf docs/source/_autosummary
             - run: uv run make -C docs doctest
 
     build-test:
