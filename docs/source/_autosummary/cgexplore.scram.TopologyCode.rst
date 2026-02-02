@@ -19,6 +19,7 @@ cgexplore.scram.TopologyCode
    
       ~TopologyCode.contains_doubles
       ~TopologyCode.contains_parallels
+      ~TopologyCode.contains_xs
       ~TopologyCode.get_as_string
       ~TopologyCode.get_graph
       ~TopologyCode.get_layout

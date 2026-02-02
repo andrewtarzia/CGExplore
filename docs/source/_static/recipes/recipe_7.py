@@ -72,6 +72,8 @@ def main() -> None:
         "20-3FG_30-2FG",
         "24-4FG_48-2FG",
         "12-5FG_30-2FG",
+        "12-4FG_24-2FG",
+        "x12-4FG_24-2FG",
     )
 
     for known_, (tfun, sele_bbs) in knowns.items():
@@ -82,6 +84,9 @@ def main() -> None:
             logger.info("%s graph not built yet", known_)
             if known_ in known_failures:
                 logger.info("----> it is ok though, we knew about this one!")
+            else:
+                msg = "actually, expected this one!"
+                raise RuntimeError(msg)
             continue
 
         for tc in iterator.yield_graphs():

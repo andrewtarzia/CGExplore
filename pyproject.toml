@@ -6,15 +6,13 @@ build-backend = "setuptools.build_meta"
 name = "cgexplore"
 maintainers = [{ name = "Andrew Tarzia", email = "andrew.tarzia@gmail.com" }]
 dependencies = [
-    "numpy",
+    "OpenMM-CUDA-12",
     "stk",
     "stko",
-    "openmm[cuda12]",
-    "OpenMM-CUDA-12",
     "chemiscope>0.7.3",
     "rustworkx",
     "bbprepared",
-    "agraphx"
+    "agraphx",
 ]
 requires-python = ">=3.11"
 dynamic = ["version"]

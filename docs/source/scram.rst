@@ -9,6 +9,9 @@ performing blind structure prediction is now part of :mod:`agx`, which can
 be found in the
 `agx documentation <https://agx.readthedocs.io/en/latest/index.html>`_.
 
+There are also `agx recipes <https://agx.readthedocs.io/en/latest/recipes.html>`_
+that highlight how to explore graphs before construction.
+
 .. toctree::
   :maxdepth: 1
 

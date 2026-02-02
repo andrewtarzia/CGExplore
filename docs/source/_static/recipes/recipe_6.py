@@ -1,4 +1,4 @@
-"""Copiable code from Recipe #5."""  # noqa: INP001
+"""Copiable code from Recipe #6."""  # noqa: INP001
 
 import argparse
 import logging

@@ -248,7 +248,7 @@ Time to iterate!
                     continue
 
                 configured = agx.ConfiguredCode(topology_code, bb_config)
-                if not agx.utilities.is_configured_code_isomoprhic(
+                if not agx.utilities.is_configured_code_isomorphic(
                     test_code=configured,
                     run_topology_codes=run_topology_codes,
                 ):

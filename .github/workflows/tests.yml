@@ -12,6 +12,7 @@ jobs:
             matrix:
                 python-version:
                     - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -19,7 +20,6 @@ jobs:
                   enable-cache: true
             - uses: actions/setup-python@v5
               with:
-                  python-version-file: "pyproject.toml"
                   python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run ruff check src/ tests/ docs/source/ first_paper_example/
@@ -30,6 +30,7 @@ jobs:
             matrix:
                 python-version:
                     - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -37,7 +38,6 @@ jobs:
                   enable-cache: true
             - uses: actions/setup-python@v5
               with:
-                  python-version-file: "pyproject.toml"
                   python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run mypy src/ tests docs/source/_static/recipes
@@ -48,6 +48,7 @@ jobs:
             matrix:
                 python-version:
                     - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -55,7 +56,6 @@ jobs:
                   enable-cache: true
             - uses: actions/setup-python@v5
               with:
-                  python-version-file: "pyproject.toml"
                   python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run ruff format --check src/ tests/ docs/source/ first_paper_example/
@@ -66,6 +66,7 @@ jobs:
             matrix:
                 python-version:
                     - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -73,7 +74,6 @@ jobs:
                   enable-cache: true
             - uses: actions/setup-python@v5
               with:
-                  python-version-file: "pyproject.toml"
                   python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
             - run: uv run pytest
@@ -84,6 +84,7 @@ jobs:
             matrix:
                 python-version:
                     - "3.13"
+                    - "3.14"
         steps:
             - uses: actions/checkout@v4
             - uses: astral-sh/setup-uv@v6
@@ -91,9 +92,10 @@ jobs:
                   enable-cache: true
             - uses: actions/setup-python@v5
               with:
-                  python-version-file: "pyproject.toml"
                   python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
+            - run: rm -rf docs/source/_autosummary
+            - run: uv run make -C docs html
             - run: uv run make -C docs doctest
 
     build-test:
@@ -109,7 +111,6 @@ jobs:
                   enable-cache: true
             - uses: actions/setup-python@v5
               with:
-                  python-version-file: "pyproject.toml"
                   python-version: ${{ matrix.python-version }}
             - run: uv sync --all-extras --dev
 

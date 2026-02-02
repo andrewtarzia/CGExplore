@@ -140,6 +140,9 @@ def get_vertexset_molecule(
         layout_type=layout_type,
         scale=scale,
     )
+
+    # aligned_construction(
+
     return try_except_construction(
         iterator=iterator,
         topology_code=topology_code,

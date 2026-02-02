@@ -165,7 +165,7 @@ def structure_function(  # noqa: C901, PLR0915
 
         # Testing bb-config aware graph check.
         configured = agx.ConfiguredCode(topology_code, building_block_config)
-        if not agx.utilities.is_configured_code_isomoprhic(
+        if not agx.utilities.is_configured_code_isomorphic(
             test_code=configured,
             run_topology_codes=[agx.ConfiguredCode(entry_tc, entry_bb_config)],
         ):
@@ -286,31 +286,30 @@ def run_genetic_algorithm(  # noqa: PLR0913
     fitness_calculator: cgx.systems_optimisation.FitnessCalculator,
     structure_calculator: cgx.systems_optimisation.StructureCalculator,
     scan_config: dict,
-    elite_population: cgx.systems_optimisation.Generation | None,
+    current_population: cgx.systems_optimisation.Generation | None,
     database: cgx.utilities.AtomliteDatabase,
     neighbour_opt: bool,
 ) -> list[cgx.systems_optimisation.Generation]:
     """A helper function for running each GA."""
     generator = np.random.default_rng(seed)
 
-    if elite_population is None:
+    if current_population is None:
         initial_population = chromo_it.select_random_population(
             generator,
             size=scan_config["selection_size"],
         )
     else:
-        initial_population = elite_population.select_elite(
-            proportion_threshold=0.25
-        )
-
         logger.info(
             "selected elite with f>%s",
             round(
-                elite_population.calculate_elite_fitness(
+                current_population.calculate_elite_fitness(
                     proportion_threshold=0.25
                 ),
                 5,
             ),
+        )
+        initial_population = current_population.select_elite(
+            proportion_threshold=0.25
         )
 
     # Yield this.
@@ -742,7 +741,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                     structure_calculator=structure_calculator,
                     scan_config=scan_config,
                     database=database,
-                    elite_population=None,
+                    current_population=None,
                     neighbour_opt=False,
                 )
                 progress_plot(
@@ -755,7 +754,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             for generations in seeded_generations.values():
                 for generation in generations:
                     chromosomes.extend(generation.chromosomes)
-            elite_population = cgx.systems_optimisation.Generation(
+            current_population = cgx.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(chromosomes),
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
@@ -773,7 +772,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                     structure_calculator=structure_calculator,
                     scan_config=temp_scan_config,
                     database=database,
-                    elite_population=elite_population,
+                    current_population=current_population,
                     neighbour_opt=False,
                 )
                 progress_plot(
@@ -786,7 +785,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
             for generations in seeded_generations.values():
                 for generation in generations:
                     chromosomes.extend(generation.chromosomes)
-            elite_population = cgx.systems_optimisation.Generation(
+            current_population = cgx.systems_optimisation.Generation(
                 chromosomes=chromo_it.dedupe_population(chromosomes),
                 fitness_calculator=fitness_calculator,
                 structure_calculator=structure_calculator,
@@ -808,7 +807,7 @@ def main() -> None:  # noqa: C901, PLR0912, PLR0915
                     structure_calculator=structure_calculator,
                     scan_config=temp_scan_config,
                     database=database,
-                    elite_population=elite_population,
+                    current_population=current_population,
                     neighbour_opt=True,
                 )
                 progress_plot(
