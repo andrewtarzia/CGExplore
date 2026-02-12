@@ -206,8 +206,10 @@ def passes_graph_bb_va_iso(
         if rx.is_isomorphic(
             current_graph,
             test_graph,
-            node_matcher=lambda x, y: (x.split("-")[1] == y.split("-")[1])
-            and (x.split("-")[2] == y.split("-")[2]),
+            node_matcher=lambda x, y: (
+                (x.split("-")[1] == y.split("-")[1])
+                and (x.split("-")[2] == y.split("-")[2])
+            ),
         ):
             passed_iso = False
             break

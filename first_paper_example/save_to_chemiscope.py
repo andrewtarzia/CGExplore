@@ -62,7 +62,7 @@ def main() -> None:
             },
             "s_angle / deg": {
                 "path": ["forcefield_dict", "c3angle"]
-                if tstr in ("6P8",)
+                if tstr != "6P8"
                 else ["forcefield_dict", "c2angle"],
                 "function": None,
             },

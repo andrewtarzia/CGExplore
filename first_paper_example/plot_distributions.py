@@ -140,7 +140,7 @@ def geom_distributions(
     }
 
     tcmap = topology_labels(short="P")
-    tcpos = {tstr: i for i, tstr in enumerate(tcmap) if tstr not in ("6P8",)}
+    tcpos = {tstr: i for i, tstr in enumerate(tcmap) if tstr != "6P8"}
     vdw_frame = all_data[all_data["vdws"] == "von"]
 
     for comp, cdict in comparisons.items():
@@ -157,7 +157,7 @@ def geom_distributions(
             tor_frame = vdw_frame[vdw_frame["torsions"] == tors]
 
             for _i, tstr in enumerate(tcmap):
-                if tstr in ("6P8",):
+                if tstr != "6P8":
                     continue
 
                 topo_frame = tor_frame[tor_frame["topology"] == tstr]

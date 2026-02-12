@@ -51,7 +51,7 @@ def analyse_cage(
         key=name,
         property_dict={
             "cage_name": name,
-            "prefix": name.split("_")[0],
+            "prefix": name.split("_", maxsplit=1)[0],
             "chromosome": tuple(int(i) for i in chromosome.name),  # type:ignore[dict-item]
             "topology": topology_str,
             "num_bbs": cgx.topologies.stoich_map(topology_str),

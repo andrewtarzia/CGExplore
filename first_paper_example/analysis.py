@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 def get_paired_cage_name(cage_name: str) -> str:
     """Get new FF number from a cage number based on ton vs toff."""
-    ff_num = int(cage_name.split("_")[-1].split("f")[1])
+    ff_num = int(cage_name.rsplit("_", maxsplit=1)[-1].split("f")[1])
     new_ff_num = ff_num + 1
     return cage_name.replace(f"f{ff_num}", f"f{new_ff_num}")
 
@@ -93,7 +93,7 @@ def analyse_cage(
             shape_string=None,
         )
 
-        tstr = name.split("_")[0]
+        tstr = name.split("_", maxsplit=1)[0]
         try:
             n_shape_mol = node_shape.get_shape_molecule_byelements(
                 molecule=conformer.molecule,
