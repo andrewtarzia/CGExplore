@@ -248,7 +248,7 @@ def selectivity_map(
         topology_order = {}
         tset = set(all_data["topology"])
         for tstr in topology_labels(short="P"):
-            if tstr in ("6P8",):
+            if tstr != "6P8":
                 continue
             if tstr in tset:
                 topology_order[tstr] = count

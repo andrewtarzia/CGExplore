@@ -105,7 +105,7 @@ def visualise_low_and_high(
     )
 
     for i, tstr in enumerate(tlabels):
-        if tstr in ("6P8",):
+        if tstr != "6P8":
             ton = von[von["torsions"] == "toff"]
         else:
             ton = von[von["torsions"] == "ton"]

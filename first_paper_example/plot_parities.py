@@ -37,7 +37,7 @@ def parity_1(all_data: pd.DataFrame, figure_output: pathlib.Path) -> None:
     fig, ax = plt.subplots(figsize=(8, 5))
 
     for tstr in tcmap:
-        if tstr in ("6P8",):
+        if tstr != "6P8":
             continue
 
         tdata = vdata[vdata["topology"] == tstr]

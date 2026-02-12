@@ -67,7 +67,7 @@ class Crest(stko.Optimizer):
         self._crest_path = crest_path
         self._xtb_path = xtb_path
         self._gfn_method = (
-            f"--gfn{gfn_method}" if gfn_method not in ("gfnff",) else "--gfnff"
+            f"--gfn{gfn_method}" if gfn_method != "gfnff" else "--gfnff"
         )
         self._output_dir = (
             None if output_dir is None else pathlib.Path(output_dir)
