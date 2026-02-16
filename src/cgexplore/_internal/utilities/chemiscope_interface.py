@@ -14,6 +14,94 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+def convert_stk_bonds_as_shapes(
+    structures: abc.Sequence[stk.Molecule],
+    bond_color: str,
+    bond_radius: float,
+) -> dict[str, dict]:
+    """Convert connections between atom ids in each structure to shapes.
+
+    :param structures: List of stk Molecule objects.
+    :param bond_color: How to color the bonds added.
+    :param bond_radius: Radius of bonds to add.
+    """
+    shape_dict: dict[str, dict] = {}
+    max_length = 0
+    for molecule in structures:
+        bonds_to_add = tuple(
+            (bond.get_atom1().get_id(), bond.get_atom2().get_id())
+            for bond in molecule.get_bonds()
+        )
+
+        for bid, bond_info in enumerate(bonds_to_add):
+            bname = f"bond_{bid}"
+
+            # Compute the bond vector.
+            position_matrix = molecule.get_position_matrix()
+            bond_geometry = {
+                "vector": (
+                    position_matrix[bond_info[1]]
+                    - position_matrix[bond_info[0]]
+                ).tolist(),
+                "position": (position_matrix[bond_info[0]]).tolist(),
+            }
+
+            # Add the bond name to the dictionary to be iterated through.
+            if bname not in shape_dict:
+                if bname == "bond_0":
+                    shape_dict[bname] = {
+                        "kind": "cylinder",
+                        "parameters": {
+                            "global": {
+                                "radius": bond_radius,
+                                "color": bond_color,
+                            },
+                            "structure": [],
+                        },
+                    }
+
+                else:
+                    num_to_add = len(
+                        shape_dict["bond_0"]["parameters"]["structure"]
+                    )
+                    shape_dict[bname] = {
+                        "kind": "cylinder",
+                        "parameters": {
+                            "global": {
+                                "radius": bond_radius,
+                                "color": bond_color,
+                            },
+                            # Add zero placements for previously non-existant
+                            # bond shapes up to the length of bond_0 -1,
+                            # because that should already be at the current
+                            # length that the new one should be.
+                            "structure": [
+                                {"vector": [0, 0, 0], "position": [0, 0, 0]}
+                                for i in range(num_to_add - 1)
+                            ],
+                        },
+                    }
+
+            # Add vector to the shape dictionary.
+            shape_dict[bname]["parameters"]["structure"].append(bond_geometry)
+            max_length = max(
+                (max_length, len(shape_dict[bname]["parameters"]["structure"]))
+            )
+
+        # Fill in bond shapes that are not the same length as the max length.
+        for bname in shape_dict:
+            missing = max_length - len(
+                shape_dict[bname]["parameters"]["structure"]
+            )
+            if missing == 0:
+                continue
+            for _ in range(missing):
+                fake_bond = {"vector": [0, 0, 0], "position": [0, 0, 0]}
+                shape_dict[bname]["parameters"]["structure"].append(fake_bond)
+
+    return shape_dict
+
+
 def write_chemiscope_json(  # noqa: PLR0913
     json_file: pathlib.Path | str,
     structures: abc.Sequence[stk.Molecule],
@@ -71,8 +159,8 @@ def write_chemiscope_json(  # noqa: PLR0913
 
     """
     if bonds_as_shapes:
-        shape_dict = chemiscope.convert_stk_bonds_as_shapes(
-            frames=structures,
+        shape_dict = convert_stk_bonds_as_shapes(
+            structures=structures,
             bond_color=bond_hex_colour,
             bond_radius=0.10,
         )
