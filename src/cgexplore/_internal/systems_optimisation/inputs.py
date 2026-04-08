@@ -142,7 +142,7 @@ class Chromosome:
                 term = self.definer_dict[key_]  # type: ignore[assignment]
 
             if term[0] == "bond":
-                bond_terms.append(
+                bond_terms.append(  # type: ignore[unreachable]
                     define_bond(
                         interaction_key=key_,
                         interaction_list=term,
@@ -151,7 +151,7 @@ class Chromosome:
                 )
 
             elif term[0] == "angle":
-                angle_terms.append(
+                angle_terms.append(  # type: ignore[unreachable]
                     define_angle(
                         interaction_key=key_,
                         interaction_list=term,
@@ -160,7 +160,7 @@ class Chromosome:
                 )
 
             elif term[0] == "pyramid":
-                angle_terms.append(
+                angle_terms.append(  # type: ignore[unreachable]
                     define_pyramid_angle(
                         interaction_key=key_,
                         interaction_list=term,
@@ -169,7 +169,7 @@ class Chromosome:
                 )
 
             elif term[0] == "cosine":
-                angle_terms.append(
+                angle_terms.append(  # type: ignore[unreachable]
                     define_cosine_angle(
                         interaction_key=key_,
                         interaction_list=term,
@@ -178,7 +178,7 @@ class Chromosome:
                 )
 
             elif term[0] == "tors":
-                torsion_terms.append(
+                torsion_terms.append(  # type: ignore[unreachable]
                     define_torsion(
                         interaction_key=key_,
                         interaction_list=term,
@@ -187,7 +187,7 @@ class Chromosome:
                 )
 
             elif term[0] == "nb":
-                nonbonded_terms.append(
+                nonbonded_terms.append(  # type: ignore[unreachable]
                     define_nonbonded(
                         interaction_key=key_,
                         interaction_list=term,
@@ -196,7 +196,7 @@ class Chromosome:
                 )
 
             elif term[0] == "custom-lj":
-                nonbonded_terms.append(
+                nonbonded_terms.append(  # type: ignore[unreachable]
                     define_lennardjones(
                         interaction_key=key_,
                         interaction_list=term,
