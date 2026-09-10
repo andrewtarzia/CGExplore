@@ -14,3 +14,4 @@ Here are some useful recipes I use.
    5. Four component structure prediction <recipes/recipe_5>
    6. Target optimisation <recipes/recipe_6>
    7. Reproducing stk graphs <recipes/recipe_7>
+   8. Summarising graphs <recipes/recipe_8>
