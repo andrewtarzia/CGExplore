@@ -104,9 +104,7 @@ def summarise_topology_code(
     axgrid = fig.add_gridspec(1, 2)
 
     ax0 = fig.add_subplot(axgrid[:, :1])
-    gcc = g.subgraph(
-        sorted(nx.connected_components(g), key=len, reverse=True)[0]
-    )
+    gcc = g.subgraph(max(nx.connected_components(g), key=len))
     pos = nx.spring_layout(gcc, seed=10396953)
     nx.draw_networkx_nodes(gcc, pos, ax=ax0, node_size=20)
     nx.draw_networkx_edges(gcc, pos, ax=ax0, alpha=0.4)
