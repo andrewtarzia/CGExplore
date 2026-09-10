@@ -453,7 +453,7 @@ class ChromosomeGenerator:
                 gene_value = self.chromosome_map[gene_id][gene]
                 gene_type = self.chromosome_types[gene_id]
                 gene_dict[gene_id] = (gene, gene_value, gene_type)
-                chromosome_name[gene_id] = gene
+                chromosome_name[gene_id] = gene  # type: ignore[call-overload]
 
             if "forcefield" in known_types:
                 # In this case, the definer dict changes per chromosome!

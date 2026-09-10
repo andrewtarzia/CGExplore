@@ -120,9 +120,11 @@ def main() -> None:
                 ),
                 "authors": ["Andrew Tarzia"],
                 "references": [
-                    "'Systematic exploration of accessible topologies of "
-                    "cage molecules via minimalistic models, Chem. Sci, "
-                    "DOI: 10.1039/D3SC03991A'",
+                    (
+                        "'Systematic exploration of accessible topologies of "
+                        "cage molecules via minimalistic models, Chem. Sci, "
+                        "DOI: 10.1039/D3SC03991A'"
+                    ),
                 ],
             },
             x_axis_dict={"property": "s_angle / deg"},

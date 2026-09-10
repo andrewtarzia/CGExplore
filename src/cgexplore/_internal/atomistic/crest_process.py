@@ -8,7 +8,10 @@ import subprocess as sp
 import uuid
 from collections import abc
 
-import bbprep
+try:
+    import bbprep
+except ModuleNotFoundError:
+    import bbprepared as bbprep
 import stk
 import stko
 from rdkit import RDLogger

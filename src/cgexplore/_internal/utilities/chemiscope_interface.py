@@ -174,9 +174,9 @@ def write_chemiscope_json(  # noqa: PLR0913
 
     chemiscope.write_input(
         path=str(json_file),
-        frames=structures,
+        structures=structures,
         properties=properties,
-        meta=meta_dict,
+        metadata=meta_dict,
         settings=chemiscope.quick_settings(
             map_settings={
                 "x": x_axis_dict,
