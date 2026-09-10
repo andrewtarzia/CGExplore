@@ -10,7 +10,7 @@ dependencies = [
     "stk",
     "stko",
     "chemiscope>0.7.3",
-    "rustworkx",
+    "rustworkx==0.17.1",
     "bbprepared",
     "agraphx",
 ]
