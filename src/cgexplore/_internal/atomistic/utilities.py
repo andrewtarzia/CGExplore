@@ -3,7 +3,10 @@
 import logging
 import pathlib
 
-import bbprep
+try:
+    import bbprep
+except ModuleNotFoundError:
+    import bbprepared as bbprep
 import numpy as np
 import stk
 import stko
