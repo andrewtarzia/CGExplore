@@ -87,7 +87,7 @@ def fitness_function(  # noqa: PLR0913
     """Calculate fitness."""
     database = cgx.utilities.AtomliteDatabase(database_path)
     topology_idx, _ = chromosome.get_topology_information()
-    building_block_config = chromosome.get_vertex_alignments()[0]
+    building_block_config = chromosome.get_building_block_configurations()[0]
     name = f"{chromosome.prefix}_{topology_idx}_b{building_block_config.idx}"
 
     entry = database.get_entry(name)
@@ -122,7 +122,7 @@ def structure_function(  # noqa: C901, PLR0915
     database = cgx.utilities.AtomliteDatabase(database_path)
 
     topology_idx, topology_code = chromosome.get_topology_information()
-    building_block_config = chromosome.get_vertex_alignments()[0]
+    building_block_config = chromosome.get_building_block_configurations()[0]
 
     base_name = (
         f"{chromosome.prefix}_{topology_idx}_b{building_block_config.idx}"
@@ -332,12 +332,12 @@ def run_genetic_algorithm(  # noqa: PLR0913
                         (
                             f"{chromosome.prefix}"
                             f"_{chromosome.get_topology_information()[0]}"
-                            f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                            f"_b{chromosome.get_building_block_configurations()[0].idx}"
                         ): chromosome
                         for chromosome in generation.chromosomes
                     },
                     selection="all",
-                    gene_range=chromo_it.get_va_ids(),
+                    gene_range=chromo_it.get_bc_ids(),
                 )
             )
             merged_chromosomes.extend(generation.select_all())
@@ -349,12 +349,12 @@ def run_genetic_algorithm(  # noqa: PLR0913
                         (
                             f"{chromosome.prefix}"
                             f"_{chromosome.get_topology_information()[0]}"
-                            f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                            f"_b{chromosome.get_building_block_configurations()[0].idx}"
                         ): chromosome
                         for chromosome in generation.chromosomes
                     },
                     generator=generator,
-                    gene_range=chromo_it.get_va_ids(),
+                    gene_range=chromo_it.get_bc_ids(),
                     selection="random",
                     num_to_select=scan_config["mutations"],
                     database=database,
@@ -366,7 +366,7 @@ def run_genetic_algorithm(  # noqa: PLR0913
                         (
                             f"{chromosome.prefix}"
                             f"_{chromosome.get_topology_information()[0]}"
-                            f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                            f"_b{chromosome.get_building_block_configurations()[0].idx}"
                         ): chromosome
                         for chromosome in generation.chromosomes
                     },
@@ -383,12 +383,12 @@ def run_genetic_algorithm(  # noqa: PLR0913
                         (
                             f"{chromosome.prefix}"
                             f"_{chromosome.get_topology_information()[0]}"
-                            f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                            f"_b{chromosome.get_building_block_configurations()[0].idx}"
                         ): chromosome
                         for chromosome in generation.chromosomes
                     },
                     generator=generator,
-                    gene_range=chromo_it.get_va_ids(),
+                    gene_range=chromo_it.get_bc_ids(),
                     selection="roulette",
                     num_to_select=scan_config["mutations"],
                     database=database,
@@ -400,7 +400,7 @@ def run_genetic_algorithm(  # noqa: PLR0913
                         (
                             f"{chromosome.prefix}"
                             f"_{chromosome.get_topology_information()[0]}"
-                            f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                            f"_b{chromosome.get_building_block_configurations()[0].idx}"
                         ): chromosome
                         for chromosome in generation.chromosomes
                     },
@@ -418,7 +418,7 @@ def run_genetic_algorithm(  # noqa: PLR0913
                         (
                             f"{chromosome.prefix}"
                             f"_{chromosome.get_topology_information()[0]}"
-                            f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                            f"_b{chromosome.get_building_block_configurations()[0].idx}"
                         ): chromosome
                         for chromosome in generation.chromosomes
                     },
@@ -435,7 +435,7 @@ def run_genetic_algorithm(  # noqa: PLR0913
                         (
                             f"{chromosome.prefix}"
                             f"_{chromosome.get_topology_information()[0]}"
-                            f"_b{chromosome.get_vertex_alignments()[0].idx}"
+                            f"_b{chromosome.get_building_block_configurations()[0].idx}"
                         ): chromosome
                         for chromosome in generation.chromosomes
                     },
@@ -481,7 +481,7 @@ def run_genetic_algorithm(  # noqa: PLR0913
         best_name = (
             f"{best_chromosome.prefix}_"
             f"{best_chromosome.get_topology_information()[0]}_"
-            f"b{best_chromosome.get_vertex_alignments()[0].idx}"
+            f"b{best_chromosome.get_building_block_configurations()[0].idx}"
         )
 
     logger.info("top scorer is %s (seed: %s)", best_name, seed)

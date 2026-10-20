@@ -82,6 +82,9 @@ class TopologyIterator:
         graph_directory:
             Directory to check for and save graph jsons.
 
+        verbose:
+            Whether to log outcomes.
+
     """
 
     building_block_counts: dict[stk.BuildingBlock, int]
@@ -91,6 +94,7 @@ class TopologyIterator:
     allowed_num_components: int = 1
     max_samples: int | None = None
     graph_directory: pathlib.Path | None = None
+    verbose: bool = True
 
     def __post_init__(self) -> None:  # noqa: PLR0915, PLR0912, C901
         """Initialize."""
@@ -329,7 +333,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 10000 == 0:
+            if i % 100 == 0 and self.verbose:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
@@ -399,7 +403,7 @@ class TopologyIterator:
             # Add this anyway, either gets skipped, or adds the new one.
             combinations_tested.add(topology_code.get_as_string())
             # Progress.
-            if i % 10000 == 0:
+            if i % 100 == 0 and self.verbose:
                 logger.info(
                     "done %s of %s (%s/100.0)",
                     i,
@@ -550,6 +554,10 @@ class TopologyIterator:
                 count += 1
 
         return count
+
+    def graph_exists(self) -> bool:
+        """Checks if the graphs have been defined."""
+        return self.graph_path.exists()
 
     def yield_graphs(self) -> abc.Generator[TopologyCode]:
         """Get constructed molecules from iteration.
