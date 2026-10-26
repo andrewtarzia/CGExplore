@@ -71,18 +71,11 @@ known failures at this time.
         "24-4FG_48-2FG": (stk.cage.M24L48, {bbs[4]: 24, bbs[2]: 48}),
         "6-4FG_8-3FG": (stk.cage.SixPlusEight, {bbs[4]: 6, bbs[3]: 8}),
         "x6-4FG_8-3FG": (stk.cage.M8L6Cube, {bbs[4]: 6, bbs[3]: 8}),
-        "3-4FG_8-3FG": (stk.cage.M6L2L3Prism, {bbs[4]: 3, bbs[3]: 8}),
+        "2-4FG_8-3FG": (stk.cage.M6L2L3Prism, {bbs[4]: 2, bbs[3]: 8}),
         "12-5FG_30-2FG": (stk.cage.TwelvePlusThirty, {bbs[5]: 12, bbs[2]: 30}),
     }
 
-    known_failures = (
-        "3-4FG_8-3FG",
-        "20-3FG_30-2FG",
-        "24-4FG_48-2FG",
-        "12-5FG_30-2FG",
-        "12-4FG_24-2FG",
-        "x12-4FG_24-2FG",
-    )
+    known_failures = ()
 
 And so all we do now is iterate through and check for isomoprhism of all the
 graphs in our iterator.
@@ -92,9 +85,17 @@ graphs in our iterator.
 
     for known_, (tfun, bbs) in knowns.items():
         found = False
+        found_skewed = False
+
         stk_topology_code, _ = cgx.scram.get_stk_topology_code(tfun)
         iterator = cgx.scram.TopologyIterator(building_block_counts=bbs)
-        if not iterator.graph_exists():
+
+        # Back up iterator.
+        skewed_iterator = cgx.scram.SkewedTopologyIterator(
+            building_block_counts=sele_bbs
+        )
+
+        if not iterator.graph_exists() or not skewed_iterator.graph_exists():
             logger.info("%s graph not built yet", known_)
             if known_ in known_failures:
                 logger.info("----> it is ok though, we knew about this one!")
@@ -105,11 +106,26 @@ graphs in our iterator.
                 found = True
                 break
 
+        if not found:
+            for tc in skewed_iterator.yield_graphs():
+                if rx.is_isomorphic(
+                    stk_topology_code.get_graph(), tc.get_graph()
+                ):
+                    found_skewed = True
+                    break
+
         if found:
             logger.info(
                 "found stk graph for %s in the %s graphs",
                 known_,
                 iterator.count_graphs(),
+            )
+
+        elif found_skewed:
+            logger.info(
+                "found stk graph for %s in the %s SKEWED graphs",
+                known_,
+                skewed_iterator.count_graphs(),
             )
 
         else:
@@ -126,14 +142,16 @@ graphs in our iterator.
 
     for known_, (tfun, bbs) in knowns.items():
         found = False
-        string = known_.replace("x", "") if "x" in known_ else known_
+        found_skewed = False
+
         stk_topology_code, _ = cgx.scram.get_stk_topology_code(tfun)
         iterator = cgx.scram.TopologyIterator(
             building_block_counts=bbs,
-            graph_type=string,
-            graph_set="rxx",
         )
-        if not iterator.graph_exists():
+        skewed_iterator = cgx.scram.SkewedTopologyIterator(
+            building_block_counts=bbs,
+        )
+        if not iterator.graph_exists() or not skewed_iterator.graph_exists():
             if known_ not in known_failures:
                 assert False
             continue
@@ -143,10 +161,22 @@ graphs in our iterator.
                 found = True
                 break
 
-        if not found and known_ not in known_failures:
+        if not found:
+            for tc in skewed_iterator.yield_graphs():
+                if rx.is_isomorphic(
+                    stk_topology_code.get_graph(), tc.get_graph()
+                ):
+                    found_skewed = True
+                    break
+
+        if not (found or found_skewed) and known_ not in known_failures:
             assert False
 
+Using the ``TopologyCode.visualise(...)``, we can see what the graphs look
+like:
 
+.. image:: recipe_7_output/figures/graph_8-3FG.png
+.. image:: recipe_7_output/figures/graph_x8-4FG_16-2FG.png
 
 .. raw:: html
 
