@@ -26,8 +26,6 @@ bbs = {
             num_graphs=2,
             num_configs=0,
             name=name,
-            doubles={0: True, 1: True},
-            parallels={0: True, 1: False},
             iso_pass=(),
         ),
         lambda name: CaseData(
@@ -39,8 +37,6 @@ bbs = {
             num_graphs=4,
             num_configs=20,
             name=name,
-            doubles={0: True, 1: True, 2: True, 4: False},
-            parallels={0: True, 1: True, 2: False, 4: True},
             iso_pass=(
                 (0, 0),
                 (1, 0),
@@ -72,8 +68,6 @@ bbs = {
             num_graphs=5,
             num_configs=0,
             name=name,
-            doubles={0: True, 1: True, 2: True, 3: False, 5: False},
-            parallels={0: True, 1: False, 2: True, 3: True, 5: False},
             iso_pass=(),
         ),
         lambda name: CaseData(
@@ -85,8 +79,6 @@ bbs = {
             num_graphs=6,
             num_configs=0,
             name=name,
-            doubles={0: True, 1: False, 2: True, 3: True, 4: True, 5: False},
-            parallels={0: True, 1: True, 2: True, 3: True, 4: False, 5: True},
             iso_pass=(),
         ),
         lambda name: CaseData(
@@ -98,8 +90,6 @@ bbs = {
             num_graphs=2,
             num_configs=0,
             name=name,
-            doubles={0: True, 1: True, 2: False},
-            parallels={0: False, 1: False, 2: True},
             iso_pass=(),
         ),
         lambda name: CaseData(
@@ -111,28 +101,6 @@ bbs = {
             num_graphs=9,
             num_configs=4,
             name=name,
-            doubles={
-                0: True,
-                1: True,
-                2: True,
-                3: True,
-                4: True,
-                5: True,
-                6: False,
-                7: True,
-                8: False,
-            },
-            parallels={
-                0: True,
-                1: True,
-                2: True,
-                3: True,
-                4: True,
-                5: False,
-                6: True,
-                7: True,
-                8: True,
-            },
             iso_pass=(
                 (0, 0),
                 (1, 0),

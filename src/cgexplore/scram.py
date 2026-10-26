@@ -12,6 +12,7 @@ from cgexplore._internal.scram.construction import (
 )
 from cgexplore._internal.scram.enumeration import TopologyIterator
 from cgexplore._internal.scram.optimisation import target_optimisation
+from cgexplore._internal.scram.skewed_iterator import SkewedTopologyIterator
 from cgexplore._internal.scram.utilities import (
     get_stk_topology_code,
     points_on_sphere,
@@ -26,6 +27,7 @@ from cgexplore._internal.scram.vertex_alignment_enum import (
 __all__ = [
     "Configuration",
     "ConfiguredCode",
+    "SkewedTopologyIterator",
     "TopologyCode",
     "TopologyIterator",
     "VertexAlignment",

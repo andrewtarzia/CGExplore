@@ -1,4 +1,4 @@
-"""Copiable code from Recipe #5."""  # noqa: INP001
+"""Copiable code from Recipe #7."""  # noqa: INP001
 
 import logging
 
@@ -62,30 +62,27 @@ def main() -> None:
         "12-4FG_24-2FG": (cgx.topologies.CGM12L24, {bbs[4]: 12, bbs[2]: 24}),
         "x12-4FG_24-2FG": (stk.cage.M12L24, {bbs[4]: 12, bbs[2]: 24}),
         "24-4FG_48-2FG": (stk.cage.M24L48, {bbs[4]: 24, bbs[2]: 48}),
-        "3-4FG_8-3FG": (stk.cage.M6L2L3Prism, {bbs[4]: 3, bbs[3]: 8}),
+        "2-4FG_8-3FG": (stk.cage.M6L2L3Prism, {bbs[4]: 2, bbs[3]: 8}),
         "12-5FG_30-2FG": (stk.cage.TwelvePlusThirty, {bbs[5]: 12, bbs[2]: 30}),
         "20-3FG_30-2FG": (stk.cage.TwentyPlusThirty, {bbs[3]: 20, bbs[2]: 30}),
     }
 
-    known_failures = (
-        "3-4FG_8-3FG",
-        "20-3FG_30-2FG",
-        "24-4FG_48-2FG",
-        "12-5FG_30-2FG",
-        "12-4FG_24-2FG",
-        "x12-4FG_24-2FG",
-    )
+    known_failures = ()
 
     for known_, (tfun, sele_bbs) in knowns.items():
         found = False
+        found_skewed = False
         stk_topology_code, _ = cgx.scram.get_stk_topology_code(tfun)
         iterator = cgx.scram.TopologyIterator(building_block_counts=sele_bbs)
-        if not iterator.graph_exists():
+        skewed_iterator = cgx.scram.SkewedTopologyIterator(
+            building_block_counts=sele_bbs
+        )
+        if not iterator.graph_exists() or not skewed_iterator.graph_exists():
             logger.info("%s graph not built yet", known_)
             if known_ in known_failures:
                 logger.info("----> it is ok though, we knew about this one!")
             else:
-                msg = "actually, expected this one!"
+                msg = "actually, did not expected this one!"
                 raise RuntimeError(msg)
             continue
 
@@ -94,11 +91,26 @@ def main() -> None:
                 found = True
                 break
 
+        if not found:
+            for tc in skewed_iterator.yield_graphs():
+                if rx.is_isomorphic(
+                    stk_topology_code.get_graph(), tc.get_graph()
+                ):
+                    found_skewed = True
+                    break
+
         if found:
             logger.info(
                 "found stk graph for %s in the %s graphs",
                 known_,
                 iterator.count_graphs(),
+            )
+
+        elif found_skewed:
+            logger.info(
+                "found stk graph for %s in the %s SKEWED graphs",
+                known_,
+                skewed_iterator.count_graphs(),
             )
 
         else:
