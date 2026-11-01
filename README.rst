@@ -100,7 +100,7 @@ How To Cite
 
 If you use ``cgexplore``, please cite this paper
 
-  `https://doi.org/10.26434/chemrxiv-2025-f034c <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_
+  Unbiased Structure Prediction of Sophisticated Cage Structures (`https://doi.org/10.1002/anie.9267462 <hhttps://onlinelibrary.wiley.com/doi/10.1002/anie.9267462>`_)
 
 and reference this URL
 
@@ -116,7 +116,7 @@ Publications using CGExplore
 
 * Using stk for constructing larger numbers of coarse-grained models: `Systematic exploration of accessible topologies of cage molecules via minimalistic models <https://doi.org/10.1039/D3SC03991A>`_.
 * Starship structure prediction: (`Adjacent backbone interactions control self-sorting of chiral heteroleptic Pd3A2B4 isosceles triangles and Pd4A4C4 pseudo-tetrahedra <https://doi.org/10.1016/j.chempr.2025.102780>`_)
-* Structure prediction: (`Predicting stable cage structures by enumerating stoichiometry and topology <https://chemrxiv.org/engage/chemrxiv/article-details/68f0ef40bc2ac3a0e051be52>`_)
+* Structure prediction: (`Unbiased Structure Prediction of Sophisticated Cage Structures <hhttps://onlinelibrary.wiley.com/doi/10.1002/anie.9267462>`_)
 
 Acknowledgements
 ================
