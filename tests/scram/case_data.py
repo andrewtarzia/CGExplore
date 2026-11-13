@@ -15,7 +15,5 @@ class CaseData:
     num_graphs: int
     num_configs: int
     max_samples: int
-    doubles: dict[int, bool]
-    parallels: dict[int, bool]
     iso_pass: abc.Sequence[tuple[int, int]]
     name: str

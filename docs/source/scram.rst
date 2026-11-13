@@ -1,11 +1,11 @@
-Scrambler: blind structure prediction
-=====================================
+Scrambler: unbiased structure prediction
+========================================
 
-A package of the classes for scrambling and blind structure prediction in
+A package of the classes for scrambling and unbiased structure prediction in
 :mod:`cgexplore`.
 
 The graphing aspect and the graphs available in :mod:`cgexplore.scram` for
-performing blind structure prediction is now part of :mod:`agx`, which can
+performing unbiased structure prediction is now part of :mod:`agx`, which can
 be found in the
 `agx documentation <https://agx.readthedocs.io/en/latest/index.html>`_.
 
@@ -16,6 +16,7 @@ that highlight how to explore graphs before construction.
   :maxdepth: 1
 
   Available graphs <avail_graphs>
+  Skewed graphs <skewed_graphs>
 
 The iterators
 -------------
@@ -23,6 +24,7 @@ The iterators
 This class now handles graph and building block configuration exploration.
 
 - :doc:`TopologyIterator <_autosummary/cgexplore.scram.TopologyIterator>`
+- :doc:`SkewedTopologyIterator <_autosummary/cgexplore.scram.SkewedTopologyIterator>`
 
 
 Containers
