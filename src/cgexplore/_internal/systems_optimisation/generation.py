@@ -31,10 +31,11 @@ class Generation:
         """Get the number of chromosomes in a generation."""
         return len(self.chromosomes)
 
-    def calculate_fitness_values(self) -> list[float]:
+    def calculate_fitness_values(self, verbose: bool = False) -> list[float]:
         """Calculate the fitness of all chromosomes."""
         length = len(self.chromosomes)
-        logger.info("calculating fitness values of %s systems...", length)
+        if verbose:
+            logger.info("calculating fitness values of %s systems...", length)
         if self.num_processes > 1:
             with pathos.pools.ProcessPool(self.num_processes) as pool:
                 return pool.map(
